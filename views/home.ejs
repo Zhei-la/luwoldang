@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>홈</title>
+  <link rel="stylesheet" href="/css/base.css">
+</head>
+<body>
+  <div class="center">
+    <span class="badge"><%= user.role === 'admin' ? '관리자' : '교육생' %></span>
+    <h1>로그인 완료 ✓</h1>
+    <div class="line"></div>
+    <p>
+      <strong><%= user.name %></strong>님 환영합니다.<br>
+      무료사주 링크 코드: <code><%= user.slug %></code>
+    </p>
+    <p style="font-size:13px;color:#8a8574;">
+      * 이 화면은 2단계에서 대시보드(사이드바 + 기능카드)로 교체됩니다.
+    </p>
+    <form method="post" action="/logout">
+      <button class="ghost" type="submit">로그아웃</button>
+    </form>
+  </div>
+</body>
+</html>

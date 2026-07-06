@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>제일라 사주 연구소</title>
+  <link rel="stylesheet" href="/css/base.css">
+</head>
+<body>
+  <div class="center">
+    <h1 class="brand">제일라 사주 연구소</h1>
+    <div class="line"></div>
+    <p class="sub">AI 사주 PDF 제작 · 무료사주 상담 플랫폼</p>
+    <a class="kakao-btn" href="/auth/kakao">카카오로 시작하기</a>
+    <% if (devLogin) { %>
+      <a class="ghost" href="/dev/login" style="display:inline-block;text-decoration:none;margin-top:16px;">
+        개발용 임시 로그인 (관리자)
+      </a>
+    <% } %>
+  </div>
+</body>
+</html>

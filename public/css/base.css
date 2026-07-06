@@ -1,0 +1,94 @@
+:root {
+  --bg: #F7F3EA;
+  --ink: #252522;
+  --navy: #182234;
+  --gold: #B59A62;
+  --beige: #E9E0CF;
+  --kakao: #FEE500;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.center {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.brand {
+  font-family: "Nanum Myeongjo", serif;
+  font-size: 28px;
+  letter-spacing: 1px;
+  margin: 0 0 8px;
+}
+
+.sub {
+  color: #6b6656;
+  font-size: 14px;
+  margin: 0 0 32px;
+}
+
+h1 {
+  font-family: "Nanum Myeongjo", serif;
+  font-size: 24px;
+  margin: 0 0 16px;
+}
+
+p { line-height: 1.7; color: #4a463d; }
+
+.line {
+  width: 40px;
+  height: 2px;
+  background: var(--gold);
+  margin: 0 auto 24px;
+}
+
+.kakao-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 14px;
+  background: var(--kakao);
+  color: #191600;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.kakao-btn:hover { filter: brightness(0.97); }
+
+.ghost {
+  margin-top: 24px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--ink);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--beige);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--navy);
+  margin-bottom: 16px;
+}

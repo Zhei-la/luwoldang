@@ -1,0 +1,38 @@
+const { Pool } = require('pg');
+
+// Railway Postgres / Supabase는 SSL 필요, 로컬은 불필요
+const url = process.env.DATABASE_URL || '';
+const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+
+const pool = new Pool({
+  connectionString: url,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
+});
+
+async function initDb() {
+  // 교육생 · 관리자 통합 테이블
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id                 SERIAL PRIMARY KEY,
+      kakao_id           TEXT UNIQUE NOT NULL,
+      name               TEXT,
+      account_email      TEXT,
+      role               TEXT NOT NULL DEFAULT 'trainee',   -- admin / trainee
+      status             TEXT NOT NULL DEFAULT 'pending',   -- pending / approved / rejected
+      slug               TEXT UNIQUE,                       -- 무료사주 고유 링크 (/s/:slug)
+      site_name          TEXT,
+      kakao_consult_link TEXT,
+      consult_message    TEXT,
+      button_text        TEXT,
+      can_make_pdf       BOOLEAN DEFAULT TRUE,
+      can_set_free       BOOLEAN DEFAULT TRUE,
+      can_view_records   BOOLEAN DEFAULT TRUE,
+      can_manage_api     BOOLEAN DEFAULT TRUE,
+      created_at         TIMESTAMPTZ DEFAULT NOW(),
+      approved_at        TIMESTAMPTZ
+    );
+  `);
+  console.log('[DB] 준비 완료');
+}
+
+module.exports = { pool, initDb };
