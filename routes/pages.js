@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireApproved, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireApproved } = require('../middleware/auth');
 
 // 모든 대시보드 페이지는 로그인 + 승인 필요
 router.use(requireAuth, requireApproved);
@@ -34,11 +34,6 @@ router.get('/api-settings', (req, res) => {
 // 내 계정 (지금도 실제 정보 표시)
 router.get('/account', (req, res) => {
   res.render('dash/account', { user: req.user, active: 'account', baseUrl: process.env.BASE_URL || '' });
-});
-
-// 관리자 전용
-router.get('/admin/approvals', requireAdmin, (req, res) => {
-  res.render('dash/placeholder', { user: req.user, active: 'admin', title: '회원 승인 · 관리', step: '9단계' });
 });
 
 module.exports = router;

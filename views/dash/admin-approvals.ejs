@@ -1,0 +1,82 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '회원 승인 · 관리' }) %>
+
+<%
+  function fmtDate(d) {
+    if (!d) return '-';
+    try { return new Date(d).toLocaleDateString('ko-KR'); } catch (e) { return '-'; }
+  }
+  function roleLabel(r) { return r === 'admin' ? '관리자' : '교육생'; }
+%>
+
+<!-- 승인 대기 -->
+<h2 class="section-h">승인 대기 <% if (pending.length) { %><span class="count"><%= pending.length %></span><% } %></h2>
+<% if (pending.length === 0) { %>
+  <div class="empty-box">승인 대기 중인 회원이 없습니다.</div>
+<% } else { %>
+  <div class="tbl">
+    <% pending.forEach(function (u) { %>
+      <div class="tbl-row">
+        <div class="tbl-main">
+          <div class="u-name"><%= u.name %> <span class="u-role"><%= roleLabel(u.role) %></span></div>
+          <div class="u-sub">가입일 <%= fmtDate(u.created_at) %><% if (u.account_email) { %> · <%= u.account_email %><% } %></div>
+        </div>
+        <div class="tbl-actions">
+          <form method="post" action="/admin/approve/<%= u.id %>">
+            <button class="btn btn-approve" type="submit">승인</button>
+          </form>
+          <form method="post" action="/admin/reject/<%= u.id %>">
+            <button class="btn btn-reject" type="submit">거절</button>
+          </form>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<!-- 승인 완료 -->
+<h2 class="section-h" style="margin-top:36px;">승인 완료 <span class="count light"><%= approved.length %></span></h2>
+<% if (approved.length === 0) { %>
+  <div class="empty-box">승인된 회원이 없습니다.</div>
+<% } else { %>
+  <div class="tbl">
+    <% approved.forEach(function (u) { %>
+      <div class="tbl-row">
+        <div class="tbl-main">
+          <div class="u-name"><%= u.name %> <span class="u-role <%= u.role === 'admin' ? 'admin' : '' %>"><%= roleLabel(u.role) %></span></div>
+          <div class="u-sub">승인일 <%= fmtDate(u.approved_at) %> · 링크코드 <%= u.slug %></div>
+        </div>
+        <div class="tbl-actions">
+          <% if (String(u.id) === String(user.id)) { %>
+            <span class="me-tag">나</span>
+          <% } else { %>
+            <form method="post" action="/admin/revoke/<%= u.id %>" onsubmit="return confirm('이 회원을 다시 승인 대기 상태로 되돌릴까요?');">
+              <button class="btn btn-ghost" type="submit">승인 해제</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<!-- 거절됨 -->
+<% if (rejected.length > 0) { %>
+  <h2 class="section-h" style="margin-top:36px;">거절됨 <span class="count light"><%= rejected.length %></span></h2>
+  <div class="tbl">
+    <% rejected.forEach(function (u) { %>
+      <div class="tbl-row">
+        <div class="tbl-main">
+          <div class="u-name"><%= u.name %></div>
+          <div class="u-sub">가입일 <%= fmtDate(u.created_at) %></div>
+        </div>
+        <div class="tbl-actions">
+          <form method="post" action="/admin/approve/<%= u.id %>">
+            <button class="btn btn-approve" type="submit">승인으로 변경</button>
+          </form>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('../partials/dash-bottom') %>

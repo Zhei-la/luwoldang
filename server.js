@@ -8,6 +8,7 @@ const { pool, initDb } = require('./db');
 const authRoutes = require('./routes/auth');
 const { router: devLoginRouter, devEnabled } = require('./routes/devLogin');
 const pagesRouter = require('./routes/pages');
+const adminRouter = require('./routes/admin');
 const { requireAuth } = require('./middleware/auth');
 
 const app = express();
@@ -58,6 +59,9 @@ app.get('/pending', requireAuth, (req, res) => {
 app.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
+
+// 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
+app.use('/admin', adminRouter);
 
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', pagesRouter);

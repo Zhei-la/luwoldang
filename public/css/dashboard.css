@@ -181,3 +181,26 @@ body {
   .hamburger { display: block; }
   .main { padding: 18px; }
 }
+
+/* ===== 관리자 승인 테이블 ===== */
+.count { display:inline-block; background:var(--gold); color:#fff; border-radius:999px; font-size:12px; padding:1px 9px; margin-left:6px; vertical-align:middle; }
+.count.light { background:var(--beige); color:var(--navy); }
+.empty-box { background:#fff; border:1px solid var(--beige); border-radius:12px; padding:22px; color:#b3ad9c; font-size:14px; text-align:center; }
+.tbl { background:#fff; border:1px solid var(--beige); border-radius:12px; overflow:hidden; }
+.tbl-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-bottom:1px solid var(--beige); }
+.tbl-row:last-child { border-bottom:none; }
+.tbl-main { min-width:0; }
+.u-name { font-weight:600; font-size:14px; }
+.u-role { display:inline-block; font-size:11px; font-weight:500; color:#8a8574; background:var(--bg); border:1px solid var(--beige); border-radius:6px; padding:1px 7px; margin-left:6px; }
+.u-role.admin { color:var(--navy); border-color:var(--gold); background:rgba(181,154,98,.12); }
+.u-sub { font-size:12px; color:#b3ad9c; margin-top:3px; word-break:break-all; }
+.tbl-actions { display:flex; gap:8px; flex-shrink:0; }
+.tbl-actions form { margin:0; }
+.btn { border:none; border-radius:8px; padding:8px 16px; font-size:13px; cursor:pointer; }
+.btn-approve { background:var(--navy); color:#fff; }
+.btn-approve:hover { background:#243350; }
+.btn-reject { background:transparent; color:#a3543f; border:1px solid #d9b3a8; }
+.btn-reject:hover { background:#faf1ee; }
+.btn-ghost { background:transparent; color:#8a8574; border:1px solid var(--beige); }
+.btn-ghost:hover { background:var(--bg); }
+.me-tag { font-size:12px; color:var(--gold); border:1px solid var(--gold); border-radius:6px; padding:3px 10px; }
