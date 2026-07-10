@@ -204,3 +204,21 @@ body {
 .btn-ghost { background:transparent; color:#8a8574; border:1px solid var(--beige); }
 .btn-ghost:hover { background:var(--bg); }
 .me-tag { font-size:12px; color:var(--gold); border:1px solid var(--gold); border-radius:6px; padding:3px 10px; }
+
+/* ===== 무료사주 설정 페이지 ===== */
+.settings-block { background:#fff; border:1px solid var(--beige); border-radius:12px; padding:22px; margin-bottom:18px; }
+.settings-block .section-h { margin-top:0; }
+.block-desc { font-size:13px; color:#8a8574; line-height:1.6; margin:0 0 16px; }
+.fl { display:block; font-size:13px; color:#6b6656; font-weight:600; margin:16px 0 6px; }
+.fl:first-of-type { margin-top:0; }
+.fi { width:100%; padding:11px 13px; border:1px solid var(--beige); border-radius:9px; font-size:14px; background:#fff; color:var(--ink); font-family:inherit; }
+.fi:focus { outline:none; border-color:var(--gold); }
+textarea.fi { resize:vertical; }
+.hint { font-size:12px; color:#b3ad9c; margin:6px 0 0; }
+.hint a { color:var(--gold); }
+.key-ok { font-size:11px; color:#3d7a4e; background:#eef6ef; border:1px solid #bcd9c2; border-radius:6px; padding:1px 8px; margin-left:6px; }
+.share-row { display:flex; gap:8px; flex-wrap:wrap; }
+.share-input { flex:1; min-width:200px; background:#fbf7ee; }
+.free-save-btn { width:100%; padding:14px; border:none; border-radius:11px; background:var(--navy); color:#fff; font-size:15px; font-weight:700; cursor:pointer; }
+.free-save-btn:hover { background:#243350; }
+.save-toast { background:#eef6ef; border:1px solid #bcd9c2; color:#3d7a4e; border-radius:10px; padding:12px 16px; font-size:14px; margin-bottom:16px; }

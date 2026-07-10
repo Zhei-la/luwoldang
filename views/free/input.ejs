@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= teacher.site_name || '무료 사주' %></title>
+  <link rel="stylesheet" href="/css/free.css">
+</head>
+<body class="free-body">
+  <div class="free-wrap">
+    <div class="free-card">
+      <div class="moon"></div>
+      <h1 class="free-title"><%= teacher.site_name || '무료 사주' %></h1>
+      <div class="free-line"></div>
+      <p class="free-intro">간단한 정보를 입력하면<br>나의 기본 사주와 올해 흐름을 무료로 확인할 수 있습니다.</p>
+
+      <% if (error) { %><div class="free-error"><%= error %></div><% } %>
+
+      <form method="post" action="/s/<%= teacher.slug %>/result" onsubmit="return onSubmit()">
+        <label class="fl">이름</label>
+        <input class="fi" type="text" name="name" value="<%= form.name || '' %>" placeholder="이름" required>
+
+        <label class="fl">성별</label>
+        <div class="seg" id="genderSeg">
+          <label class="seg-item"><input type="radio" name="gender" value="남" required> 남</label>
+          <label class="seg-item"><input type="radio" name="gender" value="여"> 여</label>
+        </div>
+
+        <label class="fl">생년월일</label>
+        <input class="fi" type="date" name="birthDate" value="<%= form.birthDate || '' %>" min="1930-01-01" max="2025-12-31" required>
+
+        <label class="fl">양력 / 음력</label>
+        <div class="seg">
+          <label class="seg-item"><input type="radio" name="calendar" value="양력" checked> 양력</label>
+          <label class="seg-item"><input type="radio" name="calendar" value="음력"> 음력</label>
+        </div>
+
+        <label class="fl">태어난 시간</label>
+        <input class="fi" type="time" name="birthTime" id="birthTime" value="<%= form.birthTime || '' %>">
+        <label class="chk"><input type="checkbox" name="timeUnknown" id="timeUnknown" onchange="toggleTime()"> 태어난 시간을 몰라요</label>
+
+        <label class="fl">태어난 지역</label>
+        <input class="fi" type="text" name="region" value="<%= form.region || '서울' %>" placeholder="예: 서울">
+
+        <label class="chk agree"><input type="checkbox" name="agree" value="1" required> 개인정보 수집 및 이용에 동의합니다.</label>
+
+        <button class="free-btn" type="submit">무료사주 결과 보기</button>
+      </form>
+    </div>
+    <p class="free-foot">본 사주 풀이는 참고용 콘텐츠입니다.</p>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>사주 내용을 분석하고 있습니다...</p>
+      <span>잠시만 기다려 주세요 (약 10초)</span>
+    </div>
+  </div>
+
+  <script>
+    function toggleTime() {
+      var t = document.getElementById('birthTime');
+      var u = document.getElementById('timeUnknown');
+      t.disabled = u.checked;
+      if (u.checked) t.value = '';
+    }
+    function onSubmit() {
+      document.getElementById('loading').classList.add('show');
+      return true;
+    }
+  </script>
+</body>
+</html>

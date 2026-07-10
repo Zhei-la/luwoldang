@@ -32,6 +32,22 @@ async function initDb() {
       approved_at        TIMESTAMPTZ
     );
   `);
+
+  // 교육생 OpenAI 키 (무료사주·PDF 생성에 사용)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_key TEXT;`);
+
+  // 무료사주 웹사이트 기록
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS free_logs (
+      id             SERIAL PRIMARY KEY,
+      teacher_id     INTEGER REFERENCES users(id),
+      input          JSONB,
+      result         JSONB,
+      kakao_clicked  BOOLEAN DEFAULT FALSE,
+      created_at     TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   console.log('[DB] 준비 완료');
 }
 

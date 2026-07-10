@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= teacher.site_name || '무료 사주' %> · 결과</title>
+  <link rel="stylesheet" href="/css/free.css">
+</head>
+<body class="free-body">
+  <div class="free-wrap">
+    <div class="free-card result">
+
+      <% if (error) { %>
+        <div class="moon"></div>
+        <h1 class="free-title">무료 사주</h1>
+        <div class="free-line"></div>
+        <div class="free-error"><%= error %></div>
+        <a class="free-btn ghost" href="/s/<%= teacher.slug %>">다시 시도하기</a>
+
+      <% } else { %>
+        <div class="moon"></div>
+        <h1 class="free-title"><%= teacher.site_name || '무료 사주' %></h1>
+        <div class="free-line"></div>
+
+        <!-- 만세력 기본 정보 -->
+        <div class="manse">
+          <div class="pillars">
+            <div class="pillar"><span>년주</span><b><%= saju.pillars.year %></b></div>
+            <div class="pillar"><span>월주</span><b><%= saju.pillars.month %></b></div>
+            <div class="pillar"><span>일주</span><b><%= saju.pillars.day %></b></div>
+            <div class="pillar"><span>시주</span><b><%= saju.pillars.hour || '—' %></b></div>
+          </div>
+          <div class="manse-meta">
+            <span>일간 <em><%= saju.dayMaster %></em> (<%= saju.dayMasterElement %>)</span>
+            <span>강한 기운 <em><%= saju.strong.join(', ') %></em></span>
+            <span>부족한 기운 <em><%= saju.weak.join(', ') %></em></span>
+          </div>
+          <div class="elements">
+            <% ['목','화','토','금','수'].forEach(function(k){ %>
+              <div class="el"><span><%= k %></span><b><%= saju.elements[k] %></b></div>
+            <% }); %>
+          </div>
+        </div>
+
+        <% function sec(title, body){ %>
+        <% } %>
+
+        <div class="rsec"><h3>기본 성향</h3><p><%= result.personality || result.manse || '' %></p></div>
+        <% if (result.manse && result.personality) { %>
+          <div class="rsec"><h3>만세력 해설</h3><p><%= result.manse %></p></div>
+        <% } %>
+        <div class="rsec"><h3>올해 운세</h3><p><%= result.year || '' %></p></div>
+        <div class="rsec"><h3>연애운</h3><p><%= result.love || '' %></p></div>
+        <div class="rsec"><h3>재물운</h3><p><%= result.wealth || '' %></p></div>
+        <div class="rsec"><h3>건강운</h3><p><%= result.health || '' %></p><small class="disc">※ 명리학적 생활 경향 해석이며 의학적 진단이 아닙니다.</small></div>
+        <div class="rsec advice"><h3>종합 조언</h3><p><%= result.advice || '' %></p></div>
+
+        <!-- 상담 연결 -->
+        <div class="cta">
+          <p class="cta-msg"><%= teacher.consult_message || '무료사주는 전체 흐름을 간단히 보는 용도입니다. 내 사주를 더 자세히 알고 싶다면 전문 상담을 받아보세요.' %></p>
+          <a class="cta-btn" href="/free/go/<%= logId %>"><%= teacher.button_text || '카카오톡으로 자세히 상담받기' %></a>
+        </div>
+
+        <a class="free-btn ghost" href="/s/<%= teacher.slug %>">처음으로</a>
+      <% } %>
+    </div>
+    <p class="free-foot">본 사주 풀이는 참고용 콘텐츠입니다.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '무료사주 웹사이트 설정' }) %>
+
+<% var shareUrl = baseUrl + '/s/' + user.slug; %>
+
+<% if (saved) { %><div class="save-toast">저장되었습니다.</div><% } %>
+
+<!-- 공유 링크 -->
+<div class="settings-block">
+  <h2 class="section-h">내 무료사주 공유 링크</h2>
+  <p class="block-desc">이 링크를 내담자에게 공유하면, 내담자가 무료사주를 보고 아래 상담 버튼으로 나에게 연결됩니다.</p>
+  <div class="share-row">
+    <input class="fi share-input" id="shareUrl" type="text" value="<%= shareUrl %>" readonly>
+    <button class="btn btn-approve" type="button" onclick="copyShare()">복사</button>
+    <a class="btn btn-ghost" href="<%= shareUrl %>" target="_blank">미리보기</a>
+  </div>
+</div>
+
+<!-- 설정 폼 -->
+<form method="post" action="/free-saju-settings" class="settings-form">
+  <div class="settings-block">
+    <h2 class="section-h">사이트 정보</h2>
+
+    <label class="fl">사이트 이름 (무료사주 첫 화면 제목)</label>
+    <input class="fi" type="text" name="site_name" value="<%= user.site_name || '' %>" placeholder="예: 제일라 사주풀이">
+
+    <label class="fl">OpenAI API 키 <% if (hasKey) { %><span class="key-ok">저장됨 ✓</span><% } %></label>
+    <input class="fi" type="password" name="openai_key" placeholder="<%= hasKey ? '변경하려면 새 키 입력 (비우면 유지)' : 'sk-... 무료사주 생성에 사용됩니다' %>" autocomplete="off">
+    <p class="hint">무료사주 결과 생성은 이 키로 호출됩니다. <a href="https://platform.openai.com/api-keys" target="_blank">키 발급받기</a></p>
+  </div>
+
+  <div class="settings-block">
+    <h2 class="section-h">상담 연결 설정</h2>
+
+    <label class="fl">카카오톡 상담 링크</label>
+    <input class="fi" type="text" name="kakao_consult_link" value="<%= user.kakao_consult_link || '' %>" placeholder="예: https://open.kakao.com/o/...">
+
+    <label class="fl">상담 안내 문구</label>
+    <textarea class="fi" name="consult_message" rows="2" placeholder="무료사주는 전체 흐름을 간단히 보는 용도입니다. 내 사주를 더 자세히 알고 싶다면 전문 상담을 받아보세요."><%= user.consult_message || '' %></textarea>
+
+    <label class="fl">상담 버튼 문구</label>
+    <input class="fi" type="text" name="button_text" list="btnExamples" value="<%= user.button_text || '' %>" placeholder="비우면 기본 문구 사용">
+    <datalist id="btnExamples">
+      <option value="카카오톡으로 상담받기">
+      <option value="내 사주 더 자세히 상담받기">
+      <option value="유료 PDF 상담 신청하기">
+      <option value="선생님에게 바로 문의하기">
+      <option value="나에게 맞는 운세 상담받기">
+    </datalist>
+    <p class="hint">직접 입력하거나 칸을 클릭해 예시 중 선택할 수 있습니다.</p>
+  </div>
+
+  <button class="free-save-btn" type="submit">설정 저장</button>
+</form>
+
+<script>
+  function copyShare() {
+    var el = document.getElementById('shareUrl');
+    el.select();
+    el.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(el.value).then(function(){
+      alert('링크가 복사되었습니다.');
+    }, function(){
+      document.execCommand('copy');
+      alert('링크가 복사되었습니다.');
+    });
+  }
+</script>
+
+<%- include('../partials/dash-bottom') %>
