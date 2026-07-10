@@ -32,17 +32,17 @@ async function generateFreeSaju({ client, saju, openaiKey, model }) {
 태어난 시간: ${saju.timeKnown ? client.birthTime : '모름'}
 태어난 지역: ${client.region || '미입력'}
 
-[계산된 사주팔자]
-년주: ${p.year}
-월주: ${p.month}
-일주: ${p.day}
-시주: ${p.hour || '(시간 모름)'}
-일간(日主): ${saju.dayMaster} (${saju.dayMasterElement}) — 이 사람의 중심 기운
+[계산된 사주팔자] (한자 옆 괄호는 한글 음)
+년주: ${p.year} (${saju.pillarsKo.year})
+월주: ${p.month} (${saju.pillarsKo.month})
+일주: ${p.day} (${saju.pillarsKo.day})
+시주: ${p.hour ? p.hour + ' (' + saju.pillarsKo.hour + ')' : '(시간 모름)'}
+일간(日主): ${saju.dayMaster} (${saju.dayMasterKo}, ${saju.dayMasterElement}) — 이 사람의 중심 기운
 오행 분포: 목${saju.elements.목} 화${saju.elements.화} 토${saju.elements.토} 금${saju.elements.금} 수${saju.elements.수}
 강한 기운: ${saju.strong.join(', ')}
 부족한 기운: ${saju.weak.join(', ')}
 
-위 사주를 근거로 무료 사주 풀이를 JSON으로 작성해주세요.`;
+위 사주를 근거로 무료 사주 풀이를 JSON으로 작성해주세요. 본문에는 한자를 쓰지 말고 한글로만 써주세요.`;
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',

@@ -89,7 +89,8 @@
 .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .pillar { text-align: center; background: #fff; border: 1px solid var(--beige); border-radius: 10px; padding: 10px 4px; }
 .pillar span { display: block; font-size: 11px; color: #8a8574; margin-bottom: 4px; }
-.pillar b { font-size: 18px; font-family: "Nanum Myeongjo", serif; color: var(--navy); }
+.pillar b { display: block; font-size: 17px; font-family: "Nanum Myeongjo", serif; color: var(--navy); }
+.pillar i { display: block; font-size: 11px; color: #b3ad9c; font-style: normal; margin-top: 2px; }
 .manse-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; font-size: 12px; color: #6b6656; justify-content: center; }
 .manse-meta em { font-style: normal; color: var(--navy); font-weight: 700; }
 .elements { display: flex; gap: 6px; margin-top: 14px; }

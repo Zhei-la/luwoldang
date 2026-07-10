@@ -25,13 +25,13 @@
         <!-- 만세력 기본 정보 -->
         <div class="manse">
           <div class="pillars">
-            <div class="pillar"><span>년주</span><b><%= saju.pillars.year %></b></div>
-            <div class="pillar"><span>월주</span><b><%= saju.pillars.month %></b></div>
-            <div class="pillar"><span>일주</span><b><%= saju.pillars.day %></b></div>
-            <div class="pillar"><span>시주</span><b><%= saju.pillars.hour || '—' %></b></div>
+            <div class="pillar"><span>년주</span><b><%= saju.pillarsKo.year %></b><i><%= saju.pillars.year %></i></div>
+            <div class="pillar"><span>월주</span><b><%= saju.pillarsKo.month %></b><i><%= saju.pillars.month %></i></div>
+            <div class="pillar"><span>일주</span><b><%= saju.pillarsKo.day %></b><i><%= saju.pillars.day %></i></div>
+            <div class="pillar"><span>시주</span><b><%= saju.pillarsKo.hour || '—' %></b><% if (saju.pillars.hour) { %><i><%= saju.pillars.hour %></i><% } %></div>
           </div>
           <div class="manse-meta">
-            <span>일간 <em><%= saju.dayMaster %></em> (<%= saju.dayMasterElement %>)</span>
+            <span>일간 <em><%= saju.dayMasterKo %></em> (<%= saju.dayMasterElement %>)</span>
             <span>강한 기운 <em><%= saju.strong.join(', ') %></em></span>
             <span>부족한 기운 <em><%= saju.weak.join(', ') %></em></span>
           </div>
