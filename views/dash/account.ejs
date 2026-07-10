@@ -1,0 +1,12 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '내 계정' }) %>
+
+<div class="account">
+  <div class="acc-row"><span>이름</span><b><%= user.name %></b></div>
+  <div class="acc-row"><span>권한</span><b><%= user.role === 'admin' ? '관리자' : '교육생' %></b></div>
+  <div class="acc-row"><span>승인 상태</span><b><%= user.status === 'approved' ? '승인 완료' : user.status %></b></div>
+  <div class="acc-row"><span>무료사주 링크 코드</span><b><%= user.slug %></b></div>
+  <div class="acc-row"><span>무료사주 공유 링크</span><b><%= baseUrl %>/s/<%= user.slug %></b></div>
+</div>
+<p class="acc-note">* 무료사주 공유 링크는 3단계에서 실제로 열리게 됩니다.</p>
+
+<%- include('../partials/dash-bottom') %>

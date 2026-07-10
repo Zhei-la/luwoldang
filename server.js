@@ -7,7 +7,8 @@ const pgSession = require('connect-pg-simple')(session);
 const { pool, initDb } = require('./db');
 const authRoutes = require('./routes/auth');
 const { router: devLoginRouter, devEnabled } = require('./routes/devLogin');
-const { requireAuth, requireApproved } = require('./middleware/auth');
+const pagesRouter = require('./routes/pages');
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -53,15 +54,13 @@ app.get('/pending', requireAuth, (req, res) => {
   res.render('pending', { user: req.user });
 });
 
-// 홈 (2단계에서 대시보드로 교체 예정)
-app.get('/home', requireAuth, requireApproved, (req, res) => {
-  res.render('home', { user: req.user });
-});
-
-// 로그아웃
+// 로그아웃 (대시보드 라우터보다 먼저 — 승인 대기 유저도 로그아웃 가능하도록)
 app.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
+
+// 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
+app.use('/', pagesRouter);
 
 // 에러 핸들러
 app.use((err, req, res, next) => {

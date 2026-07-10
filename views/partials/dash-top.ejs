@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= typeof title !== 'undefined' ? title : '홈' %> · 제일라 사주 연구소</title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+<div class="layout">
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-mini">제일라 사주<span>연구소</span></div>
+    <nav>
+      <%
+        const menu = [
+          { key: 'home',    href: '/home',               label: '홈' },
+          { key: 'free',    href: '/free-saju-settings', label: '무료사주 웹사이트 설정' },
+          { key: 'pdf',     href: '/pdf/create',         label: 'PDF 만들기' },
+          { key: 'chat',    href: '/chat',               label: '내담자 추가질문' },
+          { key: 'records', href: '/records',            label: 'PDF · 이메일 발송 기록' },
+          { key: 'api',     href: '/api-settings',       label: 'API 관리' },
+          { key: 'account', href: '/account',            label: '내 계정' }
+        ];
+      %>
+      <% menu.forEach(function (m) { %>
+        <a href="<%= m.href %>" class="nav-item <%= active === m.key ? 'active' : '' %>"><%= m.label %></a>
+      <% }); %>
+
+      <% if (user.role === 'admin') { %>
+        <div class="nav-sep">관리자</div>
+        <a href="/admin/approvals" class="nav-item <%= active === 'admin' ? 'active' : '' %>">회원 승인 · 관리</a>
+      <% } %>
+    </nav>
+    <form method="post" action="/logout" class="logout-form">
+      <button type="submit" class="logout-btn">로그아웃</button>
+    </form>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <button class="hamburger" onclick="openSidebar()" aria-label="메뉴">☰</button>
+      <h1 class="page-title"><%= typeof title !== 'undefined' ? title : '홈' %></h1>
+      <span class="who"><%= user.name %> · <%= user.role === 'admin' ? '관리자' : '교육생' %></span>
+    </header>
+    <main class="main">
