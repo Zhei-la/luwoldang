@@ -4,7 +4,7 @@ const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
 const { generatePdfReport, PDF_TYPES } = require('../services/ai');
-const { sendPdfReport } = require('../services/mail');
+const { sendPdfReport, buildPdfHtml } = require('../services/mail');
 
 router.use(requireAuth, requireApproved);
 
@@ -192,6 +192,98 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
   } catch (e) {
     console.error('[MAIL] PDF 발송 실패:', e.message);
     res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
+/* ===== PDF 미리보기 (인쇄 → PDF 저장 가능) ===== */
+router.get('/pdfs/:id/preview', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = $1 AND p.teacher_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
+
+    let saju = null;
+    try {
+      saju = calcSaju({
+        birthDate: normalizeBirth(pdf.birth),
+        birthTime: parseHour(pdf.hour),
+        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
+        isLeapMonth: pdf.calendar === '윤달',
+        region: pdf.region || '서울특별시',
+      });
+    } catch (e) { /* noop */ }
+
+    const inner = buildPdfHtml({
+      teacher: req.user,
+      type: pdf.type,
+      sections: pdf.sections,
+      saju,
+      input: { name: pdf.name },
+      baseUrl: process.env.BASE_URL || '',
+    });
+
+    // 상단 툴바 + 인쇄 스타일 삽입
+    const toolbar = `
+<div class="pv-bar no-print">
+  <a class="pv-back" href="/leads/${pdf.lead_id}">← 돌아가기</a>
+  <span class="pv-title">${pdf.name}님 · ${pdf.type} <em>미리보기</em></span>
+  <div class="pv-actions">
+    <button onclick="window.print()">PDF로 저장 / 인쇄</button>
+    <button class="send" onclick="sendMail()">이메일 보내기</button>
+  </div>
+</div>
+<style>
+  .pv-bar{position:sticky;top:0;z-index:99;display:flex;align-items:center;gap:14px;padding:12px 18px;background:#182234;color:#e8e3d6;font-family:-apple-system,'Malgun Gothic',sans-serif;font-size:14px}
+  .pv-back{color:#b3ad9c;text-decoration:none}
+  .pv-back:hover{color:#B59A62}
+  .pv-title{flex:1;font-weight:600}
+  .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:4px}
+  .pv-actions{display:flex;gap:8px}
+  .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit}
+  .pv-actions button:hover{background:rgba(181,154,98,.2)}
+  .pv-actions button.send{background:#B59A62;color:#241a06;font-weight:700}
+  .pv-actions button:disabled{opacity:.5}
+  @media print{
+    .no-print{display:none!important}
+    body{background:#fff!important}
+    @page{margin:12mm}
+  }
+</style>
+<script>
+async function sendMail(){
+  var email = ${JSON.stringify(pdf.email || '')};
+  if(!email){ alert('이 신청자의 이메일이 없습니다.'); return; }
+  if(!confirm(email + ' 로 보낼까요?')) return;
+  var btns = document.querySelectorAll('.pv-actions button');
+  btns.forEach(function(b){ b.disabled = true; });
+  try{
+    var r = await fetch('/pdfs/${pdf.id}/send', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: email })
+    });
+    var d = await r.json();
+    if(!d.ok) throw new Error(d.error || '실패');
+    alert('발송 완료: ' + d.to);
+    location.href = '/leads/${pdf.lead_id}';
+  }catch(e){
+    alert('발송 실패: ' + e.message);
+    btns.forEach(function(b){ b.disabled = false; });
+  }
+}
+</script>`;
+
+    const html = inner.replace('<body style="margin:0;padding:0;background:#F7F3EA">',
+      '<body style="margin:0;padding:0;background:#F7F3EA">' + toolbar);
+
+    res.set('Content-Type', 'text/html; charset=utf-8').send(html);
+  } catch (e) {
+    next(e);
   }
 });
 

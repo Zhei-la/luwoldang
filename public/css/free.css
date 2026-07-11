@@ -236,3 +236,13 @@ table.chart th.rowh.sub { font-size:10.5px; color:#b3ad9c; }
 }
 .up-closing p { margin:0 0 4px; font-size:13px; color:#5a5648; line-height:1.7; }
 .up-closing p:last-child { margin-bottom:0; font-weight:600; color:var(--navy); }
+.seg3 .seg-item { padding:11px 4px; font-size:13px; }
+.mail-ok { background:#eef6ef; border:1px solid #bcd9c2; color:#3d7a4e; border-radius:10px; padding:11px 14px; font-size:13px; text-align:center; margin-bottom:20px; }
+.mail-ok b { font-weight:700; }
+
+/* 폼 필수항목 안내 */
+.formerr { background:#fdecea; border:1px solid #e8b4ae; color:#b0392c; border-radius:10px; padding:12px 14px; font-size:13px; margin-bottom:18px; line-height:1.6; }
+.errmsg { color:#c0392b; font-size:12px; margin-top:6px; }
+.fi.errfield { border-color:#e08b80; background:#fffafa; }
+.seg.errfield .seg-item { border-color:#e08b80; }
+.chk.errfield { color:#c0392b; }

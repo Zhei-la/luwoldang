@@ -82,7 +82,12 @@ img{max-width:100%;display:block}
 .hl h1{font-family:${v.disp};font-weight:700;line-height:1.5;letter-spacing:-.01em;white-space:pre-line}
 .hl h1 em{font-style:normal;color:var(--ac)}
 .hl p{margin-top:14px;font-size:14px;color:var(--sb);white-space:pre-line}
-.pr{padding:22px 20px}
+.prbadge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ac);margin-bottom:10px;display:block}
+.pr{padding:20px;margin-bottom:9px;position:relative}
+.pr.best{border-color:var(--ac)}
+.bestbadge{position:absolute;top:-1px;right:14px;background:var(--ac);color:var(--btx);font-size:10px;font-weight:700;padding:3px 9px;border-radius:0 0 6px 6px}
+.pname{font-family:${v.disp};font-size:17px;font-weight:700;margin-bottom:4px}
+.pdesc{font-size:12.5px;color:var(--sb);margin-bottom:12px}
 .pr .bd{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ac);display:block;margin-bottom:16px}
 .pr .amt{display:flex;align-items:baseline;gap:10px}
 .pr .was{font-size:14px;color:var(--sb);text-decoration:line-through}
@@ -173,6 +178,10 @@ img{max-width:100%;display:block}
 .fm .ag input{width:16px;height:16px;flex:none;margin-top:2px;accent-color:var(--ac)}
 .fm .sub{width:100%;padding:17px;border:0;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
 .fm .sub:disabled{opacity:.5}
+.formerr{background:#fdecea;border:1px solid #e8b4ae;color:#b0392c;border-radius:var(--rd);padding:12px 14px;font-size:13px;margin-bottom:16px;line-height:1.6}
+.errmsg{color:#c0392b;font-size:12px;margin-top:6px}
+.errfield input,.errfield select,.errfield textarea{border-color:#e08b80!important}
+.errfield .seg label{border-color:#e08b80}
 .fm .ok{font-family:${v.disp};text-align:center;padding:40px 12px;font-size:15px;line-height:1.9}
 .fs{padding:24px 20px;text-align:center}
 .fs h3{font-family:${v.disp};font-size:19px;font-weight:700;margin-bottom:10px}
@@ -224,11 +233,20 @@ function renderBlock(b, ctx) {
         ${b.desc ? `<p>${esc(b.desc)}</p>` : ''}</div>`;
     }
 
-    case 'price':
-      return `<div class="wrap mt"><div class="card pr">
-        ${b.badge ? `<span class="bd">${esc(b.badge)}</span>` : ''}
-        <div class="amt">${b.off ? `<span class="off">${esc(b.off)}</span>` : ''}${b.was ? `<span class="was">${esc(b.was)}</span>` : ''}<span class="now">${esc(b.now)}<small>원</small></span></div>
-        <a class="go" href="#lp-form">${esc(b.cta)}</a></div></div>`;
+    case 'price': {
+      // 구버전 호환: items 없으면 단일 상품으로 변환
+      const items = b.items && b.items.length ? b.items
+        : [{ name: '상담', desc: '', off: b.off, was: b.was, now: b.now, best: false }];
+      return `<div class="wrap mt">
+        ${b.badge ? `<div class="prbadge">${esc(b.badge)}</div>` : ''}
+        ${items.map((x) => `<div class="card pr ${x.best ? 'best' : ''}">
+          ${x.best ? `<span class="bestbadge">추천</span>` : ''}
+          <div class="pname">${esc(x.name)}</div>
+          ${x.desc ? `<div class="pdesc">${esc(x.desc)}</div>` : ''}
+          <div class="amt">${x.off ? `<span class="off">${esc(x.off)}</span>` : ''}${x.was ? `<span class="was">${esc(x.was)}</span>` : ''}<span class="now">${esc(x.now)}<small>원</small></span></div>
+        </div>`).join('')}
+        <a class="go" href="#lp-form">${esc(b.cta)}</a></div>`;
+    }
 
     case 'countdown': {
       const cfg = b.mode === 'fixed' && b.target ? `data-target="${esc(b.target)}"` : `data-hours="${Number(b.hours) || 6}"`;
@@ -380,9 +398,63 @@ const RUNTIME = `(function(){
       if(Math.abs(dx)>40) go(i+(dx<0?1:-1)); x0=null; });
     dots.forEach(function(d,j){ d.addEventListener('click',function(){ clearInterval(timer); go(j); }); });
   });
+  // 필수 항목 안내
+  var LABELS = {name:'이름',gender:'성별',year:'생년',month:'생월',day:'생일',cal:'달력',
+                hour:'태어난 시각',region:'태어난 지역',phone:'연락처',email:'이메일',product:'상품',memo:'묻고 싶은 것'};
+  function fieldBox(el){ return el.closest('.g') || el.parentNode; }
+  function clearErr(f){
+    f.querySelectorAll('.errmsg').forEach(function(e){ e.remove(); });
+    f.querySelectorAll('.errfield').forEach(function(e){ e.classList.remove('errfield'); });
+  }
+  function showErr(el, msg){
+    var box = fieldBox(el);
+    if(box.querySelector('.errmsg')) return;
+    box.classList.add('errfield');
+    var d = document.createElement('div');
+    d.className = 'errmsg';
+    d.textContent = msg;
+    box.appendChild(d);
+  }
+
   document.querySelectorAll('[data-form]').forEach(function(f){
     f.addEventListener('submit',function(e){
       e.preventDefault();
+      clearErr(f);
+
+      // 1) 필수 항목 검사
+      var missing = [];
+      var first = null;
+      f.querySelectorAll('[required]').forEach(function(el){
+        var ok;
+        if(el.type === 'radio'){
+          ok = f.querySelector('input[name="'+el.name+'"]:checked');
+        } else if(el.type === 'checkbox'){
+          ok = el.checked;
+        } else {
+          ok = el.value && el.value.trim();
+        }
+        if(!ok){
+          var label = el.type==='checkbox' && !el.name ? '개인정보 수집 동의' : (LABELS[el.name] || '필수 항목');
+          if(missing.indexOf(label) < 0) missing.push(label);
+          showErr(el, el.type==='checkbox' && !el.name ? '동의가 필요합니다.' : label + '을(를) 입력해주세요.');
+          if(!first) first = el;
+        }
+      });
+
+      if(missing.length){
+        var bar = f.querySelector('.formerr');
+        if(!bar){
+          bar = document.createElement('div');
+          bar.className = 'formerr';
+          f.insertBefore(bar, f.firstChild);
+        }
+        bar.textContent = missing.join(', ') + ' 항목을 확인해주세요.';
+        var box = first ? fieldBox(first) : bar;
+        box.scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+      var bar0 = f.querySelector('.formerr'); if(bar0) bar0.remove();
+
       var btn=f.querySelector('.sub'); btn.disabled=true; btn.textContent='보내는 중...';
       var data={}; new FormData(f).forEach(function(v,k){ data[k]=v; });
       fetch(f.getAttribute('action'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
@@ -390,6 +462,18 @@ const RUNTIME = `(function(){
         .then(function(){ f.parentNode.innerHTML='<div class="ok">'+f.dataset.done+'</div>'; })
         .catch(function(){ btn.disabled=false; btn.textContent='다시 시도하기'; alert('전송에 실패했습니다. 잠시 후 다시 시도해주세요.'); });
     });
+
+    // 입력하면 에러 지우기
+    f.addEventListener('input', function(e){
+      var box = fieldBox(e.target);
+      var m = box.querySelector('.errmsg');
+      if(m){ m.remove(); box.classList.remove('errfield'); }
+    }, true);
+    f.addEventListener('change', function(e){
+      var box = fieldBox(e.target);
+      var m = box.querySelector('.errmsg');
+      if(m){ m.remove(); box.classList.remove('errfield'); }
+    }, true);
   });
 })();`;
 
@@ -445,7 +529,10 @@ function defaultLanding(name) {
       { id: uid(), type: 'logobar', text: name || '사주 상담', sub: '', logo: '', right: '상담 신청' },
       { id: uid(), type: 'headline', eyebrow: '사주 상담 · 직접 풀이', title: '당신의 흐름을\n읽어 드립니다', desc: '요약본이 아니라, 직접 풀어 적어 보내드립니다.', align: 'left', size: 26, hi: '' },
       { id: uid(), type: 'freesaju', title: '무료 사주 먼저 보기', desc: '간단한 정보를 입력하면 나의 기본 사주와 올해 흐름을 무료로 확인할 수 있습니다.', cta: '무료로 사주 보기' },
-      { id: uid(), type: 'price', badge: '이번 회차 · 선착순', off: '40%', was: '50,000원', now: '29,800', cta: '상담 신청하기' },
+      { id: uid(), type: 'price', badge: '이번 회차 · 선착순', cta: '상담 신청하기', items: [
+        { name: '정밀 풀이', desc: '대운·세운까지 상세 분석', off: '40%', was: '50,000원', now: '29,800', best: true },
+        { name: '기본 풀이', desc: '타고난 성향과 올해 흐름', off: '', was: '', now: '9,900', best: false },
+      ] },
       { id: uid(), type: 'faq', title: '묻고 답하기', items: [
         { q: '결과는 언제 받나요?', a: '접수 후 영업일 기준 1~2일 안에 보내드립니다.' },
         { q: '태어난 시간을 모릅니다.', a: "'모름'을 고르시면 시주 없이 풀이합니다. 큰 흐름은 확인할 수 있습니다." },
