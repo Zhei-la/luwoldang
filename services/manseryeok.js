@@ -17,6 +17,41 @@ const JI_KO  = { 子:'자', 丑:'축', 寅:'인', 卯:'묘', 辰:'진', 巳:'사
 const GAN_EL = { 甲:'목', 乙:'목', 丙:'화', 丁:'화', 戊:'토', 己:'토', 庚:'금', 辛:'금', 壬:'수', 癸:'수' };
 const JI_EL  = { 寅:'목', 卯:'목', 巳:'화', 午:'화', 辰:'토', 戌:'토', 丑:'토', 未:'토', 申:'금', 酉:'금', 亥:'수', 子:'수' };
 
+// 지지 음양 (체용 원리 — 子·巳·午·亥는 인덱스 홀짝과 반대. 포스텔러 기준)
+const JI_YIN = {
+  子:true,  丑:true,  寅:false, 卯:true,
+  辰:false, 巳:false, 午:true,  未:true,
+  申:false, 酉:true,  戌:false, 亥:false,
+};
+
+// 천간 음양 (甲丙戊庚壬 = 양 / 乙丁己辛癸 = 음)
+const GAN_YIN = {
+  甲:false, 乙:true, 丙:false, 丁:true, 戊:false,
+  己:true,  庚:false, 辛:true, 壬:false, 癸:true,
+};
+
+/* ---------- 십성(十星) ----------
+ * 일간(日主)을 기준으로 상대 글자의 오행·음양 관계로 결정
+ *   같은 오행  : 음양 같으면 비견,   다르면 겁재
+ *   내가 생함  : 음양 같으면 식신,   다르면 상관
+ *   내가 극함  : 음양 같으면 편재,   다르면 정재
+ *   나를 극함  : 음양 같으면 편관,   다르면 정관
+ *   나를 생함  : 음양 같으면 편인,   다르면 정인
+ */
+const SHENG = { 목:'화', 화:'토', 토:'금', 금:'수', 수:'목' }; // 生 (내가 낳는 것)
+const KE    = { 목:'토', 화:'금', 토:'수', 금:'목', 수:'화' }; // 剋 (내가 이기는 것)
+
+function tenGod(dayEl, dayYin, targetEl, targetYin) {
+  if (!dayEl || !targetEl) return null;
+  const same = dayYin === targetYin;
+  if (targetEl === dayEl)            return same ? '비견' : '겁재';
+  if (SHENG[dayEl] === targetEl)     return same ? '식신' : '상관';
+  if (KE[dayEl] === targetEl)        return same ? '편재' : '정재';
+  if (KE[targetEl] === dayEl)        return same ? '편관' : '정관';
+  if (SHENG[targetEl] === dayEl)     return same ? '편인' : '정인';
+  return null;
+}
+
 // 지장간 (문서 8번)
 const HIDDEN_STEMS = {
   子:['壬','癸'], 丑:['癸','辛','己'], 寅:['戊','丙','甲'], 卯:['甲','乙'],
@@ -184,31 +219,41 @@ function calcSaju(o) {
   const dayGan = dayP[0];
   const toKo = function (p) { return p ? (GAN_KO[p[0]] || p[0]) + (JI_KO[p[1]] || p[1]) : null; };
 
-  // 표 표시용: 기둥별 천간/지지를 글자 단위로 분해 (한자·한글·오행·음양)
-  // 음양: 천간/지지 인덱스가 짝수면 양(+), 홀수면 음(-)
-  const stemInfo = function (ch) {
+  // 표 표시용: 기둥별 천간/지지를 글자 단위로 분해 (한자·한글·오행·음양·십성)
+  const dayEl = GAN_EL[dayGan];
+  const dayYin = GAN_YIN[dayGan] === true;
+
+  const stemInfo = function (ch, isDayMaster) {
     if (!ch) return null;
-    const i = GAN.indexOf(ch);
-    return { char: ch, ko: GAN_KO[ch] || ch, el: GAN_EL[ch] || null, yin: i >= 0 && i % 2 === 1 };
+    const el = GAN_EL[ch] || null;
+    const yin = GAN_YIN[ch] === true;
+    return {
+      char: ch, ko: GAN_KO[ch] || ch, el: el, yin: yin,
+      god: isDayMaster ? '일간' : tenGod(dayEl, dayYin, el, yin),
+    };
   };
   const branchInfo = function (ch) {
     if (!ch) return null;
-    const i = JI.indexOf(ch);
-    return { char: ch, ko: JI_KO[ch] || ch, el: JI_EL[ch] || null, yin: i >= 0 && i % 2 === 1 };
+    const el = JI_EL[ch] || null;
+    const yin = JI_YIN[ch] === true;
+    return {
+      char: ch, ko: JI_KO[ch] || ch, el: el, yin: yin,
+      god: tenGod(dayEl, dayYin, el, yin),
+    };
   };
-  const detail = function (p) {
+  const detail = function (p, isDay) {
     if (!p) return { stem: null, branch: null };
-    return { stem: stemInfo(p[0]), branch: branchInfo(p[1]) };
+    return { stem: stemInfo(p[0], isDay), branch: branchInfo(p[1]) };
   };
 
   return {
     pillars: { year: yearP, month: monthP, day: dayP, hour: hourP },
     pillarsKo: { year: toKo(yearP), month: toKo(monthP), day: toKo(dayP), hour: toKo(hourP) },
     detail: {
-      year: detail(yearP),
-      month: detail(monthP),
-      day: detail(dayP),
-      hour: detail(hourP),
+      year: detail(yearP, false),
+      month: detail(monthP, false),
+      day: detail(dayP, true),
+      hour: detail(hourP, false),
     },
     hiddenStems: {
       year: HIDDEN_STEMS[yearP[1]] || [],

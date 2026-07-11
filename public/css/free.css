@@ -124,13 +124,12 @@
 .hint-sm { font-size:11.5px; color:#b3ad9c; margin:6px 0 0; }
 select.fi { appearance:none; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23B59A62' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:11px; padding-right:36px; }
 
-/* ===== 원국 표 (포스텔러 스타일) ===== */
-/* 오행 색상 */
-.el-목 { --c:#3f9e6b; --cbg:#eaf6ef; --cbd:#c2e2d0; }
-.el-화 { --c:#d7524b; --cbg:#fdeeed; --cbd:#f2c9c6; }
-.el-토 { --c:#c9922f; --cbg:#fbf3e2; --cbd:#ecd9ab; }
-.el-금 { --c:#7c8794; --cbg:#f0f2f4; --cbd:#d3d8dd; }
-.el-수 { --c:#3f6fae; --cbg:#eaf1f9; --cbd:#c3d5ea; }
+/* ===== 원국 표 (흰 배경 · 글자만 오행색) ===== */
+.el-목 { --c:#2e8b57; }
+.el-화 { --c:#cf4038; }
+.el-토 { --c:#b8860b; }
+.el-금 { --c:#6b7684; }
+.el-수 { --c:#2f6bb0; }
 
 .chart-head { text-align:center; margin-bottom:18px; }
 .chart-name { font-family:"Nanum Myeongjo",serif; font-size:22px; margin:0 0 4px; }
@@ -141,26 +140,48 @@ select.fi { appearance:none; background-image:url("data:image/svg+xml;charset=ut
 .chart-meta .corr { color:#8a8574; }
 .tag-solar { display:inline-block; background:var(--beige); color:var(--navy); border-radius:5px; padding:0 5px; font-size:11px; margin-right:2px; }
 
-.chart-scroll { overflow-x:auto; margin-bottom:18px; }
-table.chart { width:100%; border-collapse:separate; border-spacing:5px; min-width:340px; }
-table.chart th { font-size:12px; color:#8a8574; font-weight:600; padding-bottom:2px; }
-table.chart th.rowh { width:44px; text-align:center; background:#fbf7ee; border:1px solid var(--beige); border-radius:8px; font-size:11px; }
-table.chart td { text-align:center; padding:0; }
-
-.gz {
-  border-radius:10px; padding:9px 2px 6px;
-  background:var(--cbg); border:1px solid var(--cbd);
+.chart-scroll { overflow-x:auto; margin-bottom:20px; }
+table.chart {
+  width:100%; min-width:340px;
+  border-collapse:collapse;
+  background:#fff;
+  border:1px solid var(--beige);
+  border-radius:12px;
+  overflow:hidden;
 }
-.gz .ko { font-family:"Nanum Myeongjo",serif; font-size:22px; font-weight:700; color:var(--c); }
-.gz .hj { font-size:13px; color:var(--c); opacity:.65; margin-left:1px; }
-.ee { font-size:11px; color:var(--c); margin-top:3px; font-weight:600; }
-.none { border-radius:10px; padding:14px 2px; background:#f4f1ea; border:1px dashed var(--beige); color:#b3ad9c; font-size:13px; }
+table.chart th, table.chart td {
+  border:1px solid #eee6d8;
+  text-align:center;
+  padding:8px 4px;
+  background:#fff;
+}
+table.chart thead th {
+  font-size:12px; color:#8a8574; font-weight:600;
+  background:#fbf7ee; padding:9px 4px;
+}
+table.chart th.rowh {
+  width:46px; font-size:11px; color:#8a8574; font-weight:600;
+  background:#fbf7ee;
+}
+table.chart th.rowh.sub { font-size:10.5px; color:#b3ad9c; }
 
-/* 오행 카운트 바 */
+/* 간지 글자 — 배경 없이 글자만 색 */
+.gz { padding:2px 0; }
+.gz .ko { font-family:"Nanum Myeongjo",serif; font-size:24px; font-weight:700; color:var(--c); }
+.gz .hj { font-size:13px; color:var(--c); opacity:.55; margin-left:2px; }
+.ee { font-size:11px; color:var(--c); opacity:.85; margin-top:2px; font-weight:600; }
+.none { padding:12px 0; color:#c9c3b5; font-size:13px; }
+
+/* 십성 */
+.god-row td { padding:6px 4px; }
+.god { font-size:12px; color:var(--c); opacity:.9; }
+.god:not([class*="el-"]) { color:#c9c3b5; }
+
+/* 오행 카운트 */
 .el-bar { display:flex; gap:6px; margin-bottom:10px; }
 .el-item {
-  flex:1; text-align:center; border-radius:10px; padding:9px 0;
-  background:var(--cbg); border:1px solid var(--cbd);
+  flex:1; text-align:center; padding:9px 0;
+  background:#fff; border:1px solid var(--beige); border-radius:10px;
 }
 .el-item span { display:block; font-size:11px; color:var(--c); opacity:.8; }
 .el-item b { font-size:17px; color:var(--c); }

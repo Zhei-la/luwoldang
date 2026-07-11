@@ -60,6 +60,12 @@
                   </td>
                 <% }); %>
               </tr>
+              <tr class="god-row">
+                <th class="rowh sub">십성</th>
+                <% cols.forEach(function(c){ var s = saju.detail[c].stem; %>
+                  <td><span class="god <%= s ? 'el-' + s.el : '' %>"><%= s ? s.god : '—' %></span></td>
+                <% }); %>
+              </tr>
               <tr>
                 <th class="rowh">지지</th>
                 <% cols.forEach(function(c){ var b = saju.detail[c].branch; %>
@@ -71,6 +77,12 @@
                       <div class="ee el-<%= b.el %>"><%= b.yin ? '-' : '+' %><%= b.el %></div>
                     <% } else { %><div class="none">미상</div><% } %>
                   </td>
+                <% }); %>
+              </tr>
+              <tr class="god-row">
+                <th class="rowh sub">십성</th>
+                <% cols.forEach(function(c){ var b = saju.detail[c].branch; %>
+                  <td><span class="god <%= b ? 'el-' + b.el : '' %>"><%= b ? b.god : '—' %></span></td>
                 <% }); %>
               </tr>
             </tbody>
