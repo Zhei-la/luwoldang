@@ -39,6 +39,11 @@ async function initDb() {
   // 랜딩 페이지 (빌더로 꾸민 내용 JSON)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing JSONB;`);
 
+  // 교육생별 메일 발송 설정 (각자 Gmail 사용 → 자기 이름으로 발송, 한도도 각자)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_user TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_pass TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_name TEXT;`);
+
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
 
   // 무료사주 → 신청자 목록에 함께 표시하기 위한 링크

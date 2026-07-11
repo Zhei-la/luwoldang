@@ -1,18 +1,35 @@
 const nodemailer = require('nodemailer');
 
-/* 메일 발송 (교육생 또는 관리자 SMTP 사용)
- * .env:
- *   MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS, MAIL_FROM
- *   (Gmail 사용 시 앱 비밀번호 필요)
+/* 메일 발송
+ * 1순위: 교육생 본인 Gmail (users.mail_user / mail_pass)
+ *        → 자기 이름으로 발송되고, 하루 500통 한도도 각자 씀
+ * 2순위: 관리자 .env (MAIL_USER / MAIL_PASS) — 교육생이 미설정일 때 폴백
  */
-function getTransport() {
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) return null;
+function getTransport(teacher) {
+  const user = (teacher && teacher.mail_user) || process.env.MAIL_USER;
+  const pass = (teacher && teacher.mail_pass) || process.env.MAIL_PASS;
+  if (!user || !pass) return null;
+
   return nodemailer.createTransport({
     host: process.env.MAIL_HOST || 'smtp.gmail.com',
     port: Number(process.env.MAIL_PORT) || 465,
     secure: (Number(process.env.MAIL_PORT) || 465) === 465,
-    auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
+    auth: { user, pass },
   });
+}
+
+// 발신인 표시 이름
+function fromAddr(teacher) {
+  const own = teacher && teacher.mail_user;
+  const addr = own || process.env.MAIL_USER;
+  const name = (teacher && (teacher.mail_name || teacher.site_name || teacher.name)) || '사주 풀이';
+  if (own) return `"${name}" <${addr}>`;
+  return process.env.MAIL_FROM || `"${name}" <${addr}>`;
+}
+
+// 메일 설정 여부 (교육생 기준)
+function mailReady(teacher) {
+  return !!getTransport(teacher);
 }
 
 const esc = (s) =>
@@ -113,19 +130,19 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
 }
 
 async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl }) {
-  const tr = getTransport();
-  if (!tr) throw new Error('메일 설정(MAIL_USER / MAIL_PASS)이 없습니다.');
+  const tr = getTransport(teacher);
+  if (!tr) throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
 
   const html = buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl });
   await tr.sendMail({
-    from: process.env.MAIL_FROM || `"${teacher.site_name || '사주 풀이'}" <${process.env.MAIL_USER}>`,
+    from: fromAddr(teacher),
     to,
     subject: `${input.name}님의 무료 사주 풀이가 도착했습니다.`,
     html,
   });
 }
 
-module.exports = { sendFreeSaju, buildFreeSajuHtml, getTransport };
+module.exports = { sendFreeSaju, buildFreeSajuHtml, getTransport, mailReady };
 
 
 /* ============================================================
@@ -197,11 +214,11 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl }) {
 }
 
 async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl }) {
-  const tr = getTransport();
-  if (!tr) throw new Error('메일 설정(MAIL_USER / MAIL_PASS)이 없습니다.');
+  const tr = getTransport(teacher);
+  if (!tr) throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
   const html = buildPdfHtml({ teacher, type, sections, saju, input, baseUrl });
   await tr.sendMail({
-    from: process.env.MAIL_FROM || `"${teacher.site_name || '사주 풀이'}" <${process.env.MAIL_USER}>`,
+    from: fromAddr(teacher),
     to,
     subject: `${input.name}님의 ${type} 사주 리포트가 도착했습니다.`,
     html,

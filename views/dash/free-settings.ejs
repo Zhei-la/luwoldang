@@ -29,6 +29,46 @@
   </div>
 
   <div class="settings-block">
+    <h2 class="section-h">이메일 발송 설정
+      <% if (hasMail) { %><span class="key-ok">설정됨 ✓</span><% } %>
+    </h2>
+    <p class="block-desc">
+      내 Gmail로 무료사주·사주 리포트를 보냅니다. <b>내 이름으로 발송</b>되고, 발송 한도(하루 500통)도 내 계정 기준입니다.
+      <b>무료</b>이며 비용은 들지 않습니다.
+    </p>
+
+    <% if (!hasMail && hasAdminMail) { %>
+      <div class="warn-box" style="margin-bottom:16px">
+        아직 설정하지 않아 <b>관리자 이메일</b>로 발송됩니다. 내 이름으로 보내려면 아래를 설정해주세요.
+      </div>
+    <% } %>
+
+    <details class="guide">
+      <summary>앱 비밀번호 받는 법 (2분)</summary>
+      <ol>
+        <li>구글 계정 → <b>보안</b> → <b>2단계 인증</b> 켜기 <span>(필수)</span></li>
+        <li>검색창에 <b>"앱 비밀번호"</b> 검색 → 앱 비밀번호 만들기</li>
+        <li>이름 아무거나 입력 (예: 사주) → <b>만들기</b></li>
+        <li>나온 <b>16자리</b>를 아래에 붙여넣기 <span>(구글 계정 비밀번호 아님)</span></li>
+      </ol>
+      <a href="https://myaccount.google.com/apppasswords" target="_blank">앱 비밀번호 만들러 가기 →</a>
+    </details>
+
+    <label class="fl">보내는 Gmail 주소</label>
+    <input class="fi" type="email" name="mail_user" value="<%= user.mail_user || '' %>" placeholder="myname@gmail.com" autocomplete="off">
+
+    <label class="fl">앱 비밀번호 <% if (hasMail) { %><span class="key-ok">저장됨 ✓</span><% } %></label>
+    <input class="fi" type="password" name="mail_pass" placeholder="<%= hasMail ? '변경하려면 새로 입력 (비우면 유지)' : '16자리 앱 비밀번호' %>" autocomplete="off">
+
+    <label class="fl">발신인 이름 (받는 사람에게 표시됨)</label>
+    <input class="fi" type="text" name="mail_name" value="<%= user.mail_name || '' %>" placeholder="<%= user.site_name || '예: 운명삼문' %>">
+
+    <button class="btn btn-ghost" type="button" id="btnTestMail" style="margin-top:12px;width:100%">테스트 메일 보내기</button>
+    <div class="prog" id="mailProg"></div>
+    <p class="hint">먼저 <b>설정 저장</b>을 누른 뒤 테스트하세요. 내 메일로 테스트 메일이 옵니다.</p>
+  </div>
+
+  <div class="settings-block">
     <h2 class="section-h">상담 연결 설정</h2>
 
     <label class="fl">카카오톡 상담 링크</label>
@@ -53,6 +93,30 @@
 </form>
 
 <script>
+  var btnTest = document.getElementById('btnTestMail');
+  if (btnTest) {
+    btnTest.onclick = async function(){
+      var prog = document.getElementById('mailProg');
+      btnTest.disabled = true;
+      var old = btnTest.textContent;
+      btnTest.textContent = '보내는 중...';
+      prog.className = 'prog on';
+      prog.textContent = '테스트 메일을 보내는 중입니다...';
+      try {
+        var r = await fetch('/api/mail/test', { method:'POST' });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        prog.className = 'prog ok';
+        prog.textContent = '발송 성공! ' + d.to + ' 받은편지함을 확인해보세요.';
+      } catch(e) {
+        prog.className = 'prog err';
+        prog.textContent = '발송 실패: ' + e.message;
+      }
+      btnTest.disabled = false;
+      btnTest.textContent = old;
+    };
+  }
+
   function copyShare() {
     var el = document.getElementById('shareUrl');
     el.select();

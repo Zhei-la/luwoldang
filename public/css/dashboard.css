@@ -284,3 +284,15 @@ a.lead-row:hover { background:#fdfbf6; }
 .prog.on { display:block; background:#fbf7ee; border:1px solid var(--beige); color:#8a6a2f; }
 .prog.ok { display:block; background:#eef6ef; border:1px solid #bcd9c2; color:#3d7a4e; }
 .prog.err { display:block; background:#faf1ee; border:1px solid #e4c4ba; color:#a3543f; }
+
+/* 메일 설정 가이드 */
+.guide { background:#fbf7ee; border:1px solid var(--beige); border-radius:10px; padding:12px 14px; margin-bottom:18px; }
+.guide summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--navy); list-style:none; }
+.guide summary::-webkit-details-marker { display:none; }
+.guide summary:before { content:'▸ '; color:var(--gold); }
+.guide[open] summary:before { content:'▾ '; }
+.guide ol { margin:12px 0 10px; padding-left:20px; }
+.guide li { font-size:13px; color:#5a5648; line-height:1.9; }
+.guide li b { color:var(--navy); }
+.guide li span { color:#b3ad9c; font-size:11.5px; }
+.guide a { font-size:12.5px; color:var(--gold); font-weight:600; }

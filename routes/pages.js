@@ -18,29 +18,68 @@ router.get('/free-saju-settings', (req, res) => {
     active: 'settings',
     baseUrl: process.env.BASE_URL || '',
     hasKey: !!req.user.openai_key,
+    hasMail: !!req.user.mail_pass,
+    hasAdminMail: !!(process.env.MAIL_USER && process.env.MAIL_PASS),
     saved: req.query.saved === '1',
   });
 });
 
 router.post('/free-saju-settings', async (req, res, next) => {
   try {
-    const { site_name, kakao_consult_link, consult_message, button_text, openai_key } = req.body;
+    const { site_name, kakao_consult_link, consult_message, button_text,
+            openai_key, mail_user, mail_pass, mail_name } = req.body;
 
-    // OpenAI 키는 새로 입력했을 때만 갱신 (빈칸이면 기존 키 유지)
+    // 키/비번은 새로 입력했을 때만 갱신 (빈칸이면 기존 값 유지)
     if (openai_key && openai_key.trim()) {
       await pool.query('UPDATE users SET openai_key = $1 WHERE id = $2', [openai_key.trim(), req.user.id]);
+    }
+    if (mail_pass && mail_pass.trim()) {
+      // 앱 비밀번호는 공백 없이 저장 (구글이 4자씩 띄워서 보여줌)
+      await pool.query('UPDATE users SET mail_pass = $1 WHERE id = $2',
+        [mail_pass.replace(/\s+/g, ''), req.user.id]);
     }
 
     await pool.query(
       `UPDATE users
-       SET site_name = $1, kakao_consult_link = $2, consult_message = $3, button_text = $4
-       WHERE id = $5`,
-      [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null, req.user.id]
+       SET site_name = $1, kakao_consult_link = $2, consult_message = $3, button_text = $4,
+           mail_user = $5, mail_name = $6
+       WHERE id = $7`,
+      [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
+       (mail_user || '').trim() || null, (mail_name || '').trim() || null, req.user.id]
     );
 
     res.redirect('/free-saju-settings?saved=1');
   } catch (e) {
     next(e);
+  }
+});
+
+// 메일 테스트 발송
+router.post('/api/mail/test', async (req, res) => {
+  try {
+    const { getTransport, mailReady } = require('../services/mail');
+    if (!mailReady(req.user)) {
+      return res.status(400).json({ ok: false, error: '메일 설정이 없습니다. 이메일과 앱 비밀번호를 저장한 뒤 다시 시도해주세요.' });
+    }
+    const tr = getTransport(req.user);
+    const to = req.user.mail_user || process.env.MAIL_USER;
+    const name = req.user.mail_name || req.user.site_name || req.user.name || '사주 풀이';
+    await tr.sendMail({
+      from: req.user.mail_user ? `"${name}" <${req.user.mail_user}>` : (process.env.MAIL_FROM || process.env.MAIL_USER),
+      to,
+      subject: '[테스트] 메일 발송이 정상 작동합니다',
+      html: `<div style="font-family:-apple-system,'Malgun Gothic',sans-serif;padding:24px;background:#F7F3EA">
+        <div style="max-width:480px;margin:0 auto;background:#fffdf8;border:1px solid #E9E0CF;border-radius:12px;padding:28px;text-align:center">
+          <h2 style="margin:0 0 10px;color:#252522">메일 발송 정상 ✓</h2>
+          <div style="width:40px;height:2px;background:#B59A62;margin:0 auto 16px"></div>
+          <p style="margin:0;color:#6b6656;line-height:1.7;font-size:14px">
+            <b>${name}</b> 이름으로 메일이 발송됩니다.<br>이제 무료사주와 사주 리포트를 보낼 수 있습니다.</p>
+        </div></div>`,
+    });
+    res.json({ ok: true, to });
+  } catch (e) {
+    console.error('[MAIL] 테스트 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
