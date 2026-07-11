@@ -41,7 +41,7 @@ router.post('/s/:slug/result', async (req, res, next) => {
 
     if (!teacher.openai_key) {
       return res.render('free/result', {
-        teacher, saju: null, result: null, logId: null,
+        teacher, saju: null, result: null, input: null, logId: null,
         error: '현재 무료사주가 준비 중입니다. 잠시 후 다시 시도해주세요.',
       });
     }
@@ -57,7 +57,12 @@ router.post('/s/:slug/result', async (req, res, next) => {
 
     let saju;
     try {
-      saju = calcSaju({ birthDate, birthTime: client.birthTime, calendar: client.calendar });
+      saju = calcSaju({
+        birthDate,
+        birthTime: client.birthTime,
+        calendar: client.calendar,
+        region: client.region,
+      });
     } catch (e) {
       return res.status(400).render('free/input', {
         teacher, error: '생년월일 형식을 확인해주세요.', form: req.body,
@@ -70,7 +75,7 @@ router.post('/s/:slug/result', async (req, res, next) => {
     } catch (err) {
       console.error('[AI] 무료사주 생성 실패:', err.message);
       return res.render('free/result', {
-        teacher, saju, result: null, logId: null,
+        teacher, saju, result: null, input: client, logId: null,
         error: '사주 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       });
     }
@@ -80,7 +85,7 @@ router.post('/s/:slug/result', async (req, res, next) => {
       [teacher.id, JSON.stringify(client), JSON.stringify(result)]
     );
 
-    res.render('free/result', { teacher, saju, result, logId: log.rows[0].id, error: null });
+    res.render('free/result', { teacher, saju, result, input: client, logId: log.rows[0].id, error: null });
   } catch (e) {
     next(e);
   }

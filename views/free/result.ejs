@@ -22,25 +22,70 @@
         <h1 class="free-title"><%= teacher.site_name || '무료 사주' %></h1>
         <div class="free-line"></div>
 
-        <!-- 만세력 기본 정보 -->
-        <div class="manse">
-          <div class="pillars">
-            <div class="pillar"><span>년주</span><b><%= saju.pillarsKo.year %></b><i><%= saju.pillars.year %></i></div>
-            <div class="pillar"><span>월주</span><b><%= saju.pillarsKo.month %></b><i><%= saju.pillars.month %></i></div>
-            <div class="pillar"><span>일주</span><b><%= saju.pillarsKo.day %></b><i><%= saju.pillars.day %></i></div>
-            <div class="pillar"><span>시주</span><b><%= saju.pillarsKo.hour || '—' %></b><% if (saju.pillars.hour) { %><i><%= saju.pillars.hour %></i><% } %></div>
-          </div>
-          <div class="manse-meta">
-            <span>일간 <em><%= saju.dayMasterKo %></em> (<%= saju.dayMasterElement %>)</span>
-            <span>강한 기운 <em><%= saju.strong.join(', ') %></em></span>
-            <span>부족한 기운 <em><%= saju.weak.join(', ') %></em></span>
-          </div>
-          <div class="elements">
-            <% ['목','화','토','금','수'].forEach(function(k){ %>
-              <div class="el"><span><%= k %></span><b><%= saju.elements[k] %></b></div>
-            <% }); %>
+        <!-- 원국 표 -->
+        <div class="chart-head">
+          <h2 class="chart-name"><%= input.name %></h2>
+          <p class="chart-day"><%= saju.pillarsKo.day %><span><%= saju.pillars.day %></span></p>
+          <div class="chart-meta">
+            <p><b class="tag-solar">양</b> <%= saju.solarDate.replace(/-/g,'/') %> <%= saju.timeCorrection.originalTime || '시간모름' %> <%= input.gender || '' %> <%= input.region || '' %></p>
+            <% if (saju.timeCorrection.correctedTime && saju.timeCorrection.correctionMinutes !== 0) { %>
+              <p class="corr"><b class="tag-solar">양</b> <%= saju.solarDate.replace(/-/g,'/') %> <%= saju.timeCorrection.correctedTime %> <%= input.region || '' %> (<%= saju.timeCorrection.notes.join(', ') %>)</p>
+            <% } %>
           </div>
         </div>
+
+        <div class="chart-scroll">
+          <table class="chart">
+            <thead>
+              <tr>
+                <th></th>
+                <th>생시</th>
+                <th>생일</th>
+                <th>생월</th>
+                <th>생년</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% var cols = ['hour','day','month','year']; %>
+              <tr>
+                <th class="rowh">천간</th>
+                <% cols.forEach(function(c){ var s = saju.detail[c].stem; %>
+                  <td>
+                    <% if (s) { %>
+                      <div class="gz el-<%= s.el %>">
+                        <span class="ko"><%= s.ko %></span><span class="hj"><%= s.char %></span>
+                      </div>
+                      <div class="ee el-<%= s.el %>"><%= s.yin ? '-' : '+' %><%= s.el %></div>
+                    <% } else { %><div class="none">미상</div><% } %>
+                  </td>
+                <% }); %>
+              </tr>
+              <tr>
+                <th class="rowh">지지</th>
+                <% cols.forEach(function(c){ var b = saju.detail[c].branch; %>
+                  <td>
+                    <% if (b) { %>
+                      <div class="gz el-<%= b.el %>">
+                        <span class="ko"><%= b.ko %></span><span class="hj"><%= b.char %></span>
+                      </div>
+                      <div class="ee el-<%= b.el %>"><%= b.yin ? '-' : '+' %><%= b.el %></div>
+                    <% } else { %><div class="none">미상</div><% } %>
+                  </td>
+                <% }); %>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 오행 -->
+        <div class="el-bar">
+          <% ['목','화','토','금','수'].forEach(function(k){ %>
+            <div class="el-item el-<%= k %>">
+              <span><%= k %></span><b><%= saju.elements[k] %></b>
+            </div>
+          <% }); %>
+        </div>
+        <p class="el-sum">강한 기운 <em><%= saju.strong.join(', ') %></em> · 부족한 기운 <em><%= saju.weak.join(', ') %></em></p>
 
         <% function sec(title, body){ %>
         <% } %>

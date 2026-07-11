@@ -82,22 +82,6 @@
 .free-foot { text-align: center; color: #b3ad9c; font-size: 12px; margin: 18px 0 0; }
 
 /* ===== 결과 ===== */
-.manse {
-  background: #fbf7ee; border: 1px solid var(--beige); border-radius: 14px;
-  padding: 18px; margin-bottom: 22px;
-}
-.pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.pillar { text-align: center; background: #fff; border: 1px solid var(--beige); border-radius: 10px; padding: 10px 4px; }
-.pillar span { display: block; font-size: 11px; color: #8a8574; margin-bottom: 4px; }
-.pillar b { display: block; font-size: 17px; font-family: "Nanum Myeongjo", serif; color: var(--navy); }
-.pillar i { display: block; font-size: 11px; color: #b3ad9c; font-style: normal; margin-top: 2px; }
-.manse-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; font-size: 12px; color: #6b6656; justify-content: center; }
-.manse-meta em { font-style: normal; color: var(--navy); font-weight: 700; }
-.elements { display: flex; gap: 6px; margin-top: 14px; }
-.el { flex: 1; text-align: center; background: #fff; border: 1px solid var(--beige); border-radius: 8px; padding: 6px 0; }
-.el span { display: block; font-size: 11px; color: #8a8574; }
-.el b { font-size: 15px; color: var(--gold); }
-
 .rsec { margin-bottom: 20px; }
 .rsec h3 {
   font-family: "Nanum Myeongjo", serif; font-size: 16px; margin: 0 0 8px;
@@ -133,3 +117,52 @@
   animation: spin 0.9s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* 지역시 보정 안내 */
+.corr-note { margin-top:12px; text-align:center; font-size:11.5px; color:#8a8574; background:#fff; border:1px dashed var(--beige); border-radius:8px; padding:7px 10px; }
+.corr-note span { color:#b3ad9c; }
+.hint-sm { font-size:11.5px; color:#b3ad9c; margin:6px 0 0; }
+select.fi { appearance:none; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23B59A62' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:11px; padding-right:36px; }
+
+/* ===== 원국 표 (포스텔러 스타일) ===== */
+/* 오행 색상 */
+.el-목 { --c:#3f9e6b; --cbg:#eaf6ef; --cbd:#c2e2d0; }
+.el-화 { --c:#d7524b; --cbg:#fdeeed; --cbd:#f2c9c6; }
+.el-토 { --c:#c9922f; --cbg:#fbf3e2; --cbd:#ecd9ab; }
+.el-금 { --c:#7c8794; --cbg:#f0f2f4; --cbd:#d3d8dd; }
+.el-수 { --c:#3f6fae; --cbg:#eaf1f9; --cbd:#c3d5ea; }
+
+.chart-head { text-align:center; margin-bottom:18px; }
+.chart-name { font-family:"Nanum Myeongjo",serif; font-size:22px; margin:0 0 4px; }
+.chart-day { margin:0 0 12px; font-size:15px; color:var(--gold); font-weight:700; }
+.chart-day span { font-size:12px; color:#b3ad9c; margin-left:4px; font-weight:400; }
+.chart-meta { font-size:12px; color:#6b6656; line-height:1.7; }
+.chart-meta p { margin:0; }
+.chart-meta .corr { color:#8a8574; }
+.tag-solar { display:inline-block; background:var(--beige); color:var(--navy); border-radius:5px; padding:0 5px; font-size:11px; margin-right:2px; }
+
+.chart-scroll { overflow-x:auto; margin-bottom:18px; }
+table.chart { width:100%; border-collapse:separate; border-spacing:5px; min-width:340px; }
+table.chart th { font-size:12px; color:#8a8574; font-weight:600; padding-bottom:2px; }
+table.chart th.rowh { width:44px; text-align:center; background:#fbf7ee; border:1px solid var(--beige); border-radius:8px; font-size:11px; }
+table.chart td { text-align:center; padding:0; }
+
+.gz {
+  border-radius:10px; padding:9px 2px 6px;
+  background:var(--cbg); border:1px solid var(--cbd);
+}
+.gz .ko { font-family:"Nanum Myeongjo",serif; font-size:22px; font-weight:700; color:var(--c); }
+.gz .hj { font-size:13px; color:var(--c); opacity:.65; margin-left:1px; }
+.ee { font-size:11px; color:var(--c); margin-top:3px; font-weight:600; }
+.none { border-radius:10px; padding:14px 2px; background:#f4f1ea; border:1px dashed var(--beige); color:#b3ad9c; font-size:13px; }
+
+/* 오행 카운트 바 */
+.el-bar { display:flex; gap:6px; margin-bottom:10px; }
+.el-item {
+  flex:1; text-align:center; border-radius:10px; padding:9px 0;
+  background:var(--cbg); border:1px solid var(--cbd);
+}
+.el-item span { display:block; font-size:11px; color:var(--c); opacity:.8; }
+.el-item b { font-size:17px; color:var(--c); }
+.el-sum { text-align:center; font-size:12.5px; color:#8a8574; margin:0 0 24px; }
+.el-sum em { font-style:normal; color:var(--navy); font-weight:700; }

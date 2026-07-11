@@ -40,7 +40,13 @@
         <label class="chk"><input type="checkbox" name="timeUnknown" id="timeUnknown" onchange="toggleTime()"> 태어난 시간을 몰라요</label>
 
         <label class="fl">태어난 지역</label>
-        <input class="fi" type="text" name="region" value="<%= form.region || '서울' %>" placeholder="예: 서울">
+        <select class="fi" name="region">
+          <% var regions = ['서울특별시','인천광역시','경기도','강원도','대전광역시','세종특별자치시','충청북도','충청남도','광주광역시','전라북도','전라남도','대구광역시','경상북도','부산광역시','울산광역시','경상남도','제주특별자치도']; %>
+          <% regions.forEach(function(r){ %>
+            <option value="<%= r %>" <%= (form.region || '서울특별시') === r ? 'selected' : '' %>><%= r %></option>
+          <% }); %>
+        </select>
+        <p class="hint-sm">지역에 따라 실제 태어난 시각(진태양시)이 보정됩니다.</p>
 
         <label class="chk agree"><input type="checkbox" name="agree" value="1" required> 개인정보 수집 및 이용에 동의합니다.</label>
 
