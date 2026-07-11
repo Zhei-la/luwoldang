@@ -56,16 +56,16 @@ router.post('/free-saju-settings', async (req, res, next) => {
 
 // 메일 테스트 발송
 router.post('/api/mail/test', async (req, res) => {
+  const { mailReady, sendWithFallback, fromAddr } = require('../services/mail');
   try {
-    const { getTransport, mailReady } = require('../services/mail');
     if (!mailReady(req.user)) {
       return res.status(400).json({ ok: false, error: '메일 설정이 없습니다. 이메일과 앱 비밀번호를 저장한 뒤 다시 시도해주세요.' });
     }
-    const tr = getTransport(req.user);
     const to = req.user.mail_user || process.env.MAIL_USER;
     const name = req.user.mail_name || req.user.site_name || req.user.name || '사주 풀이';
-    await tr.sendMail({
-      from: req.user.mail_user ? `"${name}" <${req.user.mail_user}>` : (process.env.MAIL_FROM || process.env.MAIL_USER),
+
+    const r = await sendWithFallback(req.user, {
+      from: fromAddr(req.user),
       to,
       subject: '[테스트] 메일 발송이 정상 작동합니다',
       html: `<div style="font-family:-apple-system,'Malgun Gothic',sans-serif;padding:24px;background:#F7F3EA">
@@ -76,10 +76,16 @@ router.post('/api/mail/test', async (req, res) => {
             <b>${name}</b> 이름으로 메일이 발송됩니다.<br>이제 무료사주와 사주 리포트를 보낼 수 있습니다.</p>
         </div></div>`,
     });
-    res.json({ ok: true, to });
+    res.json({ ok: true, to, port: r.port });
   } catch (e) {
     console.error('[MAIL] 테스트 실패:', e.message);
-    res.status(500).json({ ok: false, error: e.message });
+    let msg = e.message;
+    if (/Invalid login|BadCredentials|Username and Password not accepted/i.test(msg)) {
+      msg = '로그인 실패: Gmail 주소 또는 앱 비밀번호를 확인해주세요. (구글 로그인 비밀번호가 아니라 16자리 앱 비밀번호여야 합니다)';
+    } else if (/timeout|ETIMEDOUT|ECONNREFUSED|연결하지 못했습니다/i.test(msg)) {
+      msg = '메일 서버 연결 실패: 네트워크가 SMTP 포트를 막고 있을 수 있습니다. 잠시 후 다시 시도해주세요.';
+    }
+    res.status(500).json({ ok: false, error: msg });
   }
 });
 

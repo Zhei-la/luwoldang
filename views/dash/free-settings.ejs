@@ -101,13 +101,13 @@
       var old = btnTest.textContent;
       btnTest.textContent = '보내는 중...';
       prog.className = 'prog on';
-      prog.textContent = '테스트 메일을 보내는 중입니다...';
+      prog.textContent = '테스트 메일을 보내는 중입니다... (최대 30초)';
       try {
         var r = await fetch('/api/mail/test', { method:'POST' });
         var d = await r.json();
         if (!d.ok) throw new Error(d.error || '실패');
         prog.className = 'prog ok';
-        prog.textContent = '발송 성공! ' + d.to + ' 받은편지함을 확인해보세요.';
+        prog.textContent = '발송 성공! ' + d.to + ' 받은편지함을 확인해보세요.' + (d.port === 587 ? ' (587 포트 사용)' : '');
       } catch(e) {
         prog.className = 'prog err';
         prog.textContent = '발송 실패: ' + e.message;

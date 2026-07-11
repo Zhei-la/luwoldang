@@ -5,17 +5,44 @@ const nodemailer = require('nodemailer');
  *        → 자기 이름으로 발송되고, 하루 500통 한도도 각자 씀
  * 2순위: 관리자 .env (MAIL_USER / MAIL_PASS) — 교육생이 미설정일 때 폴백
  */
-function getTransport(teacher) {
+function getTransport(teacher, opts) {
   const user = (teacher && teacher.mail_user) || process.env.MAIL_USER;
   const pass = (teacher && teacher.mail_pass) || process.env.MAIL_PASS;
   if (!user || !pass) return null;
 
+  const port = (opts && opts.port) || Number(process.env.MAIL_PORT) || 465;
+
   return nodemailer.createTransport({
     host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: Number(process.env.MAIL_PORT) || 465,
-    secure: (Number(process.env.MAIL_PORT) || 465) === 465,
+    port,
+    secure: port === 465,          // 465=SSL, 587=STARTTLS
+    requireTLS: port === 587,
     auth: { user, pass },
+    // 무한 대기 방지 (Railway에서 포트 막히면 응답이 안 옴)
+    connectionTimeout: 12000,
+    greetingTimeout: 12000,
+    socketTimeout: 20000,
   });
+}
+
+/* 465가 막히면 587로 자동 재시도 */
+async function sendWithFallback(teacher, mailOptions) {
+  const tried = [];
+  for (const port of [465, 587]) {
+    const tr = getTransport(teacher, { port });
+    if (!tr) throw new Error('메일 설정이 없습니다.');
+    try {
+      await tr.sendMail(mailOptions);
+      if (port !== 465) console.log('[MAIL] 465 실패 → 587로 발송 성공');
+      return { port };
+    } catch (e) {
+      tried.push(`${port}: ${e.message}`);
+      const retryable = /timeout|ETIMEDOUT|ECONNREFUSED|ESOCKET|ECONNRESET/i.test(e.message || '');
+      // 인증 오류(비번 틀림)면 포트 바꿔도 소용없으니 즉시 중단
+      if (!retryable) throw e;
+    }
+  }
+  throw new Error('메일 서버에 연결하지 못했습니다. (' + tried.join(' / ') + ')');
 }
 
 // 발신인 표시 이름
@@ -130,11 +157,9 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
 }
 
 async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl }) {
-  const tr = getTransport(teacher);
-  if (!tr) throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
-
+  if (!mailReady(teacher)) throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
   const html = buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl });
-  await tr.sendMail({
+  await sendWithFallback(teacher, {
     from: fromAddr(teacher),
     to,
     subject: `${input.name}님의 무료 사주 풀이가 도착했습니다.`,
@@ -142,7 +167,7 @@ async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl 
   });
 }
 
-module.exports = { sendFreeSaju, buildFreeSajuHtml, getTransport, mailReady };
+module.exports = { sendFreeSaju, buildFreeSajuHtml, getTransport, mailReady, sendWithFallback, fromAddr };
 
 
 /* ============================================================
@@ -214,10 +239,9 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl }) {
 }
 
 async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl }) {
-  const tr = getTransport(teacher);
-  if (!tr) throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
+  if (!mailReady(teacher)) throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
   const html = buildPdfHtml({ teacher, type, sections, saju, input, baseUrl });
-  await tr.sendMail({
+  await sendWithFallback(teacher, {
     from: fromAddr(teacher),
     to,
     subject: `${input.name}님의 ${type} 사주 리포트가 도착했습니다.`,
