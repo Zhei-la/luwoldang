@@ -99,18 +99,67 @@
         </div>
         <p class="el-sum">강한 기운 <em><%= saju.strong.join(', ') %></em> · 부족한 기운 <em><%= saju.weak.join(', ') %></em></p>
 
-        <% function sec(title, body){ %>
+        <% function para(t){ return String(t || '').split(/\n{2,}|\n/).filter(Boolean); } %>
+
+        <!-- 핵심 키워드 -->
+        <% if (result.keywords && result.keywords.length) { %>
+          <div class="kw-row">
+            <% result.keywords.slice(0,3).forEach(function(k){ %>
+              <span class="kw"><%= k %></span>
+            <% }); %>
+          </div>
         <% } %>
 
-        <div class="rsec"><h3>기본 성향</h3><p><%= result.personality || result.manse || '' %></p></div>
-        <% if (result.manse && result.personality) { %>
-          <div class="rsec"><h3>만세력 해설</h3><p><%= result.manse %></p></div>
-        <% } %>
-        <div class="rsec"><h3>올해 운세</h3><p><%= result.year || '' %></p></div>
-        <div class="rsec"><h3>연애운</h3><p><%= result.love || '' %></p></div>
-        <div class="rsec"><h3>재물운</h3><p><%= result.wealth || '' %></p></div>
-        <div class="rsec"><h3>건강운</h3><p><%= result.health || '' %></p><small class="disc">※ 명리학적 생활 경향 해석이며 의학적 진단이 아닙니다.</small></div>
-        <div class="rsec advice"><h3>종합 조언</h3><p><%= result.advice || '' %></p></div>
+        <div class="rsec">
+          <h3><span class="num">01</span> 만세력 기본 정보</h3>
+          <% para(result.manse).forEach(function(t){ %><p><%= t %></p><% }); %>
+        </div>
+
+        <div class="rsec">
+          <h3><span class="num">02</span> 타고난 성향</h3>
+          <% para(result.personality).forEach(function(t){ %><p><%= t %></p><% }); %>
+        </div>
+
+        <div class="rsec">
+          <h3><span class="num">03</span> 올해 운세</h3>
+          <% para(result.year).forEach(function(t){ %><p><%= t %></p><% }); %>
+          <% if (result.yearOutro) { %><div class="outro"><%= result.yearOutro %></div><% } %>
+        </div>
+
+        <div class="rsec">
+          <h3><span class="num">04</span> 연애운</h3>
+          <% para(result.love).forEach(function(t){ %><p><%= t %></p><% }); %>
+          <% if (result.loveOutro) { %><div class="outro"><%= result.loveOutro %></div><% } %>
+        </div>
+
+        <div class="rsec">
+          <h3><span class="num">05</span> 재물운</h3>
+          <% para(result.wealth).forEach(function(t){ %><p><%= t %></p><% }); %>
+          <% if (result.wealthOutro) { %><div class="outro"><%= result.wealthOutro %></div><% } %>
+        </div>
+
+        <div class="rsec">
+          <h3><span class="num">06</span> 건강운</h3>
+          <% para(result.health).forEach(function(t){ %><p><%= t %></p><% }); %>
+          <small class="disc">※ 명리학적 관점의 생활 경향 해석이며 의학적 진단이나 치료를 대신하지 않습니다.</small>
+        </div>
+
+        <div class="rsec advice">
+          <h3><span class="num">07</span> 종합 조언</h3>
+          <% para(result.advice).forEach(function(t){ %><p><%= t %></p><% }); %>
+        </div>
+
+        <!-- 08 더 자세한 사주 풀이 -->
+        <div class="upsell">
+          <h3>더 자세한 사주 풀이</h3>
+          <% upsell.intro.split('\n').forEach(function(t){ %><p class="up-intro"><%= t %></p><% }); %>
+          <ul class="up-list">
+            <% upsell.items.forEach(function(it){ %><li><%= it %></li><% }); %>
+          </ul>
+          <div class="up-closing">
+            <% upsell.closing.split('\n').forEach(function(t){ %><p><%= t %></p><% }); %>
+          </div>
+        </div>
 
         <!-- 상담 연결 -->
         <div class="cta">

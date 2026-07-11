@@ -187,3 +187,52 @@ table.chart th.rowh.sub { font-size:10.5px; color:#b3ad9c; }
 .el-item b { font-size:17px; color:var(--c); }
 .el-sum { text-align:center; font-size:12.5px; color:#8a8574; margin:0 0 24px; }
 .el-sum em { font-style:normal; color:var(--navy); font-weight:700; }
+
+/* ===== 핵심 키워드 ===== */
+.kw-row { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-bottom:26px; }
+.kw {
+  background:#fbf7ee; border:1px solid var(--gold); color:var(--navy);
+  border-radius:999px; padding:5px 15px; font-size:13px; font-weight:600;
+}
+
+/* ===== 섹션 번호 ===== */
+.rsec h3 .num {
+  display:inline-block; color:var(--gold); font-size:12px; font-weight:700;
+  margin-right:6px; letter-spacing:.5px;
+}
+.rsec p + p { margin-top:10px; }
+
+/* 섹션 마무리 문구 (유료 유도) */
+.outro {
+  margin-top:12px; padding:11px 14px;
+  background:#fbf7ee; border-left:3px solid var(--gold); border-radius:0 8px 8px 0;
+  font-size:12.5px; color:#7a7365; line-height:1.7;
+}
+
+/* ===== 08 더 자세한 사주 풀이 ===== */
+.upsell {
+  margin:30px 0 8px; padding:24px 22px;
+  background:#fbf7ee; border:1px solid var(--beige); border-radius:14px;
+}
+.upsell h3 {
+  font-family:"Nanum Myeongjo",serif; font-size:17px; margin:0 0 12px;
+  text-align:center; color:var(--navy);
+}
+.up-intro { margin:0 0 4px; font-size:13px; color:#6b6656; line-height:1.7; text-align:center; }
+.up-list { margin:16px 0; padding:0; list-style:none; }
+.up-list li {
+  position:relative; padding:7px 0 7px 20px;
+  font-size:13.5px; color:#3f3b33; line-height:1.6;
+  border-bottom:1px dashed #e6ddc9;
+}
+.up-list li:last-child { border-bottom:none; }
+.up-list li:before {
+  content:''; position:absolute; left:4px; top:14px;
+  width:5px; height:5px; border-radius:50%; background:var(--gold);
+}
+.up-closing {
+  margin-top:14px; padding-top:14px; border-top:1px solid var(--beige);
+  text-align:center;
+}
+.up-closing p { margin:0 0 4px; font-size:13px; color:#5a5648; line-height:1.7; }
+.up-closing p:last-child { margin-bottom:0; font-weight:600; color:var(--navy); }

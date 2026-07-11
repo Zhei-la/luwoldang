@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
-const { generateFreeSaju } = require('../services/ai');
+const { generateFreeSaju, UPSELL } = require('../services/ai');
 
 async function findTeacher(slug) {
   const { rows } = await pool.query(
@@ -41,7 +41,7 @@ router.post('/s/:slug/result', async (req, res, next) => {
 
     if (!teacher.openai_key) {
       return res.render('free/result', {
-        teacher, saju: null, result: null, input: null, logId: null,
+        teacher, saju: null, result: null, input: null, logId: null, upsell: UPSELL,
         error: '현재 무료사주가 준비 중입니다. 잠시 후 다시 시도해주세요.',
       });
     }
@@ -75,7 +75,7 @@ router.post('/s/:slug/result', async (req, res, next) => {
     } catch (err) {
       console.error('[AI] 무료사주 생성 실패:', err.message);
       return res.render('free/result', {
-        teacher, saju, result: null, input: client, logId: null,
+        teacher, saju, result: null, input: client, logId: null, upsell: UPSELL,
         error: '사주 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       });
     }
@@ -85,7 +85,7 @@ router.post('/s/:slug/result', async (req, res, next) => {
       [teacher.id, JSON.stringify(client), JSON.stringify(result)]
     );
 
-    res.render('free/result', { teacher, saju, result, input: client, logId: log.rows[0].id, error: null });
+    res.render('free/result', { teacher, saju, result, input: client, logId: log.rows[0].id, upsell: UPSELL, error: null });
   } catch (e) {
     next(e);
   }
