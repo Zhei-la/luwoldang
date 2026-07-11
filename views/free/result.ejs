@@ -15,7 +15,7 @@
         <h1 class="free-title">무료 사주</h1>
         <div class="free-line"></div>
         <div class="free-error"><%= error %></div>
-        <a class="free-btn ghost" href="/s/<%= teacher.slug %>">다시 시도하기</a>
+        <a class="free-btn ghost" href="/s/<%= teacher.slug %>/free">다시 시도하기</a>
 
       <% } else { %>
         <div class="moon"></div>
@@ -167,7 +167,7 @@
           <a class="cta-btn" href="/free/go/<%= logId %>"><%= teacher.button_text || '카카오톡으로 자세히 상담받기' %></a>
         </div>
 
-        <a class="free-btn ghost" href="/s/<%= teacher.slug %>">처음으로</a>
+        <a class="free-btn ghost" href="/s/<%= teacher.slug %>/free">처음으로</a>
       <% } %>
     </div>
     <p class="free-foot">본 사주 풀이는 참고용 콘텐츠입니다.</p>

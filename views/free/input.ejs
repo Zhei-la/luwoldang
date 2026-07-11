@@ -16,7 +16,7 @@
 
       <% if (error) { %><div class="free-error"><%= error %></div><% } %>
 
-      <form method="post" action="/s/<%= teacher.slug %>/result" onsubmit="return onSubmit()">
+      <form method="post" action="/s/<%= teacher.slug %>/free/result" onsubmit="return onSubmit()">
         <label class="fl">이름</label>
         <input class="fi" type="text" name="name" value="<%= form.name || '' %>" placeholder="이름" required>
 

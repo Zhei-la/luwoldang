@@ -36,6 +36,29 @@ async function initDb() {
   // 교육생 OpenAI 키 (무료사주·PDF 생성에 사용)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_key TEXT;`);
 
+  // 랜딩 페이지 (빌더로 꾸민 내용 JSON)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing JSONB;`);
+
+  // 상담 신청 (랜딩 폼)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id),
+      name        TEXT,
+      gender      TEXT,
+      birth       TEXT,
+      calendar    TEXT,
+      hour        TEXT,
+      region      TEXT,
+      phone       TEXT,
+      email       TEXT,
+      product     TEXT,
+      memo        TEXT,
+      status      TEXT DEFAULT '접수완료',
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   // 무료사주 웹사이트 기록
   await pool.query(`
     CREATE TABLE IF NOT EXISTS free_logs (

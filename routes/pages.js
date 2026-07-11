@@ -15,7 +15,7 @@ router.get('/home', (req, res) => {
 router.get('/free-saju-settings', (req, res) => {
   res.render('dash/free-settings', {
     user: req.user,
-    active: 'free',
+    active: 'settings',
     baseUrl: process.env.BASE_URL || '',
     hasKey: !!req.user.openai_key,
     saved: req.query.saved === '1',
