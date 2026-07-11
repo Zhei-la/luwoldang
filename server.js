@@ -11,6 +11,7 @@ const pagesRouter = require('./routes/pages');
 const adminRouter = require('./routes/admin');
 const freeRouter = require('./routes/free');
 const builderRouter = require('./routes/builder');
+const leadsRouter = require('./routes/leads');
 const { requireAuth } = require('./middleware/auth');
 
 const app = express();
@@ -68,8 +69,11 @@ app.use('/', freeRouter);
 // 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
 app.use('/admin', adminRouter);
 
-// 랜딩 빌더 + 신청 내역
+// 랜딩 빌더
 app.use('/', builderRouter);
+
+// 사주 신청자 + PDF 제작/발송
+app.use('/', leadsRouter);
 
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', pagesRouter);

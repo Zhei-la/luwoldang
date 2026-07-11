@@ -35,17 +35,4 @@ router.post('/api/landing', async (req, res, next) => {
   }
 });
 
-// 신청 내역 (교육생 확인용)
-router.get('/leads', async (req, res, next) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT * FROM leads WHERE teacher_id = $1 ORDER BY created_at DESC LIMIT 100',
-      [req.user.id]
-    );
-    res.render('dash/leads', { user: req.user, active: 'leads', leads: rows });
-  } catch (e) {
-    next(e);
-  }
-});
-
 module.exports = router;

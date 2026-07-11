@@ -227,3 +227,60 @@ textarea.fi { resize:vertical; }
 .lead-row { align-items:flex-start; }
 .lead-memo { margin-top:7px; padding:8px 11px; background:var(--bg); border-left:2px solid var(--gold); border-radius:0 6px 6px 0; font-size:12.5px; color:#5a5648; line-height:1.6; }
 .lead-time { font-size:11.5px; color:#b3ad9c; white-space:nowrap; }
+
+/* ===== 신청자 목록 ===== */
+.filters { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:18px; }
+.ftab { display:flex; align-items:center; gap:6px; padding:8px 14px; border:1px solid var(--beige); border-radius:99px; background:#fff; color:#8a8574; font-size:13px; text-decoration:none; }
+.ftab:hover { border-color:var(--gold); }
+.ftab.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+.ftab span { font-size:11px; background:var(--bg); color:var(--navy); border-radius:99px; padding:0 6px; min-width:18px; text-align:center; }
+.ftab.on span { background:rgba(255,255,255,.2); color:#fff; }
+
+.lead-row { align-items:flex-start; text-decoration:none; color:inherit; }
+a.lead-row:hover { background:#fdfbf6; }
+.lead-memo { margin-top:7px; padding:8px 11px; background:var(--bg); border-left:2px solid var(--gold); border-radius:0 6px 6px 0; font-size:12.5px; color:#5a5648; line-height:1.6; }
+.lead-time { font-size:11.5px; color:#b3ad9c; white-space:nowrap; }
+.lead-right { flex-direction:column; align-items:flex-end; gap:5px; }
+.src { display:inline-block; font-size:10.5px; border-radius:5px; padding:1px 7px; margin-left:5px; font-weight:600; }
+.src.free { background:#eef4fb; color:#3f6fae; border:1px solid #c3d5ea; }
+.src.paid { background:#fbf3e2; color:#a8790f; border:1px solid #ecd9ab; }
+
+.badge-sent { display:inline-block; font-size:11px; font-weight:700; background:#eef6ef; color:#3d7a4e; border:1px solid #bcd9c2; border-radius:6px; padding:2px 9px; margin-left:6px; }
+.badge-todo { display:inline-block; font-size:11px; font-weight:700; background:#fbf7ee; color:#8a8574; border:1px solid var(--beige); border-radius:6px; padding:2px 9px; margin-left:6px; }
+.badge-made { display:inline-block; font-size:11px; font-weight:700; background:#fbf3e2; color:#a8790f; border:1px solid #ecd9ab; border-radius:6px; padding:2px 9px; }
+.badge-free { display:inline-block; font-size:11px; font-weight:700; background:#eef4fb; color:#3f6fae; border:1px solid #c3d5ea; border-radius:6px; padding:2px 9px; }
+
+/* ===== 신청자 상세 ===== */
+.backlink { display:inline-block; color:#8a8574; text-decoration:none; font-size:13px; margin-bottom:14px; }
+.backlink:hover { color:var(--gold); }
+.acc-row.col { flex-direction:column; align-items:stretch; gap:8px; }
+.memo-box { background:var(--bg); border-left:2px solid var(--gold); border-radius:0 6px 6px 0; padding:10px 12px; font-size:13px; color:#5a5648; line-height:1.7; text-align:left; }
+.warn-box { background:#fdf6ee; border:1px solid #ecd9ab; color:#8a6a2f; border-radius:10px; padding:13px 16px; font-size:13.5px; }
+.warn-box a { color:var(--gold); font-weight:600; }
+
+/* 원국 미니 표 */
+.mini-chart table { width:100%; border-collapse:collapse; }
+.mini-chart th, .mini-chart td { border:1px solid #eee6d8; text-align:center; padding:8px 4px; }
+.mini-chart tr:first-child th { background:#fbf7ee; font-size:11.5px; color:#8a8574; font-weight:600; }
+.mini-chart th.rh { width:44px; background:#fbf7ee; font-size:11px; color:#8a8574; }
+.mini-chart td span b { font-size:20px; font-weight:700; }
+.mini-chart td span i { font-size:11px; opacity:.55; font-style:normal; margin-left:1px; }
+.mini-chart td em { display:block; font-size:10.5px; font-style:normal; margin-top:2px; opacity:.85; }
+.mini-chart .dim { color:#c9c3b5; font-size:13px; }
+.mini-chart .el-목, .mini-chart .el-목 b, .mini-chart .el-목 i { color:#2e8b57; }
+.mini-chart .el-화, .mini-chart .el-화 b, .mini-chart .el-화 i { color:#cf4038; }
+.mini-chart .el-토, .mini-chart .el-토 b, .mini-chart .el-토 i { color:#b8860b; }
+.mini-chart .el-금, .mini-chart .el-금 b, .mini-chart .el-금 i { color:#6b7684; }
+.mini-chart .el-수, .mini-chart .el-수 b, .mini-chart .el-수 i { color:#2f6bb0; }
+.chart-sum { text-align:center; font-size:12.5px; color:#8a8574; margin:12px 0 0; }
+.chart-sum b { color:var(--navy); }
+
+/* PDF 종류 선택 */
+.type-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; margin-bottom:16px; }
+.type-btn { padding:13px 8px; border:1px solid var(--beige); border-radius:10px; background:#fff; font-size:13.5px; cursor:pointer; color:var(--ink); }
+.type-btn:hover { border-color:var(--gold); }
+.type-btn.on { background:var(--navy); border-color:var(--navy); color:#fff; font-weight:700; }
+.prog { display:none; margin-top:12px; padding:12px 14px; border-radius:10px; font-size:13px; }
+.prog.on { display:block; background:#fbf7ee; border:1px solid var(--beige); color:#8a6a2f; }
+.prog.ok { display:block; background:#eef6ef; border:1px solid #bcd9c2; color:#3d7a4e; }
+.prog.err { display:block; background:#faf1ee; border:1px solid #e4c4ba; color:#a3543f; }

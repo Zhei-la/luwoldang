@@ -130,3 +130,130 @@ const UPSELL = {
 };
 
 module.exports = { generateFreeSaju, UPSELL };
+
+
+/* ============================================================
+ * 유료 PDF 리포트 생성 (7종)
+ * ============================================================ */
+
+const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '무료사주'];
+
+const PDF_OUTLINES = {
+  신년운세: [
+    '올해의 운세 한눈에 보기', '올해의 전체적인 흐름', '직업운·직장운', '이직운·변화운',
+    '사업운·부업운', '올해의 재물운', '연애운·애정운', '인간관계·귀인운',
+    '건강운·컨디션 흐름', '이동운·문서운', '올해의 좋은 시기', '올해의 주의 시기', '올해의 운세 활용 가이드',
+  ],
+  종합사주: [
+    '나의 사주 핵심 요약', '타고난 성격과 본질', '나의 강점과 숨겨진 재능', '인간관계와 사회생활',
+    '직업운과 적성', '사업운과 성공운', '재물운과 돈의 흐름', '연애운과 이성관계',
+    '결혼운과 배우자운', '가족운과 부모·자녀 인연', '건강운과 생활 에너지', '귀인운과 기회운',
+    '대운으로 보는 인생의 큰 흐름', '앞으로의 운세 흐름', '나를 위한 인생 사용 설명서',
+  ],
+  연애운: [
+    '나의 연애 본질', '나의 매력과 이성운', '내가 끌리는 사람 vs 나와 잘 맞는 사람',
+    '연애할 때 나타나는 나의 모습', '반복되는 연애 패턴과 주의점', '인연운과 연애운의 흐름',
+    '결혼으로 이어지는 인연', '연애운 활용 가이드', '한눈에 보는 연애 사주 요약',
+  ],
+  결혼운: [
+    '나의 결혼 성향', '배우자 복과 인연의 특징', '미래 배우자 분석', '배우자와의 만남운',
+    '결혼 시기와 혼인운', '결혼생활의 모습', '부부 갈등과 주의할 점',
+    '결혼 후 재물운과 생활운', '자녀운과 가족운', '나에게 맞는 행복한 결혼 공식',
+  ],
+  재물운: [
+    '타고난 재물운의 그릇', '나의 돈 버는 방식', '재물복이 들어오는 경로',
+    '돈을 모으는 능력과 소비 성향', '돈이 새는 지점과 주의사항', '직업 재물운',
+    '사업·부업운', '투자와 자산운', '재물운의 상승 시기', '인생 전체의 재물 흐름', '나만의 재물운 활용법',
+  ],
+  건강운: [
+    '타고난 건강 기질', '오행으로 보는 체질 균형', '신체 컨디션의 취약 경향',
+    '스트레스와 정신적 피로 패턴', '수면과 휴식운', '식습관과 생활습관',
+    '나에게 맞는 운동과 활동 방식', '시기별 건강운과 컨디션 흐름', '연령대별 건강 관리 포인트', '나만의 건강운 관리법',
+  ],
+  무료사주: [
+    '만세력 기본 정보', '타고난 성향', '올해 운세', '연애운', '재물운', '건강운', '종합 조언',
+  ],
+};
+
+const PDF_SYSTEM = `당신은 오랜 경력의 사주 명리학 상담가입니다.
+계산된 사주 원국(사주팔자·십성·오행)을 근거로 유료 사주 리포트를 작성합니다.
+
+## 작성 규칙
+- 반드시 계산된 사주팔자·일간·십성·오행을 실제 근거로 삼아 해석합니다. 사주를 임의로 바꾸지 마세요.
+- 유료 리포트이므로 무료판보다 훨씬 깊고 구체적으로 씁니다. 시기·흐름·조언을 아끼지 말고 충분히 풀어주세요.
+- 단정적인 예언("반드시 ~한다")은 피하고 경향과 흐름으로 표현합니다.
+- 좋은 말로만 포장하지 않습니다. 약점과 주의점은 솔직하게, 다만 상처 주지 않게 씁니다.
+- 건강 관련 내용은 질병을 예측·진단하지 않습니다. 체질 경향과 생활 관리 중심으로 씁니다.
+- 존댓말, 따뜻하고 신뢰감 있는 상담 말투. 본문에 한자는 쓰지 말고 한글로만 씁니다.
+- 각 섹션은 3~5문단, 문단당 3~4문장. 문단 구분은 \n\n 으로 합니다.
+- 내담자가 남긴 질문이 있으면 관련 섹션에서 반드시 답해주세요.
+
+## 출력 형식
+반드시 아래 JSON으로만 출력합니다. 다른 텍스트는 넣지 마세요.
+{ "sections": [ { "title": "섹션 제목", "body": "본문" }, ... ] }`;
+
+async function generatePdfReport({ type, client, saju, openaiKey, model }) {
+  const outline = PDF_OUTLINES[type] || PDF_OUTLINES['종합사주'];
+  const d = saju.detail;
+  const year = new Date().getFullYear();
+
+  const godLine = (key, label) => {
+    const x = d[key];
+    if (!x || !x.stem) return `${label}: (시간 모름)`;
+    return `${label}: ${x.stem.ko}${x.stem.char}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}${x.branch.char}(${x.branch.el}, ${x.branch.god})`;
+  };
+
+  const userPrompt = `[내담자 정보]
+이름: ${client.name}
+성별: ${client.gender || '미입력'}
+생년월일: ${client.birthDate} (${client.calendar})
+태어난 시간: ${saju.timeKnown ? client.birthTime : '모름'}
+태어난 지역: ${client.region || '미입력'}
+현재 연도: ${year}년
+${client.question ? `\n[내담자가 남긴 질문]\n${client.question}\n→ 이 질문에 관련 섹션에서 반드시 답해주세요.` : ''}
+
+[사주 원국] (천간/지지 — 오행, 십성)
+${godLine('year', '년주')}
+${godLine('month', '월주')}
+${godLine('day', '일주')}
+${godLine('hour', '시주')}
+
+[중심 기운]
+일간(日主): ${saju.dayMasterKo}${saju.dayMaster} (${saju.dayMasterElement})
+
+[오행 분포]
+목 ${saju.elements.목} · 화 ${saju.elements.화} · 토 ${saju.elements.토} · 금 ${saju.elements.금} · 수 ${saju.elements.수}
+강한 기운: ${saju.strong.join(', ')}
+부족한 기운: ${saju.weak.join(', ')}
+
+[작성할 리포트]
+종류: ${type}
+아래 목차 순서대로 sections 배열을 만들어주세요. 각 섹션의 title은 목차 그대로 쓰세요.
+${outline.map((o, i) => `${i + 1}. ${o}`).join('\n')}`;
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+    body: JSON.stringify({
+      model: model || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: PDF_SYSTEM },
+        { role: 'user', content: userPrompt },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.85,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'OpenAI 호출 실패');
+
+  const text = data.choices?.[0]?.message?.content || '{}';
+  let parsed;
+  try { parsed = JSON.parse(text); } catch (e) { parsed = {}; }
+  return parsed.sections || [];
+}
+
+module.exports.PDF_TYPES = PDF_TYPES;
+module.exports.PDF_OUTLINES = PDF_OUTLINES;
+module.exports.generatePdfReport = generatePdfReport;

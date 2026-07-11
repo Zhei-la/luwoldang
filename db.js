@@ -39,6 +39,11 @@ async function initDb() {
   // 랜딩 페이지 (빌더로 꾸민 내용 JSON)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing JSONB;`);
 
+  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
+
+  // 무료사주 → 신청자 목록에 함께 표시하기 위한 링크
+  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS lead_id INTEGER;`);
+
   // 상담 신청 (랜딩 폼)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS leads (
@@ -55,6 +60,24 @@ async function initDb() {
       product     TEXT,
       memo        TEXT,
       status      TEXT DEFAULT '접수완료',
+      source      TEXT DEFAULT '상담신청',
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source TEXT DEFAULT '상담신청';`);
+
+  // 제작한 PDF (내담자별)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pdfs (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id),
+      lead_id     INTEGER REFERENCES leads(id),
+      type        TEXT,
+      sections    JSONB,
+      mail_sent   BOOLEAN DEFAULT FALSE,
+      sent_at     TIMESTAMPTZ,
+      sent_to     TEXT,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
   `);

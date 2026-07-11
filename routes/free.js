@@ -4,6 +4,7 @@ const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
 const { generateFreeSaju, UPSELL } = require('../services/ai');
 const { renderLanding, defaultLanding } = require('../services/landing');
+const { sendFreeSaju } = require('../services/mail');
 
 async function findTeacher(slug) {
   const { rows } = await pool.query(
@@ -109,23 +110,23 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     const teacher = await findTeacher(req.params.slug);
     if (!teacher) return res.status(404).render('free/notfound');
 
-    const { name, gender, birthDate, birthTime, calendar, region, timeUnknown, agree } = req.body;
+    const { name, gender, birthDate, birthTime, calendar, region, timeUnknown, email, agree } = req.body;
 
-    if (!name || !birthDate || !agree) {
+    if (!name || !birthDate || !email || !agree) {
       return res.status(400).render('free/input', {
-        teacher, error: '이름, 생년월일, 개인정보 수집 동의는 필수입니다.', form: req.body,
+        teacher, error: '이름, 생년월일, 이메일, 개인정보 수집 동의는 필수입니다.', form: req.body,
       });
     }
 
     if (!teacher.openai_key) {
       return res.render('free/result', {
-        teacher, saju: null, result: null, input: null, logId: null, upsell: UPSELL,
+        teacher, saju: null, result: null, input: null, logId: null, upsell: UPSELL, mailSent: false,
         error: '현재 무료사주가 준비 중입니다. 잠시 후 다시 시도해주세요.',
       });
     }
 
     const client = {
-      name, gender, birthDate,
+      name, gender, birthDate, email,
       birthTime: timeUnknown ? null : (birthTime || null),
       calendar: calendar || '양력',
       region: region || '서울특별시',
@@ -136,7 +137,8 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
       saju = calcSaju({
         birthDate,
         birthTime: client.birthTime,
-        calendar: client.calendar,
+        calendar: client.calendar === '윤달' ? '음력' : client.calendar,
+        isLeapMonth: client.calendar === '윤달',
         region: client.region,
       });
     } catch (e) {
@@ -151,18 +153,40 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     } catch (err) {
       console.error('[AI] 무료사주 생성 실패:', err.message);
       return res.render('free/result', {
-        teacher, saju, result: null, input: client, logId: null, upsell: UPSELL,
+        teacher, saju, result: null, input: client, logId: null, upsell: UPSELL, mailSent: false,
         error: '사주 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       });
     }
 
+    // 무료사주 본 사람도 신청자 목록에 기록 (source = 무료사주)
+    const lead = await pool.query(
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, status, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'무료사주 발송','무료사주') RETURNING id`,
+      [teacher.id, client.name, client.gender, client.birthDate, client.calendar,
+       client.birthTime || null, client.region, client.email]
+    );
+    const leadId = lead.rows[0].id;
+
     const log = await pool.query(
-      'INSERT INTO free_logs (teacher_id, input, result) VALUES ($1, $2, $3) RETURNING id',
-      [teacher.id, JSON.stringify(client), JSON.stringify(result)]
+      'INSERT INTO free_logs (teacher_id, lead_id, input, result) VALUES ($1, $2, $3, $4) RETURNING id',
+      [teacher.id, leadId, JSON.stringify(client), JSON.stringify(result)]
     );
 
+    // 이메일 발송 (실패해도 화면은 정상 표시)
+    let mailSent = false;
+    try {
+      await sendFreeSaju({
+        to: email, teacher, saju, result, input: client,
+        upsell: UPSELL, baseUrl: process.env.BASE_URL || '',
+      });
+      mailSent = true;
+      await pool.query('UPDATE free_logs SET mail_sent = TRUE WHERE id = $1', [log.rows[0].id]);
+    } catch (e) {
+      console.error('[MAIL] 무료사주 발송 실패:', e.message);
+    }
+
     res.render('free/result', {
-      teacher, saju, result, input: client,
+      teacher, saju, result, input: client, mailSent,
       logId: log.rows[0].id, upsell: UPSELL, error: null,
     });
   } catch (e) {
