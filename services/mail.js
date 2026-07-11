@@ -18,7 +18,10 @@ function getTransport(teacher, opts) {
     secure: port === 465,          // 465=SSL, 587=STARTTLS
     requireTLS: port === 587,
     auth: { user, pass },
-    // 무한 대기 방지 (Railway에서 포트 막히면 응답이 안 옴)
+    // Railway 컨테이너는 IPv6 아웃바운드를 지원하지 않음
+    // → IPv6로 붙으면 ENETUNREACH. IPv4 강제.
+    family: 4,
+    // 무한 대기 방지
     connectionTimeout: 12000,
     greetingTimeout: 12000,
     socketTimeout: 20000,
@@ -37,7 +40,7 @@ async function sendWithFallback(teacher, mailOptions) {
       return { port };
     } catch (e) {
       tried.push(`${port}: ${e.message}`);
-      const retryable = /timeout|ETIMEDOUT|ECONNREFUSED|ESOCKET|ECONNRESET/i.test(e.message || '');
+      const retryable = /timeout|ETIMEDOUT|ECONNREFUSED|ESOCKET|ECONNRESET|ENETUNREACH|EHOSTUNREACH/i.test(e.message || '');
       // 인증 오류(비번 틀림)면 포트 바꿔도 소용없으니 즉시 중단
       if (!retryable) throw e;
     }

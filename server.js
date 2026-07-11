@@ -1,4 +1,8 @@
 require('dotenv').config();
+
+// Railway 컨테이너는 IPv6 아웃바운드 미지원 → DNS 조회 시 IPv4 우선
+// (미적용 시 Gmail/OpenAI 접속에서 ENETUNREACH 발생)
+try { require('dns').setDefaultResultOrder('ipv4first'); } catch (e) { /* Node 18 미만 무시 */ }
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
