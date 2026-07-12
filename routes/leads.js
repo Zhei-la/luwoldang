@@ -69,6 +69,7 @@ router.get('/leads/:id', async (req, res, next) => {
         calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
         isLeapMonth: lead.calendar === '윤달',
         region: lead.region || '서울특별시',
+        gender: lead.gender,
       });
     } catch (e) { /* 생년월일 형식 문제 시 무시 */ }
 
@@ -122,6 +123,7 @@ router.post('/leads/:id/pdf', async (req, res, next) => {
       calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
       isLeapMonth: lead.calendar === '윤달',
       region: lead.region || '서울특별시',
+      gender: lead.gender,
     });
 
     const client = {
@@ -169,6 +171,7 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
         calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
         isLeapMonth: pdf.calendar === '윤달',
         region: pdf.region || '서울특별시',
+        gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
 
@@ -216,6 +219,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
         calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
         isLeapMonth: pdf.calendar === '윤달',
         region: pdf.region || '서울특별시',
+        gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
 

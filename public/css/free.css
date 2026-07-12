@@ -246,3 +246,20 @@ table.chart th.rowh.sub { font-size:10.5px; color:#b3ad9c; }
 .fi.errfield { border-color:#e08b80; background:#fffafa; }
 .seg.errfield .seg-item { border-color:#e08b80; }
 .chk.errfield { color:#c0392b; }
+
+/* 지장간 */
+.jj { display:flex; justify-content:center; gap:2px; }
+.jj i { font-style:normal; font-size:12px; font-weight:600; color:var(--c); }
+.jj i.el-목 { color:#2e8b57; } .jj i.el-화 { color:#cf4038; } .jj i.el-토 { color:#b8860b; }
+.jj i.el-금 { color:#6b7684; } .jj i.el-수 { color:#2f6bb0; }
+
+/* 대운 */
+.dw { margin:0 0 26px; }
+.dw-title { font-family:"Nanum Myeongjo",serif; font-size:14px; color:var(--navy); margin-bottom:9px; text-align:center; }
+.dw-title span { font-size:11px; color:var(--gold); border:1px solid var(--gold); border-radius:5px; padding:1px 7px; margin-left:5px; }
+.dw-scroll { overflow-x:auto; }
+.dw-row { display:flex; gap:6px; min-width:min-content; padding-bottom:4px; }
+.dw-item { flex:0 0 auto; min-width:52px; text-align:center; background:#fff; border:1px solid var(--beige); border-radius:9px; padding:8px 5px; }
+.dw-age { display:block; font-size:10.5px; color:#8a8574; margin-bottom:3px; }
+.dw-gz { display:block; font-family:"Nanum Myeongjo",serif; font-size:15px; color:var(--navy); }
+.dw-hj { display:block; font-style:normal; font-size:10px; color:#b3ad9c; margin-top:1px; }

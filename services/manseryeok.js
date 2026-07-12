@@ -130,6 +130,7 @@ function calcSaju(o) {
   const region = o.region || '서울';
   const isLeapMonth = !!o.isLeapMonth;
   const dayChangeMode = o.dayChangeMode || 'lateZiNextDay';
+  const gender = o.gender || null;
   const useLocalSolarTime = o.useLocalSolarTime !== false;
   const applyDST = o.applyDST === true; // 검증 결과 기본 off
 
@@ -242,9 +243,25 @@ function calcSaju(o) {
     };
   };
   const detail = function (p, isDay) {
-    if (!p) return { stem: null, branch: null };
-    return { stem: stemInfo(p[0], isDay), branch: branchInfo(p[1]) };
+    if (!p) return { stem: null, branch: null, unseong: null, jijanggan: [] };
+    return {
+      stem: stemInfo(p[0], isDay),
+      branch: branchInfo(p[1]),
+      unseong: unseong(dayGan, p[1]),          // 12운성 (일간 기준)
+      jijanggan: (HIDDEN_STEMS[p[1]] || []).map(function (g) {
+        return { char: g, ko: GAN_KO[g] || g, el: GAN_EL[g] || null };
+      }),
+    };
   };
+
+  // 대운 (성별을 알아야 순행/역행 판단 가능)
+  let daewoon = null;
+  if (gender) {
+    try {
+      const solarForDw = Solar.fromYmd(sy, sm, sd);
+      daewoon = calcDaewoon(solarForDw, yearP[0], monthP, gender, 9);
+    } catch (e) { /* 실패해도 나머지는 정상 반환 */ }
+  }
 
   return {
     pillars: { year: yearP, month: monthP, day: dayP, hour: hourP },
@@ -255,6 +272,7 @@ function calcSaju(o) {
       day: detail(dayP, true),
       hour: detail(hourP, false),
     },
+    daewoon: daewoon,
     hiddenStems: {
       year: HIDDEN_STEMS[yearP[1]] || [],
       month: HIDDEN_STEMS[monthP[1]] || [],
@@ -281,3 +299,130 @@ function calcSaju(o) {
 }
 
 module.exports = { calcSaju: calcSaju, HIDDEN_STEMS: HIDDEN_STEMS, GAN: GAN, JI: JI, GAN_KO: GAN_KO, JI_KO: JI_KO };
+
+/* ============================================================
+ * 12운성 (十二運星)
+ * 일간(日主) 기준으로 각 지지의 기운 상태를 봄
+ * 양간(甲丙戊庚壬)은 순행, 음간(乙丁己辛癸)은 역행
+ * ============================================================ */
+
+const UNSEONG_NAMES = ['장생','목욕','관대','건록','제왕','쇠','병','사','묘','절','태','양'];
+
+// 각 천간의 장생(長生) 시작 지지
+const JANGSAENG_START = {
+  甲:'亥', 乙:'午', 丙:'寅', 丁:'酉', 戊:'寅',
+  己:'酉', 庚:'巳', 辛:'子', 壬:'申', 癸:'卯',
+};
+
+function unseong(dayStem, branch) {
+  const start = JANGSAENG_START[dayStem];
+  if (!start || !branch) return null;
+  const si = JI.indexOf(start);
+  const bi = JI.indexOf(branch);
+  if (si < 0 || bi < 0) return null;
+
+  const isYang = GAN_YIN[dayStem] === false;  // 양간 = 순행
+  const step = isYang ? (bi - si + 12) % 12 : (si - bi + 12) % 12;
+  return UNSEONG_NAMES[step];
+}
+
+/* ============================================================
+ * 대운 (大運)
+ * 월주에서 시작해 10년 단위로 흐르는 인생의 큰 흐름
+ *
+ * 순행/역행 판단:
+ *   년간이 양(甲丙戊庚壬) + 남자  → 순행
+ *   년간이 양            + 여자  → 역행
+ *   년간이 음(乙丁己辛癸) + 남자  → 역행
+ *   년간이 음            + 여자  → 순행
+ *
+ * 시작 나이:
+ *   순행 → 다음 절입일까지 남은 일수 ÷ 3
+ *   역행 → 지난 절입일부터 지난 일수 ÷ 3
+ * ============================================================ */
+
+// 24절기 중 월을 나누는 12절기 (中氣 제외)
+// lunar-javascript는 간체자를 반환하므로 간체·번체 모두 등록
+const MONTH_TERMS = new Set([
+  '立春',
+  '驚蟄', '惊蛰',
+  '清明',
+  '立夏',
+  '芒種', '芒种',
+  '小暑',
+  '立秋',
+  '白露',
+  '寒露',
+  '立冬',
+  '大雪',
+  '小寒',
+]);
+
+// 해당 날짜 기준 이전/다음 절입일 찾기
+function findTermBoundaries(solar) {
+  const { Solar } = require('lunar-javascript');
+  const base = solar.toYmd();
+
+  let prev = null, next = null;
+  // 앞뒤 60일 범위에서 절입일 탐색
+  for (let d = -60; d <= 60; d++) {
+    const t = new Date(solar.getYear(), solar.getMonth() - 1, solar.getDay() + d);
+    const so = Solar.fromYmd(t.getFullYear(), t.getMonth() + 1, t.getDate());
+    const jq = so.getLunar().getJieQi();
+    if (!jq || !MONTH_TERMS.has(jq)) continue;
+
+    const ymd = so.toYmd();
+    if (ymd <= base) prev = so;
+    if (ymd > base && !next) next = so;
+  }
+  return { prev, next };
+}
+
+function daysBetween(a, b) {
+  const d1 = new Date(a.getYear(), a.getMonth() - 1, a.getDay());
+  const d2 = new Date(b.getYear(), b.getMonth() - 1, b.getDay());
+  return Math.round((d2 - d1) / 86400000);
+}
+
+/**
+ * 대운 계산
+ * @param {object} o { solar(Solar), yearStem, monthPillar, gender('남'|'여'), count }
+ */
+function calcDaewoon(solar, yearStem, monthPillar, gender, count) {
+  const n = count || 8;
+  const isYangYear = GAN_YIN[yearStem] === false;
+  const isMale = gender === '남' || gender === 'M' || gender === 'male';
+  const forward = (isYangYear && isMale) || (!isYangYear && !isMale);
+
+  // 시작 나이 = 절입일까지 거리 ÷ 3
+  const { prev, next } = findTermBoundaries(solar);
+  let days = 3;
+  if (forward && next) days = Math.max(1, daysBetween(solar, next));
+  else if (!forward && prev) days = Math.max(1, daysBetween(prev, solar));
+  let startAge = Math.round(days / 3);
+  if (startAge < 1) startAge = 1;
+  if (startAge > 10) startAge = 10;
+
+  // 월주에서 순행/역행하며 60갑자 진행
+  const gi = GAN.indexOf(monthPillar[0]);
+  const bi = JI.indexOf(monthPillar[1]);
+
+  const list = [];
+  for (let i = 1; i <= n; i++) {
+    const step = forward ? i : -i;
+    const g = GAN[((gi + step) % 10 + 10) % 10];
+    const b = JI[((bi + step) % 12 + 12) % 12];
+    list.push({
+      age: startAge + (i - 1) * 10,
+      ganzi: g + b,
+      ko: (GAN_KO[g] || g) + (JI_KO[b] || b),
+      stem: g,
+      branch: b,
+    });
+  }
+  return { forward, startAge, list };
+}
+
+module.exports.unseong = unseong;
+module.exports.calcDaewoon = calcDaewoon;
+module.exports.UNSEONG_NAMES = UNSEONG_NAMES;

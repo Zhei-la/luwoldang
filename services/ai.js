@@ -48,8 +48,15 @@ async function generateFreeSaju({ client, saju, openaiKey, model }) {
   const godLine = (key, label) => {
     const x = d[key];
     if (!x || !x.stem) return `${label}: (시간 모름)`;
-    return `${label}: ${x.stem.ko}${x.stem.char}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}${x.branch.char}(${x.branch.el}, ${x.branch.god})`;
+    const jj = (x.jijanggan || []).map((g) => g.ko).join('');
+    return `${label}: ${x.stem.ko}${x.stem.char}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}${x.branch.char}(${x.branch.el}, ${x.branch.god})` +
+           ` · 12운성 ${x.unseong || '-'} · 지장간 ${jj || '-'}`;
   };
+
+  const dwLine = saju.daewoon && saju.daewoon.list.length
+    ? `\n[대운] (${saju.daewoon.forward ? '순행' : '역행'})\n` +
+      saju.daewoon.list.slice(0, 8).map((x) => `${x.age}세~ ${x.ko}`).join(' / ')
+    : '';
 
   const userPrompt = `[내담자 정보]
 이름: ${client.name}
@@ -200,8 +207,15 @@ async function generatePdfReport({ type, client, saju, openaiKey, model }) {
   const godLine = (key, label) => {
     const x = d[key];
     if (!x || !x.stem) return `${label}: (시간 모름)`;
-    return `${label}: ${x.stem.ko}${x.stem.char}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}${x.branch.char}(${x.branch.el}, ${x.branch.god})`;
+    const jj = (x.jijanggan || []).map((g) => g.ko).join('');
+    return `${label}: ${x.stem.ko}${x.stem.char}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}${x.branch.char}(${x.branch.el}, ${x.branch.god})` +
+           ` · 12운성 ${x.unseong || '-'} · 지장간 ${jj || '-'}`;
   };
+
+  const dwLine = saju.daewoon && saju.daewoon.list.length
+    ? `\n[대운] (${saju.daewoon.forward ? '순행' : '역행'})\n` +
+      saju.daewoon.list.slice(0, 8).map((x) => `${x.age}세~ ${x.ko}`).join(' / ')
+    : '';
 
   const userPrompt = `[내담자 정보]
 이름: ${client.name}
@@ -225,6 +239,7 @@ ${godLine('hour', '시주')}
 목 ${saju.elements.목} · 화 ${saju.elements.화} · 토 ${saju.elements.토} · 금 ${saju.elements.금} · 수 ${saju.elements.수}
 강한 기운: ${saju.strong.join(', ')}
 부족한 기운: ${saju.weak.join(', ')}
+${dwLine}
 
 [작성할 리포트]
 종류: ${type}

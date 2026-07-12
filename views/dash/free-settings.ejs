@@ -30,54 +30,52 @@
 
   <div class="settings-block">
     <h2 class="section-h">이메일 발송 설정
-      <% if (hasMailKey) { %><span class="key-ok">설정됨 ✓</span><% } %>
+      <% if (mailReady) { %><span class="key-ok">사용 가능 ✓</span><% } %>
     </h2>
-    <p class="block-desc">
-      무료사주와 사주 리포트를 이메일로 보냅니다. <b>Mailjet</b>을 사용하며 <b>하루 200통까지 무료</b>입니다.<br>
-      <b>도메인 없이</b> 내 이메일 주소만 인증하면 내담자에게 바로 보낼 수 있습니다.
-    </p>
 
-    <% if (!hasMailKey && hasAdminMail) { %>
+    <% if (!mailDomain) { %>
       <div class="warn-box" style="margin-bottom:16px">
-        아직 설정하지 않아 <b>관리자 계정</b>으로 발송됩니다. 내 이름으로 보내려면 아래를 설정해주세요.
+        메일 발송이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.
       </div>
-    <% } %>
-
-    <details class="guide" <%= hasMailKey ? '' : 'open' %>>
-      <summary>Mailjet 설정하는 법 (5분, 무료)</summary>
-      <ol>
-        <li><a href="https://www.mailjet.com/" target="_blank">mailjet.com</a> 가입 <span>(카드 등록 없음)</span></li>
-        <li><b>Senders &amp; Domains</b> → <b>Add a sender email</b> → 내 이메일 입력
-          <span>→ 인증 메일이 오면 링크 클릭 (이게 도메인 대신입니다)</span></li>
-        <li><b>API Key Management</b> → API 키 생성</li>
-        <li><b>API 키</b>와 <b>비밀 키</b> 두 개를 복사해서 아래에 붙여넣기</li>
-      </ol>
-      <p class="guide-note">
-        ※ <b>2번의 발신자 인증</b>을 꼭 완료해야 합니다. 인증한 그 이메일 주소를 아래 <b>보내는 주소</b>에 그대로 입력하세요.
+    <% } else { %>
+      <p class="block-desc">
+        무료사주와 사주 리포트를 <b>내 이름으로</b> 보냅니다. 별도 가입이나 비용 없이 바로 사용할 수 있습니다.
       </p>
-      <a href="https://app.mailjet.com/account/apikeys" target="_blank">API 키 만들러 가기 →</a>
-    </details>
 
-    <label class="fl">API 키 <% if (hasMailKey) { %><span class="key-ok">저장됨 ✓</span><% } %></label>
-    <input class="fi" type="password" name="mj_key" placeholder="<%= hasMailKey ? '변경하려면 새 키 입력 (비우면 유지)' : 'Mailjet API 키' %>" autocomplete="off">
+      <!-- 발신 미리보기 -->
+      <div class="mail-preview">
+        <div class="mp-label">받는 사람에게 이렇게 보입니다</div>
+        <div class="mp-box">
+          <b id="pvName"><%= user.mail_name || user.site_name || user.name || '사주 풀이' %></b>
+          <span id="pvAddr">&lt;<%= (user.mail_local || 'noreply') %>@<%= mailDomain %>&gt;</span>
+        </div>
+      </div>
 
-    <label class="fl">비밀 키 <% if (hasMailKey) { %><span class="key-ok">저장됨 ✓</span><% } %></label>
-    <input class="fi" type="password" name="mj_secret" placeholder="<%= hasMailKey ? '변경하려면 새 키 입력 (비우면 유지)' : 'Mailjet 비밀 키 (Secret Key)' %>" autocomplete="off">
+      <label class="fl">발신인 이름</label>
+      <input class="fi" type="text" id="mailNameInput" name="mail_name"
+             value="<%= user.mail_name || '' %>" placeholder="<%= user.site_name || '예: 운명삼문' %>">
+      <p class="hint">받는 사람 메일함에 <b>크게 표시되는 이름</b>입니다.</p>
 
-    <label class="fl">보내는 주소 <span class="req">*</span></label>
-    <input class="fi" type="email" name="mail_user" value="<%= user.mail_user || '' %>" placeholder="Mailjet에서 인증한 이메일 주소" required>
-    <p class="hint">⚠️ Mailjet에서 <b>인증(Add a sender)</b>을 완료한 이메일이어야 합니다. 인증 안 된 주소는 발송이 거부됩니다.</p>
+      <label class="fl">메일 아이디</label>
+      <div class="mail-id-row">
+        <input class="fi" type="text" id="mailLocalInput" name="mail_local"
+               value="<%= user.mail_local || '' %>" placeholder="noreply" autocomplete="off">
+        <span class="mail-domain">@<%= mailDomain %></span>
+      </div>
+      <p class="hint">영문 소문자·숫자만 사용할 수 있습니다. 비우면 <b>noreply</b>로 발송됩니다.</p>
 
-    <label class="fl">발신인 이름 (받는 사람에게 표시됨)</label>
-    <input class="fi" type="text" name="mail_name" value="<%= user.mail_name || '' %>" placeholder="<%= user.site_name || '예: 운명삼문' %>">
+      <label class="fl">답장 받을 주소</label>
+      <input class="fi" type="email" name="mail_reply" value="<%= user.mail_reply || '' %>"
+             placeholder="내 개인 이메일 (예: myname@naver.com)">
+      <p class="hint">내담자가 <b>답장</b>을 누르면 이 주소로 옵니다. 비우면 답장을 받을 수 없습니다.</p>
 
-    <div class="test-row">
-      <input class="fi" type="email" id="testTo" placeholder="테스트 받을 이메일" value="<%= user.mail_user || '' %>">
-      <button class="btn btn-ghost" type="button" id="btnTestMail">테스트 발송</button>
-    </div>
-    <button class="btn btn-ghost" type="button" id="btnMailStatus" style="width:100%;margin-top:8px">저장된 키 확인하기</button>
-    <div class="prog" id="mailProg"></div>
-    <p class="hint">먼저 <b>설정 저장</b>을 누른 뒤 테스트하세요.</p>
+      <div class="test-row">
+        <input class="fi" type="email" id="testTo" placeholder="테스트 받을 이메일" value="<%= user.mail_reply || '' %>">
+        <button class="btn btn-ghost" type="button" id="btnTestMail">테스트 발송</button>
+      </div>
+      <div class="prog" id="mailProg"></div>
+      <p class="hint">먼저 <b>설정 저장</b>을 누른 뒤 테스트하세요.</p>
+    <% } %>
   </div>
 
   <div class="settings-block">
@@ -127,6 +125,23 @@
     };
   }
 
+  // 발신 주소 실시간 미리보기
+  var nameIn = document.getElementById('mailNameInput');
+  var localIn = document.getElementById('mailLocalInput');
+  var pvName = document.getElementById('pvName');
+  var pvAddr = document.getElementById('pvAddr');
+  var DOMAIN = '<%= mailDomain || "" %>';
+  function syncPreview(){
+    if (pvName && nameIn) pvName.textContent = nameIn.value.trim() || (nameIn.placeholder.replace('예: ','') || '사주 풀이');
+    if (pvAddr && localIn) {
+      var v = localIn.value.toLowerCase().replace(/[^a-z0-9._-]/g, '');
+      if (localIn.value !== v) localIn.value = v;
+      pvAddr.textContent = '<' + (v || 'noreply') + '@' + DOMAIN + '>';
+    }
+  }
+  if (nameIn) nameIn.addEventListener('input', syncPreview);
+  if (localIn) localIn.addEventListener('input', syncPreview);
+
   var btnTest = document.getElementById('btnTestMail');
   if (btnTest) {
     btnTest.onclick = async function(){
@@ -146,7 +161,7 @@
         var d = await r.json();
         if (!d.ok) throw new Error((d.error || '실패') + (d.hint ? '  → ' + d.hint : ''));
         prog.className = 'prog ok';
-        prog.textContent = '발송 성공! ' + d.to + ' 받은편지함을 확인해보세요.';
+        prog.textContent = '발송 성공! ' + d.to + ' 받은편지함을 확인해보세요.  (발신: ' + d.from + ')';
       } catch(e) {
         prog.className = 'prog err';
         prog.textContent = '발송 실패: ' + e.message;

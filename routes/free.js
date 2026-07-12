@@ -140,6 +140,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
         calendar: client.calendar === '윤달' ? '음력' : client.calendar,
         isLeapMonth: client.calendar === '윤달',
         region: client.region,
+        gender: client.gender,
       });
     } catch (e) {
       return res.status(400).render('free/input', {

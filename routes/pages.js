@@ -32,8 +32,9 @@ router.get('/free-saju-settings', (req, res) => {
     active: 'settings',
     baseUrl: process.env.BASE_URL || '',
     hasKey: !!req.user.openai_key,
-    hasMailKey: !!(req.user.mj_key && req.user.mj_secret),
-    hasAdminMail: !!(process.env.MJ_KEY && process.env.MJ_SECRET),
+    mailDomain: process.env.MAIL_DOMAIN || null,
+    mailFrom: require('../services/mail').fromAddr(req.user),
+    mailReady: require('../services/mail').mailReady(req.user),
     saved: req.query.saved === '1',
   });
 });
@@ -41,28 +42,23 @@ router.get('/free-saju-settings', (req, res) => {
 router.post('/free-saju-settings', async (req, res, next) => {
   try {
     const { site_name, kakao_consult_link, consult_message, button_text,
-            openai_key, mj_key, mj_secret, mail_user, mail_name } = req.body;
+            openai_key, mail_local, mail_name, mail_reply } = req.body;
 
     // 키/비번은 새로 입력했을 때만 갱신 (빈칸이면 기존 값 유지)
     if (openai_key && openai_key.trim()) {
       await pool.query('UPDATE users SET openai_key = $1 WHERE id = $2', [openai_key.trim(), req.user.id]);
     }
-    // 키에 공백/따옴표가 딸려오는 경우가 많아 정리
-    const clean = (v) => String(v || '').replace(/[\s'"]/g, '');
-    if (mj_key && clean(mj_key)) {
-      await pool.query('UPDATE users SET mj_key = $1 WHERE id = $2', [clean(mj_key), req.user.id]);
-    }
-    if (mj_secret && clean(mj_secret)) {
-      await pool.query('UPDATE users SET mj_secret = $1 WHERE id = $2', [clean(mj_secret), req.user.id]);
-    }
+
+    // 메일 아이디: 영문/숫자/.-_ 만 허용
+    const local = String(mail_local || '').toLowerCase().replace(/[^a-z0-9._-]/g, '') || null;
 
     await pool.query(
       `UPDATE users
        SET site_name = $1, kakao_consult_link = $2, consult_message = $3, button_text = $4,
-           mail_user = $5, mail_name = $6
-       WHERE id = $7`,
+           mail_local = $5, mail_name = $6, mail_reply = $7
+       WHERE id = $8`,
       [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
-       (mail_user || '').trim() || null, (mail_name || '').trim() || null, req.user.id]
+       local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null, req.user.id]
     );
 
     res.redirect('/free-saju-settings?saved=1');
@@ -71,34 +67,18 @@ router.post('/free-saju-settings', async (req, res, next) => {
   }
 });
 
-// 메일 설정 상태 확인 (키는 마스킹해서 표시)
-router.get('/api/mail/status', (req, res) => {
-  const mask = (v) => {
-    if (!v) return null;
-    const s = String(v);
-    return { length: s.length, preview: s.slice(0, 4) + '...' + s.slice(-4) };
-  };
-  res.json({
-    apiKey: mask(req.user.mj_key),
-    secretKey: mask(req.user.mj_secret),
-    fromEmail: req.user.mail_user || null,
-    fromName: req.user.mail_name || null,
-    note: 'Mailjet 키는 보통 32자입니다. 길이가 다르면 잘못 붙여넣은 것입니다.',
-  });
-});
-
 // 메일 테스트 발송
 router.post('/api/mail/test', async (req, res) => {
-  const { mailReady, sendMail, fromAddr } = require('../services/mail');
+  const { mailReady, sendMail, fromAddr, mailDomain } = require('../services/mail');
   try {
-    if (!mailReady(req.user)) {
-      return res.status(400).json({
-        ok: false,
-        error: 'API 키와 보내는 이메일 주소를 먼저 저장해주세요.',
-      });
+    if (!mailDomain()) {
+      return res.status(400).json({ ok: false, error: '메일 도메인이 설정되지 않았습니다. 관리자에게 문의해주세요.' });
     }
-    const to = (req.body && req.body.to) || req.user.mail_user;
-    if (!to) return res.status(400).json({ ok: false, error: '받을 이메일 주소를 입력해주세요.' });
+    if (!mailReady(req.user)) {
+      return res.status(400).json({ ok: false, error: '메일 발송이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.' });
+    }
+    const to = (req.body && req.body.to) || req.user.mail_reply || req.user.account_email;
+    if (!to) return res.status(400).json({ ok: false, error: '테스트 받을 이메일 주소를 입력해주세요.' });
 
     const name = req.user.mail_name || req.user.site_name || req.user.name || '사주 풀이';
     await sendMail(req.user, {
@@ -113,19 +93,10 @@ router.post('/api/mail/test', async (req, res) => {
           <p style="margin:14px 0 0;font-size:12px;color:#b3ad9c">발신: ${fromAddr(req.user)}</p>
         </div></div>`,
     });
-    res.json({ ok: true, to });
+    res.json({ ok: true, to, from: fromAddr(req.user) });
   } catch (e) {
     console.error('[MAIL] 테스트 실패:', e.message);
-    let msg = e.message;
-    let hint = null;
-    if (/API 키가 올바르지|401|Unauthorized/i.test(msg)) {
-      msg = 'API 키가 올바르지 않습니다.';
-      hint = 'Mailjet의 API 키와 비밀 키를 다시 확인해주세요.';
-    } else if (/sender|not.*(allowed|authori|valid)|From/i.test(msg)) {
-      msg = '보내는 이메일 주소가 인증되지 않았습니다.';
-      hint = 'Mailjet → Senders & Domains 에서 해당 이메일을 인증(Add a sender)한 뒤 다시 시도해주세요.';
-    }
-    res.status(500).json({ ok: false, error: msg, hint });
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

@@ -85,6 +85,24 @@
                   <td><span class="god <%= b ? 'el-' + b.el : '' %>"><%= b ? b.god : '—' %></span></td>
                 <% }); %>
               </tr>
+              <tr class="god-row">
+                <th class="rowh sub">지장간</th>
+                <% cols.forEach(function(c){ var jj = saju.detail[c].jijanggan || []; %>
+                  <td>
+                    <% if (jj.length) { %>
+                      <span class="jj">
+                        <% jj.forEach(function(g){ %><i class="el-<%= g.el %>"><%= g.ko %></i><% }); %>
+                      </span>
+                    <% } else { %><span class="god">—</span><% } %>
+                  </td>
+                <% }); %>
+              </tr>
+              <tr class="god-row">
+                <th class="rowh sub">12운성</th>
+                <% cols.forEach(function(c){ var u = saju.detail[c].unseong; %>
+                  <td><span class="god"><%= u || '—' %></span></td>
+                <% }); %>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -99,7 +117,28 @@
         </div>
         <p class="el-sum">강한 기운 <em><%= saju.strong.join(', ') %></em> · 부족한 기운 <em><%= saju.weak.join(', ') %></em></p>
 
+        <% if (saju.daewoon && saju.daewoon.list.length) { %>
+          <div class="dw">
+            <div class="dw-title">대운 <span><%= saju.daewoon.forward ? '순행' : '역행' %></span></div>
+            <div class="dw-scroll">
+              <div class="dw-row">
+                <% saju.daewoon.list.forEach(function(d){ %>
+                  <div class="dw-item">
+                    <span class="dw-age"><%= d.age %></span>
+                    <b class="dw-gz"><%= d.ko %></b>
+                    <i class="dw-hj"><%= d.ganzi %></i>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          </div>
+        <% } %>
+
         <% function para(t){ return String(t || '').split(/\n{2,}|\n/).filter(Boolean); } %>
+
+        <% if (typeof mailSent !== 'undefined' && mailSent && input && input.email) { %>
+          <div class="mail-ok">✓ <b><%= input.email %></b> 로 사주 풀이를 보내드렸습니다.</div>
+        <% } %>
 
         <!-- 핵심 키워드 -->
         <% if (result.keywords && result.keywords.length) { %>

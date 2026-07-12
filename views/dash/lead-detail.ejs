@@ -44,7 +44,26 @@
             <em class="<%= EL[b.el] %>"><%= b.yin?'-':'+' %><%= b.el %> · <%= b.god %></em>
           <% } else { %><span class="dim">미상</span><% } %></td>
         <% }); %></tr>
+      <tr><th class="rh sm">지장간</th>
+        <% cols.forEach(function(c){ var jj=saju.detail[c].jijanggan||[]; %>
+          <td class="sm-cell"><% if(jj.length){ jj.forEach(function(g){ %><span class="<%= EL[g.el] %>"><%= g.ko %></span><% }); } else { %>—<% } %></td>
+        <% }); %></tr>
+      <tr><th class="rh sm">12운성</th>
+        <% cols.forEach(function(c){ %>
+          <td class="sm-cell"><%= saju.detail[c].unseong || '—' %></td>
+        <% }); %></tr>
     </table>
+
+    <% if (saju.daewoon && saju.daewoon.list.length) { %>
+      <div class="dw-mini">
+        <div class="dw-mini-t">대운 <span><%= saju.daewoon.forward ? '순행' : '역행' %></span></div>
+        <div class="dw-mini-row">
+          <% saju.daewoon.list.forEach(function(d){ %>
+            <div class="dw-mini-item"><span><%= d.age %>세</span><b><%= d.ko %></b></div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
     <p class="chart-sum">
       오행 · 목 <%= saju.elements.목 %> 화 <%= saju.elements.화 %> 토 <%= saju.elements.토 %> 금 <%= saju.elements.금 %> 수 <%= saju.elements.수 %>
       &nbsp;|&nbsp; 강한 <b><%= saju.strong.join(', ') %></b> &nbsp;·&nbsp; 부족 <b><%= saju.weak.join(', ') %></b>
