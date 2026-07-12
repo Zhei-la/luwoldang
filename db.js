@@ -95,6 +95,9 @@ async function initDb() {
     );
   `);
 
+  // 리포트 부가 데이터 (체크리스트 · 연애카드 등) — leads.js 에서 JSON 으로 저장
+  await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS extra JSONB;`);
+
   // 무료사주 웹사이트 기록
   await pool.query(`
     CREATE TABLE IF NOT EXISTS free_logs (
