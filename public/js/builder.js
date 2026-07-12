@@ -10,7 +10,7 @@ const DEFS = {
   headline: { name:'헤드라인',      ico:'T', make:()=>({ eyebrow:'사주 상담 · 직접 풀이', title:'당신의 흐름을\n읽어 드립니다', desc:'요약본이 아니라, 직접 풀어 적어 보내드립니다.', align:'left', size:26, hi:'' }) },
   freesaju: { name:'무료사주 맛보기', ico:'☾', make:()=>({ title:'무료 사주 먼저 보기', desc:'간단한 정보를 입력하면 나의 기본 사주와 올해 흐름을 무료로 확인할 수 있습니다.', cta:'무료로 사주 보기' }) },
   price:    { name:'가격',          ico:'₩', make:()=>({ badge:'이번 회차 · 선착순', off:'40%', was:'50,000원', now:'29,800', cta:'상담 신청하기' }) },
-  countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'fixed', hours:6, target:'' }) },
+  countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'cycle', cycle:24, anchor:'', hours:6, target:'' }) },
   gauge:    { name:'남은 자리',      ico:'◐', make:()=>({ title:'남은 자리', total:30, note:'회차당 인원을 넘기면 풀이가 얕아집니다' }) },
   live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황' }) },
   reviews:  { name:'받아본 이야기',   ico:'❝', make:()=>({ title:'받아본 이야기', items:[] }) },
@@ -329,11 +329,19 @@ function paintInspector(){
       break;
     case 'countdown':
       h += T('title','제목') + T('note','하단 문구')
-        + SL('mode','방식',[['fixed','고정 마감일시 (권장)'],['rolling','접속할 때마다 재시작']])
-        + (b.mode==='fixed'
-            ? `<div class="fld"><label>마감 일시</label><input type="datetime-local" data-k="target" value="${esc(b.target)}"></div>`
-            : N('hours','남은 시간 (시간)'))
-        + `<div class="fld"><div class="hint">⚠️ 실제 마감이 없는데 계속 리셋되는 타이머는 표시광고법 이슈가 될 수 있습니다. 회차 마감일이 있으면 <b>고정 일시</b>를 쓰세요.</div></div>`;
+        + SL('mode','방식',[
+            ['cycle','반복 — 주기마다 자동 재시작'],
+            ['fixed','고정 마감일시 (1회)'],
+            ['rolling','접속할 때마다 재시작'],
+          ])
+        + (b.mode==='cycle'
+            ? N('cycle','반복 주기 (시간)')
+              + `<div class="fld"><label>기준 시각 (비우면 매일 자정 기준)</label><input type="datetime-local" data-k="anchor" value="${esc(b.anchor)}"></div>`
+              + `<div class="fld"><div class="hint">예) 주기 <b>24</b> → 자정마다 24시간 카운트다운이 새로 시작됩니다. 매번 설정할 필요 없습니다.<br>예) 주기 <b>168</b> → 일주일 단위로 반복됩니다.<br>모든 방문자가 <b>같은 남은 시간</b>을 봅니다.</div></div>`
+            : b.mode==='fixed'
+              ? `<div class="fld"><label>마감 일시</label><input type="datetime-local" data-k="target" value="${esc(b.target)}"></div>`
+              : N('hours','남은 시간 (시간)'))
+        + `<div class="fld"><div class="hint">⚠️ <b>접속할 때마다 재시작</b>은 사람마다 다른 시간이 보이고 새로고침하면 리셋됩니다. 실제 마감이 없는 타이머는 표시광고법 이슈가 될 수 있으니 <b>반복</b>이나 <b>고정 일시</b>를 쓰세요.</div></div>`;
       break;
     case 'gauge':
       h += T('title','제목') + N('total','모집 인원 (전체)') + T('note','설명')

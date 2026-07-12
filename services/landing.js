@@ -249,7 +249,15 @@ function renderBlock(b, ctx) {
     }
 
     case 'countdown': {
-      const cfg = b.mode === 'fixed' && b.target ? `data-target="${esc(b.target)}"` : `data-hours="${Number(b.hours) || 6}"`;
+      let cfg;
+      if (b.mode === 'cycle') {
+        // 주기 반복 — 끝나면 같은 길이로 자동 재시작 (모든 방문자가 같은 시각을 본다)
+        cfg = `data-cycle="${Number(b.cycle) || 24}"` + (b.anchor ? ` data-anchor="${esc(b.anchor)}"` : '');
+      } else if (b.mode === 'fixed' && b.target) {
+        cfg = `data-target="${esc(b.target)}"`;
+      } else {
+        cfg = `data-hours="${Number(b.hours) || 6}"`;
+      }
       return `<div class="wrap mt"><div class="card cd" data-cd ${cfg}>
         <div class="t">${esc(b.title)}</div>
         <div class="digits">
@@ -367,11 +375,28 @@ function renderBlock(b, ctx) {
 
 const RUNTIME = `(function(){
   document.querySelectorAll('[data-cd]').forEach(function(el){
-    var end = el.dataset.target ? new Date(el.dataset.target).getTime() : Date.now() + (parseFloat(el.dataset.hours)||6)*3600*1000;
+    var cyc = parseFloat(el.dataset.cycle) || 0;                 // 주기(시간) — 반복 모드
+    var anc = el.dataset.anchor ? new Date(el.dataset.anchor).getTime() : null;
+
+    function nextEnd(){
+      if (cyc > 0) {
+        var P = cyc * 3600 * 1000;
+        // 기준 시각이 없으면 오늘 자정부터 센다
+        var a = (anc !== null && !isNaN(anc)) ? anc : new Date().setHours(0,0,0,0);
+        var k = Math.floor((Date.now() - a) / P);
+        return a + (k + 1) * P;      // 이번 주기의 끝
+      }
+      if (el.dataset.target) return new Date(el.dataset.target).getTime();
+      return Date.now() + (parseFloat(el.dataset.hours)||6)*3600*1000;
+    }
+
+    var end = nextEnd();
     var d=el.querySelector('[data-d]'),h=el.querySelector('[data-h]'),m=el.querySelector('[data-m]'),s=el.querySelector('[data-s]');
     var pad=function(n){return String(n).padStart(2,'0')};
     (function tick(){
-      var left=Math.max(0,end-Date.now())/1000|0;
+      var left = end - Date.now();
+      if (left <= 0 && cyc > 0) { end = nextEnd(); left = end - Date.now(); }  // 끝나면 다음 주기로
+      left = Math.max(0, left) / 1000 | 0;
       d.textContent=pad(left/86400|0); h.textContent=pad((left%86400)/3600|0);
       m.textContent=pad((left%3600)/60|0); s.textContent=pad(left%60);
       setTimeout(tick,1000);
