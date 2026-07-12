@@ -42,7 +42,7 @@ body{background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.014) 0 1px,tra
 .pr .bd{border:1px solid var(--ac);color:var(--ac);display:inline-block;padding:5px 9px;letter-spacing:.08em}
 .gg .bar,.gg .moon{display:none}
 .cd .u b{font-weight:800}
-.sticky a,.pr .go,.bt a,.fm .sub,.rv .bx{border-radius:0}`,
+.sticky a,.go,.bt a,.fm .sub,.rv .bx{border-radius:0}`,
   plain: `
 .lp{padding-bottom:104px}
 .card,.rv .bx{border-color:transparent;box-shadow:0 2px 24px -14px rgba(20,22,28,.3),0 0 0 1px var(--ln)}
@@ -51,7 +51,7 @@ body{background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.014) 0 1px,tra
 .gg .seg{display:none}
 .sticky{background:linear-gradient(transparent,rgba(0,0,0,.05));border-top:0}
 .sticky a{border-radius:99px;box-shadow:0 10px 30px -8px rgba(0,0,0,.35)}
-.pr .go,.bt a,.fm .sub{border-radius:12px}`,
+.go,.bt a,.fm .sub{border-radius:12px}`,
   night: `
 body{background:radial-gradient(120% 60% at 50% 0%,#171c28 0%,var(--bg) 55%)}
 .hl h1{text-shadow:0 0 40px rgba(200,164,92,.12)}
@@ -94,7 +94,7 @@ img{max-width:100%;display:block}
 .pr .off{font-family:${v.disp};font-size:16px;font-weight:700;color:var(--ac)}
 .pr .now{font-family:${v.disp};font-size:34px;font-weight:700;letter-spacing:-.02em;margin-left:auto}
 .pr .now small{font-size:15px;margin-left:2px}
-.pr .go{display:block;margin-top:18px;padding:15px;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:15px;font-weight:800;text-align:center;text-decoration:none}
+.go{display:block;margin-top:14px;padding:16px;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:15.5px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em}
 .cd{padding:22px 20px;text-align:center}
 .cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb);margin-bottom:16px}
 .cd .digits{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:${v.disp}}

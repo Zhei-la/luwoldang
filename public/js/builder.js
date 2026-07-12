@@ -47,8 +47,8 @@ function pageCSS(t){
   const sk = SKINS[t.skin] || SKINS.moon, v = sk.v;
   const extra = {
     moon:`body{background:radial-gradient(140% 70% at 50% -10%,#fffdf8 0%,var(--bg) 60%)}.card{box-shadow:0 1px 2px rgba(29,28,25,.04),0 12px 30px -22px rgba(29,28,25,.35)}.hl{padding:40px 20px 28px}.gg .seg{display:none}`,
-    hanji:`body{background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.014) 0 1px,transparent 1px 3px)}.pr .bd{border:1px solid var(--ac);color:var(--ac);display:inline-block;padding:5px 9px}.gg .bar,.gg .moon{display:none}.sticky a,.pr .go,.bt a,.fm .sub,.rv .bx{border-radius:0}`,
-    plain:`.card,.rv .bx{border-color:transparent;box-shadow:0 2px 24px -14px rgba(20,22,28,.3),0 0 0 1px var(--ln)}.hl{padding:44px 20px 30px}.hl h1{font-weight:800;letter-spacing:-.035em;line-height:1.42}.gg .seg{display:none}.sticky{border-top:0}.sticky a{border-radius:99px}.pr .go,.bt a,.fm .sub{border-radius:12px}`,
+    hanji:`body{background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.014) 0 1px,transparent 1px 3px)}.pr .bd{border:1px solid var(--ac);color:var(--ac);display:inline-block;padding:5px 9px}.gg .bar,.gg .moon{display:none}.sticky a,.go,.bt a,.fm .sub,.rv .bx{border-radius:0}`,
+    plain:`.card,.rv .bx{border-color:transparent;box-shadow:0 2px 24px -14px rgba(20,22,28,.3),0 0 0 1px var(--ln)}.hl{padding:44px 20px 30px}.hl h1{font-weight:800;letter-spacing:-.035em;line-height:1.42}.gg .seg{display:none}.sticky{border-top:0}.sticky a{border-radius:99px}.go,.bt a,.fm .sub{border-radius:12px}`,
     night:`body{background:radial-gradient(120% 60% at 50% 0%,#171c28 0%,var(--bg) 55%)}.hl h1{text-shadow:0 0 40px rgba(200,164,92,.12)}.gg .seg{display:none}`,
   }[t.skin] || '';
   return `:root{--ac:${t.accent};--bg:${v.bg};--cd:${v.card};--tx:${v.text};--sb:${v.sub};--ln:${v.line};--rd:${v.rd};--btx:${v.btx}}
@@ -81,7 +81,7 @@ img{max-width:100%;display:block}
 .pr .off{font-family:${v.disp};font-size:16px;font-weight:700;color:var(--ac)}
 .pr .now{font-family:${v.disp};font-size:34px;font-weight:700;margin-left:auto}
 .pr .now small{font-size:15px}
-.pr .go{display:block;margin-top:18px;padding:15px;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:15px;font-weight:800;text-align:center;text-decoration:none}
+.go{display:block;margin-top:14px;padding:16px;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:15.5px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em}
 .cd{padding:22px 20px;text-align:center}
 .cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb);margin-bottom:16px}
 .cd .digits{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:${v.disp}}
