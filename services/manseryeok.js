@@ -285,6 +285,7 @@ function calcSaju(o) {
     dayMasterKo: GAN_KO[dayGan] || dayGan,
     dayMasterElement: GAN_EL[dayGan] || null,
     elements: elements,
+    elementWheel: elementWheel(GAN_EL[dayGan], elements),
     strong: strong,
     weak: weak,
     timeKnown: timeKnown,
@@ -428,3 +429,37 @@ function calcDaewoon(solar, yearStem, monthPillar, gender, count) {
 module.exports.unseong = unseong;
 module.exports.calcDaewoon = calcDaewoon;
 module.exports.UNSEONG_NAMES = UNSEONG_NAMES;
+
+/* ============================================================
+ * 오행 오각형 (일간 기준 회전)
+ *
+ * 일간(자기 오행)이 항상 12시 방향에 오고,
+ * 상생 순서(목→화→토→금→수)로 시계방향 배치.
+ * 그래서 십성 그룹이 항상 같은 자리에 온다:
+ *   12시=비겁(나) → 식상(내가 생함) → 재성(내가 극함) → 관성(나를 극함) → 인성(나를 생함)
+ * ============================================================ */
+
+const EL_CYCLE = ['목', '화', '토', '금', '수'];        // 상생 순서
+const EL_GROUP = ['비겁', '식상', '재성', '관성', '인성']; // 일간 기준 십성 그룹
+
+function elementWheel(dayMasterElement, elements) {
+  const start = EL_CYCLE.indexOf(dayMasterElement);
+  if (start < 0) return null;
+
+  const total = EL_CYCLE.reduce(function (a, k) { return a + (elements[k] || 0); }, 0);
+
+  return EL_CYCLE.map(function (_, i) {
+    const el = EL_CYCLE[(start + i) % 5];
+    const count = elements[el] || 0;
+    return {
+      el: el,
+      group: EL_GROUP[i],
+      count: count,
+      pct: total ? Math.round((count / total) * 1000) / 10 : 0,
+    };
+  });
+}
+
+module.exports.elementWheel = elementWheel;
+module.exports.EL_CYCLE = EL_CYCLE;
+module.exports.EL_GROUP = EL_GROUP;
