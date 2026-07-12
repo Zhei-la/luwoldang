@@ -84,13 +84,16 @@ function coverPage({ type, client, teacher, baseUrl }) {
 }
 
 /* ── 2. 목차 ── */
-function tocPage(chapters) {
+function tocPage(chapters, type) {
+  const isNewYear = type === '신년운세';
   return `
 <section class="page sheet toc">
   <h2 class="pg-title">목 차</h2>
   <div class="pg-line"></div>
   <ol class="toc-list">
     <li class="toc-fixed"><span>만세력 · 사주 원국</span></li>
+    <li class="toc-fixed"><span>오행 · 대운</span></li>
+    ${isNewYear ? `<li class="toc-fixed"><span>올해 운의 흐름 (세운 · 월운)</span></li>` : ''}
     ${chapters.map((c, i) => `
       <li>
         <span class="toc-no">${String(i + 1).padStart(2, '0')}</span>
@@ -100,8 +103,14 @@ function tocPage(chapters) {
 </section>`;
 }
 
-/* ── 3. 만세력 ── */
-function sajuPage({ client, saju, type }) {
+/* ── 3. 만세력 (여러 장으로 나눔) ──
+ *
+ * 한 장에 다 넣으면 넘쳐서 잘린다.
+ *   1장: 원국표 (천간·지지·지장간·12운성)
+ *   2장: 오행 분포 + 대운
+ *   3장: 세운 + 월운 (신년운세만)
+ * ── */
+function sajuPages({ client, saju, type }) {
   if (!saju) return '';
 
   const cols = ['hour', 'day', 'month', 'year'];
@@ -123,40 +132,10 @@ function sajuPage({ client, saju, type }) {
       `<span style="color:${EL_COLOR[g.el] || '#5a5648'}">${esc(g.ko)}</span>`).join('')}</td>`;
   };
 
-  const wheel = saju.elementWheel || [];
-  const total = Object.values(saju.elements).reduce((a, b) => a + b, 0) || 1;
+  const pages = [];
 
-  const dw = saju.daewoon && saju.daewoon.list.length ? `
-    <h3 class="ms-h">대운 <span>${saju.daewoon.forward ? '순행' : '역행'}</span></h3>
-    <table class="ms-dw">
-      <tr>${saju.daewoon.list.map((d) => `<th>${d.age}세</th>`).join('')}</tr>
-      <tr>${saju.daewoon.list.map((d) => `<td><b>${esc(d.ko)}</b><i>${esc(d.ganzi)}</i></td>`).join('')}</tr>
-    </table>` : '';
-
-  // 신년운세는 세운·월운을 함께 싣는다
-  const yl = saju.yearLuck;
-  const yearTables = (type === '신년운세' && yl) ? `
-    <h3 class="ms-h">${yl.year}년 세운</h3>
-    <table class="ms-el-tbl">
-      <tr><th>간지</th><th>천간</th><th>지지</th><th>12운성</th></tr>
-      <tr>
-        <td><b>${esc(yl.sewoon.ko)}</b></td>
-        <td>${esc(yl.sewoon.stem.ko)} · ${esc(yl.sewoon.stem.god)}</td>
-        <td>${esc(yl.sewoon.branch.ko)} · ${esc(yl.sewoon.branch.god)}</td>
-        <td>${esc(yl.sewoon.unseong || '-')}</td>
-      </tr>
-    </table>
-    ${yl.currentDaewoon ? `<p class="ms-sum">현재 대운 <b>${esc(yl.currentDaewoon.ko)}</b> (${yl.currentDaewoon.age}세~, 올해 ${yl.currentDaewoon.currentAge}세)</p>` : ''}
-
-    <h3 class="ms-h">${yl.year}년 월운</h3>
-    <table class="ms-wol">
-      <tr>${yl.wolwoon.map((w) => `<th>${w.month}월</th>`).join('')}</tr>
-      <tr>${yl.wolwoon.map((w) => `<td><b>${esc(w.ko)}</b></td>`).join('')}</tr>
-      <tr>${yl.wolwoon.map((w) => `<td class="wol-god">${esc(w.stem.god)}<br>${esc(w.branch.god)}</td>`).join('')}</tr>
-      <tr>${yl.wolwoon.map((w) => `<td class="wol-us">${esc(w.unseong || '-')}</td>`).join('')}</tr>
-    </table>` : '';
-
-  return `
+  /* ── 1장: 원국표 ── */
+  pages.push(`
 <section class="page sheet">
   <h2 class="pg-title">만세력 · 사주 원국</h2>
   <div class="pg-line"></div>
@@ -178,12 +157,27 @@ function sajuPage({ client, saju, type }) {
     <tr><th class="ms-rh sm">지장간</th>${cols.map((c) => jj(saju.detail[c].jijanggan)).join('')}</tr>
     <tr><th class="ms-rh sm">12운성</th>${cols.map((c) => small(saju.detail[c].unseong)).join('')}</tr>
   </table>
+</section>`);
+
+  /* ── 2장: 오행 + 대운 ── */
+  const wheel = saju.elementWheel || [];
+  const total = Object.values(saju.elements).reduce((a, b) => a + b, 0) || 1;
+
+  const dw = saju.daewoon && saju.daewoon.list.length ? `
+    <h3 class="ms-h">대운 <span>${saju.daewoon.forward ? '순행' : '역행'}</span></h3>
+    <table class="ms-dw">
+      <tr>${saju.daewoon.list.map((d) => `<th>${d.age}세</th>`).join('')}</tr>
+      <tr>${saju.daewoon.list.map((d) => `<td><b>${esc(d.ko)}</b><i>${esc(d.ganzi)}</i></td>`).join('')}</tr>
+    </table>` : '';
+
+  pages.push(`
+<section class="page sheet">
+  <h2 class="pg-title">오행 · 대운</h2>
+  <div class="pg-line"></div>
 
   <h3 class="ms-h">오행 분포</h3>
   <table class="ms-el-tbl">
-    <tr>
-      ${['목', '화', '토', '금', '수'].map((k) => `<th style="color:${EL_COLOR[k]}">${k}</th>`).join('')}
-    </tr>
+    <tr>${['목', '화', '토', '금', '수'].map((k) => `<th style="color:${EL_COLOR[k]}">${k}</th>`).join('')}</tr>
     <tr>
       ${['목', '화', '토', '금', '수'].map((k) =>
         `<td><b style="color:${EL_COLOR[k]}">${saju.elements[k]}</b>
@@ -199,8 +193,41 @@ function sajuPage({ client, saju, type }) {
   </p>
 
   ${dw}
-  ${yearTables}
-</section>`;
+</section>`);
+
+  /* ── 3장: 세운 + 월운 (신년운세만) ── */
+  const yl = saju.yearLuck;
+  if (type === '신년운세' && yl) {
+    pages.push(`
+<section class="page sheet">
+  <h2 class="pg-title">${yl.year}년 운의 흐름</h2>
+  <div class="pg-line"></div>
+
+  <h3 class="ms-h">${yl.year}년 세운</h3>
+  <table class="ms-el-tbl">
+    <tr><th>간지</th><th>천간</th><th>지지</th><th>12운성</th></tr>
+    <tr>
+      <td><b>${esc(yl.sewoon.ko)}</b></td>
+      <td>${esc(yl.sewoon.stem.ko)} · ${esc(yl.sewoon.stem.god)}</td>
+      <td>${esc(yl.sewoon.branch.ko)} · ${esc(yl.sewoon.branch.god)}</td>
+      <td>${esc(yl.sewoon.unseong || '-')}</td>
+    </tr>
+  </table>
+  ${yl.currentDaewoon
+    ? `<p class="ms-sum">현재 대운 <b>${esc(yl.currentDaewoon.ko)}</b> (${yl.currentDaewoon.age}세~, 올해 ${yl.currentDaewoon.currentAge}세)</p>`
+    : ''}
+
+  <h3 class="ms-h">${yl.year}년 월운</h3>
+  <table class="ms-wol">
+    <tr>${yl.wolwoon.map((w) => `<th>${w.month}월</th>`).join('')}</tr>
+    <tr>${yl.wolwoon.map((w) => `<td><b>${esc(w.ko)}</b></td>`).join('')}</tr>
+    <tr>${yl.wolwoon.map((w) => `<td class="wol-god">${esc(w.stem.god)}<br>${esc(w.branch.god)}</td>`).join('')}</tr>
+    <tr>${yl.wolwoon.map((w) => `<td class="wol-us">${esc(w.unseong || '-')}</td>`).join('')}</tr>
+  </table>
+</section>`);
+  }
+
+  return pages.join('');
 }
 
 /* ── 4. 본문 챕터 ──
@@ -314,7 +341,6 @@ function endPage({ teacher }) {
     <div class="end-cta">
       <p class="end-cta-desc">${esc(desc).replace(/\n/g, '<br>')}</p>
       <a class="end-cta-btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(btnText)}</a>
-      <p class="end-cta-url">${esc(link)}</p>
     </div>` : '';
 
   return `
@@ -678,8 +704,8 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl }) {
 </head>
 <body>
 ${coverPage({ type, client, teacher, baseUrl })}
-${tocPage(chapters)}
-${sajuPage({ client, saju, type })}
+${tocPage(chapters, type)}
+${sajuPages({ client, saju, type })}
 ${chapterPages(chapters)}
 ${endPage({ teacher })}
 </body>
