@@ -234,7 +234,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* A4 페이지 */
+/* A4 페이지 — 화면에서는 종이처럼, 인쇄에서는 흐름대로 */
 .page {
   width: 210mm;
   min-height: 297mm;
@@ -247,6 +247,15 @@ body {
   break-after: page;
 }
 .page:last-child { page-break-after: auto; break-after: auto; }
+
+/* 챕터 시작을 확실히 새 페이지로 밀어내는 마커 */
+.pagebreak {
+  page-break-before: always;
+  break-before: page;
+  height: 0;
+  margin: 0;
+  border: 0;
+}
 
 /* 표지 */
 .cover { display: flex; align-items: center; justify-content: center; }
@@ -377,22 +386,97 @@ body {
 .end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 14px; letter-spacing: 4px; color: #a08a5c; margin-bottom: 40px; }
 .end-note { font-size: 11.5px; color: #b3ad9c; line-height: 1.9; }
 
-/* 인쇄 */
+/* ============================================================
+ * 인쇄 — 여기가 실제 PDF가 되는 부분
+ * ============================================================ */
 @media print {
-  body { background: #fff; }
-  .page {
-    margin: 0; box-shadow: none; width: auto; min-height: auto;
-    padding: 20mm 18mm 22mm;
+  html, body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
   }
-  .chapter { padding-top: 26mm; }   /* 챕터 시작 페이지 위 여백 */
+
+  /* 페이지 = 그냥 콘텐츠 블록. 높이 강제하지 않는다.
+     min-height를 남겨두면 내용이 넘칠 때 페이지 계산이 깨진다. */
+  .page {
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    page-break-after: always;
+    break-after: page;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+
+  /* 표지·마무리는 한 장을 꽉 채운다 */
+  .cover, .end {
+    min-height: 245mm !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 챕터 — 반드시 새 페이지에서 시작하고, 위에 여백을 준다 */
+  .chapter {
+    page-break-before: always;
+    break-before: page;
+    padding-top: 8mm !important;
+  }
+
+  /* 챕터 제목: 아래 내용과 절대 떨어지지 않게 */
+  .ch-head {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 4mm;
+  }
+  .pg-line {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 소제목 + 첫 문단은 한 덩어리 (제목만 남고 넘어가는 것 방지) */
+  .ch-keep {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+  .ch-sub {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 문단: 한두 줄만 떨어지지 않게 (최소 3줄) */
+  .ch-block p {
+    orphans: 3;
+    widows: 3;
+    page-break-inside: auto;
+  }
+
+  /* 블록 사이 간격 */
+  .ch-block { margin-bottom: 8mm; }
+
+  /* 만세력 표는 쪼개지지 않게 */
+  .ms-chart, .ms-dw, .ms-wol, .ms-el-tbl {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .ms-h {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
   .no-print { display: none !important; }
 
-  /* 제목이 페이지 맨 아래에 홀로 남지 않게 */
-  .ch-head, .ch-sub, .ms-h { page-break-after: avoid; break-after: avoid; }
-  .ch-keep { page-break-inside: avoid; break-inside: avoid; }
-  .ch-block p { orphans: 3; widows: 3; }
-
-  @page { size: A4; margin: 0; }
+  /* 여백은 @page에서만 준다 */
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm;
+  }
 }
 `;
 
