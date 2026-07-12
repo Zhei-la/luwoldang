@@ -203,35 +203,103 @@ function sajuPage({ client, saju, type }) {
 </section>`;
 }
 
-/* ── 4. 본문 챕터 (챕터마다 새 페이지) ── */
+/* ── 4. 본문 챕터 ──
+ *
+ * ⚠️ 핵심: 서버에서 A4 한 장 분량씩 미리 잘라 각각 별도 .page로 만든다.
+ *    브라우저가 알아서 자르게 두면 배경(테두리)이 중간에서 끊기고
+ *    글자가 겹친다. 그래서 직접 나눈다.
+ *
+ * 페이지 용량 (줄 단위로 계산):
+ *   A4 297mm - 상하여백 46mm = 251mm 사용 가능
+ *   본문 한 줄 ≈ 7.7mm → 페이지당 약 32줄
+ * ── */
+
+const LINES_PER_PAGE = 31;      // 페이지당 줄 수 (251mm ÷ 7.7mm = 32, 여유 1줄)
+const CHARS_PER_LINE = 45;      // 한 줄 글자 수 (170mm ÷ 3.76mm)
+const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
+const LINES_SUB = 3;            // 소제목 + 여백
+const LINES_PARA_GAP = 1;       // 문단 사이 여백
+
+/** 문단이 차지하는 줄 수 */
+function paraLines(text) {
+  const len = String(text || '').length;
+  return Math.ceil(len / CHARS_PER_LINE) + LINES_PARA_GAP;
+}
+
+/**
+ * 챕터를 A4 페이지 단위로 나눈다.
+ * @returns [{ isFirst, blocks: [{sub, paras:[]}] }, ...]
+ */
+function paginateChapter(ch) {
+  const pages = [];
+  let cur = { isFirst: true, blocks: [] };
+  let used = LINES_CH_TITLE;     // 첫 장은 챕터 제목이 자리를 먹는다
+
+  const pushPage = () => {
+    if (cur.blocks.length) pages.push(cur);
+    cur = { isFirst: false, blocks: [] };
+    used = 0;
+  };
+
+  (ch.blocks || []).forEach((b) => {
+    const paras = String(b.body || '').split(/\n{2,}|\n/).filter(Boolean);
+    let block = { sub: b.sub || '', paras: [] };
+    let need = b.sub ? LINES_SUB : 0;
+
+    // 소제목 + 첫 문단이 이 페이지에 안 들어가면 → 새 페이지에서 시작
+    const firstNeed = need + (paras[0] ? paraLines(paras[0]) : 0);
+    if (used > 0 && used + firstNeed > LINES_PER_PAGE) {
+      pushPage();
+    }
+    used += need;
+
+    paras.forEach((p) => {
+      const n = paraLines(p);
+
+      // 이 문단이 안 들어가면 페이지를 넘긴다
+      if (used + n > LINES_PER_PAGE) {
+        if (block.paras.length || block.sub) {
+          cur.blocks.push(block);
+          block = { sub: '', paras: [] };   // 이어지는 페이지엔 소제목 반복 안 함
+        }
+        pushPage();
+      }
+
+      block.paras.push(p);
+      used += n;
+    });
+
+    if (block.paras.length || block.sub) cur.blocks.push(block);
+  });
+
+  if (cur.blocks.length) pages.push(cur);
+  return pages.length ? pages : [{ isFirst: true, blocks: [] }];
+}
+
 function chapterPages(chapters) {
   return chapters.map((ch, i) => {
-    const blocks = (ch.blocks || []).map((b) => {
-      const paras = String(b.body || '').split(/\n{2,}|\n/).filter(Boolean);
-      const first = paras[0] || '';
-      const rest = paras.slice(1);
+    const pages = paginateChapter(ch);
 
-      // 소제목 + 첫 문단을 한 덩어리로 묶어 함께 넘어가게 한다
-      // (소제목만 페이지 끝에 남는 것을 방지)
-      return `
-      <div class="ch-block">
-        <div class="ch-keep">
-          ${b.sub ? `<h3 class="ch-sub">${esc(b.sub)}</h3>` : ''}
-          ${first ? `<p>${esc(first)}</p>` : ''}
-        </div>
-        ${rest.map((p) => `<p>${esc(p)}</p>`).join('')}
-      </div>`;
-    }).join('');
-
-    return `
-<section class="page flow chapter">
+    return pages.map((pg, pi) => {
+      const head = pg.isFirst ? `
   <div class="ch-head">
     <span class="ch-no">${String(i + 1).padStart(2, '0')}</span>
     <h2 class="ch-title">${esc(ch.title)}</h2>
   </div>
-  <div class="pg-line"></div>
-  ${blocks || '<p class="ch-empty">내용을 생성하지 못했습니다.</p>'}
+  <div class="pg-line"></div>` : '';
+
+      const body = pg.blocks.map((b) => `
+      <div class="ch-block">
+        ${b.sub ? `<h3 class="ch-sub">${esc(b.sub)}</h3>` : ''}
+        ${b.paras.map((p) => `<p>${esc(p)}</p>`).join('')}
+      </div>`).join('');
+
+      return `
+<section class="page sheet chapter${pg.isFirst ? ' chapter-start' : ''}">
+  ${head}
+  ${body || (pg.isFirst ? '<p class="ch-empty">내용을 생성하지 못했습니다.</p>' : '')}
 </section>`;
+    }).join('');
   }).join('');
 }
 
@@ -281,15 +349,19 @@ body {
  * 테두리 배경은 A4 크기로 반복(repeat-y)시켜 몇 장이 되든 매 장에 나오게 한다.
  */
 .page {
+  /* 미리보기 = PDF: A4 한 장으로 고정 (내용은 서버에서 이미 분할됨) */
   width: 210mm;
-  /* 인쇄와 동일한 여백 — 미리보기 = PDF */
+  height: 297mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  overflow: hidden;
   padding: 22mm 20mm 24mm;
   margin: 0 auto 10mm;
   background-color: #fdfaf2;
   background-image: url('BASE_URL/img/pdf/frame.jpg');
   background-size: 210mm 297mm;
-  background-repeat: repeat-y;
-  background-position: top center;
+  background-repeat: no-repeat;
+  background-position: center;
   box-shadow: 0 4px 20px rgba(0,0,0,.12);
   position: relative;
   page-break-after: always;
@@ -533,10 +605,8 @@ body {
 /* ============================================================
  * 인쇄 — 실제 PDF
  *
- * 원칙:
- *   화면(미리보기)과 인쇄가 같은 규칙으로 흐르게 한다.
- *   높이를 고정하면(max-height) 내용이 넘칠 때 잘리므로 고정하지 않는다.
- *   대신 @page로 A4 크기를 잡고, 내용은 자연스럽게 다음 장으로 흐른다.
+ * 페이지는 서버에서 이미 A4 단위로 잘라 놓았다.
+ * 여기서는 각 .page를 정확히 A4 한 장으로 고정하기만 하면 된다.
  * ============================================================ */
 @media print {
   html, body {
@@ -546,66 +616,46 @@ body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* 페이지 — 폭은 A4로 고정, 높이는 내용에 맡긴다 (잘림 방지) */
+  /* 페이지 = 정확히 A4 한 장 */
   .page {
     width: 210mm !important;
+    height: 297mm !important;
     min-height: 297mm !important;
-    height: auto !important;
-    max-height: none !important;      /* ← 고정하면 내용이 잘린다 */
+    max-height: 297mm !important;
     padding: 22mm 20mm 24mm !important;
     margin: 0 !important;
     box-shadow: none !important;
-    overflow: visible !important;
-    page-break-after: always;
-    break-after: page;
+    overflow: hidden !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     background-size: 210mm 297mm !important;
-    background-repeat: repeat-y !important;   /* 넘치면 테두리도 이어짐 */
-    background-position: top center !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
   }
-  .page:last-child { page-break-after: auto; break-after: auto; }
+  .page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
 
-  /* 표지·마무리 — 한 장 딱 맞게 */
   .cover, .end {
-    height: 297mm !important;
-    max-height: 297mm !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
-    overflow: hidden !important;
-    background-repeat: no-repeat !important;
   }
   .cover-img {
     display: block !important;
     padding: 0 !important;
     background-size: 210mm 297mm !important;
-    background-repeat: no-repeat !important;
   }
 
-  .chapter { page-break-before: always; break-before: page; }
-
-  .ch-head, .pg-line, .ch-sub, .ms-h {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-  .ch-head, .ch-keep {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .ch-block p { orphans: 3; widows: 3; }
-  .ch-block { margin-bottom: 7mm; }
-
-  .ms-chart, .ms-dw, .ms-wol, .ms-el-tbl {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
+  .ch-block p { orphans: 2; widows: 2; }
   .no-print { display: none !important; }
 
   /* margin: 0 → 브라우저 머리말/꼬리말 제거 */
