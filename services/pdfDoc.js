@@ -140,12 +140,22 @@ function sajuPage({ client, saju }) {
 /* ── 4. 본문 챕터 (챕터마다 새 페이지) ── */
 function chapterPages(chapters) {
   return chapters.map((ch, i) => {
-    const blocks = (ch.blocks || []).map((b) => `
+    const blocks = (ch.blocks || []).map((b) => {
+      const paras = String(b.body || '').split(/\n{2,}|\n/).filter(Boolean);
+      const first = paras[0] || '';
+      const rest = paras.slice(1);
+
+      // 소제목 + 첫 문단을 한 덩어리로 묶어 함께 넘어가게 한다
+      // (소제목만 페이지 끝에 남는 것을 방지)
+      return `
       <div class="ch-block">
-        ${b.sub ? `<h3 class="ch-sub">${esc(b.sub)}</h3>` : ''}
-        ${String(b.body || '').split(/\n{2,}|\n/).filter(Boolean)
-          .map((p) => `<p>${esc(p)}</p>`).join('')}
-      </div>`).join('');
+        <div class="ch-keep">
+          ${b.sub ? `<h3 class="ch-sub">${esc(b.sub)}</h3>` : ''}
+          ${first ? `<p>${esc(first)}</p>` : ''}
+        </div>
+        ${rest.map((p) => `<p>${esc(p)}</p>`).join('')}
+      </div>`;
+    }).join('');
 
     return `
 <section class="page chapter">
@@ -269,22 +279,36 @@ body {
 .ms-dw td i { display: block; font-style: normal; font-size: 10px; color: #b3ad9c; }
 
 /* 본문 챕터 */
+.chapter { padding-top: 32mm; }              /* 챕터 첫 페이지는 위 여백 넉넉히 */
 .ch-head { display: flex; align-items: baseline; gap: 12px; }
 .ch-no { font-family: 'Nanum Myeongjo', serif; font-size: 30px; font-weight: 800; color: #d8cfb8; }
 .ch-title { font-family: 'Nanum Myeongjo', serif; font-size: 25px; font-weight: 800; letter-spacing: 2px; color: #1f2a3d; }
-.ch-block { margin-bottom: 26px; }
+
+.ch-block { margin-bottom: 30px; }
 .ch-block:last-child { margin-bottom: 0; }
+
+/* 소제목 — 혼자 페이지 끝에 남지 않게 (제목만 남고 본문 넘어가는 것 방지) */
 .ch-sub {
   font-family: 'Nanum Myeongjo', serif; font-size: 16.5px; font-weight: 700;
-  color: #1f2a3d; margin: 0 0 12px; padding-left: 11px; border-left: 3px solid #b59a62;
+  color: #1f2a3d; margin: 0 0 13px; padding-left: 11px; border-left: 3px solid #b59a62;
   page-break-after: avoid; break-after: avoid;
+  page-break-inside: avoid; break-inside: avoid;
 }
+
 .ch-block p {
   font-size: 14.2px; line-height: 2.05; color: #3a3831;
-  margin-bottom: 11px; text-align: justify; word-break: keep-all;
+  margin-bottom: 12px; text-align: justify; word-break: keep-all;
+  /* 문단이 페이지 경계에서 한두 줄만 남지 않게 */
+  orphans: 3; widows: 3;
 }
 .ch-block p:last-child { margin-bottom: 0; }
 .ch-empty { color: #b3ad9c; text-align: center; padding: 40px 0; }
+
+/* 소제목 + 첫 문단을 한 덩어리로 유지 */
+.ch-keep {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
 
 /* 마무리 */
 .end { display: flex; align-items: center; justify-content: center; }
@@ -296,8 +320,18 @@ body {
 /* 인쇄 */
 @media print {
   body { background: #fff; }
-  .page { margin: 0; box-shadow: none; width: auto; min-height: auto; padding: 18mm 16mm; }
+  .page {
+    margin: 0; box-shadow: none; width: auto; min-height: auto;
+    padding: 20mm 18mm 22mm;
+  }
+  .chapter { padding-top: 26mm; }   /* 챕터 시작 페이지 위 여백 */
   .no-print { display: none !important; }
+
+  /* 제목이 페이지 맨 아래에 홀로 남지 않게 */
+  .ch-head, .ch-sub, .ms-h { page-break-after: avoid; break-after: avoid; }
+  .ch-keep { page-break-inside: avoid; break-inside: avoid; }
+  .ch-block p { orphans: 3; widows: 3; }
+
   @page { size: A4; margin: 0; }
 }
 `;
