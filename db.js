@@ -43,6 +43,7 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_user TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_pass TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_key TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_mode TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_name TEXT;`);
 
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
