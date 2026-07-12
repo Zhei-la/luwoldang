@@ -1,4 +1,5 @@
 // 무료사주 AI 생성 (교육생 OpenAI 키 사용)
+const { fieldBlock } = require('./sajuFields');
 
 const SYSTEM_PROMPT = `당신은 오랜 경력의 사주 명리학 상담가입니다.
 계산된 사주팔자(원국)와 십성·오행을 근거로 "무료 사주 리포트"를 작성합니다.
@@ -80,9 +81,10 @@ ${godLine('hour', '시주')}
 강한 기운: ${saju.strong.join(', ')}
 부족한 기운: ${saju.weak.join(', ')}
 
+${fieldBlock('무료사주')}
+
 위 원국을 근거로 무료 사주 리포트를 JSON으로 작성해주세요.
-${year}년 기준으로 올해 운세를 써주세요.
-구체적인 시기(월)·인연 시기·결혼 가능성·직업 추천은 절대 쓰지 마세요.`;
+${year}년 기준으로 올해 운세를 써주세요.`;
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -240,6 +242,8 @@ ${godLine('hour', '시주')}
 강한 기운: ${saju.strong.join(', ')}
 부족한 기운: ${saju.weak.join(', ')}
 ${dwLine}
+
+${fieldBlock(type)}
 
 [작성할 리포트]
 종류: ${type}
