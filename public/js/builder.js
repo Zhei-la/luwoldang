@@ -9,7 +9,10 @@ const DEFS = {
   image:    { name:'이미지',        ico:'▣', make:()=>({ src:'', alt:'상세 이미지', pad:false }) },
   headline: { name:'헤드라인',      ico:'T', make:()=>({ eyebrow:'사주 상담 · 직접 풀이', title:'당신의 흐름을\n읽어 드립니다', desc:'요약본이 아니라, 직접 풀어 적어 보내드립니다.', align:'left', size:26, hi:'' }) },
   freesaju: { name:'무료사주 맛보기', ico:'☾', make:()=>({ title:'무료 사주 먼저 보기', desc:'간단한 정보를 입력하면 나의 기본 사주와 올해 흐름을 무료로 확인할 수 있습니다.', cta:'무료로 사주 보기' }) },
-  price:    { name:'가격',          ico:'₩', make:()=>({ badge:'이번 회차 · 선착순', off:'40%', was:'50,000원', now:'29,800', cta:'상담 신청하기' }) },
+  price:    { name:'가격',          ico:'₩', make:()=>({ badge:'이번 회차 · 선착순', cta:'상담 신청하기', items:[
+                { name:'정밀 풀이', desc:'대운·세운까지 상세 분석', off:'40%', was:'50,000원', now:'29,800', best:true },
+                { name:'기본 풀이', desc:'타고난 성향과 올해 흐름', off:'', was:'', now:'9,900', best:false },
+              ] }) },
   countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'cycle', cycle:24, anchor:'', hours:6, target:'' }) },
   gauge:    { name:'남은 자리',      ico:'◐', make:()=>({ title:'남은 자리', total:30, note:'회차당 인원을 넘기면 풀이가 얕아집니다' }) },
   live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황' }) },
@@ -66,6 +69,12 @@ img{max-width:100%;display:block}
 .hl h1 em{font-style:normal;color:var(--ac)}
 .hl p{margin-top:14px;font-size:14px;color:var(--sb);white-space:pre-line}
 .pr{padding:22px 20px}
+.prbadge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ac);margin-bottom:10px;display:block}
+.pr{padding:20px;margin-bottom:9px;position:relative}
+.pr.best{border-color:var(--ac)}
+.bestbadge{position:absolute;top:-1px;right:14px;background:var(--ac);color:var(--btx);font-size:10px;font-weight:700;padding:3px 9px;border-radius:0 0 6px 6px}
+.pname{font-family:${v.disp};font-size:17px;font-weight:700;margin-bottom:4px}
+.pdesc{font-size:12.5px;color:var(--sb);margin-bottom:12px}
 .pr .bd{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ac);display:block;margin-bottom:16px}
 .pr .amt{display:flex;align-items:baseline;gap:10px}
 .pr .was{font-size:14px;color:var(--sb);text-decoration:line-through}
@@ -162,14 +171,35 @@ function renderBlock(b, S){
     }
     case 'freesaju':
       return `<div class="wrap mt"><div class="card fs"><h3>${esc(b.title)}</h3><p>${esc(b.desc)}</p><a href="#">${esc(b.cta)}</a></div></div>`;
-    case 'price':
-      return `<div class="wrap mt"><div class="card pr">${b.badge?`<span class="bd">${esc(b.badge)}</span>`:''}
-        <div class="amt">${b.off?`<span class="off">${esc(b.off)}</span>`:''}${b.was?`<span class="was">${esc(b.was)}</span>`:''}<span class="now">${esc(b.now)}<small>원</small></span></div>
-        <a class="go" href="#">${esc(b.cta)}</a></div></div>`;
-    case 'countdown':
+    case 'price': {
+      // 구버전(단일 가격) 호환
+      const items = b.items && b.items.length ? b.items
+        : [{ name:'상담', desc:'', off:b.off, was:b.was, now:b.now, best:false }];
+      return `<div class="wrap mt">
+        ${b.badge?`<div class="prbadge">${esc(b.badge)}</div>`:''}
+        ${items.map(x=>`<div class="card pr ${x.best?'best':''}">
+          ${x.best?`<span class="bestbadge">추천</span>`:''}
+          <div class="pname">${esc(x.name)}</div>
+          ${x.desc?`<div class="pdesc">${esc(x.desc)}</div>`:''}
+          <div class="amt">${x.off?`<span class="off">${esc(x.off)}</span>`:''}${x.was?`<span class="was">${esc(x.was)}</span>`:''}<span class="now">${esc(x.now)}<small>원</small></span></div>
+        </div>`).join('')}
+        <a class="go" href="#">${esc(b.cta)}</a></div>`;
+    }
+    case 'countdown':{
+      // 실제 페이지와 같은 계산으로 미리보기
+      let end;
+      if(b.mode==='cycle'){
+        const P=(Number(b.cycle)||24)*3600*1000;
+        const a=b.anchor?new Date(b.anchor).getTime():new Date().setHours(0,0,0,0);
+        end=a+(Math.floor((Date.now()-a)/P)+1)*P;
+      } else if(b.mode==='fixed'&&b.target){ end=new Date(b.target).getTime(); }
+      else { end=Date.now()+(Number(b.hours)||6)*3600*1000; }
+      const L=Math.max(0,end-Date.now())/1000|0;
+      const p=n=>String(n).padStart(2,'0');
       return `<div class="wrap mt"><div class="card cd"><div class="t">${esc(b.title)}</div>
-        <div class="digits"><div class="u"><b>00</b><span>일</span></div><div class="cl">·</div><div class="u"><b>05</b><span>시</span></div><div class="cl">·</div><div class="u"><b>32</b><span>분</span></div><div class="cl">·</div><div class="u"><b>18</b><span>초</span></div></div>
+        <div class="digits"><div class="u"><b>${p(L/86400|0)}</b><span>일</span></div><div class="cl">·</div><div class="u"><b>${p((L%86400)/3600|0)}</b><span>시</span></div><div class="cl">·</div><div class="u"><b>${p((L%3600)/60|0)}</b><span>분</span></div><div class="cl">·</div><div class="u"><b>${p(L%60)}</b><span>초</span></div></div>
         ${b.note?`<div class="note">${esc(b.note)}</div>`:''}</div></div>`;
+    }
     case 'gauge':{
       const total = Math.max(1, Number(b.total)||30);
       const left = total; // 미리보기: 아직 신청 0건 기준
@@ -323,9 +353,21 @@ function paintInspector(){
         + `<div class="fld"><div class="hint">이 버튼을 누르면 <b>무료사주 페이지</b>로 이동합니다. AI가 사주팔자를 계산해서 풀이해줍니다.</div></div>`;
       break;
     case 'price':
-      h += A('badge','배지 문구')
-        + `<div class="fld row2"><div><label>할인율</label><input type="text" data-k="off" value="${esc(b.off)}"></div><div><label>정가</label><input type="text" data-k="was" value="${esc(b.was)}"></div></div>`
-        + T('now','판매가 (숫자만)') + T('cta','버튼 문구');
+      // 구버전(단일 가격)이면 items 로 옮겨준다
+      if(!b.items || !b.items.length){
+        b.items = [{ name:'상담', desc:'', off:b.off||'', was:b.was||'', now:b.now||'', best:false }];
+      }
+      h += A('badge','배지 문구 (상품 목록 위)')
+        + `<div class="sec">상품 (여러 개 추가 가능)</div>`
+        + listEditor(b, [
+            ['name','상품명 (예: 정밀 풀이)'],
+            ['desc','한 줄 설명'],
+            ['off','할인율 (예: 40%) — 없으면 비움'],
+            ['was','정가 (예: 50,000원) — 없으면 비움'],
+            ['now','판매가 (예: 29,800)'],
+            ['best','⭐ 추천 뱃지 달기','check'],
+          ], { name:'', desc:'', off:'', was:'', now:'', best:false })
+        + T('cta','버튼 문구');
       break;
     case 'countdown':
       h += T('title','제목') + T('note','하단 문구')
@@ -422,7 +464,9 @@ function listEditor(b, fields, blank){
       <div class="lhead"><b>#${i+1}</b><button class="btn sm danger" data-li-del="${i}">삭제</button></div>
       ${fields.map(([k,l,ty])=> ty==='area'
         ? `<textarea data-li="${i}" data-lk="${k}" placeholder="${l}">${esc(it[k])}</textarea>`
-        : `<input type="text" data-li="${i}" data-lk="${k}" value="${esc(it[k])}" placeholder="${l}">`).join('')}
+        : ty==='check'
+          ? `<label class="sw" style="padding:4px 0"><input type="checkbox" data-li="${i}" data-lk="${k}" ${it[k]?'checked':''}>${l}</label>`
+          : `<input type="text" data-li="${i}" data-lk="${k}" value="${esc(it[k])}" placeholder="${l}">`).join('')}
     </div>`).join('')}
     <button class="btn sm" data-li-add style="width:100%">＋ 항목 추가</button>
   </div><div class="hint" data-blank='${JSON.stringify(blank)}' style="display:none"></div></div>`;
@@ -450,7 +494,21 @@ function bindFields(b){
   });
   inspector.querySelectorAll('[data-clear]').forEach(el=> el.onclick = ()=>{ b[el.dataset.clear]=''; paint(); });
   const blankEl = inspector.querySelector('[data-blank]');
-  inspector.querySelectorAll('[data-li]').forEach(el=> el.oninput = ()=>{ b.items[+el.dataset.li][el.dataset.lk] = el.value; refresh(); });
+  inspector.querySelectorAll('[data-li]').forEach(el=>{
+    const ev = el.type==='checkbox' ? 'change' : 'input';
+    el.addEventListener(ev, ()=>{
+      const i = +el.dataset.li, k = el.dataset.lk;
+      if(el.type==='checkbox'){
+        // '추천' 뱃지는 한 상품에만
+        if(k==='best' && el.checked) b.items.forEach(x=>{ x.best = false; });
+        b.items[i][k] = el.checked;
+        paint();
+      } else {
+        b.items[i][k] = el.value;
+        refresh();
+      }
+    });
+  });
   inspector.querySelectorAll('[data-li-del]').forEach(el=> el.onclick = ()=>{ b.items.splice(+el.dataset.liDel,1); paint(); });
   const add = inspector.querySelector('[data-li-add]');
   if(add) add.onclick = ()=>{ b.items.push(JSON.parse(blankEl.dataset.blank)); paint(); };
