@@ -281,7 +281,7 @@ body {
   margin: 0 auto 10mm;
   background-color: #fdfaf2;
   background-image: url('BASE_URL/img/pdf/frame.jpg');
-  background-size: 100% 100%;
+  background-size: 210mm 297mm;
   background-repeat: no-repeat;
   background-position: center;
   box-shadow: 0 4px 20px rgba(0,0,0,.12);
@@ -306,7 +306,7 @@ body {
 .cover { display: flex; align-items: center; justify-content: center; }
 .cover-img {
   background-image: none;
-  background-size: cover;
+  background-size: 210mm 297mm;
   background-position: center;
   background-repeat: no-repeat;
   padding: 0 !important;
@@ -493,109 +493,86 @@ body {
 .end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 14px; letter-spacing: 4px; color: #a08a5c; }
 
 /* ============================================================
- * 인쇄 — 여기가 실제 PDF가 되는 부분
+ * 인쇄 — 실제 PDF가 되는 부분
+ *
+ * 핵심:
+ *   1) @page margin: 0  → 브라우저 머리말/꼬리말(날짜·URL·페이지번호) 제거
+ *   2) .page를 A4(210×297mm)로 고정 → 배경 이미지가 정확히 맞음
+ *   3) 여백은 .page의 padding으로 준다
  * ============================================================ */
 @media print {
   html, body {
     background: #fff !important;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* 배경(테두리·표지)을 인쇄에 포함 */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* 페이지 = 그냥 콘텐츠 블록. 높이 강제하지 않는다.
-     min-height를 남겨두면 내용이 넘칠 때 페이지 계산이 깨진다. */
+  /* 페이지 = 정확히 A4 한 장. 배경이 늘어나지 않게 크기 고정 */
   .page {
-    width: auto !important;
-    min-height: 0 !important;
-    height: auto !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    padding: 22mm 20mm 24mm !important;
     margin: 0 !important;
-    padding: 0 !important;
     box-shadow: none !important;
+    overflow: hidden;
     page-break-after: always;
     break-after: page;
-    /* 배경 이미지(테두리)는 유지 */
+    background-size: 210mm 297mm !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
   }
   .page:last-child { page-break-after: auto; break-after: auto; }
 
-  /* 표지·마무리는 한 장을 꽉 채운다 */
   .cover, .end {
-    min-height: 250mm !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
   }
   .cover-img {
     display: block !important;
-    min-height: 297mm !important;
-    height: 297mm !important;
     padding: 0 !important;
+    background-size: 210mm 297mm !important;
   }
 
-  /* 챕터 — 반드시 새 페이지에서 시작하고, 위에 여백을 준다 */
+  /* 챕터는 새 페이지에서 시작 */
   .chapter {
     page-break-before: always;
     break-before: page;
-    padding-top: 8mm !important;
   }
 
-  /* 챕터 제목: 아래 내용과 절대 떨어지지 않게 */
-  .ch-head {
+  /* 제목이 페이지 끝에 홀로 남지 않게 */
+  .ch-head, .pg-line, .ch-sub, .ms-h {
     page-break-after: avoid !important;
     break-after: avoid !important;
+  }
+  .ch-head, .ch-keep {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-bottom: 4mm;
-  }
-  .pg-line {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
   }
 
-  /* 소제목 + 첫 문단은 한 덩어리 (제목만 남고 넘어가는 것 방지) */
-  .ch-keep {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    page-break-after: avoid !important;
-  }
-  .ch-sub {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
+  .ch-block p { orphans: 3; widows: 3; }
+  .ch-block { margin-bottom: 7mm; }
 
-  /* 문단: 한두 줄만 떨어지지 않게 (최소 3줄) */
-  .ch-block p {
-    orphans: 3;
-    widows: 3;
-    page-break-inside: auto;
-  }
-
-  /* 블록 사이 간격 */
-  .ch-block { margin-bottom: 8mm; }
-
-  /* 만세력 표는 쪼개지지 않게 */
   .ms-chart, .ms-dw, .ms-wol, .ms-el-tbl {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
-  .ms-h {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
 
   .no-print { display: none !important; }
 
-  /* 여백은 @page에서만 준다 */
+  /* margin: 0 이어야 브라우저가 머리말/꼬리말을 안 넣는다 */
   @page {
     size: A4;
-    margin: 20mm 18mm 22mm;
+    margin: 0;
   }
 }
 `;
