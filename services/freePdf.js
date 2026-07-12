@@ -99,9 +99,9 @@ function freeChapters(result, promo) {
     { title: '내 사주 한눈에 보기', body: [kw, r.manse].filter(Boolean).join('\n\n') },
     { title: '사주로 보는 나는?', body: r.self },
     { title: '타고난 성향', body: r.personality },
-    { title: '올해 운세', body: r.year },
-    { title: '연애운', body: r.love },
-    { title: '재물운', body: r.wealth },
+    { title: '올해 운세', body: [r.year, r.yearOutro].filter(Boolean).join('\n\n') },
+    { title: '연애운', body: [r.love, r.loveOutro].filter(Boolean).join('\n\n') },
+    { title: '재물운', body: [r.wealth, r.wealthOutro].filter(Boolean).join('\n\n') },
     { title: '건강운', body: r.health },
     { title: '종합 조언', body: r.advice },
   ];
