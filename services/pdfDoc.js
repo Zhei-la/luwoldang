@@ -322,20 +322,20 @@ body {
   font-family: 'Nanum Myeongjo', serif;
   z-index: 2;
 }
-/* 수묵화 표지: 이미지에 이름이 박혀 있어 배경으로 덮는다 */
+/* 수묵화 표지 — 배경 없이 글자만 얹는다 (이미지에서 원래 글자 제거됨) */
 .cv-brand-overlay.ink {
-  height: 3.4%;
-  background: #fdfaf2;
-  font-size: 15px;
-  letter-spacing: 5px;
-  color: #4a463d;
-}
-/* 원형 표지: 자리가 비어 있어 배경 없이 얹는다 */
-.cv-brand-overlay.circle {
-  height: 3%;
-  font-size: 12.5px;
+  height: 4%;
+  font-size: 21px;
   font-weight: 700;
-  letter-spacing: 4px;
+  letter-spacing: 7px;
+  color: #3f3a33;
+}
+/* 원형 표지 */
+.cv-brand-overlay.circle {
+  height: 4%;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 6px;
   color: #5c4633;
 }
 
