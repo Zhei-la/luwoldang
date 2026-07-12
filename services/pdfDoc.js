@@ -666,6 +666,56 @@ body {
  * 페이지는 서버에서 이미 A4 단위로 잘라 놓았다.
  * 여기서는 각 .page를 정확히 A4 한 장으로 고정하기만 하면 된다.
  * ============================================================ */
+/* ── 무료 PDF 업셀 페이지 ── */
+.promo { }
+.promo-title {
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 27px; font-weight: 800; line-height: 1.45;
+  letter-spacing: -0.02em; color: #232220;
+  white-space: pre-line; margin-bottom: 26px;
+}
+.promo-title em { font-style: normal; color: #b03a2e; }
+.promo-body p { font-size: 14.5px; line-height: 2.0; color: #45433d; margin-bottom: 15px; }
+.promo-lead {
+  font-size: 14.5px; line-height: 1.95; color: #45433d;
+  padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid #e4ded0;
+}
+.qa-list { list-style: none; }
+.qa-list li {
+  font-size: 13.6px; line-height: 1.85; color: #45433d;
+  padding: 11px 0 11px 0; border-bottom: 1px dashed #e4ded0;
+}
+.qa-list li:last-child { border-bottom: 0; }
+.qa-tag {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  color: #8a6f3c; background: #f5efe1; border: 1px solid #e6dcc4;
+  border-radius: 3px; padding: 1px 6px; margin-right: 7px;
+  font-family: Pretendard, sans-serif; vertical-align: 1px;
+}
+.rv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.rv-grid.one { grid-template-columns: 1fr; }
+.rv-grid img {
+  width: 100%; border: 1px solid #ded7c6; border-radius: 4px;
+  background: #fff; display: block;
+}
+.price-box {
+  border: 1px solid #ded7c6; background: #fbf8f1;
+  border-radius: 6px; padding: 20px; text-align: center; margin: 22px 0 18px;
+}
+.price-off { font-size: 16px; font-weight: 800; color: #b03a2e; margin-right: 9px; }
+.price-was { font-size: 14px; color: #a49c8b; text-decoration: line-through; margin-right: 9px; }
+.price-now {
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 30px; font-weight: 800; color: #232220; letter-spacing: -0.02em;
+}
+.promo-btn {
+  display: block; text-align: center; text-decoration: none;
+  padding: 16px; border-radius: 5px;
+  background: #2b3a67; color: #fff;
+  font-size: 15.5px; font-weight: 800; letter-spacing: 0.02em;
+}
+.promo-note { margin-top: 12px; text-align: center; font-size: 11.5px; color: #a49c8b; }
+
 @media print {
   html, body {
     background: #fff !important;
@@ -749,4 +799,8 @@ function buildCSS(baseUrl) {
   return CSS_TEMPLATE.split('BASE_URL').join(baseUrl || '');
 }
 
-module.exports = { buildReportHtml, buildCSS, CSS_TEMPLATE };
+module.exports = {
+  buildReportHtml, buildCSS, CSS_TEMPLATE,
+  // 무료사주 PDF(freePdf.js)에서 재사용
+  coverPage, tocPage, sajuPages, chapterPages, endPage, esc,
+};

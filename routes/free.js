@@ -5,6 +5,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { generateFreeSaju, UPSELL } = require('../services/ai');
 const { renderLanding, defaultLanding } = require('../services/landing');
 const { sendFreeSaju } = require('../services/mail');
+const { buildFreePdfHtml } = require('../services/freePdf');
 
 async function findTeacher(slug) {
   const { rows } = await pool.query(
@@ -213,6 +214,57 @@ router.get('/free/go/:logId', async (req, res, next) => {
     if (!link) return res.redirect('/s/' + row.slug + '#lp-form');
     if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
     res.redirect(link);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/* ===== 무료사주 PDF (브라우저 인쇄 → PDF 저장) ===== */
+router.get('/free/:logId/pdf', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT f.input, f.result, u.*
+       FROM free_logs f JOIN users u ON u.id = f.teacher_id
+       WHERE f.id = $1`,
+      [req.params.logId]
+    );
+    const row = rows[0];
+    if (!row) return res.status(404).render('free/notfound');
+
+    const client = row.input || {};
+    const result = row.result || {};
+    const teacher = row;
+
+    let saju = null;
+    try {
+      saju = calcSaju({
+        birthDate: client.birthDate,
+        birthTime: client.birthTime || null,
+        calendar: client.calendar === '윤달' ? '음력' : (client.calendar || '양력'),
+        isLeapMonth: client.calendar === '윤달',
+        region: client.region || '서울특별시',
+        gender: client.gender,
+      });
+    } catch (e) { /* 만세력 실패해도 본문은 나가게 */ }
+
+    const html = buildFreePdfHtml({
+      teacher, client, saju, result,
+      baseUrl: process.env.BASE_URL || '',
+    });
+
+    const bar = `
+<div class="no-print" style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:10px;align-items:center;
+     justify-content:center;padding:11px;background:#232220;color:#fff;font-family:Pretendard,sans-serif;font-size:13px">
+  <span>인쇄 창에서 <b>대상: PDF로 저장</b> · 여백 <b>없음</b> · 배경 그래픽 <b>체크</b></span>
+  <button onclick="window.print()" style="padding:7px 16px;border:0;border-radius:5px;background:#c8a45c;color:#241a06;font-weight:800;cursor:pointer">
+    PDF로 저장
+  </button>
+</div>
+<div class="no-print" style="height:44px"></div>`;
+
+    res
+      .set('Content-Type', 'text/html; charset=utf-8')
+      .send(html.replace('<body>', '<body>' + bar));
   } catch (e) {
     next(e);
   }

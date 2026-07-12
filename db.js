@@ -50,10 +50,8 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pdf_cta_text TEXT;`);   // 버튼 문구
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pdf_cta_desc TEXT;`);   // 안내 문구
 
-  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
-
-  // 무료사주 → 신청자 목록에 함께 표시하기 위한 링크
-  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS lead_id INTEGER;`);
+  // 무료사주 PDF 업셀 설정 (프리미엄 안내 · Q&A · 할인문구 · 후기이미지 · 만세력 해설)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS free_promo JSONB;`);
 
   // 상담 신청 (랜딩 폼)
   await pool.query(`
@@ -108,6 +106,10 @@ async function initDb() {
       created_at     TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+
+  // ⚠️ ALTER 는 반드시 CREATE 뒤에 (앞에 두면 새 DB에서 relation does not exist 로 서버가 안 뜸)
+  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
+  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS lead_id INTEGER;`);
 
   console.log('[DB] 준비 완료');
 }

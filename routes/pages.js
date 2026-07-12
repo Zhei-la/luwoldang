@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
+const { getPromo, normalizePromo } = require('../services/freePromo');
 
 // 모든 대시보드 페이지는 로그인 + 승인 필요
 router.use(requireAuth, requireApproved);
@@ -32,6 +33,7 @@ router.get('/free-saju-settings', (req, res) => {
     active: 'settings',
     baseUrl: process.env.BASE_URL || '',
     hasKey: !!req.user.openai_key,
+    promo: getPromo(req.user),
     mailDomain: process.env.MAIL_DOMAIN || null,
     mailFrom: require('../services/mail').fromAddr(req.user),
     mailReady: require('../services/mail').mailReady(req.user),
@@ -43,7 +45,17 @@ router.post('/free-saju-settings', async (req, res, next) => {
   try {
     const { site_name, kakao_consult_link, consult_message, button_text,
             openai_key, mail_local, mail_name, mail_reply,
-            pdf_cta_text, pdf_cta_desc } = req.body;
+            pdf_cta_text, pdf_cta_desc, promo_json } = req.body;
+
+    // 무료 PDF 업셀 설정 (프리미엄 안내 · Q&A · 후기 이미지 · 할인 문구)
+    if (promo_json) {
+      let parsed = null;
+      try { parsed = JSON.parse(promo_json); } catch (e) { /* 무시 */ }
+      if (parsed) {
+        await pool.query('UPDATE users SET free_promo = $1 WHERE id = $2',
+          [JSON.stringify(normalizePromo(parsed)), req.user.id]);
+      }
+    }
 
     // 키/비번은 새로 입력했을 때만 갱신 (빈칸이면 기존 값 유지)
     if (openai_key && openai_key.trim()) {

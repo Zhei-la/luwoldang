@@ -125,6 +125,76 @@
     <p class="hint">줄바꿈이 그대로 반영됩니다.</p>
   </div>
 
+  <!-- ===== 무료사주 PDF — 뒷장 안내 페이지 ===== -->
+  <div class="settings-block">
+    <h2 class="section-h">무료사주 PDF 뒷장 (상담 유도 페이지)</h2>
+    <p class="block-desc">
+      무료 PDF 마지막에 붙는 안내 페이지입니다. 내용을 비우면 기본 문구가 들어갑니다.
+      아래 브랜드명(<b><%= user.site_name || '사이트 이름 미설정' %></b>)이 PDF 모든 장 하단에 찍힙니다.
+    </p>
+
+    <label class="fl" style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" id="pmShow" <%= promo.show ? 'checked' : '' %>>
+      뒷장 안내 페이지 넣기
+    </label>
+
+    <div id="pmBox">
+      <label class="fl">만세력 이해하기 (모든 리포트에 공통으로 들어가는 해설)</label>
+      <textarea class="fi" id="pmManse" rows="6"><%= promo.manseEssay %></textarea>
+
+      <hr style="border:0;border-top:1px solid #E9E0CF;margin:22px 0">
+
+      <label class="fl">① 프리미엄 안내 — 제목 (줄바꿈 가능)</label>
+      <textarea class="fi" id="pmPremTitle" rows="2"><%= promo.premium.title %></textarea>
+      <label class="fl">① 프리미엄 안내 — 본문</label>
+      <textarea class="fi" id="pmPremBody" rows="7"><%= promo.premium.body %></textarea>
+
+      <hr style="border:0;border-top:1px solid #E9E0CF;margin:22px 0">
+
+      <label class="fl">② 답변드립니다 — 제목</label>
+      <textarea class="fi" id="pmQaTitle" rows="2"><%= promo.qa.title %></textarea>
+      <label class="fl">② 답변드립니다 — 안내 문구</label>
+      <textarea class="fi" id="pmQaIntro" rows="2"><%= promo.qa.intro %></textarea>
+      <label class="fl">② 실제 받은 질문 (한 줄에 하나씩 · 최대 8개까지 PDF에 들어감)</label>
+      <textarea class="fi" id="pmQaItems" rows="7"><%= promo.qa.items.join('\n') %></textarea>
+
+      <hr style="border:0;border-top:1px solid #E9E0CF;margin:22px 0">
+
+      <label class="fl">③ 후기 — 제목</label>
+      <input class="fi" type="text" id="pmRvTitle" value="<%= promo.reviews.title %>">
+      <label class="fl">③ 후기 이미지 (최대 6장 · 캡처해서 올리면 자동으로 줄여서 저장됩니다)</label>
+      <input type="file" id="pmRvFile" accept="image/*" multiple style="margin-bottom:10px">
+      <div id="pmRvList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+
+      <hr style="border:0;border-top:1px solid #E9E0CF;margin:22px 0">
+
+      <label class="fl">④ 할인 안내 — 제목 (줄바꿈 가능)</label>
+      <textarea class="fi" id="pmDcTitle" rows="2"><%= promo.discount.title %></textarea>
+      <label class="fl">④ 할인 안내 — 본문</label>
+      <textarea class="fi" id="pmDcBody" rows="6"><%= promo.discount.body %></textarea>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div>
+          <label class="fl">할인율</label>
+          <input class="fi" type="text" id="pmDcOff" value="<%= promo.discount.off || '' %>" placeholder="50%">
+        </div>
+        <div>
+          <label class="fl">정가</label>
+          <input class="fi" type="text" id="pmDcWas" value="<%= promo.discount.priceWas || '' %>" placeholder="60,000원">
+        </div>
+        <div>
+          <label class="fl">할인가</label>
+          <input class="fi" type="text" id="pmDcNow" value="<%= promo.discount.priceNow || '' %>" placeholder="29,800원">
+        </div>
+      </div>
+
+      <label class="fl">④ 버튼 문구 (누르면 위에 등록한 카카오 상담 링크로 연결됩니다)</label>
+      <input class="fi" type="text" id="pmDcBtn" value="<%= promo.discount.btn %>" placeholder="할인받고 상담 신청하기">
+    </div>
+
+    <input type="hidden" name="promo_json" id="promoJson">
+  </div>
+
   <button class="free-save-btn" type="submit">설정 저장</button>
 </form>
 
@@ -211,3 +281,81 @@
 </script>
 
 <%- include('../partials/dash-bottom') %>
+
+<script>
+/* ===== 무료 PDF 뒷장 설정 ===== */
+(function(){
+  var imgs = <%- JSON.stringify(promo.reviews.images || []) %>;
+  var list = document.getElementById('pmRvList');
+  var file = document.getElementById('pmRvFile');
+  var box  = document.getElementById('pmBox');
+  var show = document.getElementById('pmShow');
+  if (!list) return;
+
+  function paint(){
+    list.innerHTML = imgs.map(function(src, i){
+      return '<div style="position:relative">' +
+        '<img src="' + src + '" style="width:100%;border:1px solid #E9E0CF;border-radius:6px;display:block">' +
+        '<button type="button" data-i="' + i + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;' +
+        'border:0;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;line-height:1">×</button></div>';
+    }).join('');
+    list.querySelectorAll('button').forEach(function(b){
+      b.onclick = function(){ imgs.splice(+b.dataset.i, 1); paint(); };
+    });
+  }
+
+  // 캔버스로 줄여서 저장 (원본 그대로 넣으면 DB가 터진다)
+  function shrink(f){
+    return new Promise(function(resolve, reject){
+      var img = new Image();
+      img.onload = function(){
+        var MAX = 900;
+        var w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  file.onchange = async function(){
+    for (var i = 0; i < file.files.length; i++) {
+      if (imgs.length >= 6) { alert('후기 이미지는 최대 6장까지 넣을 수 있어요.'); break; }
+      try { imgs.push(await shrink(file.files[i])); } catch (e) { /* 무시 */ }
+    }
+    file.value = '';
+    paint();
+  };
+
+  function toggle(){ box.style.display = show.checked ? '' : 'none'; }
+  show.onchange = toggle;
+  toggle();
+  paint();
+
+  // 저장 직전에 JSON으로 묶어서 hidden 필드에 넣는다
+  var form = document.querySelector('.settings-form');
+  form.addEventListener('submit', function(){
+    var v = function(id){ var el = document.getElementById(id); return el ? el.value : ''; };
+    document.getElementById('promoJson').value = JSON.stringify({
+      show: show.checked,
+      manseEssay: v('pmManse'),
+      premium: { title: v('pmPremTitle'), body: v('pmPremBody') },
+      qa: {
+        title: v('pmQaTitle'),
+        intro: v('pmQaIntro'),
+        items: v('pmQaItems').split('\n').map(function(x){ return x.trim(); }).filter(Boolean),
+      },
+      reviews: { title: v('pmRvTitle'), images: imgs },
+      discount: {
+        title: v('pmDcTitle'), body: v('pmDcBody'),
+        off: v('pmDcOff'), priceWas: v('pmDcWas'), priceNow: v('pmDcNow'),
+        btn: v('pmDcBtn'),
+      },
+    });
+  });
+})();
+</script>

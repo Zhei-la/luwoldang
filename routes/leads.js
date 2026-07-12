@@ -167,14 +167,18 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       question: lead.memo,
     };
 
-    const chapters = await generatePdfReport({
+    const result = await generatePdfReport({
       type, client, saju, openaiKey: req.user.openai_key,
       onProgress: (done, total, title) => send('progress', { done, total, title }),
     });
+    const chapters = result.chapters || [];
+    const extra = (result.checklist || result.loveCard)
+      ? { checklist: result.checklist || null, loveCard: result.loveCard || null }
+      : null;
 
     const ins = await pool.query(
-      'INSERT INTO pdfs (teacher_id, lead_id, type, sections) VALUES ($1,$2,$3,$4) RETURNING id',
-      [req.user.id, lead.id, type, JSON.stringify(chapters)]
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+      [req.user.id, lead.id, type, JSON.stringify(chapters), extra ? JSON.stringify(extra) : null]
     );
 
     send('done', { pdfId: ins.rows[0].id, chapters: chapters.length });
@@ -297,12 +301,14 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     } catch (e) { /* noop */ }
 
     const chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
+    const extra = pdf.extra || null;
     const inner = buildReportHtml({
       type: pdf.type,
       client,
       teacher: req.user,
       saju,
       chapters,
+      extra,
       baseUrl: process.env.BASE_URL || '',
     });
 
