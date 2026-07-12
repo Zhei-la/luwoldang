@@ -21,33 +21,91 @@
  */
 
 const {
-  coverPage, tocPage, sajuPages, chapterPages, endPage, buildCSS, esc,
+  coverPage, tocPage, sajuPages, endPage, buildCSS, esc,
 } = require('./pdfDoc');
 const { getPromo } = require('./freePromo');
 
 const TYPE = '무료사주';
 
+/* ── 챕터를 페이지에 "채워서" 배치 ──
+ *
+ * 기존 유료 리포트는 챕터마다 새 페이지를 강제한다(chapter-start).
+ * 무료는 챕터가 짧아서 그러면 페이지 절반이 빈다.
+ * → 남은 줄이 충분하면 다음 챕터를 같은 페이지에 이어 붙인다. (보통 2개/장)
+ */
+const LINES_PER_PAGE = 31;   // A4 한 장에 들어가는 줄 수
+const CHARS_PER_LINE = 45;   // 한 줄 글자 수
+const LINES_HEAD = 5;        // 챕터 제목 + 구분선
+const LINES_GAP = 3;         // 같은 페이지에서 챕터 사이 여백
+const MIN_TAIL = 9;          // 이만큼도 안 남으면 새 페이지에서 시작
+
+const lineCount = (t) => Math.ceil(String(t || '').length / CHARS_PER_LINE) + 1;
+
+function flowPages(chapters) {
+  const pages = [];
+  let cur = [];
+  let used = 0;
+
+  const flush = () => { if (cur.length) pages.push(cur); cur = []; used = 0; };
+
+  chapters.forEach((ch, i) => {
+    const no = String(i + 1).padStart(2, '0');
+    const paras = String(ch.body || '').split(/\n{2,}|\n/).map((x) => x.trim()).filter(Boolean);
+    const first = paras[0] ? lineCount(paras[0]) : 0;
+
+    // 이 페이지에 제목 + 첫 문단이 못 들어가면 새 페이지
+    const gap = used > 0 ? LINES_GAP : 0;
+    if (used > 0 && (used + gap + LINES_HEAD + first > LINES_PER_PAGE
+                     || LINES_PER_PAGE - used < MIN_TAIL)) {
+      flush();
+    }
+
+    cur.push({ t: 'head', no, title: ch.title, second: used > 0 });
+    used += (used > 0 ? LINES_GAP : 0) + LINES_HEAD;
+
+    paras.forEach((p) => {
+      const n = lineCount(p);
+      if (used + n > LINES_PER_PAGE) flush();   // 넘치면 다음 장으로 흘린다
+      cur.push({ t: 'p', text: p });
+      used += n;
+    });
+  });
+
+  flush();
+  return pages;
+}
+
+function renderFlow(chapters) {
+  return flowPages(chapters).map((items) => `
+<section class="page sheet chapter">
+  ${items.map((it) => it.t === 'head' ? `
+  <div class="ch-head"${it.second ? ' style="margin-top:26px;padding-top:22px;border-top:1px solid #e6dfd0"' : ''}>
+    <span class="ch-no">${it.no}</span>
+    <h2 class="ch-title">${esc(it.title)}</h2>
+  </div>
+  <div class="pg-line"></div>` : `
+  <div class="ch-block"><p>${esc(it.text)}</p></div>`).join('')}
+</section>`).join('');
+}
+
 /** AI 결과(result) → 챕터 배열 */
 function freeChapters(result, promo) {
   const r = result || {};
-  const ch = (title, body) => ({ title, blocks: [{ sub: '', body: String(body || '').trim() }] });
+  const kw = Array.isArray(r.keywords) && r.keywords.length
+    ? '핵심 키워드 — ' + r.keywords.join(' · ') : '';
 
   const list = [
-    ch('만세력 이해하기', promo.manseEssay),
-    ch('사주로 보는 나는?', r.self),
-    ch('타고난 성향', r.personality),
-    ch('올해 운세', [r.year, r.yearOutro].filter(Boolean).join('\n\n')),
-    ch('연애운', [r.love, r.loveOutro].filter(Boolean).join('\n\n')),
-    ch('재물운', [r.wealth, r.wealthOutro].filter(Boolean).join('\n\n')),
-    ch('건강운', r.health),
-    ch('종합 조언', r.advice),
+    { title: '만세력 이해하기', body: promo.manseEssay },
+    { title: '내 사주 한눈에 보기', body: [kw, r.manse].filter(Boolean).join('\n\n') },
+    { title: '사주로 보는 나는?', body: r.self },
+    { title: '타고난 성향', body: r.personality },
+    { title: '올해 운세', body: [r.year, r.yearOutro].filter(Boolean).join('\n\n') },
+    { title: '연애운', body: [r.love, r.loveOutro].filter(Boolean).join('\n\n') },
+    { title: '재물운', body: [r.wealth, r.wealthOutro].filter(Boolean).join('\n\n') },
+    { title: '건강운', body: r.health },
+    { title: '종합 조언', body: r.advice },
   ];
-
-  // 만세력 요약(manse)이 있으면 '만세력 이해하기' 뒤에 붙인다
-  if (r.manse) {
-    list[0].blocks.push({ sub: '내 사주 한눈에 보기', body: r.manse });
-  }
-  return list.filter((c) => c.blocks.some((b) => b.body));
+  return list.filter((c) => String(c.body || '').trim());
 }
 
 /** 09 프리미엄 안내 */
@@ -177,7 +235,7 @@ function buildFreePdfHtml({ teacher, client, saju, result, baseUrl }) {
 ${coverPage({ type: TYPE, client, teacher, baseUrl })}
 ${tocPage(tocList, TYPE)}
 ${sajuPages({ client, saju, type: TYPE })}
-${chapterPages(chapters, null)}
+${renderFlow(chapters)}
 ${promoPages}
 ${endPage({ teacher })}
 </body>
