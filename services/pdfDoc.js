@@ -50,7 +50,7 @@ function coverPage({ type, client, teacher, baseUrl }) {
     const cls = cfg.style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle';
 
     return `
-<section class="page cover cover-img cover-${cfg.style}" style="background-image:url('${esc(url)}')">
+<section class="page sheet cover cover-img cover-${cfg.style}" style="background-image:url('${esc(url)}')">
   <div class="${cls}" style="top:${cfg.brandTop}%">${esc(brand)}</div>
   <div class="cv-info">
     <p class="cv-name">${esc(client.name)} 님</p>
@@ -66,7 +66,7 @@ function coverPage({ type, client, teacher, baseUrl }) {
 
   // 표지 이미지가 없는 종류 → 기본 액자 표지
   return `
-<section class="page cover">
+<section class="page sheet cover">
   <div class="cv-frame">
     <div class="cv-moon"></div>
     <p class="cv-brand">${esc(brand)}</p>
@@ -86,7 +86,7 @@ function coverPage({ type, client, teacher, baseUrl }) {
 /* ── 2. 목차 ── */
 function tocPage(chapters) {
   return `
-<section class="page toc">
+<section class="page sheet toc">
   <h2 class="pg-title">목 차</h2>
   <div class="pg-line"></div>
   <ol class="toc-list">
@@ -157,7 +157,7 @@ function sajuPage({ client, saju, type }) {
     </table>` : '';
 
   return `
-<section class="page">
+<section class="page sheet">
   <h2 class="pg-title">만세력 · 사주 원국</h2>
   <div class="pg-line"></div>
 
@@ -224,7 +224,7 @@ function chapterPages(chapters) {
     }).join('');
 
     return `
-<section class="page chapter">
+<section class="page flow chapter">
   <div class="ch-head">
     <span class="ch-no">${String(i + 1).padStart(2, '0')}</span>
     <h2 class="ch-title">${esc(ch.title)}</h2>
@@ -250,7 +250,7 @@ function endPage({ teacher }) {
     </div>` : '';
 
   return `
-<section class="page end">
+<section class="page sheet end">
   <div class="end-box">
     <p class="end-msg">${esc(teacher.consult_message || '여기까지 읽어주셔서 감사합니다.')}</p>
     ${cta}
@@ -273,23 +273,42 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* A4 페이지 — 모든 페이지에 한지 테두리 배경 */
+/* A4 페이지
+ *
+ * .sheet  = 한 장으로 고정 (표지·목차·만세력·마무리)
+ * .flow   = 내용이 길면 여러 장에 걸쳐 흐름 (본문 챕터)
+ *
+ * 테두리 배경은 A4 크기로 반복(repeat-y)시켜 몇 장이 되든 매 장에 나오게 한다.
+ */
 .page {
   width: 210mm;
-  min-height: 297mm;
-  padding: 30mm 26mm 28mm;
+  /* 인쇄와 동일한 여백 — 미리보기 = PDF */
+  padding: 22mm 20mm 24mm;
   margin: 0 auto 10mm;
   background-color: #fdfaf2;
   background-image: url('BASE_URL/img/pdf/frame.jpg');
   background-size: 210mm 297mm;
-  background-repeat: no-repeat;
-  background-position: center;
+  background-repeat: repeat-y;
+  background-position: top center;
   box-shadow: 0 4px 20px rgba(0,0,0,.12);
   position: relative;
   page-break-after: always;
   break-after: page;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+/* 한 장으로 고정되는 페이지 */
+.page.sheet {
+  height: 297mm;
+  min-height: 297mm;
+  background-repeat: no-repeat;
+}
+
+/* 내용이 길면 여러 장으로 흐르는 페이지 (본문) */
+.page.flow {
+  min-height: 297mm;
+  height: auto;
 }
 .page:last-child { page-break-after: auto; break-after: auto; }
 
@@ -472,33 +491,52 @@ body {
 }
 .end-box {
   text-align: center;
-  max-width: 125mm;
+  max-width: 155mm;
   margin: 0 auto;
 }
-.end-msg { font-family: 'Nanum Myeongjo', serif; font-size: 16px; line-height: 2; color: #4a463d; margin-bottom: 30px; }
+.end-msg { font-family: 'Nanum Myeongjo', serif; font-size: 20px; line-height: 2.15; color: #4a463d; margin-bottom: 44px; }
 
-/* 추가질문 CTA */
+/* 추가질문 CTA — 한지 톤에 맞춘 차분한 스타일 */
 .end-cta {
-  background: #faf6ec; border: 1px solid #e2d9c5; border-radius: 10px;
-  padding: 28px 22px; margin-bottom: 34px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 52px;
 }
-.end-cta-desc { font-size: 14px; line-height: 1.95; color: #5a5648; margin-bottom: 20px; }
+.end-cta-desc {
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 17px; line-height: 2.1; color: #5a5648;
+  margin-bottom: 32px;
+}
 .end-cta-btn {
-  display: inline-block; padding: 14px 34px; border-radius: 8px;
-  background: #FEE500; color: #191600; font-size: 15.5px; font-weight: 700;
-  text-decoration: none; border: 1px solid #e4cf00;
+  display: inline-block;
+  padding: 19px 54px;
+  border-radius: 2px;
+  background: #fdfaf2;
+  color: #4a3f2f;
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-decoration: none;
+  border: 1px solid #a08a5c;
+  outline: 1px solid #d8cfb8;
+  outline-offset: 4px;
 }
-.end-cta-url { font-size: 10.5px; color: #b3ad9c; margin-top: 14px; word-break: break-all; }
+.end-cta-url {
+  font-size: 11px; color: #b8b1a2; margin-top: 26px;
+  word-break: break-all; letter-spacing: .3px;
+}
 
-.end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 14px; letter-spacing: 4px; color: #a08a5c; }
+.end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 17px; letter-spacing: 6px; color: #a08a5c; }
 
 /* ============================================================
- * 인쇄 — 실제 PDF가 되는 부분
+ * 인쇄 — 실제 PDF
  *
- * 핵심:
- *   1) @page margin: 0  → 브라우저 머리말/꼬리말(날짜·URL·페이지번호) 제거
- *   2) .page를 A4(210×297mm)로 고정 → 배경 이미지가 정확히 맞음
- *   3) 여백은 .page의 padding으로 준다
+ * 원칙:
+ *   화면(미리보기)과 인쇄가 같은 규칙으로 흐르게 한다.
+ *   높이를 고정하면(max-height) 내용이 넘칠 때 잘리므로 고정하지 않는다.
+ *   대신 @page로 A4 크기를 잡고, 내용은 자연스럽게 다음 장으로 흐른다.
  * ============================================================ */
 @media print {
   html, body {
@@ -514,42 +552,43 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* 페이지 = 정확히 A4 한 장. 배경이 늘어나지 않게 크기 고정 */
+  /* 페이지 — 폭은 A4로 고정, 높이는 내용에 맡긴다 (잘림 방지) */
   .page {
     width: 210mm !important;
-    height: 297mm !important;
     min-height: 297mm !important;
-    max-height: 297mm !important;
+    height: auto !important;
+    max-height: none !important;      /* ← 고정하면 내용이 잘린다 */
     padding: 22mm 20mm 24mm !important;
     margin: 0 !important;
     box-shadow: none !important;
-    overflow: hidden;
+    overflow: visible !important;
     page-break-after: always;
     break-after: page;
     background-size: 210mm 297mm !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
+    background-repeat: repeat-y !important;   /* 넘치면 테두리도 이어짐 */
+    background-position: top center !important;
   }
   .page:last-child { page-break-after: auto; break-after: auto; }
 
+  /* 표지·마무리 — 한 장 딱 맞게 */
   .cover, .end {
+    height: 297mm !important;
+    max-height: 297mm !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
+    overflow: hidden !important;
+    background-repeat: no-repeat !important;
   }
   .cover-img {
     display: block !important;
     padding: 0 !important;
     background-size: 210mm 297mm !important;
+    background-repeat: no-repeat !important;
   }
 
-  /* 챕터는 새 페이지에서 시작 */
-  .chapter {
-    page-break-before: always;
-    break-before: page;
-  }
+  .chapter { page-break-before: always; break-before: page; }
 
-  /* 제목이 페이지 끝에 홀로 남지 않게 */
   .ch-head, .pg-line, .ch-sub, .ms-h {
     page-break-after: avoid !important;
     break-after: avoid !important;
@@ -569,11 +608,8 @@ body {
 
   .no-print { display: none !important; }
 
-  /* margin: 0 이어야 브라우저가 머리말/꼬리말을 안 넣는다 */
-  @page {
-    size: A4;
-    margin: 0;
-  }
+  /* margin: 0 → 브라우저 머리말/꼬리말 제거 */
+  @page { size: A4; margin: 0; }
 }
 `;
 
