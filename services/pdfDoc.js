@@ -59,7 +59,7 @@ function tocPage(chapters) {
 }
 
 /* ── 3. 만세력 ── */
-function sajuPage({ client, saju }) {
+function sajuPage({ client, saju, type }) {
   if (!saju) return '';
 
   const cols = ['hour', 'day', 'month', 'year'];
@@ -89,6 +89,29 @@ function sajuPage({ client, saju }) {
     <table class="ms-dw">
       <tr>${saju.daewoon.list.map((d) => `<th>${d.age}세</th>`).join('')}</tr>
       <tr>${saju.daewoon.list.map((d) => `<td><b>${esc(d.ko)}</b><i>${esc(d.ganzi)}</i></td>`).join('')}</tr>
+    </table>` : '';
+
+  // 신년운세는 세운·월운을 함께 싣는다
+  const yl = saju.yearLuck;
+  const yearTables = (type === '신년운세' && yl) ? `
+    <h3 class="ms-h">${yl.year}년 세운</h3>
+    <table class="ms-el-tbl">
+      <tr><th>간지</th><th>천간</th><th>지지</th><th>12운성</th></tr>
+      <tr>
+        <td><b>${esc(yl.sewoon.ko)}</b></td>
+        <td>${esc(yl.sewoon.stem.ko)} · ${esc(yl.sewoon.stem.god)}</td>
+        <td>${esc(yl.sewoon.branch.ko)} · ${esc(yl.sewoon.branch.god)}</td>
+        <td>${esc(yl.sewoon.unseong || '-')}</td>
+      </tr>
+    </table>
+    ${yl.currentDaewoon ? `<p class="ms-sum">현재 대운 <b>${esc(yl.currentDaewoon.ko)}</b> (${yl.currentDaewoon.age}세~, 올해 ${yl.currentDaewoon.currentAge}세)</p>` : ''}
+
+    <h3 class="ms-h">${yl.year}년 월운</h3>
+    <table class="ms-wol">
+      <tr>${yl.wolwoon.map((w) => `<th>${w.month}월</th>`).join('')}</tr>
+      <tr>${yl.wolwoon.map((w) => `<td><b>${esc(w.ko)}</b></td>`).join('')}</tr>
+      <tr>${yl.wolwoon.map((w) => `<td class="wol-god">${esc(w.stem.god)}<br>${esc(w.branch.god)}</td>`).join('')}</tr>
+      <tr>${yl.wolwoon.map((w) => `<td class="wol-us">${esc(w.unseong || '-')}</td>`).join('')}</tr>
     </table>` : '';
 
   return `
@@ -134,6 +157,7 @@ function sajuPage({ client, saju }) {
   </p>
 
   ${dw}
+  ${yearTables}
 </section>`;
 }
 
@@ -292,6 +316,14 @@ body {
 .ms-dw td b { display: block; font-family: 'Nanum Myeongjo', serif; font-size: 15px; color: #1f2a3d; }
 .ms-dw td i { display: block; font-style: normal; font-size: 10px; color: #b3ad9c; }
 
+/* 월운 표 */
+.ms-wol { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.ms-wol th, .ms-wol td { border: 1px solid #e6ddc9; text-align: center; padding: 6px 1px; background: #fff; }
+.ms-wol th { background: #faf6ec; font-size: 10px; color: #8a8574; font-weight: 500; }
+.ms-wol td b { font-family: 'Nanum Myeongjo', serif; font-size: 13px; color: #1f2a3d; }
+.ms-wol .wol-god { font-size: 9px; color: #7c7466; line-height: 1.5; }
+.ms-wol .wol-us { font-size: 9.5px; color: #a8a293; }
+
 /* 본문 챕터 */
 .chapter { padding-top: 32mm; }              /* 챕터 첫 페이지는 위 여백 넉넉히 */
 .ch-head { display: flex; align-items: baseline; gap: 12px; }
@@ -380,7 +412,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters }) {
 <body>
 ${coverPage({ type, client, teacher })}
 ${tocPage(chapters)}
-${sajuPage({ client, saju })}
+${sajuPage({ client, saju, type })}
 ${chapterPages(chapters)}
 ${endPage({ teacher })}
 </body>

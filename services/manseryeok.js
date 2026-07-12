@@ -275,6 +275,13 @@ function calcSaju(o) {
       hour: detail(hourP, false),
     },
     daewoon: daewoon,
+    yearLuck: (function () {
+      try {
+        const yl = calcYearLuck(dayGan, null, daewoon && daewoon.list);
+        yl.currentDaewoon = findCurrentDaewoon(daewoon, sy, yl.year);
+        return yl;
+      } catch (e) { return null; }
+    })(),
     hiddenStems: {
       year: HIDDEN_STEMS[yearP[1]] || [],
       month: HIDDEN_STEMS[monthP[1]] || [],
@@ -463,3 +470,78 @@ function elementWheel(dayMasterElement, elements) {
 module.exports.elementWheel = elementWheel;
 module.exports.EL_CYCLE = EL_CYCLE;
 module.exports.EL_GROUP = EL_GROUP;
+
+/* ============================================================
+ * 세운(歲運) · 월운(月運)
+ *
+ * 세운 = 올해의 간지. 일간 기준 십성으로 올해의 성격을 봄.
+ * 월운 = 12개월 각각의 간지 (절기 기준).
+ *        신년운세에서 "몇 월에 무슨 일이" 를 판단하는 근거.
+ * ============================================================ */
+
+/**
+ * @param {string} dayGan 일간
+ * @param {number} year 연도 (기본: 올해)
+ * @param {string|null} currentDaewoon 현재 대운 간지 (있으면 관계 표시)
+ */
+function calcYearLuck(dayGan, year, daewoonList) {
+  const y = year || new Date().getFullYear();
+  const dayEl = GAN_EL[dayGan];
+  const dayYin = GAN_YIN[dayGan] === true;
+
+  const info = (gz) => {
+    const g = gz[0], b = gz[1];
+    return {
+      ganzi: gz,
+      ko: (GAN_KO[g] || g) + (JI_KO[b] || b),
+      stem: {
+        char: g, ko: GAN_KO[g] || g, el: GAN_EL[g],
+        god: tenGod(dayEl, dayYin, GAN_EL[g], GAN_YIN[g] === true),
+      },
+      branch: {
+        char: b, ko: JI_KO[b] || b, el: JI_EL[b],
+        god: tenGod(dayEl, dayYin, JI_EL[b], JI_YIN[b] === true),
+      },
+      unseong: unseong(dayGan, b),
+    };
+  };
+
+  // 세운 (연간지)
+  const yearGz = Solar.fromYmd(y, 6, 15).getLunar().getYearInGanZhi();
+  const sewoon = info(yearGz);
+  sewoon.year = y;
+
+  // 월운 12개월 (절기 기준 월건)
+  const wolwoon = [];
+  for (let m = 1; m <= 12; m++) {
+    const gz = Solar.fromYmd(y, m, 15).getLunar().getMonthInGanZhi();
+    const x = info(gz);
+    x.month = m;
+    wolwoon.push(x);
+  }
+
+  // 현재 대운 (나이로 판단)
+  let current = null;
+  if (Array.isArray(daewoonList) && daewoonList.length) {
+    // 대운은 age 기준. 올해 나이를 알 수 없으므로 호출부에서 넘겨받거나 생략
+    current = null;
+  }
+
+  return { year: y, sewoon, wolwoon, currentDaewoon: current };
+}
+
+/** 생년 기준 올해 나이(세는나이)로 현재 대운 찾기 */
+function findCurrentDaewoon(daewoon, birthYear, year) {
+  if (!daewoon || !daewoon.list || !daewoon.list.length) return null;
+  const y = year || new Date().getFullYear();
+  const age = y - birthYear + 1;   // 세는나이
+  let cur = null;
+  for (const d of daewoon.list) {
+    if (age >= d.age) cur = d;
+    else break;
+  }
+  return cur ? Object.assign({}, cur, { currentAge: age }) : null;
+}
+
+module.exports.calcYearLuck = calcYearLuck;
+module.exports.findCurrentDaewoon = findCurrentDaewoon;

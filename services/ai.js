@@ -218,6 +218,19 @@ function sajuBlock(client, saju) {
       saju.daewoon.list.map((x) => `${x.age}세~${x.age + 9}세: ${x.ko}`).join('\n')
     : '';
 
+  // 세운·월운 (신년운세 등 시기 판단에 필수)
+  const yl = saju.yearLuck;
+  const yearBlock = yl ? `
+[${yl.year}년 세운] ${yl.sewoon.ko}
+천간 ${yl.sewoon.stem.ko}(${yl.sewoon.stem.el}) = ${yl.sewoon.stem.god}
+지지 ${yl.sewoon.branch.ko}(${yl.sewoon.branch.el}) = ${yl.sewoon.branch.god} · 12운성 ${yl.sewoon.unseong}
+${yl.currentDaewoon ? `현재 대운: ${yl.currentDaewoon.age}세~ ${yl.currentDaewoon.ko} (올해 ${yl.currentDaewoon.currentAge}세)` : ''}
+
+[${yl.year}년 월운] — 시기 판단은 반드시 이 표를 근거로 하세요
+${yl.wolwoon.map((w) =>
+  `${String(w.month).padStart(2)}월 ${w.ko}: 천간=${w.stem.god}, 지지=${w.branch.god}, 12운성=${w.unseong}`
+).join('\n')}` : '';
+
   return `[내담자 정보]
 이름: ${client.name}
 성별: ${client.gender || '미입력'}
@@ -239,7 +252,8 @@ ${godLine('hour', '시주')}
 [오행 분포]
 목 ${saju.elements.목} · 화 ${saju.elements.화} · 토 ${saju.elements.토} · 금 ${saju.elements.금} · 수 ${saju.elements.수}
 강한 기운: ${saju.strong.join(', ')} / 부족한 기운: ${saju.weak.join(', ')}
-${dw}`;
+${dw}
+${yearBlock}`;
 }
 
 /** OpenAI 호출 (JSON) */
