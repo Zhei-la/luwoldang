@@ -303,6 +303,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       teacher: req.user,
       saju,
       chapters,
+      baseUrl: process.env.BASE_URL || '',
     });
 
     const toolbar = `

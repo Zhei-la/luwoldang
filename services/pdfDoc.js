@@ -22,12 +22,54 @@ function fmtDate(d) {
 }
 
 /* ── 1. 표지 ── */
-function coverPage({ type, client, teacher }) {
+/**
+ * 리포트 종류별 표지
+ *   img     : 배경 이미지
+ *   style   : 'ink'   = 수묵화 (이미지에 브랜드명이 박혀 있음 → 덮어씀)
+ *             'circle'= 원형 (브랜드명 자리가 비어 있음 → 그냥 얹음)
+ *   brandTop: 브랜드명 세로 위치 (%)
+ */
+const COVERS = {
+  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 12.4 },
+  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 12.4 },
+  연애운:    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
+  결혼운:    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
+  연인궁합:  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
+  재물운:    { img: '/img/pdf/cover-jaemul.jpg',   style: 'circle', brandTop: 18.2 },
+  무료사주:  { img: '/img/pdf/cover-free.jpg',     style: 'circle', brandTop: 18.2 },
+};
+
+function coverPage({ type, client, teacher, baseUrl }) {
+  const cfg = COVERS[type];
+  const brand = teacher.site_name || teacher.name || '';
+
+  if (cfg) {
+    const url = (baseUrl || '') + cfg.img;
+    // 수묵화 표지는 이미지에 이름이 박혀 있어 배경으로 가려야 한다.
+    // 원형 표지는 자리가 비어 있으므로 배경 없이 얹는다.
+    const cls = cfg.style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle';
+
+    return `
+<section class="page cover cover-img cover-${cfg.style}" style="background-image:url('${esc(url)}')">
+  <div class="${cls}" style="top:${cfg.brandTop}%">${esc(brand)}</div>
+  <div class="cv-info">
+    <p class="cv-name">${esc(client.name)} 님</p>
+    <p class="cv-birth">
+      ${esc(client.birthDate)} ${esc(client.calendar || '양력')}
+      ${client.birthTime ? esc(client.birthTime) : '시간 모름'}
+      ${client.gender ? ' · ' + esc(client.gender) : ''}
+    </p>
+    <p class="cv-date">${fmtDate()}</p>
+  </div>
+</section>`;
+  }
+
+  // 표지 이미지가 없는 종류 → 기본 액자 표지
   return `
 <section class="page cover">
   <div class="cv-frame">
     <div class="cv-moon"></div>
-    <p class="cv-brand">${esc(teacher.site_name || teacher.name || '사주 리포트')}</p>
+    <p class="cv-brand">${esc(brand)}</p>
     <h1 class="cv-type">${esc(type)}</h1>
     <div class="cv-line"></div>
     <p class="cv-name">${esc(client.name)} 님</p>
@@ -200,7 +242,6 @@ function endPage({ teacher }) {
   const desc = teacher.pdf_cta_desc
     || '리포트를 읽고 더 궁금한 점이 생기셨다면\n아래 버튼을 눌러 편하게 물어보세요.';
 
-  // 링크가 없으면 버튼 대신 안내만
   const cta = link ? `
     <div class="end-cta">
       <p class="end-cta-desc">${esc(desc).replace(/\n/g, '<br>')}</p>
@@ -211,17 +252,15 @@ function endPage({ teacher }) {
   return `
 <section class="page end">
   <div class="end-box">
-    <div class="cv-moon small"></div>
     <p class="end-msg">${esc(teacher.consult_message || '여기까지 읽어주셔서 감사합니다.')}</p>
     ${cta}
     <p class="end-brand">${esc(teacher.site_name || teacher.name || '')}</p>
-    <p class="end-note">본 사주 풀이는 참고용 콘텐츠이며,<br>의학적·법률적 조언을 대신하지 않습니다.</p>
   </div>
 </section>`;
 }
 
 /* ── CSS ── */
-const CSS = `
+const CSS_TEMPLATE = `
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -234,17 +273,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* A4 페이지 — 화면에서는 종이처럼, 인쇄에서는 흐름대로 */
+/* A4 페이지 — 모든 페이지에 한지 테두리 배경 */
 .page {
   width: 210mm;
   min-height: 297mm;
-  padding: 26mm 22mm 24mm;
+  padding: 30mm 26mm 28mm;
   margin: 0 auto 10mm;
-  background: #fffdf8;
+  background-color: #fdfaf2;
+  background-image: url('BASE_URL/img/pdf/frame.jpg');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
   box-shadow: 0 4px 20px rgba(0,0,0,.12);
   position: relative;
   page-break-after: always;
   break-after: page;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 .page:last-child { page-break-after: auto; break-after: auto; }
 
@@ -257,8 +302,61 @@ body {
   border: 0;
 }
 
-/* 표지 */
+/* 표지 — 이미지 배경 */
 .cover { display: flex; align-items: center; justify-content: center; }
+.cover-img {
+  background-image: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 0 !important;
+  display: block;
+}
+/* 브랜드명 — 교육생마다 다른 이름 */
+.cv-brand-overlay {
+  position: absolute;
+  left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Nanum Myeongjo', serif;
+  z-index: 2;
+}
+/* 수묵화 표지: 이미지에 이름이 박혀 있어 배경으로 덮는다 */
+.cv-brand-overlay.ink {
+  height: 3.4%;
+  background: #fdfaf2;
+  font-size: 15px;
+  letter-spacing: 5px;
+  color: #4a463d;
+}
+/* 원형 표지: 자리가 비어 있어 배경 없이 얹는다 */
+.cv-brand-overlay.circle {
+  height: 3%;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #5c4633;
+}
+
+/* 원형 표지는 하단 정보를 조금 더 위로 */
+.cover-circle .cv-info { bottom: 8%; }
+.cover-circle .cv-name { color: #4a3728; }
+.cover-circle .cv-birth { color: #7d6a58; }
+.cover-circle .cv-date { color: #a08a72; }
+.cv-info {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 6%;
+  text-align: center;
+}
+.cover-img .cv-name {
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 19px; font-weight: 700;
+  color: #2b2a26; margin-bottom: 6px;
+}
+.cover-img .cv-birth { font-size: 12.5px; color: #6b6656; }
+.cover-img .cv-date { font-size: 11px; color: #9a9384; margin-top: 8px; }
 .cv-frame {
   text-align: center; width: 100%;
   padding: 40mm 12mm;
@@ -365,9 +463,18 @@ body {
   break-inside: avoid;
 }
 
-/* 마무리 */
-.end { display: flex; align-items: center; justify-content: center; }
-.end-box { text-align: center; max-width: 130mm; }
+/* 마무리 — 상하좌우 중앙 */
+.end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.end-box {
+  text-align: center;
+  max-width: 125mm;
+  margin: 0 auto;
+}
 .end-msg { font-family: 'Nanum Myeongjo', serif; font-size: 16px; line-height: 2; color: #4a463d; margin-bottom: 30px; }
 
 /* 추가질문 CTA */
@@ -383,8 +490,7 @@ body {
 }
 .end-cta-url { font-size: 10.5px; color: #b3ad9c; margin-top: 14px; word-break: break-all; }
 
-.end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 14px; letter-spacing: 4px; color: #a08a5c; margin-bottom: 40px; }
-.end-note { font-size: 11.5px; color: #b3ad9c; line-height: 1.9; }
+.end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 14px; letter-spacing: 4px; color: #a08a5c; }
 
 /* ============================================================
  * 인쇄 — 여기가 실제 PDF가 되는 부분
@@ -394,6 +500,14 @@ body {
     background: #fff !important;
     margin: 0;
     padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 배경(테두리·표지)을 인쇄에 포함 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* 페이지 = 그냥 콘텐츠 블록. 높이 강제하지 않는다.
@@ -405,18 +519,24 @@ body {
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    background: #fff !important;
     page-break-after: always;
     break-after: page;
+    /* 배경 이미지(테두리)는 유지 */
   }
   .page:last-child { page-break-after: auto; break-after: auto; }
 
   /* 표지·마무리는 한 장을 꽉 채운다 */
   .cover, .end {
-    min-height: 245mm !important;
+    min-height: 250mm !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
+  }
+  .cover-img {
+    display: block !important;
+    min-height: 297mm !important;
+    height: 297mm !important;
+    padding: 0 !important;
   }
 
   /* 챕터 — 반드시 새 페이지에서 시작하고, 위에 여백을 준다 */
@@ -484,17 +604,17 @@ body {
  * 리포트 전체 HTML
  * @param {object} o { type, client, teacher, saju, chapters }
  */
-function buildReportHtml({ type, client, teacher, saju, chapters }) {
+function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(client.name)}님의 ${esc(type)} 리포트</title>
-<style>${CSS}</style>
+<style>${buildCSS(baseUrl)}</style>
 </head>
 <body>
-${coverPage({ type, client, teacher })}
+${coverPage({ type, client, teacher, baseUrl })}
 ${tocPage(chapters)}
 ${sajuPage({ client, saju, type })}
 ${chapterPages(chapters)}
@@ -503,4 +623,9 @@ ${endPage({ teacher })}
 </html>`;
 }
 
-module.exports = { buildReportHtml, CSS };
+/** baseUrl을 주입한 CSS */
+function buildCSS(baseUrl) {
+  return CSS_TEMPLATE.split('BASE_URL').join(baseUrl || '');
+}
+
+module.exports = { buildReportHtml, buildCSS, CSS_TEMPLATE };
