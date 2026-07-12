@@ -230,7 +230,9 @@ function calcSaju(o) {
     const yin = GAN_YIN[ch] === true;
     return {
       char: ch, ko: GAN_KO[ch] || ch, el: el, yin: yin,
-      god: isDayMaster ? '일간' : tenGod(dayEl, dayYin, el, yin),
+      // 일주 천간은 일간 자신 → 십성 규칙상 '비견' (포스텔러 표기 기준)
+      god: tenGod(dayEl, dayYin, el, yin),
+      isDayMaster: !!isDayMaster,
     };
   };
   const branchInfo = function (ch) {
