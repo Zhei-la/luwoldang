@@ -42,7 +42,8 @@ router.get('/free-saju-settings', (req, res) => {
 router.post('/free-saju-settings', async (req, res, next) => {
   try {
     const { site_name, kakao_consult_link, consult_message, button_text,
-            openai_key, mail_local, mail_name, mail_reply } = req.body;
+            openai_key, mail_local, mail_name, mail_reply,
+            pdf_cta_text, pdf_cta_desc } = req.body;
 
     // 키/비번은 새로 입력했을 때만 갱신 (빈칸이면 기존 값 유지)
     if (openai_key && openai_key.trim()) {
@@ -55,10 +56,13 @@ router.post('/free-saju-settings', async (req, res, next) => {
     await pool.query(
       `UPDATE users
        SET site_name = $1, kakao_consult_link = $2, consult_message = $3, button_text = $4,
-           mail_local = $5, mail_name = $6, mail_reply = $7
-       WHERE id = $8`,
+           mail_local = $5, mail_name = $6, mail_reply = $7,
+           pdf_cta_text = $8, pdf_cta_desc = $9
+       WHERE id = $10`,
       [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
-       local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null, req.user.id]
+       local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null,
+       (pdf_cta_text || '').trim() || null, (pdf_cta_desc || '').trim() || null,
+       req.user.id]
     );
 
     res.redirect('/free-saju-settings?saved=1');

@@ -227,7 +227,11 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
       'UPDATE pdfs SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1 WHERE id = $2',
       [to, pdf.id]
     );
-    await pool.query("UPDATE leads SET status = '발송완료' WHERE id = $1", [pdf.lead_id]);
+    // 발송 완료 시각 기록 → 3일 뒤 연락처 자동 마스킹
+    await pool.query(
+      "UPDATE leads SET status = '발송완료', delivered_at = COALESCE(delivered_at, NOW()) WHERE id = $1",
+      [pdf.lead_id]
+    );
 
     res.json({ ok: true, to });
   } catch (e) {
@@ -236,6 +240,27 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
   }
 });
 
+
+/* ===== 리포트 내용 수정 저장 ===== */
+router.post('/pdfs/:id/edit', async (req, res) => {
+  try {
+    const chapters = req.body && req.body.chapters;
+    if (!Array.isArray(chapters)) {
+      return res.status(400).json({ ok: false, error: '형식이 올바르지 않습니다.' });
+    }
+
+    const { rowCount } = await pool.query(
+      'UPDATE pdfs SET sections = $1 WHERE id = $2 AND teacher_id = $3',
+      [JSON.stringify(chapters), req.params.id, req.user.id]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[PDF] 수정 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 /* ===== PDF 미리보기 (인쇄 → PDF 저장) ===== */
 router.get('/pdfs/:id/preview', async (req, res, next) => {
@@ -283,10 +308,13 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     const toolbar = `
 <div class="pv-bar no-print">
   <a class="pv-back" href="/leads/${pdf.lead_id}">← 돌아가기</a>
-  <span class="pv-title">${pdf.name}님 · ${pdf.type} <em>${chapters.length}개 챕터</em></span>
+  <span class="pv-title">${pdf.name}님 · ${pdf.type} <em id="pvMode">${chapters.length}개 챕터</em></span>
   <div class="pv-actions">
-    <button onclick="window.print()">PDF로 저장 / 인쇄</button>
-    <button class="send" onclick="sendMail()">이메일 보내기</button>
+    <button id="btnEdit" onclick="toggleEdit()">수정하기</button>
+    <button id="btnSave" onclick="saveEdit()" style="display:none">저장</button>
+    <button id="btnCancel" onclick="cancelEdit()" style="display:none">취소</button>
+    <button id="btnPrint" onclick="window.print()">PDF로 저장 / 인쇄</button>
+    <button id="btnSend" class="send" onclick="sendMail()">이메일 보내기</button>
   </div>
 </div>
 <style>
@@ -296,13 +324,148 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   .pv-title{flex:1;font-weight:600}
   .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:6px}
   .pv-actions{display:flex;gap:8px}
-  .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit}
+  .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
   .pv-actions button:hover{background:rgba(181,154,98,.2)}
   .pv-actions button.send{background:#B59A62;color:#241a06;font-weight:700}
   .pv-actions button:disabled{opacity:.5}
-  body{padding-top:0}
+
+  /* 수정 모드 */
+  body.editing .ch-block p,
+  body.editing .ch-sub,
+  body.editing .ch-title {
+    outline: 1px dashed #c8b98e;
+    outline-offset: 3px;
+    border-radius: 3px;
+    transition: background .15s;
+  }
+  body.editing [contenteditable]:hover { background: #fdf8ea; }
+  body.editing [contenteditable]:focus { outline: 2px solid #B59A62; background: #fffdf5; }
+  body.editing .ch-block { position: relative; }
+  .blk-del {
+    position: absolute; right: -34px; top: 2px;
+    width: 26px; height: 26px; border-radius: 6px;
+    border: 1px solid #e0c4c0; background: #fff; color: #b0392c;
+    font-size: 14px; cursor: pointer; display: none; line-height: 1;
+  }
+  body.editing .blk-del { display: block; }
+  .blk-del:hover { background: #fdecea; }
+  .edit-hint {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #182234; color: #e8e3d6; padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; z-index: 98; display: none;
+    font-family: Pretendard, -apple-system, sans-serif;
+  }
+  body.editing .edit-hint { display: block; }
 </style>
+<div class="edit-hint no-print">글을 클릭해서 바로 고칠 수 있습니다. 오른쪽 <b>×</b>를 누르면 그 문단이 삭제됩니다.</div>
 <script>
+var EDITING = false;
+var SNAPSHOT = null;
+
+function eachBlock(fn) {
+  document.querySelectorAll('.page.chapter').forEach(function(ch, ci){
+    ch.querySelectorAll('.ch-block').forEach(function(b, bi){ fn(ch, b, ci, bi); });
+  });
+}
+
+function toggleEdit(){
+  EDITING = true;
+  document.body.classList.add('editing');
+  SNAPSHOT = collect();
+
+  document.querySelectorAll('.ch-title, .ch-sub, .ch-block p').forEach(function(el){
+    el.setAttribute('contenteditable', 'true');
+  });
+
+  eachBlock(function(ch, b){
+    if (b.querySelector('.blk-del')) return;
+    var x = document.createElement('button');
+    x.className = 'blk-del no-print';
+    x.textContent = '×';
+    x.title = '이 문단 삭제';
+    x.onclick = function(){
+      if (confirm('이 문단을 삭제할까요?')) b.remove();
+    };
+    b.appendChild(x);
+  });
+
+  document.getElementById('btnEdit').style.display = 'none';
+  document.getElementById('btnPrint').style.display = 'none';
+  document.getElementById('btnSend').style.display = 'none';
+  document.getElementById('btnSave').style.display = '';
+  document.getElementById('btnCancel').style.display = '';
+  document.getElementById('pvMode').textContent = '수정 중';
+}
+
+function endEdit(){
+  EDITING = false;
+  document.body.classList.remove('editing');
+  document.querySelectorAll('[contenteditable]').forEach(function(el){
+    el.removeAttribute('contenteditable');
+  });
+  document.querySelectorAll('.blk-del').forEach(function(x){ x.remove(); });
+  document.getElementById('btnEdit').style.display = '';
+  document.getElementById('btnPrint').style.display = '';
+  document.getElementById('btnSend').style.display = '';
+  document.getElementById('btnSave').style.display = 'none';
+  document.getElementById('btnCancel').style.display = 'none';
+}
+
+/* 화면 → 데이터 */
+function collect(){
+  var chapters = [];
+  document.querySelectorAll('.page.chapter').forEach(function(ch){
+    var titleEl = ch.querySelector('.ch-title');
+    var blocks = [];
+    ch.querySelectorAll('.ch-block').forEach(function(b){
+      var subEl = b.querySelector('.ch-sub');
+      var paras = [];
+      b.querySelectorAll('p').forEach(function(p){
+        var t = p.innerText.trim();
+        if (t) paras.push(t);
+      });
+      if (!subEl && !paras.length) return;
+      blocks.push({
+        sub: subEl ? subEl.innerText.trim() : '',
+        body: paras.join('\n\n')
+      });
+    });
+    chapters.push({
+      title: titleEl ? titleEl.innerText.trim() : '',
+      blocks: blocks
+    });
+  });
+  return chapters;
+}
+
+function cancelEdit(){
+  if (!confirm('수정한 내용을 취소하고 되돌릴까요?')) return;
+  location.reload();
+}
+
+async function saveEdit(){
+  var btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+  try {
+    var chapters = collect();
+    var r = await fetch('/pdfs/${pdf.id}/edit', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chapters: chapters })
+    });
+    var d = await r.json();
+    if (!d.ok) throw new Error(d.error || '실패');
+    endEdit();
+    document.getElementById('pvMode').textContent = '저장됨 ✓';
+    setTimeout(function(){ location.reload(); }, 600);
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '저장';
+  }
+}
+
 async function sendMail(){
   var email = ${JSON.stringify(pdf.email || '')};
   if(!email){ alert('이 신청자의 이메일이 없습니다.'); return; }
@@ -323,6 +486,10 @@ async function sendMail(){
     btns.forEach(function(b){ b.disabled = false; });
   }
 }
+
+window.addEventListener('beforeunload', function(e){
+  if (EDITING) { e.preventDefault(); e.returnValue = ''; }
+});
 </script>`;
 
     const html = inner.replace('<body>', '<body>' + toolbar);

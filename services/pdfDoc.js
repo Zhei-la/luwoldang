@@ -169,13 +169,27 @@ function chapterPages(chapters) {
   }).join('');
 }
 
-/* ── 5. 마무리 ── */
+/* ── 5. 마무리 + 추가질문 CTA ── */
 function endPage({ teacher }) {
+  const link = teacher.kakao_consult_link || '';
+  const btnText = teacher.pdf_cta_text || '추가 질문하러 가기';
+  const desc = teacher.pdf_cta_desc
+    || '리포트를 읽고 더 궁금한 점이 생기셨다면\n아래 버튼을 눌러 편하게 물어보세요.';
+
+  // 링크가 없으면 버튼 대신 안내만
+  const cta = link ? `
+    <div class="end-cta">
+      <p class="end-cta-desc">${esc(desc).replace(/\n/g, '<br>')}</p>
+      <a class="end-cta-btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(btnText)}</a>
+      <p class="end-cta-url">${esc(link)}</p>
+    </div>` : '';
+
   return `
 <section class="page end">
   <div class="end-box">
     <div class="cv-moon small"></div>
-    <p class="end-msg">${esc(teacher.consult_message || '더 궁금한 점이 있으시면 편하게 문의해주세요.')}</p>
+    <p class="end-msg">${esc(teacher.consult_message || '여기까지 읽어주셔서 감사합니다.')}</p>
+    ${cta}
     <p class="end-brand">${esc(teacher.site_name || teacher.name || '')}</p>
     <p class="end-note">본 사주 풀이는 참고용 콘텐츠이며,<br>의학적·법률적 조언을 대신하지 않습니다.</p>
   </div>
@@ -312,8 +326,22 @@ body {
 
 /* 마무리 */
 .end { display: flex; align-items: center; justify-content: center; }
-.end-box { text-align: center; }
-.end-msg { font-family: 'Nanum Myeongjo', serif; font-size: 16px; line-height: 2; color: #4a463d; margin-bottom: 24px; }
+.end-box { text-align: center; max-width: 130mm; }
+.end-msg { font-family: 'Nanum Myeongjo', serif; font-size: 16px; line-height: 2; color: #4a463d; margin-bottom: 30px; }
+
+/* 추가질문 CTA */
+.end-cta {
+  background: #faf6ec; border: 1px solid #e2d9c5; border-radius: 10px;
+  padding: 28px 22px; margin-bottom: 34px;
+}
+.end-cta-desc { font-size: 14px; line-height: 1.95; color: #5a5648; margin-bottom: 20px; }
+.end-cta-btn {
+  display: inline-block; padding: 14px 34px; border-radius: 8px;
+  background: #FEE500; color: #191600; font-size: 15.5px; font-weight: 700;
+  text-decoration: none; border: 1px solid #e4cf00;
+}
+.end-cta-url { font-size: 10.5px; color: #b3ad9c; margin-top: 14px; word-break: break-all; }
+
 .end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 14px; letter-spacing: 4px; color: #a08a5c; margin-bottom: 40px; }
 .end-note { font-size: 11.5px; color: #b3ad9c; line-height: 1.9; }
 

@@ -21,7 +21,7 @@
     <h2 class="section-h">사이트 정보</h2>
 
     <label class="fl">사이트 이름 (무료사주 첫 화면 제목)</label>
-    <input class="fi" type="text" name="site_name" value="<%= user.site_name || '' %>" placeholder="예: 제일라 사주풀이">
+    <input class="fi" type="text" name="site_name" value="<%= user.site_name || '' %>" placeholder="예: 루월당">
 
     <label class="fl">OpenAI API 키 <% if (hasKey) { %><span class="key-ok">저장됨 ✓</span><% } %></label>
     <input class="fi" type="password" name="openai_key" placeholder="<%= hasKey ? '변경하려면 새 키 입력 (비우면 유지)' : 'sk-... 무료사주 생성에 사용됩니다' %>" autocomplete="off">
@@ -97,6 +97,32 @@
       <option value="나에게 맞는 운세 상담받기">
     </datalist>
     <p class="hint">직접 입력하거나 칸을 클릭해 예시 중 선택할 수 있습니다.</p>
+  </div>
+
+  <div class="settings-block">
+    <h2 class="section-h">PDF 마지막 페이지 · 추가질문 버튼</h2>
+    <p class="block-desc">
+      리포트 마지막 장에 <b>추가질문 버튼</b>이 들어갑니다. 위에서 등록한 <b>카카오톡 상담 링크</b>로 연결됩니다.
+      <% if (!user.kakao_consult_link) { %>
+        <br><span class="warn-inline">⚠️ 카카오톡 상담 링크를 먼저 등록해야 버튼이 표시됩니다.</span>
+      <% } %>
+    </p>
+
+    <label class="fl">버튼 문구</label>
+    <input class="fi" type="text" name="pdf_cta_text" list="ctaExamples"
+           value="<%= user.pdf_cta_text || '' %>" placeholder="추가 질문하러 가기">
+    <datalist id="ctaExamples">
+      <option value="추가 질문하러 가기">
+      <option value="카카오톡으로 물어보기">
+      <option value="더 자세히 상담받기">
+      <option value="궁금한 점 물어보기">
+      <option value="1:1 상담 신청하기">
+    </datalist>
+    <p class="hint">칸을 클릭하면 예시를 고를 수 있습니다. 비우면 <b>추가 질문하러 가기</b>로 표시됩니다.</p>
+
+    <label class="fl">버튼 위 안내 문구</label>
+    <textarea class="fi" name="pdf_cta_desc" rows="3" placeholder="리포트를 읽고 더 궁금한 점이 생기셨다면&#10;아래 버튼을 눌러 편하게 물어보세요."><%= user.pdf_cta_desc || '' %></textarea>
+    <p class="hint">줄바꿈이 그대로 반영됩니다.</p>
   </div>
 
   <button class="free-save-btn" type="submit">설정 저장</button>

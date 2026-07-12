@@ -46,6 +46,10 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_reply TEXT;`); // 답장 받을 주소
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_key TEXT;`); // (선택) 개인 Resend 키
 
+  // PDF 마지막 페이지 추가질문 CTA
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pdf_cta_text TEXT;`);   // 버튼 문구
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pdf_cta_desc TEXT;`);   // 안내 문구
+
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
 
   // 무료사주 → 신청자 목록에 함께 표시하기 위한 링크
@@ -73,6 +77,10 @@ async function initDb() {
   `);
 
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source TEXT DEFAULT '상담신청';`);
+
+  // 개인정보 자동 폐기 (발송 완료 후 3일 → 연락처·이메일 마스킹)
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS masked_at TIMESTAMPTZ;`);
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;`);
 
   // 제작한 PDF (내담자별)
   await pool.query(`
