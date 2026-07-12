@@ -1,38 +1,20 @@
 const express = require('express');
-const crypto = require('crypto');
-const { pool } = require('../db');
-
 const router = express.Router();
 
-// DEV_LOGIN=on 일 때만 동작. 배포 후 카카오 붙이면 이 값만 지우면 됨.
+/**
+ * ⚠️ 개발용 임시 로그인은 제거되었습니다.
+ *
+ * 비밀번호 없이 관리자 계정으로 들어갈 수 있어 보안상 위험했습니다.
+ * 관리자 권한은 이제 카카오로 로그인한 뒤
+ *   GET /auth/admin?key=<ADMIN_KEY>
+ * 로 승격합니다. (routes/auth.js)
+ *
+ * Railway 환경변수의 DEV_LOGIN 도 삭제하세요.
+ */
 function devEnabled() {
-  return process.env.DEV_LOGIN === 'on';
+  return false;
 }
 
-// 임시 로그인: 카카오 없이 관리자 계정으로 바로 진입
-router.get('/login', async (req, res, next) => {
-  if (!devEnabled()) return res.status(404).send('Not found');
-  try {
-    const DEV_KAKAO_ID = 'dev-admin';
-    let { rows } = await pool.query('SELECT * FROM users WHERE kakao_id = $1', [DEV_KAKAO_ID]);
-    let user = rows[0];
-
-    if (!user) {
-      const slug = crypto.randomBytes(5).toString('hex');
-      const inserted = await pool.query(
-        `INSERT INTO users (kakao_id, name, role, status, slug, approved_at)
-         VALUES ($1, $2, 'admin', 'approved', $3, NOW())
-         RETURNING *`,
-        [DEV_KAKAO_ID, '개발자(임시)', slug]
-      );
-      user = inserted.rows[0];
-    }
-
-    req.session.userId = user.id;
-    res.redirect('/home');
-  } catch (e) {
-    next(e);
-  }
-});
+router.get('/login', (req, res) => res.status(404).send('Not found'));
 
 module.exports = { router, devEnabled };

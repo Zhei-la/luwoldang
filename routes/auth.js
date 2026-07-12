@@ -93,4 +93,31 @@ router.get('/kakao/callback', async (req, res, next) => {
   }
 });
 
+/* ===== 관리자 승격 =====
+ * 카카오로 로그인한 뒤 아래 주소를 열면 그 계정이 관리자가 된다.
+ *   /auth/admin?key=<ADMIN_KEY>
+ * ADMIN_KEY 는 Railway 환경변수. 비워두면 이 기능 자체가 꺼진다.
+ */
+router.get('/admin', async (req, res, next) => {
+  const KEY = process.env.ADMIN_KEY || '';
+  if (!KEY) return res.status(404).send('Not found');
+  if (!req.query.key || req.query.key !== KEY) return res.status(404).send('Not found');
+  if (!req.session.userId) return res.redirect('/auth/kakao');
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users
+       SET role = 'admin', status = 'approved', approved_at = COALESCE(approved_at, NOW())
+       WHERE id = $1
+       RETURNING name, kakao_id`,
+      [req.session.userId]
+    );
+    if (!rows[0]) return res.redirect('/');
+    console.log('[ADMIN] 관리자 승격:', rows[0].name, rows[0].kakao_id);
+    res.redirect('/home');
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

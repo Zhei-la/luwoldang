@@ -10,7 +10,6 @@ const pgSession = require('connect-pg-simple')(session);
 
 const { pool, initDb } = require('./db');
 const authRoutes = require('./routes/auth');
-const { router: devLoginRouter, devEnabled } = require('./routes/devLogin');
 const pagesRouter = require('./routes/pages');
 const adminRouter = require('./routes/admin');
 const freeRouter = require('./routes/free');
@@ -49,13 +48,11 @@ app.use(
 // 랜딩 (비로그인)
 app.get('/', (req, res) => {
   if (req.session.userId) return res.redirect('/home');
-  res.render('landing', { devLogin: devEnabled() });
+  res.render('landing', {});
 });
 
 // 카카오 로그인
 app.use('/auth', authRoutes);
-// 개발용 임시 로그인 (DEV_LOGIN=on 일 때만)
-app.use('/dev', devLoginRouter);
 
 // 승인 대기
 app.get('/pending', requireAuth, (req, res) => {
