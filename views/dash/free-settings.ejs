@@ -75,6 +75,7 @@
       <input class="fi" type="email" id="testTo" placeholder="테스트 받을 이메일" value="<%= user.mail_user || '' %>">
       <button class="btn btn-ghost" type="button" id="btnTestMail">테스트 발송</button>
     </div>
+    <button class="btn btn-ghost" type="button" id="btnMailStatus" style="width:100%;margin-top:8px">저장된 키 확인하기</button>
     <div class="prog" id="mailProg"></div>
     <p class="hint">먼저 <b>설정 저장</b>을 누른 뒤 테스트하세요.</p>
   </div>
@@ -104,6 +105,28 @@
 </form>
 
 <script>
+  // 저장된 키 확인
+  var btnStatus = document.getElementById('btnMailStatus');
+  if (btnStatus) {
+    btnStatus.onclick = async function(){
+      var prog = document.getElementById('mailProg');
+      try {
+        var r = await fetch('/api/mail/status');
+        var d = await r.json();
+        var lines = [];
+        lines.push('API 키: ' + (d.apiKey ? d.apiKey.preview + ' (' + d.apiKey.length + '자)' : '없음'));
+        lines.push('비밀 키: ' + (d.secretKey ? d.secretKey.preview + ' (' + d.secretKey.length + '자)' : '없음'));
+        lines.push('보내는 주소: ' + (d.fromEmail || '없음'));
+        var bad = (d.apiKey && d.apiKey.length !== 32) || (d.secretKey && d.secretKey.length !== 32);
+        prog.className = bad ? 'prog err' : 'prog on';
+        prog.textContent = lines.join('  |  ') + (bad ? '  ⚠️ 키는 보통 32자입니다. 길이를 확인해주세요.' : '');
+      } catch(e) {
+        prog.className = 'prog err';
+        prog.textContent = '확인 실패: ' + e.message;
+      }
+    };
+  }
+
   var btnTest = document.getElementById('btnTestMail');
   if (btnTest) {
     btnTest.onclick = async function(){

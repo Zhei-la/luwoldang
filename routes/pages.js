@@ -47,11 +47,13 @@ router.post('/free-saju-settings', async (req, res, next) => {
     if (openai_key && openai_key.trim()) {
       await pool.query('UPDATE users SET openai_key = $1 WHERE id = $2', [openai_key.trim(), req.user.id]);
     }
-    if (mj_key && mj_key.trim()) {
-      await pool.query('UPDATE users SET mj_key = $1 WHERE id = $2', [mj_key.trim(), req.user.id]);
+    // 키에 공백/따옴표가 딸려오는 경우가 많아 정리
+    const clean = (v) => String(v || '').replace(/[\s'"]/g, '');
+    if (mj_key && clean(mj_key)) {
+      await pool.query('UPDATE users SET mj_key = $1 WHERE id = $2', [clean(mj_key), req.user.id]);
     }
-    if (mj_secret && mj_secret.trim()) {
-      await pool.query('UPDATE users SET mj_secret = $1 WHERE id = $2', [mj_secret.trim(), req.user.id]);
+    if (mj_secret && clean(mj_secret)) {
+      await pool.query('UPDATE users SET mj_secret = $1 WHERE id = $2', [clean(mj_secret), req.user.id]);
     }
 
     await pool.query(
@@ -67,6 +69,22 @@ router.post('/free-saju-settings', async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+
+// 메일 설정 상태 확인 (키는 마스킹해서 표시)
+router.get('/api/mail/status', (req, res) => {
+  const mask = (v) => {
+    if (!v) return null;
+    const s = String(v);
+    return { length: s.length, preview: s.slice(0, 4) + '...' + s.slice(-4) };
+  };
+  res.json({
+    apiKey: mask(req.user.mj_key),
+    secretKey: mask(req.user.mj_secret),
+    fromEmail: req.user.mail_user || null,
+    fromName: req.user.mail_name || null,
+    note: 'Mailjet 키는 보통 32자입니다. 길이가 다르면 잘못 붙여넣은 것입니다.',
+  });
 });
 
 // 메일 테스트 발송
