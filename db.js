@@ -40,10 +40,10 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing JSONB;`);
 
   // 교육생별 메일 발송 설정 (각자 Gmail 사용 → 자기 이름으로 발송, 한도도 각자)
+  // Mailjet 발송 설정 (교육생별)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mj_key TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mj_secret TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_user TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_pass TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_key TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_mode TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_name TEXT;`);
 
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);

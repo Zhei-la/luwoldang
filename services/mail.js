@@ -1,42 +1,27 @@
-const nodemailer = require('nodemailer');
-
 /* ============================================================
- * 메일 발송 — SMTP(Gmail) 또는 Resend HTTP API
+ * 메일 발송 — Mailjet HTTP API
  *
- * 방식 선택 (users.mail_mode):
- *   'smtp'   : Gmail 앱 비밀번호 사용. 누구에게나 발송 가능. 도메인 불필요.
- *              단, Railway가 SMTP 포트를 막으면 실패함.
- *   'resend' : HTTPS(443) 사용. 포트 차단 영향 없음.
- *              단, 도메인 인증 전에는 본인 이메일로만 발송 가능.
+ * 왜 Mailjet인가:
+ *   - Railway는 SMTP 포트(25/465/587)를 차단 → Gmail 직접 발송 불가
+ *   - Mailjet은 HTTPS(443)로 보내므로 차단 영향 없음
+ *   - 도메인 없이 "발신자 이메일 인증"만으로 누구에게나 발송 가능
+ *   - 하루 200통 무료
  *
- * 저장 필드:
- *   mail_mode, mail_user(주소), mail_pass(앱비번), mail_key(Resend키), mail_name
+ * 설정 (교육생별, 없으면 관리자 .env 폴백):
+ *   users.mj_key    : Mailjet API 키
+ *   users.mj_secret : Mailjet 비밀 키
+ *   users.mail_user : 보내는 주소 (Mailjet에서 인증한 이메일)
+ *   users.mail_name : 발신인 표시 이름
  * ============================================================ */
 
-const RESEND_URL = 'https://api.resend.com/emails';
-const DEFAULT_FROM = 'onboarding@resend.dev';
+const MAILJET_URL = 'https://api.mailjet.com/v3.1/send';
 
-// 어떤 방식으로 보낼지 결정
-function mailMode(teacher) {
-  if (teacher && teacher.mail_mode) return teacher.mail_mode;
-  if (teacher && teacher.mail_pass && teacher.mail_user) return 'smtp';
-  if (teacher && teacher.mail_key) return 'resend';
-  if (process.env.MAIL_USER && process.env.MAIL_PASS) return 'smtp';
-  if (process.env.RESEND_KEY) return 'resend';
-  return null;
-}
-
-function mailReady(teacher) {
-  const m = mailMode(teacher);
-  if (m === 'smtp') {
-    const u = (teacher && teacher.mail_user) || process.env.MAIL_USER;
-    const p = (teacher && teacher.mail_pass) || process.env.MAIL_PASS;
-    return !!(u && p);
-  }
-  if (m === 'resend') {
-    return !!((teacher && teacher.mail_key) || process.env.RESEND_KEY);
-  }
-  return false;
+function mailCreds(teacher) {
+  return {
+    key:    (teacher && teacher.mj_key)    || process.env.MJ_KEY    || null,
+    secret: (teacher && teacher.mj_secret) || process.env.MJ_SECRET || null,
+    from:   (teacher && teacher.mail_user) || process.env.MAIL_FROM_EMAIL || null,
+  };
 }
 
 function fromName(teacher) {
@@ -44,90 +29,80 @@ function fromName(teacher) {
          process.env.MAIL_FROM_NAME || '사주 풀이';
 }
 
+function fromEmail(teacher) {
+  return mailCreds(teacher).from;
+}
+
 function fromAddr(teacher) {
-  const mode = mailMode(teacher);
-  const name = fromName(teacher);
-  if (mode === 'smtp') {
-    const addr = (teacher && teacher.mail_user) || process.env.MAIL_USER;
-    return `"${name}" <${addr}>`;
+  return `${fromName(teacher)} <${fromEmail(teacher) || '(주소 미설정)'}>`;
+}
+
+// 발송 준비 완료 여부
+function mailReady(teacher) {
+  const c = mailCreds(teacher);
+  return !!(c.key && c.secret && c.from);
+}
+
+/**
+ * 메일 발송
+ * @param teacher 교육생 (mj_key / mj_secret / mail_user / mail_name)
+ * @param opts { to, subject, html }
+ */
+async function sendMail(teacher, opts) {
+  const { key, secret, from } = mailCreds(teacher);
+
+  if (!key || !secret) {
+    throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 Mailjet API 키를 등록해주세요.');
   }
-  const addr = (teacher && teacher.mail_user) || process.env.MAIL_FROM_EMAIL || DEFAULT_FROM;
-  return `${name} <${addr}>`;
-}
-
-/* ---------- SMTP ---------- */
-function smtpTransport(teacher, port) {
-  const user = (teacher && teacher.mail_user) || process.env.MAIL_USER;
-  const pass = (teacher && teacher.mail_pass) || process.env.MAIL_PASS;
-  if (!user || !pass) return null;
-  return nodemailer.createTransport({
-    host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port,
-    secure: port === 465,
-    requireTLS: port === 587,
-    auth: { user, pass },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 25000,
-  });
-}
-
-async function sendViaSmtp(teacher, opts) {
-  const tried = [];
-  for (const port of [587, 465]) {   // 587 먼저 (방화벽 통과율 높음)
-    const tr = smtpTransport(teacher, port);
-    if (!tr) throw new Error('SMTP 설정이 없습니다.');
-    try {
-      await tr.sendMail({ from: fromAddr(teacher), to: opts.to, subject: opts.subject, html: opts.html });
-      return { via: 'smtp', port };
-    } catch (e) {
-      tried.push(`${port}: ${e.message}`);
-      const netErr = /timeout|ETIMEDOUT|ECONNREFUSED|ESOCKET|ECONNRESET|ENETUNREACH|EHOSTUNREACH/i.test(e.message || '');
-      if (!netErr) throw e;   // 인증 오류 등은 즉시 중단
-    }
+  if (!from) {
+    throw new Error('보내는 이메일 주소를 입력해주세요. (Mailjet에서 인증한 주소)');
   }
-  const err = new Error('SMTP 연결 실패 (' + tried.join(' / ') + ')');
-  err.smtpBlocked = true;
-  throw err;
-}
 
-/* ---------- Resend ---------- */
-async function sendViaResend(teacher, opts) {
-  const key = (teacher && teacher.mail_key) || process.env.RESEND_KEY;
-  if (!key) throw new Error('Resend API 키가 없습니다.');
-
+  const auth = Buffer.from(`${key}:${secret}`).toString('base64');
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
+
   let res, data;
   try {
-    res = await fetch(RESEND_URL, {
+    res = await fetch(MAILJET_URL, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: fromAddr(teacher), to: [opts.to], subject: opts.subject, html: opts.html }),
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Messages: [{
+          From: { Email: from, Name: fromName(teacher) },
+          To: [{ Email: opts.to }],
+          Subject: opts.subject,
+          HTMLPart: opts.html,
+        }],
+      }),
       signal: ctrl.signal,
     });
     data = await res.json().catch(() => ({}));
   } catch (e) {
     clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('메일 서버 응답이 없습니다.');
+    if (e.name === 'AbortError') throw new Error('메일 서버 응답이 없습니다. 잠시 후 다시 시도해주세요.');
     throw new Error('메일 발송 중 네트워크 오류: ' + e.message);
   }
   clearTimeout(timer);
 
+  // HTTP 에러
   if (!res.ok) {
-    throw new Error((data && (data.message || data.error)) || `발송 실패 (HTTP ${res.status})`);
+    let msg = (data && data.ErrorMessage) || `발송 실패 (HTTP ${res.status})`;
+    if (res.status === 401) msg = 'API 키가 올바르지 않습니다. API 키와 비밀 키를 확인해주세요.';
+    throw new Error(msg);
   }
-  return { via: 'resend', id: data && data.id };
-}
 
-/* ---------- 통합 발송 ---------- */
-async function sendMail(teacher, opts) {
-  const mode = mailMode(teacher);
-  if (!mode) {
-    throw new Error('메일 설정이 없습니다. [무료사주 · API 설정]에서 이메일 발송을 설정해주세요.');
+  // 메시지 단위 에러 (발신자 미인증 등)
+  const m = data && data.Messages && data.Messages[0];
+  if (m && m.Status && m.Status !== 'success') {
+    const e0 = m.Errors && m.Errors[0];
+    throw new Error((e0 && e0.ErrorMessage) || '발송에 실패했습니다.');
   }
-  if (mode === 'smtp') return sendViaSmtp(teacher, opts);
-  return sendViaResend(teacher, opts);
+
+  return { via: 'mailjet' };
 }
 
 const esc = (s) =>
@@ -236,7 +211,7 @@ async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl 
   });
 }
 
-module.exports = { sendFreeSaju, buildFreeSajuHtml, mailReady, sendMail, fromAddr, mailMode, smtpTransport, DEFAULT_FROM };
+module.exports = { sendFreeSaju, buildFreeSajuHtml, mailReady, sendMail, fromAddr, fromEmail };
 
 
 /* ============================================================
