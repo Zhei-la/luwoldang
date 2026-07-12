@@ -344,3 +344,17 @@ a.lead-row:hover { background:#fdfbf6; }
 .dw-mini-item { flex:0 0 auto; min-width:46px; text-align:center; background:#fbf7ee; border:1px solid var(--beige); border-radius:7px; padding:6px 4px; }
 .dw-mini-item span { display:block; font-size:9.5px; color:#8a8574; }
 .dw-mini-item b { display:block; font-size:13px; color:var(--navy); margin-top:2px; }
+
+/* 오행 오각형 (대시보드) */
+.ew-wrap { margin: 14px 0 10px; }
+.ew-title { font-size:13.5px; color:var(--navy); font-weight:700; margin-bottom:6px; }
+.ew-title b { color:var(--gold); }
+.ew-legend { display:flex; gap:14px; font-size:11px; color:#8a8574; margin-bottom:4px; }
+.ew-legend span { display:flex; align-items:center; gap:5px; }
+.ew-legend i { width:16px; height:2px; display:inline-block; }
+.ew-legend i.ln-sheng { background:#4a90d9; }
+.ew-legend i.ln-ke { background:#e05b52; }
+.ew-svg { width:100%; max-width:380px; height:auto; display:block; margin:0 auto; }
+.ew-name { font-size:13px; font-weight:700; fill:#252522; }
+.ew-pct { font-size:14px; font-weight:700; fill:#252522; }
+

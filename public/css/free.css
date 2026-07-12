@@ -263,3 +263,17 @@ table.chart th.rowh.sub { font-size:10.5px; color:#b3ad9c; }
 .dw-age { display:block; font-size:10.5px; color:#8a8574; margin-bottom:3px; }
 .dw-gz { display:block; font-family:"Nanum Myeongjo",serif; font-size:15px; color:var(--navy); }
 .dw-hj { display:block; font-style:normal; font-size:10px; color:#b3ad9c; margin-top:1px; }
+
+/* ===== 오행 오각형 ===== */
+.ew-wrap { margin: 4px 0 18px; }
+.ew-title { font-size:14px; color:var(--navy); font-weight:700; margin-bottom:6px; }
+.ew-title b { color:var(--gold); }
+.ew-legend { display:flex; gap:14px; font-size:11.5px; color:#8a8574; margin-bottom:4px; }
+.ew-legend span { display:flex; align-items:center; gap:5px; }
+.ew-legend i { width:16px; height:2px; display:inline-block; position:relative; }
+.ew-legend i.ln-sheng { background:#4a90d9; }
+.ew-legend i.ln-ke { background:#e05b52; }
+.ew-svg { width:100%; max-width:400px; height:auto; display:block; margin:0 auto; }
+.ew-name { font-size:13px; font-weight:700; fill:#252522; }
+.ew-pct { font-size:14px; font-weight:700; fill:#252522; }
+

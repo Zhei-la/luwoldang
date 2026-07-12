@@ -64,9 +64,14 @@
         </div>
       </div>
     <% } %>
+    <% if (saju.elementWheel) { %>
+      <%- include('../partials/element-wheel', {
+            wheel: saju.elementWheel,
+            dayMasterKo: saju.dayMasterKo,
+            dayMasterElement: saju.dayMasterElement }) %>
+    <% } %>
     <p class="chart-sum">
-      오행 · 목 <%= saju.elements.목 %> 화 <%= saju.elements.화 %> 토 <%= saju.elements.토 %> 금 <%= saju.elements.금 %> 수 <%= saju.elements.수 %>
-      &nbsp;|&nbsp; 강한 <b><%= saju.strong.join(', ') %></b> &nbsp;·&nbsp; 부족 <b><%= saju.weak.join(', ') %></b>
+      강한 기운 <b><%= saju.strong.join(', ') %></b> &nbsp;·&nbsp; 부족한 기운 <b><%= saju.weak.join(', ') %></b>
     </p>
   </div>
 </div>

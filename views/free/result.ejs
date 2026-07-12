@@ -107,14 +107,13 @@
           </table>
         </div>
 
-        <!-- 오행 -->
-        <div class="el-bar">
-          <% ['목','화','토','금','수'].forEach(function(k){ %>
-            <div class="el-item el-<%= k %>">
-              <span><%= k %></span><b><%= saju.elements[k] %></b>
-            </div>
-          <% }); %>
-        </div>
+        <!-- 오행 오각형 -->
+        <% if (saju.elementWheel) { %>
+          <%- include('../partials/element-wheel', {
+                wheel: saju.elementWheel,
+                dayMasterKo: saju.dayMasterKo,
+                dayMasterElement: saju.dayMasterElement }) %>
+        <% } %>
         <p class="el-sum">강한 기운 <em><%= saju.strong.join(', ') %></em> · 부족한 기운 <em><%= saju.weak.join(', ') %></em></p>
 
         <% if (saju.daewoon && saju.daewoon.list.length) { %>

@@ -1,0 +1,79 @@
+<%
+/* 오행 오각형 — 일간이 12시 방향, 상생 순서로 시계방향
+   필요 변수: wheel (saju.elementWheel), dayMasterKo, dayMasterElement */
+var EL_C = { '목':'#7fd0e8', '화':'#f5a9b8', '토':'#f5cb6b', '금':'#d8dade', '수':'#a9aec4' };
+var EL_LINE = { '목':'#2e8b57', '화':'#cf4038', '토':'#b8860b', '금':'#6b7684', '수':'#2f6bb0' };
+
+var CX = 200, CY = 190, R = 128, NR = 46;   // 중심, 반지름, 노드 반지름
+var pts = wheel.map(function (w, i) {
+  var a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;   // 12시부터 시계방향
+  return { x: CX + R * Math.cos(a), y: CY + R * Math.sin(a), w: w };
+});
+
+/* 노드 가장자리에서 멈추는 화살표 좌표 */
+function edge(from, to, pad) {
+  var dx = to.x - from.x, dy = to.y - from.y;
+  var len = Math.sqrt(dx * dx + dy * dy) || 1;
+  var ux = dx / len, uy = dy / len;
+  return {
+    x1: from.x + ux * (NR + 4), y1: from.y + uy * (NR + 4),
+    x2: to.x - ux * (NR + pad), y2: to.y - uy * (NR + pad)
+  };
+}
+%>
+<div class="ew-wrap">
+  <div class="ew-title">나의 오행: <b><%= dayMasterKo %><%= dayMasterElement %></b></div>
+  <div class="ew-legend">
+    <span><i class="ln-sheng"></i>생(生)</span>
+    <span><i class="ln-ke"></i>극(剋)</span>
+  </div>
+
+  <svg viewBox="0 0 400 390" class="ew-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ah-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#4a90d9"/>
+      </marker>
+      <marker id="ah-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#e05b52"/>
+      </marker>
+      <% pts.forEach(function(p, i){ %>
+        <clipPath id="ewclip<%= i %>">
+          <% var fillY = p.y + NR - (NR * 2 * (p.w.pct / 100)); %>
+          <rect x="<%= p.x - NR %>" y="<%= fillY %>" width="<%= NR * 2 %>" height="<%= NR * 2 %>"/>
+        </clipPath>
+      <% }); %>
+    </defs>
+
+    <!-- 극(剋) — 별 모양, 두 칸 건너 -->
+    <% for (var i = 0; i < 5; i++) {
+         var e = edge(pts[i], pts[(i + 2) % 5], 6); %>
+      <line x1="<%= e.x1.toFixed(1) %>" y1="<%= e.y1.toFixed(1) %>"
+            x2="<%= e.x2.toFixed(1) %>" y2="<%= e.y2.toFixed(1) %>"
+            stroke="#e05b52" stroke-width="1.6" marker-end="url(#ah-k)" opacity=".85"/>
+    <% } %>
+
+    <!-- 생(生) — 바깥 원, 한 칸씩 -->
+    <% for (var i = 0; i < 5; i++) {
+         var e = edge(pts[i], pts[(i + 1) % 5], 6); %>
+      <line x1="<%= e.x1.toFixed(1) %>" y1="<%= e.y1.toFixed(1) %>"
+            x2="<%= e.x2.toFixed(1) %>" y2="<%= e.y2.toFixed(1) %>"
+            stroke="#4a90d9" stroke-width="2" marker-end="url(#ah-s)"/>
+    <% } %>
+
+    <!-- 노드 -->
+    <% pts.forEach(function(p, i){ var w = p.w; %>
+      <circle cx="<%= p.x.toFixed(1) %>" cy="<%= p.y.toFixed(1) %>" r="<%= NR %>" fill="#fff"/>
+      <% if (w.pct > 0) { %>
+        <circle cx="<%= p.x.toFixed(1) %>" cy="<%= p.y.toFixed(1) %>" r="<%= NR %>"
+                fill="<%= EL_C[w.el] %>" clip-path="url(#ewclip<%= i %>)"/>
+      <% } %>
+      <circle cx="<%= p.x.toFixed(1) %>" cy="<%= p.y.toFixed(1) %>" r="<%= NR %>"
+              fill="none" stroke="<%= w.pct > 0 ? EL_LINE[w.el] : '#dcd6c8' %>"
+              stroke-width="<%= w.pct > 0 ? 1.4 : 1 %>" opacity="<%= w.pct > 0 ? .55 : 1 %>"/>
+      <text x="<%= p.x.toFixed(1) %>" y="<%= (p.y - 6).toFixed(1) %>" text-anchor="middle"
+            class="ew-name"><%= w.el %>(<%= w.group %>)</text>
+      <text x="<%= p.x.toFixed(1) %>" y="<%= (p.y + 15).toFixed(1) %>" text-anchor="middle"
+            class="ew-pct"><%= w.pct %>%</text>
+    <% }); %>
+  </svg>
+</div>
