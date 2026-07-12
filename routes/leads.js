@@ -3,9 +3,12 @@ const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
-const { generatePdfReport, PDF_TYPES } = require('../services/ai');
-const { sendPdfReport, buildPdfHtml } = require('../services/mail');
-const { buildReportHtml } = require('../services/pdfDoc');
+const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL } = require('../services/ai');
+const { sendPdfReport, buildPdfHtml, sendFreeSaju } = require('../services/mail');
+const { buildReportHtml, esc } = require('../services/pdfDoc');
+const { buildFreePdfHtml } = require('../services/freePdf');
+
+const FREE = '무료사주';
 
 router.use(requireAuth, requireApproved);
 
@@ -167,6 +170,20 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       question: lead.memo,
     };
 
+    /* ── 무료사주: 공개 페이지와 완전히 같은 파이프라인 ── */
+    if (type === FREE) {
+      send('progress', { done: 0, total: 1, title: '무료 사주 풀이 생성 중' });
+      const free = await generateFreeSaju({ client, saju, openaiKey: req.user.openai_key });
+      send('progress', { done: 1, total: 1, title: '완료' });
+
+      const insF = await pool.query(
+        'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,NULL) RETURNING id',
+        [req.user.id, lead.id, FREE, JSON.stringify(free)]
+      );
+      send('done', { pdfId: insF.rows[0].id, chapters: 1 });
+      return res.end();
+    }
+
     const result = await generatePdfReport({
       type, client, saju, openaiKey: req.user.openai_key,
       onProgress: (done, total, title) => send('progress', { done, total, title }),
@@ -217,15 +234,26 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
       });
     } catch (e) { /* noop */ }
 
-    await sendPdfReport({
-      to,
-      teacher: req.user,
-      type: pdf.type,
-      sections: pdf.sections,
-      saju,
-      input: { name: pdf.name },
-      baseUrl: process.env.BASE_URL || '',
-    });
+    if (pdf.type === FREE) {
+      // 무료사주는 공개 페이지와 같은 메일 템플릿으로
+      await sendFreeSaju({
+        to, teacher: req.user, saju,
+        result: pdf.sections || {},
+        input: { name: pdf.name, email: to },
+        upsell: UPSELL,
+        baseUrl: process.env.BASE_URL || '',
+      });
+    } else {
+      await sendPdfReport({
+        to,
+        teacher: req.user,
+        type: pdf.type,
+        sections: pdf.sections,
+        saju,
+        input: { name: pdf.name },
+        baseUrl: process.env.BASE_URL || '',
+      });
+    }
 
     await pool.query(
       'UPDATE pdfs SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1 WHERE id = $2',
@@ -299,6 +327,29 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
         gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
+
+    /* ── 무료사주: 공개 링크 PDF와 똑같이 ── */
+    if (pdf.type === FREE) {
+      const html = buildFreePdfHtml({
+        teacher: req.user, client, saju,
+        result: pdf.sections || {},
+        baseUrl: process.env.BASE_URL || '',
+      });
+      const bar = `
+<div class="no-print" style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:12px;align-items:center;
+     justify-content:center;padding:11px;background:#232220;color:#fff;font-family:Pretendard,sans-serif;font-size:13px">
+  <a href="/leads/${pdf.lead_id}" style="color:#c8a45c;text-decoration:none">← 돌아가기</a>
+  <span>${esc(pdf.name)}님 · 무료사주</span>
+  <span style="opacity:.6">인쇄창에서 여백 <b>없음</b> · 배경 그래픽 <b>체크</b></span>
+  <button onclick="window.print()" style="padding:7px 16px;border:0;border-radius:5px;background:#c8a45c;color:#241a06;font-weight:800;cursor:pointer">
+    PDF로 저장
+  </button>
+</div>
+<div class="no-print" style="height:44px"></div>`;
+      return res
+        .set('Content-Type', 'text/html; charset=utf-8')
+        .send(html.replace('<body>', '<body>' + bar));
+    }
 
     const chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
     const extra = pdf.extra || null;
