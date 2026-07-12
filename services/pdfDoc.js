@@ -303,17 +303,25 @@ function paginateChapter(ch) {
   return pages.length ? pages : [{ isFirst: true, blocks: [] }];
 }
 
-function chapterPages(chapters) {
+function chapterPages(chapters, question) {
   return chapters.map((ch, i) => {
     const pages = paginateChapter(ch);
 
     return pages.map((pg, pi) => {
+      const isQ = ch.title === '내담자 질문 답변';
+      const qBox = (pg.isFirst && isQ && question) ? `
+  <div class="q-box">
+    <div class="q-label">남겨주신 질문</div>
+    <p class="q-text">${esc(question)}</p>
+  </div>` : '';
+
       const head = pg.isFirst ? `
   <div class="ch-head">
     <span class="ch-no">${String(i + 1).padStart(2, '0')}</span>
     <h2 class="ch-title">${esc(ch.title)}</h2>
   </div>
-  <div class="pg-line"></div>` : '';
+  <div class="pg-line"></div>
+  ${qBox}` : '';
 
       const body = pg.blocks.map((b) => `
       <div class="ch-block">
@@ -580,6 +588,30 @@ body {
   break-inside: avoid;
 }
 
+/* 내담자 질문 박스 */
+.q-box {
+  background: #faf6ec;
+  border: 1px solid #ddd2b8;
+  border-left: 3px solid #a08a5c;
+  border-radius: 0 8px 8px 0;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+.q-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #a08a5c;
+  margin-bottom: 8px;
+}
+.q-text {
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 16px;
+  line-height: 1.85;
+  color: #3a3831;
+  margin: 0;
+}
+
 /* 마무리 — 상하좌우 중앙 */
 .end {
   display: flex;
@@ -706,7 +738,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl }) {
 ${coverPage({ type, client, teacher, baseUrl })}
 ${tocPage(chapters, type)}
 ${sajuPages({ client, saju, type })}
-${chapterPages(chapters)}
+${chapterPages(chapters, client.question)}
 ${endPage({ teacher })}
 </body>
 </html>`;

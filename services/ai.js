@@ -150,7 +150,7 @@ module.exports = { generateFreeSaju, UPSELL };
  *   챕터 15개 → 본문 55~75페이지 (+ 표지/목차/만세력 5p)
  * ============================================================ */
 
-const { OUTLINES, titles } = require('./outlines');
+const { OUTLINES, titles, outlineWithQuestion, QUESTION_CHAPTER } = require('./outlines');
 
 const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '무료사주'];
 
@@ -315,6 +315,24 @@ async function generateChapter({ type, chapter, index, total, client, saju, open
   const info = sajuBlock(client, saju);
   const subs = chapter.sub || [];
 
+  const isQuestion = chapter.title === QUESTION_CHAPTER.title;
+
+  // 질문 답변 챕터는 전용 지시를 준다
+  const questionGuide = isQuestion ? `
+
+⚠️ 이 챕터는 **내담자가 직접 남긴 질문에 답하는 챕터**입니다.
+
+[내담자의 질문]
+"${client.question}"
+
+이 질문에만 집중해서 답하세요.
+- 다른 챕터에서 이미 다룬 내용을 반복하지 마세요.
+- 질문에 나온 주제를 명식에서 직접 찾아 근거로 삼으세요.
+  (예: 결혼 질문 → 일지·배우자성·대운 / 이직 질문 → 관성·재성·현재 대운)
+- 두루뭉술하게 넘기지 말고, 이 사람의 명식에서 답을 끌어내세요.
+- 다만 단정("~하게 됩니다")은 피하고 흐름과 경향으로 씁니다.
+- 답을 회피하지 마세요. 물어본 것에 대해 최선을 다해 답하세요.` : '';
+
   const user = `${info}
 
 ${fieldBlock(type)}
@@ -322,6 +340,7 @@ ${fieldBlock(type)}
 [작성할 챕터]
 리포트 종류: ${type}
 챕터 ${index + 1}/${total}: ${chapter.title}
+${questionGuide}
 
 아래 소제목 ${subs.length}개를 각각 **700~900자**로 작성해주세요.
 blocks 배열에 소제목 순서대로 담아주세요. sub는 아래 소제목 그대로 쓰세요.
@@ -389,7 +408,8 @@ ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}
  * @param onProgress (done, total, title) => void
  */
 async function generatePdfReport({ type, client, saju, openaiKey, model, onProgress }) {
-  const chapters = OUTLINES[type] || OUTLINES['종합사주'];
+  // 내담자가 질문을 남겼으면 '질문 답변' 챕터를 마지막 조언 앞에 끼워 넣는다
+  const chapters = outlineWithQuestion(type, client.question);
   const out = [];
 
   for (let i = 0; i < chapters.length; i++) {
