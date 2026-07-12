@@ -1,0 +1,80 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: 'PDF 만들기' }) %>
+
+<div class="settings-block">
+  <h2 class="section-h">내담자 정보 입력</h2>
+  <p class="block-desc">
+    카톡·전화 등 <b>외부로 신청받은 내담자</b>의 정보를 직접 입력합니다.<br>
+    저장하면 <b>사주 신청자</b> 목록에 추가되고, 바로 리포트를 만들 수 있습니다.
+  </p>
+
+  <% if (!hasKey) { %>
+    <div class="warn-box" style="margin-bottom:16px">
+      OpenAI API 키를 먼저 등록해주세요. <a href="/free-saju-settings">설정하러 가기 →</a>
+    </div>
+  <% } %>
+
+  <% if (error) { %><div class="warn-box" style="margin-bottom:16px"><%= error %></div><% } %>
+
+  <form method="post" action="/pdf/create">
+    <label class="fl">이름 <span class="req">*</span></label>
+    <input class="fi" type="text" name="name" value="<%= form.name || '' %>" placeholder="홍길동" required>
+
+    <label class="fl">성별</label>
+    <div class="seg-row">
+      <label class="seg-item"><input type="radio" name="gender" value="남" <%= form.gender === '남' ? 'checked' : '' %>> 남성</label>
+      <label class="seg-item"><input type="radio" name="gender" value="여" <%= form.gender === '여' ? 'checked' : '' %>> 여성</label>
+    </div>
+
+    <label class="fl">생년월일 <span class="req">*</span></label>
+    <input class="fi" type="date" name="birthDate" value="<%= form.birthDate || '' %>" min="1930-01-01" max="2025-12-31" required>
+
+    <label class="fl">달력</label>
+    <div class="seg-row c3">
+      <label class="seg-item"><input type="radio" name="calendar" value="양력" <%= (form.calendar || '양력') === '양력' ? 'checked' : '' %>> 양력</label>
+      <label class="seg-item"><input type="radio" name="calendar" value="음력" <%= form.calendar === '음력' ? 'checked' : '' %>> 음력</label>
+      <label class="seg-item"><input type="radio" name="calendar" value="윤달" <%= form.calendar === '윤달' ? 'checked' : '' %>> 윤달</label>
+    </div>
+
+    <label class="fl">태어난 시간</label>
+    <input class="fi" type="time" name="birthTime" id="birthTime" value="<%= form.birthTime || '' %>">
+    <label class="chk-inline">
+      <input type="checkbox" name="timeUnknown" id="timeUnknown" onchange="toggleTime()" <%= form.timeUnknown ? 'checked' : '' %>>
+      태어난 시간을 모름
+    </label>
+
+    <label class="fl">태어난 지역</label>
+    <select class="fi" name="region">
+      <% var regions = ['서울특별시','인천광역시','경기도','강원도','대전광역시','세종특별자치시','충청북도','충청남도','광주광역시','전라북도','전라남도','대구광역시','경상북도','부산광역시','울산광역시','경상남도','제주특별자치도']; %>
+      <% regions.forEach(function(r){ %>
+        <option value="<%= r %>" <%= (form.region || '서울특별시') === r ? 'selected' : '' %>><%= r %></option>
+      <% }); %>
+    </select>
+    <p class="hint">지역에 따라 실제 태어난 시각(진태양시)이 보정됩니다.</p>
+
+    <label class="fl">이메일</label>
+    <input class="fi" type="email" name="email" value="<%= form.email || '' %>" placeholder="리포트를 보낼 이메일 (선택)">
+    <p class="hint">이메일이 없으면 PDF로 저장해서 직접 전달할 수 있습니다.</p>
+
+    <label class="fl">연락처</label>
+    <input class="fi" type="text" name="phone" value="<%= form.phone || '' %>" placeholder="010-0000-0000 (선택)">
+
+    <label class="fl">묻고 싶은 것</label>
+    <textarea class="fi" name="memo" rows="3" placeholder="내담자가 궁금해하는 내용 (선택) — 리포트에 반영됩니다"><%= form.memo || '' %></textarea>
+
+    <button class="free-save-btn" type="submit" style="margin-top:20px">
+      저장하고 리포트 만들기 →
+    </button>
+  </form>
+</div>
+
+<script>
+  function toggleTime() {
+    var t = document.getElementById('birthTime');
+    var u = document.getElementById('timeUnknown');
+    t.disabled = u.checked;
+    if (u.checked) t.value = '';
+  }
+  toggleTime();
+</script>
+
+<%- include('../partials/dash-bottom') %>

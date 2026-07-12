@@ -7,9 +7,23 @@ const { requireAuth, requireApproved } = require('../middleware/auth');
 router.use(requireAuth, requireApproved);
 
 // 홈
-router.get('/home', (req, res) => {
-  res.render('dash/home', { user: req.user, active: 'home' });
+router.get('/home', async (req, res, next) => {
+  try {
+    const q = async (sql) => (await pool.query(sql, [req.user.id])).rows[0].c;
+    const stats = {
+      pdfs:  await q('SELECT COUNT(*)::int AS c FROM pdfs WHERE teacher_id = $1'),
+      sent:  await q('SELECT COUNT(*)::int AS c FROM pdfs WHERE teacher_id = $1 AND mail_sent = TRUE'),
+      leads: await q('SELECT COUNT(*)::int AS c FROM leads WHERE teacher_id = $1'),
+      free:  await q('SELECT COUNT(*)::int AS c FROM free_logs WHERE teacher_id = $1'),
+    };
+    res.render('dash/home', { user: req.user, active: 'home', stats });
+  } catch (e) {
+    next(e);
+  }
 });
+
+// API 관리 (설정 페이지로 통합)
+router.get('/api-settings', (req, res) => res.redirect('/free-saju-settings'));
 
 // 무료사주 웹사이트 설정 (실제 기능)
 router.get('/free-saju-settings', (req, res) => {
@@ -123,6 +137,22 @@ router.post('/api/mail/test', async (req, res) => {
     }
     res.status(500).json({ ok: false, error: msg, hint });
   }
+});
+
+// 내담자 추가질문 (다음 단계에서 구현)
+router.get('/chat', (req, res) => {
+  res.render('dash/placeholder', {
+    user: req.user, active: 'chat',
+    title: '내담자 추가질문', step: '다음 단계',
+  });
+});
+
+// 내 계정
+router.get('/account', (req, res) => {
+  res.render('dash/account', {
+    user: req.user, active: 'account',
+    baseUrl: process.env.BASE_URL || '',
+  });
 });
 
 module.exports = router;

@@ -287,4 +287,82 @@ async function sendMail(){
   }
 });
 
+
+/* ===== PDF 만들기 — 내담자 직접 입력 (외부 신청분) ===== */
+router.get('/pdf/create', (req, res) => {
+  res.render('dash/pdf-create', {
+    user: req.user,
+    active: 'pdf',
+    types: PDF_TYPES,
+    hasKey: !!req.user.openai_key,
+    error: null,
+    form: {},
+  });
+});
+
+router.post('/pdf/create', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const back = (error, form) => res.status(400).render('dash/pdf-create', {
+      user: req.user, active: 'pdf', types: PDF_TYPES,
+      hasKey: !!req.user.openai_key, error, form,
+    });
+
+    if (!b.name || !b.birthDate) return back('이름과 생년월일은 필수입니다.', b);
+    if (!req.user.openai_key) return back('OpenAI API 키를 먼저 등록해주세요.', b);
+
+    // 내담자를 신청자 목록에 등록 (외부 유입으로 구분)
+    const lead = await pool.query(
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력') RETURNING id`,
+      [req.user.id, b.name, b.gender || null, b.birthDate, b.calendar || '양력',
+       b.timeUnknown ? null : (b.birthTime || null), b.region || '서울특별시',
+       (b.email || '').trim() || null, (b.phone || '').trim() || null, (b.memo || '').trim() || null]
+    );
+
+    res.redirect('/leads/' + lead.rows[0].id);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/* ===== PDF · 이메일 발송 기록 ===== */
+router.get('/records', async (req, res, next) => {
+  try {
+    const f = req.query.f || 'all';
+    const { rows } = await pool.query(
+      `SELECT p.*, l.name, l.email AS lead_email, l.source
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.teacher_id = $1
+       ORDER BY p.created_at DESC LIMIT 200`,
+      [req.user.id]
+    );
+
+    const free = await pool.query(
+      `SELECT f.id, f.created_at, f.mail_sent, f.input
+       FROM free_logs f WHERE f.teacher_id = $1
+       ORDER BY f.created_at DESC LIMIT 100`,
+      [req.user.id]
+    );
+
+    let records = rows;
+    if (f === '발송완료') records = rows.filter((r) => r.mail_sent);
+    else if (f === '미발송') records = rows.filter((r) => !r.mail_sent);
+
+    const counts = {
+      all: rows.length,
+      발송완료: rows.filter((r) => r.mail_sent).length,
+      미발송: rows.filter((r) => !r.mail_sent).length,
+      무료사주: free.rows.length,
+    };
+
+    res.render('dash/records', {
+      user: req.user, active: 'records',
+      records, freeLogs: free.rows, filter: f, counts,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

@@ -1,0 +1,79 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: 'PDF · 이메일 발송 기록' }) %>
+
+<%
+  function fmt(d){ try { return new Date(d).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return '-'; } }
+  var tabs = [['all','전체 리포트'],['발송완료','발송완료'],['미발송','미발송']];
+%>
+
+<div class="filters">
+  <% tabs.forEach(function(t){ %>
+    <a href="/records?f=<%= t[0] %>" class="ftab <%= filter === t[0] ? 'on' : '' %>">
+      <%= t[1] %><span><%= counts[t[0]] %></span>
+    </a>
+  <% }); %>
+</div>
+
+<h2 class="section-h">사주 리포트</h2>
+<% if (records.length === 0) { %>
+  <div class="empty-box">
+    <% if (filter === 'all') { %>
+      아직 제작한 리포트가 없습니다.<br><a href="/pdf/create">PDF 만들기</a>에서 시작해보세요.
+    <% } else { %>
+      해당하는 기록이 없습니다.
+    <% } %>
+  </div>
+<% } else { %>
+  <div class="tbl">
+    <% records.forEach(function(r){ %>
+      <div class="tbl-row">
+        <div class="tbl-main">
+          <div class="u-name">
+            <%= r.name %>
+            <span class="u-role"><%= r.type %></span>
+            <% if (r.mail_sent) { %><span class="badge-sent">✓ 발송완료</span>
+            <% } else { %><span class="badge-todo">미발송</span><% } %>
+          </div>
+          <div class="u-sub">
+            제작 <%= fmt(r.created_at) %>
+            <% if (r.mail_sent) { %> · 발송 <%= fmt(r.sent_at) %> → <%= r.sent_to %><% } %>
+            <% if (r.source) { %> · <%= r.source %><% } %>
+          </div>
+        </div>
+        <div class="tbl-actions">
+          <a class="btn btn-ghost" href="/pdfs/<%= r.id %>/preview" target="_blank">미리보기</a>
+          <a class="btn btn-ghost" href="/leads/<%= r.lead_id %>">상세</a>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<h2 class="section-h" style="margin-top:36px;">무료사주 발송 <span class="count light"><%= counts['무료사주'] %></span></h2>
+<% if (freeLogs.length === 0) { %>
+  <div class="empty-box">아직 무료사주 발송 내역이 없습니다.</div>
+<% } else { %>
+  <div class="tbl">
+    <% freeLogs.forEach(function(f){ %>
+      <% var inp = f.input || {}; %>
+      <div class="tbl-row">
+        <div class="tbl-main">
+          <div class="u-name">
+            <%= inp.name || '-' %>
+            <span class="src free">무료사주</span>
+            <% if (f.mail_sent) { %><span class="badge-sent">✓ 발송완료</span>
+            <% } else { %><span class="badge-todo">발송 안 됨</span><% } %>
+          </div>
+          <div class="u-sub">
+            <%= inp.birthDate || '-' %> <%= inp.calendar || '' %>
+            <% if (inp.email) { %> · <%= inp.email %><% } %>
+          </div>
+        </div>
+        <div class="tbl-actions">
+          <span class="lead-time"><%= fmt(f.created_at) %></span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('../partials/dash-bottom') %>
