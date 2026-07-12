@@ -5,6 +5,7 @@ const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
 const { generatePdfReport, PDF_TYPES } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml } = require('../services/mail');
+const { buildReportHtml } = require('../services/pdfDoc');
 
 router.use(requireAuth, requireApproved);
 
@@ -127,19 +128,27 @@ function parseHour(h) {
   return null;
 }
 
-/* ===== PDF 내용 생성 (AI) ===== */
-router.post('/leads/:id/pdf', async (req, res, next) => {
+/* ===== PDF 내용 생성 (AI) — 챕터별 진행상황 스트리밍 ===== */
+router.get('/leads/:id/pdf/stream', async (req, res) => {
+  const type = req.query.type;
+
+  res.set({
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  const send = (ev, data) => res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
+
   try {
     const { rows } = await pool.query(
       'SELECT * FROM leads WHERE id = $1 AND teacher_id = $2',
       [req.params.id, req.user.id]
     );
     const lead = rows[0];
-    if (!lead) return res.status(404).json({ ok: false, error: '신청 내역 없음' });
-    if (!req.user.openai_key) return res.status(400).json({ ok: false, error: 'OpenAI 키를 먼저 등록해주세요.' });
-
-    const type = req.body.type;
-    if (!PDF_TYPES.includes(type)) return res.status(400).json({ ok: false, error: 'PDF 종류를 선택해주세요.' });
+    if (!lead) { send('error', { error: '신청 내역을 찾을 수 없습니다.' }); return res.end(); }
+    if (!req.user.openai_key) { send('error', { error: 'OpenAI 키를 먼저 등록해주세요.' }); return res.end(); }
+    if (!PDF_TYPES.includes(type)) { send('error', { error: 'PDF 종류를 선택해주세요.' }); return res.end(); }
 
     const saju = calcSaju({
       birthDate: normalizeBirth(lead.birth),
@@ -158,17 +167,22 @@ router.post('/leads/:id/pdf', async (req, res, next) => {
       question: lead.memo,
     };
 
-    const sections = await generatePdfReport({ type, client, saju, openaiKey: req.user.openai_key });
+    const chapters = await generatePdfReport({
+      type, client, saju, openaiKey: req.user.openai_key,
+      onProgress: (done, total, title) => send('progress', { done, total, title }),
+    });
 
     const ins = await pool.query(
       'INSERT INTO pdfs (teacher_id, lead_id, type, sections) VALUES ($1,$2,$3,$4) RETURNING id',
-      [req.user.id, lead.id, type, JSON.stringify(sections)]
+      [req.user.id, lead.id, type, JSON.stringify(chapters)]
     );
 
-    res.json({ ok: true, pdfId: ins.rows[0].id });
+    send('done', { pdfId: ins.rows[0].id, chapters: chapters.length });
+    res.end();
   } catch (e) {
     console.error('[PDF] 생성 실패:', e.message);
-    res.status(500).json({ ok: false, error: e.message });
+    send('error', { error: e.message });
+    res.end();
   }
 });
 
@@ -223,11 +237,11 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
 });
 
 
-/* ===== PDF 미리보기 (인쇄 → PDF 저장 가능) ===== */
+/* ===== PDF 미리보기 (인쇄 → PDF 저장) ===== */
 router.get('/pdfs/:id/preview', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -235,11 +249,21 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     const pdf = rows[0];
     if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
 
+    const client = {
+      name: pdf.name,
+      gender: pdf.gender,
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar,
+      region: pdf.region,
+      question: pdf.memo,
+    };
+
     let saju = null;
     try {
       saju = calcSaju({
-        birthDate: normalizeBirth(pdf.birth),
-        birthTime: parseHour(pdf.hour),
+        birthDate: client.birthDate,
+        birthTime: client.birthTime,
         calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
         isLeapMonth: pdf.calendar === '윤달',
         region: pdf.region || '서울특별시',
@@ -247,41 +271,36 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       });
     } catch (e) { /* noop */ }
 
-    const inner = buildPdfHtml({
-      teacher: req.user,
+    const chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
+    const inner = buildReportHtml({
       type: pdf.type,
-      sections: pdf.sections,
+      client,
+      teacher: req.user,
       saju,
-      input: { name: pdf.name },
-      baseUrl: process.env.BASE_URL || '',
+      chapters,
     });
 
-    // 상단 툴바 + 인쇄 스타일 삽입
     const toolbar = `
 <div class="pv-bar no-print">
   <a class="pv-back" href="/leads/${pdf.lead_id}">← 돌아가기</a>
-  <span class="pv-title">${pdf.name}님 · ${pdf.type} <em>미리보기</em></span>
+  <span class="pv-title">${pdf.name}님 · ${pdf.type} <em>${chapters.length}개 챕터</em></span>
   <div class="pv-actions">
     <button onclick="window.print()">PDF로 저장 / 인쇄</button>
     <button class="send" onclick="sendMail()">이메일 보내기</button>
   </div>
 </div>
 <style>
-  .pv-bar{position:sticky;top:0;z-index:99;display:flex;align-items:center;gap:14px;padding:12px 18px;background:#182234;color:#e8e3d6;font-family:-apple-system,'Malgun Gothic',sans-serif;font-size:14px}
+  .pv-bar{position:sticky;top:0;z-index:99;display:flex;align-items:center;gap:14px;padding:12px 18px;background:#182234;color:#e8e3d6;font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif;font-size:14px}
   .pv-back{color:#b3ad9c;text-decoration:none}
   .pv-back:hover{color:#B59A62}
   .pv-title{flex:1;font-weight:600}
-  .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:4px}
+  .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:6px}
   .pv-actions{display:flex;gap:8px}
   .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit}
   .pv-actions button:hover{background:rgba(181,154,98,.2)}
   .pv-actions button.send{background:#B59A62;color:#241a06;font-weight:700}
   .pv-actions button:disabled{opacity:.5}
-  @media print{
-    .no-print{display:none!important}
-    body{background:#fff!important}
-    @page{margin:12mm}
-  }
+  body{padding-top:0}
 </style>
 <script>
 async function sendMail(){
@@ -306,91 +325,11 @@ async function sendMail(){
 }
 </script>`;
 
-    const html = inner.replace('<body style="margin:0;padding:0;background:#F7F3EA">',
-      '<body style="margin:0;padding:0;background:#F7F3EA">' + toolbar);
-
+    const html = inner.replace('<body>', '<body>' + toolbar);
     res.set('Content-Type', 'text/html; charset=utf-8').send(html);
   } catch (e) {
     next(e);
   }
 });
 
-
-/* ===== PDF 만들기 — 내담자 직접 입력 (외부 신청분) ===== */
-router.get('/pdf/create', (req, res) => {
-  res.render('dash/pdf-create', {
-    user: req.user,
-    active: 'pdf',
-    types: PDF_TYPES,
-    hasKey: !!req.user.openai_key,
-    error: null,
-    form: {},
-  });
-});
-
-router.post('/pdf/create', async (req, res, next) => {
-  try {
-    const b = req.body || {};
-    const back = (error, form) => res.status(400).render('dash/pdf-create', {
-      user: req.user, active: 'pdf', types: PDF_TYPES,
-      hasKey: !!req.user.openai_key, error, form,
-    });
-
-    if (!b.name || !b.birthDate) return back('이름과 생년월일은 필수입니다.', b);
-    if (!req.user.openai_key) return back('OpenAI API 키를 먼저 등록해주세요.', b);
-
-    // 내담자를 신청자 목록에 등록 (외부 유입으로 구분)
-    const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력') RETURNING id`,
-      [req.user.id, b.name, b.gender || null, b.birthDate, b.calendar || '양력',
-       b.timeUnknown ? null : (b.birthTime || null), b.region || '서울특별시',
-       (b.email || '').trim() || null, (b.phone || '').trim() || null, (b.memo || '').trim() || null]
-    );
-
-    res.redirect('/leads/' + lead.rows[0].id);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/* ===== PDF · 이메일 발송 기록 ===== */
-router.get('/records', async (req, res, next) => {
-  try {
-    const f = req.query.f || 'all';
-    const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email AS lead_email, l.source
-       FROM pdfs p JOIN leads l ON l.id = p.lead_id
-       WHERE p.teacher_id = $1
-       ORDER BY p.created_at DESC LIMIT 200`,
-      [req.user.id]
-    );
-
-    const free = await pool.query(
-      `SELECT f.id, f.created_at, f.mail_sent, f.input
-       FROM free_logs f WHERE f.teacher_id = $1
-       ORDER BY f.created_at DESC LIMIT 100`,
-      [req.user.id]
-    );
-
-    let records = rows;
-    if (f === '발송완료') records = rows.filter((r) => r.mail_sent);
-    else if (f === '미발송') records = rows.filter((r) => !r.mail_sent);
-
-    const counts = {
-      all: rows.length,
-      발송완료: rows.filter((r) => r.mail_sent).length,
-      미발송: rows.filter((r) => !r.mail_sent).length,
-      무료사주: free.rows.length,
-    };
-
-    res.render('dash/records', {
-      user: req.user, active: 'records',
-      records, freeLogs: free.rows, filter: f, counts,
-    });
-  } catch (e) {
-    next(e);
-  }
-});
-
-module.exports = router;
+module.exports = router;module.exports = router;

@@ -358,3 +358,9 @@ a.lead-row:hover { background:#fdfbf6; }
 .ew-name { font-size:13px; font-weight:700; fill:#252522; }
 .ew-pct { font-size:14px; font-weight:700; fill:#252522; }
 
+
+/* 리포트 생성 진행바 */
+.prog b { display:block; margin-bottom:4px; }
+.prog .bar { height:6px; background:var(--beige); border-radius:99px; overflow:hidden; margin:10px 0 8px; }
+.prog .bar i { display:block; height:100%; width:0; background:var(--gold); border-radius:99px; transition:width .4s; }
+.prog small { display:block; font-size:11.5px; color:#b3ad9c; }

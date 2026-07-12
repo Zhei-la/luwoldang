@@ -87,7 +87,7 @@
   <% } else if (!saju) { %>
     <div class="warn-box">사주 계산이 안 되어 리포트를 만들 수 없습니다.</div>
   <% } else { %>
-    <p class="block-desc">종류를 선택하면 AI가 이 분의 사주를 근거로 리포트를 작성합니다.<br>작성이 끝나면 <b>미리보기</b>가 열립니다. 확인 후 이메일 발송 또는 PDF 저장할 수 있습니다.</p>
+    <p class="block-desc">종류를 선택하면 AI가 이 분의 사주를 근거로 <b>60~80페이지</b> 리포트를 작성합니다.<br>표지 · 목차 · 만세력 · 본문 순서로 구성되며, 작성 후 <b>미리보기</b>에서 확인하고 PDF 저장 또는 이메일 발송할 수 있습니다.</p>
     <div class="type-grid" id="typeGrid">
       <% types.forEach(function(t){ %>
         <button type="button" class="type-btn" data-type="<%= t %>"><%= t %></button>
@@ -147,29 +147,46 @@
 
   var btnMake = document.getElementById('btnMake');
   if (btnMake) {
-    btnMake.onclick = async function(){
+    btnMake.onclick = function(){
       if(!picked) return;
       var prog = document.getElementById('prog');
+      var bar  = document.getElementById('progBar');
       btnMake.disabled = true;
       btnMake.textContent = '작성 중...';
       prog.className = 'prog on';
-      prog.textContent = 'AI가 사주를 분석하고 리포트를 작성하고 있습니다... (30초~1분)';
-      try {
-        var r = await fetch('/leads/<%= lead.id %>/pdf', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ type: picked })
-        });
-        var d = await r.json();
-        if(!d.ok) throw new Error(d.error || '실패');
+      prog.innerHTML = '<b>리포트를 작성하고 있습니다.</b><br>' +
+        '<span id="progMsg">준비 중...</span>' +
+        '<div class="bar"><i id="progFill"></i></div>' +
+        '<small>60~80페이지 분량이라 5~10분 정도 걸립니다. 창을 닫지 마세요.</small>';
+
+      var es = new EventSource('/leads/<%= lead.id %>/pdf/stream?type=' + encodeURIComponent(picked));
+
+      es.addEventListener('progress', function(e){
+        var d = JSON.parse(e.data);
+        var pct = Math.round(d.done / d.total * 100);
+        var msg = document.getElementById('progMsg');
+        var fill = document.getElementById('progFill');
+        if (msg) msg.textContent = '(' + d.done + '/' + d.total + ') ' + d.title;
+        if (fill) fill.style.width = pct + '%';
+      });
+
+      es.addEventListener('done', function(e){
+        var d = JSON.parse(e.data);
+        es.close();
         prog.className = 'prog ok';
-        prog.textContent = '완성됐습니다. 미리보기를 엽니다...';
-        setTimeout(function(){ location.href = '/pdfs/' + d.pdfId + '/preview'; }, 700);
-      } catch(e) {
+        prog.textContent = '완성됐습니다 (' + d.chapters + '개 챕터). 미리보기를 엽니다...';
+        setTimeout(function(){ location.href = '/pdfs/' + d.pdfId + '/preview'; }, 800);
+      });
+
+      es.addEventListener('error', function(e){
+        es.close();
+        var msg = '연결이 끊어졌습니다.';
+        try { msg = JSON.parse(e.data).error; } catch(x) {}
         prog.className = 'prog err';
-        prog.textContent = '실패: ' + e.message;
+        prog.textContent = '실패: ' + msg;
         btnMake.disabled = false;
         btnMake.textContent = picked + ' 리포트 만들기';
-      }
+      });
     };
   }
 
