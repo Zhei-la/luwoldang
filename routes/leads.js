@@ -148,10 +148,18 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       type, client, saju, openaiKey: req.user.openai_key,
       onProgress: (done, total, title) => send('progress', { done, total, title }),
     });
-    const chapters = result.chapters || [];
-    const extra = (result.checklist || result.loveCard)
+    // generatePdfReport 는 챕터 배열을 반환한다.
+    // (예전에 { chapters, checklist, loveCard } 객체를 쓰던 버전과도 호환되게 둘 다 받는다)
+    const chapters = Array.isArray(result) ? result : (result.chapters || []);
+    const extra = (!Array.isArray(result) && (result.checklist || result.loveCard))
       ? { checklist: result.checklist || null, loveCard: result.loveCard || null }
       : null;
+
+    if (!chapters.length) {
+      console.error('[PDF] 챕터가 0개입니다. AI 생성 실패 가능성.');
+      send('error', { message: '리포트 생성에 실패했습니다. OpenAI 키와 사용량을 확인해주세요.' });
+      return res.end();
+    }
 
     const ins = await pool.query(
       'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,$5) RETURNING id',
