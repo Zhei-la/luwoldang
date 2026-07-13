@@ -49,6 +49,17 @@
           <% if (String(u.id) === String(user.id)) { %>
             <span class="me-tag">나</span>
           <% } else { %>
+            <% if (u.role === 'admin') { %>
+              <form method="post" action="/admin/role/<%= u.id %>" onsubmit="return confirm('<%= u.name %>님의 관리자 권한을 내리고 교육생으로 바꿀까요?');">
+                <input type="hidden" name="role" value="trainee">
+                <button class="btn btn-ghost" type="submit">교육생으로</button>
+              </form>
+            <% } else { %>
+              <form method="post" action="/admin/role/<%= u.id %>" onsubmit="return confirm('<%= u.name %>님을 관리자로 올릴까요?\n\n관리자는 모든 교육생의 기록과 회원 승인 권한을 갖습니다.');">
+                <input type="hidden" name="role" value="admin">
+                <button class="btn btn-ghost" type="submit">관리자로</button>
+              </form>
+            <% } %>
             <form method="post" action="/admin/revoke/<%= u.id %>" onsubmit="return confirm('이 회원을 다시 승인 대기 상태로 되돌릴까요?');">
               <button class="btn btn-ghost" type="submit">승인 해제</button>
             </form>

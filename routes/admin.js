@@ -78,4 +78,24 @@ router.post('/revoke/:id', async (req, res, next) => {
   }
 });
 
+/* ===== 역할 변경 (관리자 ↔ 교육생) ===== */
+router.post('/role/:id', async (req, res, next) => {
+  if (guardSelf(req, res)) return;   // 내 권한은 스스로 못 내림
+  try {
+    const role = req.body.role === 'admin' ? 'admin' : 'trainee';
+
+    // 마지막 관리자를 내리는 건 막는다 (아무도 못 들어가는 사고 방지)
+    if (role === 'trainee') {
+      const c = await pool.query("SELECT COUNT(*)::int AS c FROM users WHERE role = 'admin'");
+      if (c.rows[0].c <= 1) return res.redirect('/admin/approvals');
+    }
+
+    await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, req.params.id]);
+    console.log('[ADMIN] 역할 변경:', req.params.id, '→', role);
+    res.redirect('/admin/approvals');
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
