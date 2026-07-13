@@ -14,7 +14,7 @@ const DEFS = {
                 { name:'기본 풀이', desc:'타고난 성향과 올해 흐름', off:'', was:'', now:'9,900', best:false },
               ] }) },
   countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'cycle', cycle:24, anchor:'', hours:6, target:'',
-                cdStyle:'urgent', numColor:'', boxColor:'', labColor:'' }) },
+                cdStyle:'urgent', numColor:'', boxColor:'', labColor:'', txtColor:'' }) },
   gauge:    { name:'남은 자리',      ico:'◐', make:()=>({ title:'남은 자리', total:30, note:'회차당 인원을 넘기면 풀이가 얕아집니다' }) },
   live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황' }) },
   reviews:  { name:'받아본 이야기',   ico:'❝', make:()=>({ title:'받아본 이야기', items:[] }) },
@@ -84,18 +84,18 @@ img{max-width:100%;display:block}
 .pr .now small{font-size:15px}
 .go{display:block;margin-top:14px;padding:16px;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:15.5px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em}
 .cd{padding:22px 20px;text-align:center}
-.cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb);margin-bottom:16px}
+.cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--ctxt,var(--sb));margin-bottom:16px}
 .cd .digits{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:${v.disp}}
 .cd .u b{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--cnum,var(--tx))}.cd .u span{font-size:10px;color:var(--sb)}
 .cd .cl{color:var(--ln);font-size:22px}
-.cd .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--ln);font-size:12px;color:var(--sb)}
+.cd .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--ln);font-size:12px;color:var(--ctxt,var(--sb))}
 .cd.box .digits,.cd.urgent .digits{gap:7px;align-items:center}
 .cd.box .u,.cd.urgent .u{background:var(--cbox,#1c1a17);border-radius:10px;padding:11px 6px 8px;min-width:60px}
 .cd.box .u b,.cd.urgent .u b{display:block;font-size:30px;color:var(--cnum,#fff)}
 .cd.box .u span,.cd.urgent .u span{display:block;margin:2px 0 0;font-size:9.5px;color:var(--clab,rgba(255,255,255,.55))}
 .cd.box .cl,.cd.urgent .cl{color:var(--cbox,#1c1a17);font-size:18px;font-weight:800;opacity:.45}
-.cd.urgent .t{color:var(--cbox,#c0392b);font-weight:800}
-.cd.urgent .note{color:var(--cbox,#c0392b);font-weight:700;border-top-color:var(--cbox,#c0392b);opacity:.85}
+.cd.urgent .t{color:var(--ctxt,var(--cbox,#c0392b));font-weight:800}
+.cd.urgent .note{color:var(--ctxt,var(--cbox,#c0392b));font-weight:700;border-top-color:var(--ctxt,var(--cbox,#c0392b));opacity:.85}
 .cd.urgent .u{animation:cdpulse 1.6s ease-in-out infinite}
 .cd.urgent .u:last-of-type b{animation:cdblink 1s steps(2,start) infinite}
 @keyframes cdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
@@ -209,7 +209,7 @@ function renderBlock(b, S){
       const L=Math.max(0,end-Date.now())/1000|0;
       const p=n=>String(n).padStart(2,'0');
       const sty=b.cdStyle||'plain';
-      const vars=[b.numColor?`--cnum:${esc(b.numColor)}`:'',b.boxColor?`--cbox:${esc(b.boxColor)}`:'',b.labColor?`--clab:${esc(b.labColor)}`:''].filter(Boolean).join(';');
+      const vars=[b.numColor?`--cnum:${esc(b.numColor)}`:'',b.boxColor?`--cbox:${esc(b.boxColor)}`:'',b.labColor?`--clab:${esc(b.labColor)}`:'',b.txtColor?`--ctxt:${esc(b.txtColor)}`:''].filter(Boolean).join(';');
       return `<div class="wrap mt"><div class="card cd ${sty}" ${vars?`style="${vars}"`:''}><div class="t">${esc(b.title)}</div>
         <div class="digits"><div class="u"><b>${p(L/86400|0)}</b><span>일</span></div><div class="cl">·</div><div class="u"><b>${p((L%86400)/3600|0)}</b><span>시</span></div><div class="cl">·</div><div class="u"><b>${p((L%3600)/60|0)}</b><span>분</span></div><div class="cl">·</div><div class="u"><b>${p(L%60)}</b><span>초</span></div></div>
         ${b.note?`<div class="note">${esc(b.note)}</div>`:''}</div></div>`;
@@ -411,9 +411,12 @@ function paintInspector(){
             ['box','박스형 — 숫자를 색 박스에'],
             ['plain','기본 — 숫자만'],
           ])
+        + `<div class="sec" style="border-top:0;padding-top:4px">숫자 · 박스 색</div>`
         + (b.cdStyle==='plain'
-            ? C('numColor','숫자 색 (비우면 기본)')
+            ? C('numColor','숫자 색')
             : C('boxColor','박스 색') + C('numColor','숫자 색') + C('labColor','단위(일/시/분/초) 색'))
+        + `<div class="sec">제목 · 하단 문구 색</div>`
+        + C('txtColor','제목과 하단 문구 색 (위 박스 색과 별개)')
         + `<div class="fld"><div class="hint">색을 비워두면 테마 색을 따라갑니다. 교육생마다 다른 색을 쓰면 페이지가 서로 달라 보입니다.</div></div>`;
       break;
     case 'gauge':

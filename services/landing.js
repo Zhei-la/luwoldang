@@ -96,12 +96,12 @@ img{max-width:100%;display:block}
 .pr .now small{font-size:15px;margin-left:2px}
 .go{display:block;margin-top:14px;padding:16px;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:15.5px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:.02em}
 .cd{padding:22px 20px;text-align:center}
-.cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb);margin-bottom:16px}
+.cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--ctxt,var(--sb));margin-bottom:16px}
 .cd .digits{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:${v.disp}}
 .cd .u b{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--cnum,var(--tx))}
 .cd .u span{font-size:10px;color:var(--sb);margin-left:2px;letter-spacing:.1em}
 .cd .cl{color:var(--ln);font-size:22px}
-.cd .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--ln);font-size:12px;color:var(--sb)}
+.cd .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--ln);font-size:12px;color:var(--ctxt,var(--sb))}
 /* 타이머 디자인 — 박스형 */
 .cd.box .digits,.cd.urgent .digits{gap:7px;align-items:center}
 .cd.box .u,.cd.urgent .u{background:var(--cbox,#1c1a17);border-radius:10px;padding:11px 6px 8px;min-width:60px}
@@ -109,8 +109,8 @@ img{max-width:100%;display:block}
 .cd.box .u span,.cd.urgent .u span{display:block;margin:2px 0 0;font-size:9.5px;color:var(--clab,rgba(255,255,255,.55))}
 .cd.box .cl,.cd.urgent .cl{color:var(--cbox,#1c1a17);font-size:18px;font-weight:800;opacity:.45}
 /* 긴박 — 박스 고동 + 초 깜빡임 */
-.cd.urgent .t{color:var(--cbox,#c0392b);font-weight:800}
-.cd.urgent .note{color:var(--cbox,#c0392b);font-weight:700;border-top-color:var(--cbox,#c0392b);opacity:.85}
+.cd.urgent .t{color:var(--ctxt,var(--cbox,#c0392b));font-weight:800}
+.cd.urgent .note{color:var(--ctxt,var(--cbox,#c0392b));font-weight:700;border-top-color:var(--ctxt,var(--cbox,#c0392b));opacity:.85}
 .cd.urgent .u{animation:cdpulse 1.6s ease-in-out infinite}
 .cd.urgent .u:last-of-type b{animation:cdblink 1s steps(2,start) infinite}
 @keyframes cdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
@@ -277,6 +277,7 @@ function renderBlock(b, ctx) {
         b.numColor ? `--cnum:${esc(b.numColor)}` : '',
         b.boxColor ? `--cbox:${esc(b.boxColor)}` : '',
         b.labColor ? `--clab:${esc(b.labColor)}` : '',
+        b.txtColor ? `--ctxt:${esc(b.txtColor)}` : '',
       ].filter(Boolean).join(';');
       return `<div class="wrap mt"><div class="card cd ${sty}" ${vars ? `style="${vars}"` : ''} data-cd ${cfg}>
         <div class="t">${esc(b.title)}</div>
