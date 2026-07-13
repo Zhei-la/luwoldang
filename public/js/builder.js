@@ -381,11 +381,11 @@ function paintInspector(){
       h += A('badge','배지 문구 (상품 목록 위)')
         + `<div class="sec">상품 (여러 개 추가 가능)</div>`
         + listEditor(b, [
-            ['name','상품명 (예: 정밀 풀이)'],
-            ['desc','한 줄 설명'],
+            ['name','상품명', 'text', NAME_SG],
+            ['desc','한 줄 설명', 'text', DESC_SG],
             ['off','할인율 (예: 40%) — 없으면 비움'],
             ['was','정가 (예: 50,000원) — 없으면 비움'],
-            ['now','판매가 (예: 29,800)'],
+            ['now','판매가 — 할인율·정가 넣으면 자동 계산'],
             ['best','⭐ 추천 뱃지 달기','check'],
           ], { name:'', desc:'', off:'', was:'', now:'', best:false })
         + T('cta','버튼 문구');
@@ -491,16 +491,44 @@ function pageInspector(){
 }
 
 /* --- 리스트 에디터 --- */
+/* 상품명 · 설명 추천 문구 */
+const NAME_SG = ['종합 사주','정밀 풀이','기본 풀이','신년 운세','연인 궁합','재물운','취업·이직운','재회 상담'];
+const DESC_SG = [
+  '대운·세운까지 상세 분석',
+  '타고난 성향과 올해 흐름',
+  '연애·궁합과 인연의 시기',
+  '재물의 흐름과 직업 방향',
+  '올해 한 해 운의 전체 흐름',
+  '결과 PDF + 추가 질문 무제한',
+  '태어난 시각까지 짚는 정밀 풀이',
+  '고민 한 가지 집중 상담',
+];
+
+/* 숫자만 뽑기: "50,000원" → 50000, "40%" → 40 */
+const numOf = (v) => {
+  const d = String(v || '').replace(/[^0-9.]/g, '');
+  return d ? parseFloat(d) : NaN;
+};
+/* 할인율 + 정가 → 판매가 (100원 단위 반올림) */
+function calcNow(item){
+  const was = numOf(item.was), off = numOf(item.off);
+  if (!isFinite(was) || !isFinite(off) || off <= 0 || off >= 100) return null;
+  const v = Math.round(was * (1 - off / 100) / 100) * 100;
+  return v.toLocaleString('ko-KR');
+}
+
 function listEditor(b, fields, blank){
   const items = b.items||[];
   return `<div class="fld"><label>항목 ${items.length}개</label><div class="listbox">
     ${items.map((it,i)=>`<div class="litem">
       <div class="lhead"><b>#${i+1}</b><button class="btn sm danger" data-li-del="${i}">삭제</button></div>
-      ${fields.map(([k,l,ty])=> ty==='area'
+      ${fields.map(([k,l,ty,sg])=> ty==='area'
         ? `<textarea data-li="${i}" data-lk="${k}" placeholder="${l}">${esc(it[k])}</textarea>`
         : ty==='check'
           ? `<label class="sw" style="padding:4px 0"><input type="checkbox" data-li="${i}" data-lk="${k}" ${it[k]?'checked':''}>${l}</label>`
-          : `<input type="text" data-li="${i}" data-lk="${k}" value="${esc(it[k])}" placeholder="${l}">`).join('')}
+          : `<input type="text" data-li="${i}" data-lk="${k}" value="${esc(it[k])}" placeholder="${l}">`
+            + (sg && sg.length ? `<div class="chips">${sg.map(x=>`<button type="button" class="chip" data-sg="${i}" data-sk="${k}" data-sv="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : '')
+        ).join('')}
     </div>`).join('')}
     <button class="btn sm" data-li-add style="width:100%">＋ 항목 추가</button>
   </div><div class="hint" data-blank='${JSON.stringify(blank)}' style="display:none"></div></div>`;
@@ -537,11 +565,28 @@ function bindFields(b){
         if(k==='best' && el.checked) b.items.forEach(x=>{ x.best = false; });
         b.items[i][k] = el.checked;
         paint();
-      } else {
-        b.items[i][k] = el.value;
-        refresh();
+        return;
       }
+      b.items[i][k] = el.value;
+
+      // 할인율 · 정가 → 판매가 자동 계산
+      if(b.type==='price' && (k==='off' || k==='was')){
+        const v = calcNow(b.items[i]);
+        if(v !== null){
+          b.items[i].now = v;
+          const nowIn = inspector.querySelector(`[data-li="${i}"][data-lk="now"]`);
+          if(nowIn) nowIn.value = v;
+        }
+      }
+      refresh();
     });
+  });
+
+  // 추천 문구 칩
+  inspector.querySelectorAll('[data-sg]').forEach(el=> el.onclick = ()=>{
+    const i = +el.dataset.sg, k = el.dataset.sk;
+    b.items[i][k] = el.dataset.sv;
+    paint();
   });
   inspector.querySelectorAll('[data-li-del]').forEach(el=> el.onclick = ()=>{ b.items.splice(+el.dataset.liDel,1); paint(); });
   const add = inspector.querySelector('[data-li-add]');
