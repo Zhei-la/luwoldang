@@ -92,3 +92,13 @@ p { line-height: 1.7; color: #4a463d; }
   color: var(--navy);
   margin-bottom: 16px;
 }
+
+/* 랜딩 브랜드 한자 */
+.brand-han {
+  font-size: 0.52em;
+  font-weight: 400;
+  color: #B59A62;
+  letter-spacing: .12em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
