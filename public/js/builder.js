@@ -516,6 +516,13 @@ function calcNow(item){
   const v = Math.round(was * (1 - off / 100) / 100) * 100;
   return v.toLocaleString('ko-KR');
 }
+/* 할인율 + 판매가 → 정가 (역산) */
+function calcWas(item){
+  const now = numOf(item.now), off = numOf(item.off);
+  if (!isFinite(now) || !isFinite(off) || off <= 0 || off >= 100 || now <= 0) return null;
+  const v = Math.round(now / (1 - off / 100) / 100) * 100;
+  return v.toLocaleString('ko-KR') + '원';
+}
 
 function listEditor(b, fields, blank){
   const items = b.items||[];
@@ -569,13 +576,27 @@ function bindFields(b){
       }
       b.items[i][k] = el.value;
 
-      // 할인율 · 정가 → 판매가 자동 계산
-      if(b.type==='price' && (k==='off' || k==='was')){
-        const v = calcNow(b.items[i]);
-        if(v !== null){
-          b.items[i].now = v;
-          const nowIn = inspector.querySelector(`[data-li="${i}"][data-lk="now"]`);
-          if(nowIn) nowIn.value = v;
+      // 가격 자동 계산 (정가 ↔ 판매가 · 할인율 기준)
+      if(b.type==='price'){
+        const it = b.items[i];
+        const put = (key, val)=>{
+          it[key] = val;
+          const el2 = inspector.querySelector(`[data-li="${i}"][data-lk="${key}"]`);
+          if(el2) el2.value = val;
+        };
+        const hasWas = String(it.was||'').trim() !== '';
+        const hasNow = String(it.now||'').trim() !== '';
+
+        if(k === 'was'){                       // 정가를 고치면 → 판매가
+          const v = calcNow(it); if(v !== null) put('now', v);
+        } else if(k === 'now'){                // 판매가를 고치면 → 정가
+          const v = calcWas(it); if(v !== null) put('was', v);
+        } else if(k === 'off'){                // 할인율을 고치면
+          if(hasWas){                          //  정가가 있으면 판매가를 다시
+            const v = calcNow(it); if(v !== null) put('now', v);
+          } else if(hasNow){                   //  판매가만 있으면 정가를 역산
+            const v = calcWas(it); if(v !== null) put('was', v);
+          }
         }
       }
       refresh();

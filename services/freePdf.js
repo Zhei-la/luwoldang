@@ -37,9 +37,16 @@ const LINES_PER_PAGE = 31;   // A4 한 장에 들어가는 줄 수
 const CHARS_PER_LINE = 45;   // 한 줄 글자 수
 const LINES_HEAD = 5;        // 챕터 제목 + 구분선
 const LINES_GAP = 3;         // 같은 페이지에서 챕터 사이 여백
-const MIN_TAIL = 9;          // 이만큼도 안 남으면 새 페이지에서 시작
 
 const lineCount = (t) => Math.ceil(String(t || '').length / CHARS_PER_LINE) + 1;
+
+/* AI가 본문 앞에 "02 사주로 보는 나는? —" 같은 라벨을 붙여 보내는 경우가 있어 걷어낸다 */
+function stripLabel(text) {
+  return String(text || '')
+    .replace(/^\s*\d{1,2}[.)]?\s*[^\n—-]{0,20}\s*[—–-]\s*/, '')  // 맨 앞 "02 제목 —"
+    .replace(/\n\s*\d{1,2}[.)]?\s*[^\n—-]{0,20}\s*[—–-]\s*/g, '\n')
+    .trim();
+}
 
 function flowPages(chapters) {
   const pages = [];
@@ -50,22 +57,35 @@ function flowPages(chapters) {
 
   chapters.forEach((ch, i) => {
     const no = String(i + 1).padStart(2, '0');
-    const paras = String(ch.body || '').split(/\n{2,}|\n/).map((x) => x.trim()).filter(Boolean);
-    const first = paras[0] ? lineCount(paras[0]) : 0;
+    const paras = stripLabel(ch.body)
+      .split(/\n{2,}|\n/).map((x) => x.trim()).filter(Boolean);
 
-    // 이 페이지에 제목 + 첫 문단이 못 들어가면 새 페이지
+    // 이 챕터가 통째로 몇 줄을 먹나
+    const bodyLines = paras.reduce((a, p) => a + lineCount(p), 0);
+    const whole = LINES_HEAD + bodyLines;
     const gap = used > 0 ? LINES_GAP : 0;
-    if (used > 0 && (used + gap + LINES_HEAD + first > LINES_PER_PAGE
-                     || LINES_PER_PAGE - used < MIN_TAIL)) {
-      flush();
+    const left = LINES_PER_PAGE - used - gap;
+
+    /* 한 장에 들어가는 챕터는 절대 쪼개지 않는다.
+       (제목만 남고 본문이 다음 장으로 넘어가는 꼴을 막는다) */
+    if (whole <= LINES_PER_PAGE) {
+      if (used > 0 && whole > left) flush();          // 자리 부족 → 통째로 다음 장
+      const g = used > 0 ? LINES_GAP : 0;
+      cur.push({ t: 'head', no, title: ch.title, second: used > 0 });
+      cur.push(...paras.map((p) => ({ t: 'p', text: p })));
+      used += g + whole;
+      return;
     }
 
+    /* 한 장을 넘는 긴 챕터만 흘려 보낸다 */
+    if (used > 0 && (LINES_HEAD + (paras[0] ? lineCount(paras[0]) : 0) > left)) flush();
+    const g2 = used > 0 ? LINES_GAP : 0;
     cur.push({ t: 'head', no, title: ch.title, second: used > 0 });
-    used += (used > 0 ? LINES_GAP : 0) + LINES_HEAD;
+    used += g2 + LINES_HEAD;
 
     paras.forEach((p) => {
       const n = lineCount(p);
-      if (used + n > LINES_PER_PAGE) flush();   // 넘치면 다음 장으로 흘린다
+      if (used + n > LINES_PER_PAGE) flush();
       cur.push({ t: 'p', text: p });
       used += n;
     });

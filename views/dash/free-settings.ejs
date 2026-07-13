@@ -389,3 +389,40 @@ function confirmSlug(){
   );
 }
 </script>
+
+<script>
+/* 할인 안내 — 할인율 / 정가 / 할인가 양방향 자동 계산 */
+(function(){
+  var off = document.getElementById('pmDcOff');
+  var was = document.getElementById('pmDcWas');
+  var now = document.getElementById('pmDcNow');
+  if (!off || !was || !now) return;
+
+  function numOf(v){
+    var d = String(v || '').replace(/[^0-9.]/g, '');
+    return d ? parseFloat(d) : NaN;
+  }
+  function won(v){ return v.toLocaleString('ko-KR') + '원'; }
+  function okOff(o){ return isFinite(o) && o > 0 && o < 100; }
+
+  // 정가 + 할인율 → 할인가
+  function toNow(){
+    var w = numOf(was.value), o = numOf(off.value);
+    if (!isFinite(w) || !okOff(o)) return;
+    now.value = won(Math.round(w * (1 - o / 100) / 100) * 100);
+  }
+  // 할인가 + 할인율 → 정가
+  function toWas(){
+    var n = numOf(now.value), o = numOf(off.value);
+    if (!isFinite(n) || n <= 0 || !okOff(o)) return;
+    was.value = won(Math.round(n / (1 - o / 100) / 100) * 100);
+  }
+
+  was.addEventListener('input', toNow);
+  now.addEventListener('input', toWas);
+  off.addEventListener('input', function(){
+    if (String(was.value).trim()) toNow();
+    else if (String(now.value).trim()) toWas();
+  });
+})();
+</script>
