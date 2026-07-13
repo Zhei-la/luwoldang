@@ -211,6 +211,25 @@
 
       <label class="fl">④ 버튼 문구 (누르면 위에 등록한 카카오 상담 링크로 연결됩니다)</label>
       <input class="fi" type="text" id="pmDcBtn" value="<%= promo.discount.btn %>" placeholder="할인받고 상담 신청하기">
+
+      <label class="fl" style="margin-top:16px">④ 색</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div>
+          <span class="fl" style="font-weight:400;font-size:11.5px">버튼 배경</span>
+          <input type="color" id="pmDcBtnColor" value="<%= promo.discount.btnColor %>" class="fi-color">
+        </div>
+        <div>
+          <span class="fl" style="font-weight:400;font-size:11.5px">버튼 글자</span>
+          <input type="color" id="pmDcBtnText" value="<%= promo.discount.btnTextColor %>" class="fi-color">
+        </div>
+        <div>
+          <span class="fl" style="font-weight:400;font-size:11.5px">할인율 강조</span>
+          <input type="color" id="pmDcAccent" value="<%= promo.discount.accentColor %>" class="fi-color">
+        </div>
+      </div>
+      <div id="pmBtnPreview" style="margin-top:12px;padding:15px;border-radius:5px;text-align:center;font-weight:800;font-size:15px">
+        미리보기
+      </div>
     </div>
 
     <input type="hidden" name="promo_json" id="promoJson">
@@ -394,6 +413,7 @@
         title: v('pmDcTitle'), body: v('pmDcBody'),
         off: v('pmDcOff'), priceWas: v('pmDcWas'), priceNow: v('pmDcNow'),
         btn: v('pmDcBtn'),
+        btnColor: v('pmDcBtnColor'), btnTextColor: v('pmDcBtnText'), accentColor: v('pmDcAccent'),
       },
     });
   });
@@ -449,5 +469,23 @@ function confirmSlug(){
     if (String(was.value).trim()) toNow();
     else if (String(now.value).trim()) toWas();
   });
+})();
+</script>
+
+<script>
+/* 버튼 색 미리보기 */
+(function(){
+  var bg = document.getElementById('pmDcBtnColor');
+  var tc = document.getElementById('pmDcBtnText');
+  var txt = document.getElementById('pmDcBtn');
+  var box = document.getElementById('pmBtnPreview');
+  if (!bg || !box) return;
+  function paint(){
+    box.style.background = bg.value;
+    box.style.color = tc.value;
+    box.textContent = (txt.value || '').trim() || '할인받고 상담 신청하기';
+  }
+  [bg, tc, txt].forEach(function(el){ el.addEventListener('input', paint); });
+  paint();
 })();
 </script>

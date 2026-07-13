@@ -15,6 +15,7 @@ const adminRouter = require('./routes/admin');
 const freeRouter = require('./routes/free');
 const builderRouter = require('./routes/builder');
 const leadsRouter = require('./routes/leads');
+const chatRoutes = require('./routes/chat');
 const { requireAuth } = require('./middleware/auth');
 
 const app = express();
@@ -76,6 +77,7 @@ app.use('/', builderRouter);
 
 // 사주 신청자 + PDF 제작/발송
 app.use('/', leadsRouter);
+app.use(chatRoutes);
 
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', pagesRouter);

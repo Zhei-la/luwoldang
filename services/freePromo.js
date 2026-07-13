@@ -56,6 +56,9 @@ const DEFAULT_PROMO = {
     priceNow: '29,800원',
     off: '50%',
     btn: '할인받고 상담 신청하기',
+    btnColor: '#2b3a67',      // 버튼 배경
+    btnTextColor: '#ffffff',  // 버튼 글자
+    accentColor: '#b03a2e',   // 할인율 · 강조 문구 색
   },
 };
 
@@ -83,6 +86,7 @@ function getPromo(user) {
 /** 폼에서 받은 값 정리 → DB에 넣을 형태 */
 function normalizePromo(body) {
   const s = (v) => String(v || '').trim();
+  const hex = (v) => (/^#[0-9a-fA-F]{6}$/.test(String(v || '').trim()) ? String(v).trim() : '');
   const imgs = Array.isArray(body?.reviews?.images) ? body.reviews.images : [];
 
   return {
@@ -110,6 +114,10 @@ function normalizePromo(body) {
       priceNow: s(body.discount?.priceNow),
       off: s(body.discount?.off),
       btn: s(body.discount?.btn) || DEFAULT_PROMO.discount.btn,
+      // 색은 #rrggbb 형식만 허용 (CSS 주입 차단)
+      btnColor: hex(body.discount?.btnColor) || DEFAULT_PROMO.discount.btnColor,
+      btnTextColor: hex(body.discount?.btnTextColor) || DEFAULT_PROMO.discount.btnTextColor,
+      accentColor: hex(body.discount?.accentColor) || DEFAULT_PROMO.discount.accentColor,
     },
   };
 }

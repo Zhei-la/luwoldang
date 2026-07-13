@@ -117,14 +117,6 @@ router.post('/api/mail/test', async (req, res) => {
   }
 });
 
-// 내담자 추가질문 (다음 단계에서 구현)
-router.get('/chat', (req, res) => {
-  res.render('dash/placeholder', {
-    user: req.user, active: 'chat',
-    title: '내담자 추가질문', step: '다음 단계',
-  });
-});
-
 // 내 계정
 router.get('/account', (req, res) => {
   res.render('dash/account', {

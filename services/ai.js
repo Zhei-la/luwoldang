@@ -452,3 +452,90 @@ module.exports.OUTLINES = OUTLINES;
 module.exports.generatePdfReport = generatePdfReport;
 module.exports.generateChapter = generateChapter;
 module.exports.checkStyle = checkStyle;
+
+
+/* ============================================================
+ * 내담자 추가질문 — 이미 보낸 리포트를 근거로 답한다
+ * ============================================================ */
+
+/** 저장된 리포트(sections) → AI에게 줄 컨텍스트 */
+function reportContext(sections) {
+  if (!sections) return '';
+
+  // 유료: [{ title, blocks:[{sub, body}] }]
+  if (Array.isArray(sections)) {
+    return sections.map((ch) => {
+      const body = (ch.blocks || [])
+        .map((b) => (b.sub ? `[${b.sub}] ` : '') + String(b.body || ''))
+        .join('\n');
+      return `## ${ch.title}\n${body}`;
+    }).join('\n\n');
+  }
+
+  // 무료: { manse, self, personality, year, love, wealth, health, advice }
+  const LAB = {
+    manse: '내 사주 한눈에 보기', self: '사주로 보는 나는?', personality: '타고난 성향',
+    year: '올해 운세', love: '연애운', wealth: '재물운', health: '건강운', advice: '종합 조언',
+  };
+  return Object.entries(LAB)
+    .filter(([k]) => sections[k])
+    .map(([k, label]) => `## ${label}\n${sections[k]}`)
+    .join('\n\n');
+}
+
+/** JSON 강제 없이 글로 받는 호출 */
+async function callAIText({ system, messages, openaiKey, model, maxTokens }) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+    body: JSON.stringify({
+      model: model || 'gpt-4o-mini',
+      messages: [{ role: 'system', content: system }, ...messages],
+      temperature: 0.8,
+      max_tokens: maxTokens || 1400,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'OpenAI 호출 실패');
+  return (data.choices?.[0]?.message?.content || '').trim();
+}
+
+/**
+ * 추가질문 답변
+ * @param {object} o { client, saju, sections, history, question, openaiKey, model }
+ */
+async function answerFollowUp({ client, saju, sections, history, question, openaiKey, model }) {
+  const system = `당신은 13년 경력의 명리학 상담가입니다.
+${client.name}님께 이미 사주 리포트를 보내드렸고, 지금은 그것을 읽고 들어온 추가 질문에 답하는 중입니다.
+
+## 이 사람의 사주
+${sajuBlock(client, saju)}
+
+## 이미 보내드린 리포트
+${reportContext(sections).slice(0, 6000)}
+
+## 답변 규칙
+- 리포트에 쓴 내용과 어긋나지 않게 답합니다. 앞뒤가 맞아야 합니다.
+- 원국의 어느 글자를 근거로 그렇게 보는지 최소 한 번은 짚습니다. (예: "일지에 놓인 관성이…")
+- 3~5문단, 문단당 2~4문장. 한두 줄로 끊지 마세요.
+- 단정하지 말고 흐름과 경향으로 말합니다. "반드시", "무조건" 같은 말은 쓰지 않습니다.
+- 좋은 말로만 포장하지 않습니다. 짚어야 할 것은 짚되 겁주지 않습니다.
+- 사주로 답할 수 없는 질문(의료 진단, 법률, 투자 종목 등)은 솔직히 그렇다고 말하고,
+  대신 사주로 볼 수 있는 결(성향·시기의 흐름)만 짚어줍니다.
+- 건강은 진단·치료를 말하지 않고 생활 관리 경향만 이야기합니다.
+- AI, 데이터, 분석 결과 같은 기계적인 표현은 절대 쓰지 않습니다.
+- ${client.name}님이라고 부르되 매 문단 반복하지는 마세요.
+- 마크다운 기호(#, *, -)를 쓰지 말고 그냥 문단으로 씁니다.`;
+
+  const messages = [];
+  (history || []).slice(-6).forEach((h) => {
+    messages.push({ role: 'user', content: h.question });
+    messages.push({ role: 'assistant', content: h.answer });
+  });
+  messages.push({ role: 'user', content: question });
+
+  return callAIText({ system, messages, openaiKey, model, maxTokens: 1400 });
+}
+
+module.exports.answerFollowUp = answerFollowUp;
+module.exports.reportContext = reportContext;

@@ -114,6 +114,19 @@ async function initDb() {
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS lead_id INTEGER;`);
 
+  // 내담자 추가질문 (리포트별 채팅방)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_qa (
+      id          SERIAL PRIMARY KEY,
+      pdf_id      INTEGER REFERENCES pdfs(id) ON DELETE CASCADE,
+      teacher_id  INTEGER REFERENCES users(id),
+      question    TEXT,
+      answer      TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_chat_qa_pdf ON chat_qa(pdf_id);`);
+
   console.log('[DB] 준비 완료');
 }
 

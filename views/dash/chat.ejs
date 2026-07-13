@@ -1,0 +1,185 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '내담자 추가질문' }) %>
+
+<div class="chat-wrap">
+
+  <!-- 좌: 리포트(채팅방) 목록 -->
+  <aside class="chat-list">
+    <div class="chat-list-h">
+      리포트 <span><%= rooms.length %></span>
+    </div>
+
+    <% if (!rooms.length) { %>
+      <div class="chat-empty-side">
+        아직 만든 리포트가 없습니다.<br>
+        <a href="/leads">신청자</a>에서 리포트를 먼저 만들어주세요.
+      </div>
+    <% } %>
+
+    <% rooms.forEach(function(r){ %>
+      <a class="chat-room <%= (room && room.id === r.id) ? 'on' : '' %>" href="/chat?pdf=<%= r.id %>">
+        <div class="cr-top">
+          <b><%= r.name %></b>
+          <% if (r.qa_count > 0) { %><span class="cr-badge"><%= r.qa_count %></span><% } %>
+        </div>
+        <div class="cr-sub"><%= r.type %></div>
+        <div class="cr-date">
+          <%= new Date(r.created_at).toLocaleDateString('ko-KR') %>
+          <% if (r.mail_sent) { %> · 발송완료<% } %>
+        </div>
+      </a>
+    <% }) %>
+  </aside>
+
+  <!-- 우: 대화 -->
+  <section class="chat-main">
+    <% if (!room) { %>
+      <div class="chat-empty">
+        <h3>리포트를 선택해주세요</h3>
+        <p>내담자가 리포트를 받아본 뒤 물어온 질문을 여기에 적으면,<br>
+           그 사람의 사주와 이미 보낸 리포트 내용을 근거로 답변 초안을 만들어드립니다.</p>
+      </div>
+    <% } else { %>
+
+      <header class="chat-head">
+        <div>
+          <b><%= room.name %></b>
+          <span class="ch-meta"><%= room.type %> · <%= room.birth %> <%= room.gender %></span>
+        </div>
+        <a class="btn btn-ghost" href="/leads/<%= room.id %>/pdf/preview" target="_blank">리포트 보기</a>
+      </header>
+
+      <div class="chat-body" id="chatBody">
+        <% if (!messages.length) { %>
+          <div class="chat-hint">
+            첫 질문을 남겨보세요. 이전 문답이 쌓이면 그 흐름까지 이어서 답합니다.
+          </div>
+        <% } %>
+
+        <% messages.forEach(function(m){ %>
+          <div class="msg q">
+            <div class="bubble"><%= m.question %></div>
+          </div>
+          <div class="msg a" data-qa="<%= m.id %>">
+            <div class="bubble">
+              <%= m.answer %>
+              <div class="msg-tools">
+                <button type="button" onclick="copyAnswer(this)">복사</button>
+                <button type="button" onclick="delQA(<%= m.id %>)">삭제</button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <footer class="chat-foot">
+        <% if (!hasKey) { %>
+          <div class="chat-warn">
+            <a href="/api-settings">API 관리</a>에서 OpenAI 키를 먼저 등록해주세요.
+          </div>
+        <% } %>
+        <div class="chat-input">
+          <textarea id="q" rows="2" placeholder="내담자가 물어본 내용을 적어주세요. (Ctrl+Enter 로 전송)"
+                    <%= hasKey ? '' : 'disabled' %>></textarea>
+          <button class="btn btn-approve" id="send" <%= hasKey ? '' : 'disabled' %>>보내기</button>
+        </div>
+        <p class="chat-note">답변은 저장되어 다음 질문의 흐름에 이어집니다. 질문 횟수 제한은 없습니다.</p>
+      </footer>
+
+    <% } %>
+  </section>
+</div>
+
+<script>
+(function(){
+  var body = document.getElementById('chatBody');
+  var q = document.getElementById('q');
+  var send = document.getElementById('send');
+  if (!body) return;
+
+  var PDF_ID = <%= room ? room.id : 'null' %>;
+  body.scrollTop = body.scrollHeight;
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+
+  function addMsg(kind, text, id){
+    var d = document.createElement('div');
+    d.className = 'msg ' + kind;
+    if (id) d.dataset.qa = id;
+    var tools = kind === 'a' && id
+      ? '<div class="msg-tools"><button type="button" onclick="copyAnswer(this)">복사</button>' +
+        '<button type="button" onclick="delQA(' + id + ')">삭제</button></div>'
+      : '';
+    d.innerHTML = '<div class="bubble">' + esc(text) + tools + '</div>';
+    body.appendChild(d);
+    body.scrollTop = body.scrollHeight;
+    return d;
+  }
+
+  async function ask(){
+    var text = (q.value || '').trim();
+    if (!text) return;
+    if (text.length > 800) { alert('질문이 너무 깁니다. (800자 이내)'); return; }
+
+    q.value = '';
+    q.disabled = true; send.disabled = true;
+    addMsg('q', text);
+
+    var hint = document.querySelector('.chat-hint');
+    if (hint) hint.remove();
+
+    var loading = addMsg('a', '풀이하는 중…');
+    loading.classList.add('loading');
+
+    try {
+      var r = await fetch('/api/chat/' + PDF_ID + '/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: text }),
+      });
+      var data = await r.json();
+      loading.remove();
+
+      if (!r.ok) { addMsg('a', '⚠️ ' + (data.error || '답변 생성 실패')); }
+      else { addMsg('a', data.answer, data.id); }
+    } catch (e) {
+      loading.remove();
+      addMsg('a', '⚠️ 통신에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+
+    q.disabled = false; send.disabled = false;
+    q.focus();
+  }
+
+  send.addEventListener('click', ask);
+  q.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ask(); }
+  });
+})();
+
+function copyAnswer(btn){
+  var box = btn.closest('.bubble').cloneNode(true);
+  var t = box.querySelector('.msg-tools');
+  if (t) t.remove();
+  navigator.clipboard.writeText(box.textContent.trim());
+  btn.textContent = '복사됨';
+  setTimeout(function(){ btn.textContent = '복사'; }, 1500);
+}
+
+async function delQA(id){
+  if (!confirm('이 문답을 지울까요?')) return;
+  var el = document.querySelector('[data-qa="' + id + '"]');
+  var pdfId = new URLSearchParams(location.search).get('pdf') || '';
+  await fetch('/api/chat/' + pdfId + '/delete/' + id, { method: 'POST' });
+  if (el) {
+    var prev = el.previousElementSibling;
+    if (prev && prev.classList.contains('q')) prev.remove();
+    el.remove();
+  }
+}
+</script>
+
+<%- include('../partials/dash-bottom') %>

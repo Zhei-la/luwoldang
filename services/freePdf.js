@@ -190,15 +190,20 @@ function discountPage(promo, teacher, no) {
   const paras = String(d.body || '').split(/\n{2,}/).filter(Boolean);
   const link = teacher.kakao_consult_link || '';
 
+  const ac = d.accentColor || '#b03a2e';
+  const bg = d.btnColor || '#2b3a67';
+  const tc = d.btnTextColor || '#ffffff';
+
   const price = (d.priceNow || d.priceWas || d.off) ? `
   <div class="price-box">
-    ${d.off ? `<span class="price-off">${esc(d.off)}</span>` : ''}
+    ${d.off ? `<span class="price-off" style="color:${esc(ac)}">${esc(d.off)}</span>` : ''}
     ${d.priceWas ? `<span class="price-was">${esc(d.priceWas)}</span>` : ''}
     ${d.priceNow ? `<span class="price-now">${esc(d.priceNow)}</span>` : ''}
   </div>` : '';
 
   const btn = link
-    ? `<a class="promo-btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(d.btn)}</a>
+    ? `<a class="promo-btn" href="${esc(link)}" target="_blank" rel="noopener"
+          style="background:${esc(bg)};color:${esc(tc)}">${esc(d.btn)}</a>
        <p class="promo-note">버튼을 누르면 상담 채널로 연결됩니다.</p>`
     : `<p class="promo-note">상담 링크가 아직 등록되지 않았습니다. (설정 → 카카오 상담 링크)</p>`;
 
@@ -209,7 +214,7 @@ function discountPage(promo, teacher, no) {
     <h2 class="ch-title">상담 안내</h2>
   </div>
   <div class="pg-line"></div>
-  <div class="promo-title">${esc(d.title)}</div>
+  <div class="promo-title" style="border-left:3px solid ${esc(ac)};padding-left:12px">${esc(d.title)}</div>
   <div class="promo-body">${paras.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
   ${price}
   ${btn}
