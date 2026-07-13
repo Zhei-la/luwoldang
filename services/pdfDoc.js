@@ -692,12 +692,17 @@ body {
   border-radius: 3px; padding: 1px 6px; margin-right: 7px;
   font-family: Pretendard, sans-serif; vertical-align: 1px;
 }
-.rv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.rv-grid.one { grid-template-columns: 1fr; }
+.rv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; align-items: start; }
+.rv-grid.one { grid-template-columns: 1fr; justify-items: center; }
 .rv-grid img {
-  width: 100%; border: 1px solid #ded7c6; border-radius: 4px;
-  background: #fff; display: block;
+  width: auto; max-width: 100%;
+  /* A4 한 장을 넘지 않도록 높이를 묶는다 (세로로 긴 캡처 대응) */
+  max-height: 196mm;
+  object-fit: contain;
+  border: 1px solid #ded7c6; border-radius: 4px;
+  background: #fff; display: block; margin: 0 auto;
 }
+.rv-grid.one img { max-height: 200mm; }
 .price-box {
   border: 1px solid #ded7c6; background: #fbf8f1;
   border-radius: 6px; padding: 20px; text-align: center; margin: 22px 0 18px;
