@@ -13,7 +13,8 @@ const DEFS = {
                 { name:'정밀 풀이', desc:'대운·세운까지 상세 분석', off:'40%', was:'50,000원', now:'29,800', best:true },
                 { name:'기본 풀이', desc:'타고난 성향과 올해 흐름', off:'', was:'', now:'9,900', best:false },
               ] }) },
-  countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'cycle', cycle:24, anchor:'', hours:6, target:'' }) },
+  countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'cycle', cycle:24, anchor:'', hours:6, target:'',
+                cdStyle:'urgent', numColor:'', boxColor:'', labColor:'' }) },
   gauge:    { name:'남은 자리',      ico:'◐', make:()=>({ title:'남은 자리', total:30, note:'회차당 인원을 넘기면 풀이가 얕아집니다' }) },
   live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황' }) },
   reviews:  { name:'받아본 이야기',   ico:'❝', make:()=>({ title:'받아본 이야기', items:[] }) },
@@ -85,9 +86,20 @@ img{max-width:100%;display:block}
 .cd{padding:22px 20px;text-align:center}
 .cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb);margin-bottom:16px}
 .cd .digits{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:${v.disp}}
-.cd .u b{font-size:36px;font-weight:700}.cd .u span{font-size:10px;color:var(--sb)}
+.cd .u b{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--cnum,var(--tx))}.cd .u span{font-size:10px;color:var(--sb)}
 .cd .cl{color:var(--ln);font-size:22px}
 .cd .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--ln);font-size:12px;color:var(--sb)}
+.cd.box .digits,.cd.urgent .digits{gap:7px;align-items:center}
+.cd.box .u,.cd.urgent .u{background:var(--cbox,#1c1a17);border-radius:10px;padding:11px 6px 8px;min-width:60px}
+.cd.box .u b,.cd.urgent .u b{display:block;font-size:30px;color:var(--cnum,#fff)}
+.cd.box .u span,.cd.urgent .u span{display:block;margin:2px 0 0;font-size:9.5px;color:var(--clab,rgba(255,255,255,.55))}
+.cd.box .cl,.cd.urgent .cl{color:var(--cbox,#1c1a17);font-size:18px;font-weight:800;opacity:.45}
+.cd.urgent .t{color:var(--cbox,#c0392b);font-weight:800}
+.cd.urgent .note{color:var(--cbox,#c0392b);font-weight:700;border-top-color:var(--cbox,#c0392b);opacity:.85}
+.cd.urgent .u{animation:cdpulse 1.6s ease-in-out infinite}
+.cd.urgent .u:last-of-type b{animation:cdblink 1s steps(2,start) infinite}
+@keyframes cdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes cdblink{50%{opacity:.35}}
 .gg{padding:22px 20px;display:flex;align-items:center;gap:18px}
 .gg .moon{flex:none;width:62px;height:62px}.gg .body{flex:1}
 .gg .top{display:flex;align-items:baseline;justify-content:space-between}
@@ -196,7 +208,9 @@ function renderBlock(b, S){
       else { end=Date.now()+(Number(b.hours)||6)*3600*1000; }
       const L=Math.max(0,end-Date.now())/1000|0;
       const p=n=>String(n).padStart(2,'0');
-      return `<div class="wrap mt"><div class="card cd"><div class="t">${esc(b.title)}</div>
+      const sty=b.cdStyle||'plain';
+      const vars=[b.numColor?`--cnum:${esc(b.numColor)}`:'',b.boxColor?`--cbox:${esc(b.boxColor)}`:'',b.labColor?`--clab:${esc(b.labColor)}`:''].filter(Boolean).join(';');
+      return `<div class="wrap mt"><div class="card cd ${sty}" ${vars?`style="${vars}"`:''}><div class="t">${esc(b.title)}</div>
         <div class="digits"><div class="u"><b>${p(L/86400|0)}</b><span>일</span></div><div class="cl">·</div><div class="u"><b>${p((L%86400)/3600|0)}</b><span>시</span></div><div class="cl">·</div><div class="u"><b>${p((L%3600)/60|0)}</b><span>분</span></div><div class="cl">·</div><div class="u"><b>${p(L%60)}</b><span>초</span></div></div>
         ${b.note?`<div class="note">${esc(b.note)}</div>`:''}</div></div>`;
     }
@@ -327,6 +341,13 @@ function paintInspector(){
   const N=(k,l)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" value="${esc(b[k])}"></div>`;
   const SL=(k,l,o)=>`<div class="fld"><label>${l}</label><select data-k="${k}">${o.map(([v,n])=>`<option value="${v}" ${b[k]===v?'selected':''}>${n}</option>`).join('')}</select></div>`;
   const CK=(k,l)=>`<label class="sw"><input type="checkbox" data-k="${k}" ${b[k]?'checked':''}>${l}</label>`;
+  // 색상 (비우면 테마색 사용)
+  const C=(k,l)=>`<div class="fld"><label>${l}</label>
+    <div class="colorrow">
+      <input type="color" data-k="${k}" value="${esc(b[k]||'#c0392b')}">
+      <input type="text" data-k="${k}" value="${esc(b[k])}" placeholder="비우면 기본색" style="flex:1">
+      <button class="btn sm" data-clear="${k}">지우기</button>
+    </div></div>`;
 
   switch(b.type){
     case 'logobar':
@@ -383,7 +404,17 @@ function paintInspector(){
             : b.mode==='fixed'
               ? `<div class="fld"><label>마감 일시</label><input type="datetime-local" data-k="target" value="${esc(b.target)}"></div>`
               : N('hours','남은 시간 (시간)'))
-        + `<div class="fld"><div class="hint">⚠️ <b>접속할 때마다 재시작</b>은 사람마다 다른 시간이 보이고 새로고침하면 리셋됩니다. 실제 마감이 없는 타이머는 표시광고법 이슈가 될 수 있으니 <b>반복</b>이나 <b>고정 일시</b>를 쓰세요.</div></div>`;
+        + `<div class="fld"><div class="hint">⚠️ <b>접속할 때마다 재시작</b>은 사람마다 다른 시간이 보이고 새로고침하면 리셋됩니다. 실제 마감이 없는 타이머는 표시광고법 이슈가 될 수 있으니 <b>반복</b>이나 <b>고정 일시</b>를 쓰세요.</div></div>`
+        + `<div class="sec">디자인</div>`
+        + SL('cdStyle','스타일',[
+            ['urgent','긴박 — 박스 + 고동 + 초 깜빡임'],
+            ['box','박스형 — 숫자를 색 박스에'],
+            ['plain','기본 — 숫자만'],
+          ])
+        + (b.cdStyle==='plain'
+            ? C('numColor','숫자 색 (비우면 기본)')
+            : C('boxColor','박스 색') + C('numColor','숫자 색') + C('labColor','단위(일/시/분/초) 색'))
+        + `<div class="fld"><div class="hint">색을 비워두면 테마 색을 따라갑니다. 교육생마다 다른 색을 쓰면 페이지가 서로 달라 보입니다.</div></div>`;
       break;
     case 'gauge':
       h += T('title','제목') + N('total','모집 인원 (전체)') + T('note','설명')

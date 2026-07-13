@@ -38,6 +38,7 @@ router.get('/free-saju-settings', (req, res) => {
     mailFrom: require('../services/mail').fromAddr(req.user),
     mailReady: require('../services/mail').mailReady(req.user),
     saved: req.query.saved === '1',
+    slugError: SLUG_ERR[req.query.slugerr] || null,
   });
 });
 
@@ -130,6 +131,46 @@ router.get('/account', (req, res) => {
     user: req.user, active: 'account',
     baseUrl: process.env.BASE_URL || '',
   });
+});
+
+/* ===== 링크 주소(슬러그) 변경 ===== */
+const SLUG_ERR = {
+  bad:   '영문·숫자·하이픈(-)만 쓸 수 있고 3~24자여야 합니다.',
+  taken: '이미 다른 분이 쓰고 있는 주소입니다. 다른 걸로 정해주세요.',
+  keep:  '사용할 수 없는 주소입니다.',
+};
+
+// 시스템 경로와 겹치면 안 되는 이름
+const RESERVED = [
+  'admin', 'api', 'auth', 'home', 'builder', 'leads', 'pdf', 'pdfs',
+  'records', 'chat', 'account', 'free', 'settings', 'login', 'logout',
+  'pending', 's', 'dev', 'public', 'static', 'assets',
+];
+
+router.post('/free-saju-settings/slug', async (req, res, next) => {
+  try {
+    const slug = String(req.body.slug || '').trim().toLowerCase();
+
+    if (!/^[a-z0-9-]{3,24}$/.test(slug)) {
+      return res.redirect('/free-saju-settings?slugerr=bad');
+    }
+    if (RESERVED.includes(slug)) {
+      return res.redirect('/free-saju-settings?slugerr=keep');
+    }
+    if (slug === req.user.slug) {
+      return res.redirect('/free-saju-settings?saved=1'); // 그대로면 그냥 통과
+    }
+
+    const dup = await pool.query('SELECT 1 FROM users WHERE slug = $1', [slug]);
+    if (dup.rows[0]) {
+      return res.redirect('/free-saju-settings?slugerr=taken');
+    }
+
+    await pool.query('UPDATE users SET slug = $1 WHERE id = $2', [slug, req.user.id]);
+    res.redirect('/free-saju-settings?saved=1');
+  } catch (e) {
+    next(e);
+  }
 });
 
 module.exports = router;

@@ -368,3 +368,13 @@ a.lead-row:hover { background:#fdfbf6; }
 /* 개인정보 폐기 표시 */
 .masked-tag { font-size:11px; color:#8a8574; background:var(--bg); border:1px solid var(--beige); border-radius:5px; padding:1px 7px; font-weight:500; }
 .warn-inline { color:#a8790f; font-size:12.5px; }
+
+/* 링크 주소(슬러그) 변경 */
+.slug-pre {
+  display: inline-flex; align-items: center;
+  padding: 0 10px; height: 42px;
+  background: #F3EEE3; border: 1px solid #E9E0CF; border-right: 0;
+  border-radius: 8px 0 0 8px;
+  font-size: 12.5px; color: #8a8577; white-space: nowrap;
+}
+.share-row .slug-pre + .fi { border-radius: 0 8px 8px 0; }

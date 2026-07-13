@@ -98,10 +98,24 @@ img{max-width:100%;display:block}
 .cd{padding:22px 20px;text-align:center}
 .cd .t{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb);margin-bottom:16px}
 .cd .digits{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:${v.disp}}
-.cd .u b{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.cd .u b{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--cnum,var(--tx))}
 .cd .u span{font-size:10px;color:var(--sb);margin-left:2px;letter-spacing:.1em}
 .cd .cl{color:var(--ln);font-size:22px}
 .cd .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--ln);font-size:12px;color:var(--sb)}
+/* 타이머 디자인 — 박스형 */
+.cd.box .digits,.cd.urgent .digits{gap:7px;align-items:center}
+.cd.box .u,.cd.urgent .u{background:var(--cbox,#1c1a17);border-radius:10px;padding:11px 6px 8px;min-width:60px}
+.cd.box .u b,.cd.urgent .u b{display:block;font-size:30px;color:var(--cnum,#fff)}
+.cd.box .u span,.cd.urgent .u span{display:block;margin:2px 0 0;font-size:9.5px;color:var(--clab,rgba(255,255,255,.55))}
+.cd.box .cl,.cd.urgent .cl{color:var(--cbox,#1c1a17);font-size:18px;font-weight:800;opacity:.45}
+/* 긴박 — 박스 고동 + 초 깜빡임 */
+.cd.urgent .t{color:var(--cbox,#c0392b);font-weight:800}
+.cd.urgent .note{color:var(--cbox,#c0392b);font-weight:700;border-top-color:var(--cbox,#c0392b);opacity:.85}
+.cd.urgent .u{animation:cdpulse 1.6s ease-in-out infinite}
+.cd.urgent .u:last-of-type b{animation:cdblink 1s steps(2,start) infinite}
+@keyframes cdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes cdblink{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.cd.urgent .u,.cd.urgent .u:last-of-type b{animation:none}}
 .gg{padding:22px 20px;display:flex;align-items:center;gap:18px}
 .gg .moon{flex:none;width:62px;height:62px}
 .gg .body{flex:1}
@@ -251,20 +265,27 @@ function renderBlock(b, ctx) {
     case 'countdown': {
       let cfg;
       if (b.mode === 'cycle') {
-        // 주기 반복 — 끝나면 같은 길이로 자동 재시작 (모든 방문자가 같은 시각을 본다)
         cfg = `data-cycle="${Number(b.cycle) || 24}"` + (b.anchor ? ` data-anchor="${esc(b.anchor)}"` : '');
       } else if (b.mode === 'fixed' && b.target) {
         cfg = `data-target="${esc(b.target)}"`;
       } else {
         cfg = `data-hours="${Number(b.hours) || 6}"`;
       }
-      return `<div class="wrap mt"><div class="card cd" data-cd ${cfg}>
+      // 디자인: plain / box / urgent + 색 커스텀
+      const sty = b.cdStyle || 'plain';
+      const vars = [
+        b.numColor ? `--cnum:${esc(b.numColor)}` : '',
+        b.boxColor ? `--cbox:${esc(b.boxColor)}` : '',
+        b.labColor ? `--clab:${esc(b.labColor)}` : '',
+      ].filter(Boolean).join(';');
+      return `<div class="wrap mt"><div class="card cd ${sty}" ${vars ? `style="${vars}"` : ''} data-cd ${cfg}>
         <div class="t">${esc(b.title)}</div>
         <div class="digits">
-          <div class="u"><b data-d>00</b><span>일</span></div><div class="cl">·</div>
-          <div class="u"><b data-h>00</b><span>시</span></div><div class="cl">·</div>
-          <div class="u"><b data-m>00</b><span>분</span></div><div class="cl">·</div>
-          <div class="u"><b data-s>00</b><span>초</span></div></div>
+          <div class="u"><b data-d>00</b><span>일</span></div><div class="cl">:</div>
+          <div class="u"><b data-h>00</b><span>시</span></div><div class="cl">:</div>
+          <div class="u"><b data-m>00</b><span>분</span></div><div class="cl">:</div>
+          <div class="u"><b data-s>00</b><span>초</span></div>
+        </div>
         ${b.note ? `<div class="note">${esc(b.note)}</div>` : ''}</div></div>`;
     }
 
