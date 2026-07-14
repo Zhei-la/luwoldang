@@ -14,7 +14,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { buildReportHtml } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
-const { htmlToPdf, pdfFilename } = require('../services/pdfFile');
+const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 const { maskName } = require('./reviews');
 
 const FREE = '무료사주';
@@ -112,7 +112,7 @@ router.get('/r/:token', async (req, res, next) => {
 </style>
 <div class="sv-bar no-print">
   <span class="sv-name">${escapeHtml(pdf.name)}님의 사주 리포트</span>
-  <a class="sv-btn" id="svDl" href="/r/${escapeHtml(req.params.token)}/download">
+  <a class="sv-btn" id="svDl" href="/r/${escapeHtml(req.params.token)}/report.pdf">
     <span id="svDlText">PDF 다운받기</span>
   </a>
 </div>
@@ -287,29 +287,26 @@ router.get('/r/:token', async (req, res, next) => {
   }
 });
 
-/* ===== PDF 파일로 내려받기 ===== */
-router.get('/r/:token/download', async (req, res, next) => {
+/* ===== PDF 파일로 내려받기 =====
+   ⚠️ 주소가 .pdf 로 끝나야 한다. 카톡·삼성인터넷 같은 인앱 브라우저는
+      Content-Disposition 을 무시하고 URL 끝으로 파일명을 정하기 때문에,
+      확장자가 없으면 "올바르지 않은 확장자" 오류가 난다. */
+async function downloadReport(req, res) {
   try {
     const r = await loadReport(req.params.token);
     if (!r) return res.status(404).send('링크가 만료되었거나 잘못된 주소입니다.');
     const { pdf, html } = r;
 
     const buf = await htmlToPdf(html);
-    const fn = pdfFilename(pdf.name, pdf.type);
-
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Length': buf.length,
-      'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
-      'Cache-Control': 'no-store',
-    });
-    res.send(buf);
+    sendPdf(res, buf, pdf.name, pdf.type);
   } catch (e) {
     console.error('[PDF] 파일 생성 실패:', e.message);
-    // 크롬이 없거나 실패하면 열람 페이지로 돌려보낸다 (인쇄로 저장 가능)
     res.status(302).redirect(`/r/${req.params.token}?pdferr=1`);
   }
-});
+}
+
+router.get('/r/:token/report.pdf', downloadReport);
+router.get('/r/:token/download', downloadReport);   // 예전 링크(메일에 이미 나간 것) 호환
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (m) => (

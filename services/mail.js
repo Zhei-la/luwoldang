@@ -361,7 +361,7 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
   /* ── 리포트 전체 보기 (로그인 없이 열리는 링크 · PDF 저장 가능) ── */
   const reportBtn = shareUrl ? `
     <tr><td style="padding:0 24px 26px" align="center">
-      <a href="${esc(shareUrl)}/download" style="display:block;padding:17px;background:#B59A62;color:#fff;
+      <a href="${esc(shareUrl)}/report.pdf" style="display:block;padding:17px;background:#B59A62;color:#fff;
          font-weight:800;font-size:16px;text-decoration:none;border-radius:10px;text-align:center">
         PDF 다운받기
       </a>
@@ -434,7 +434,7 @@ function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
         </tr>
         <tr>
           <td style="padding:0 18px 16px">
-            <a href="${esc(it.shareUrl)}/download"
+            <a href="${esc(it.shareUrl)}/report.pdf"
                style="display:inline-block;padding:11px 18px;background:#B59A62;color:#fff;
                       font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px;margin-right:6px">
               PDF 다운받기

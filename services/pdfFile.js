@@ -104,12 +104,18 @@ async function htmlToPdf(html) {
       .catch(() => { /* 리플로우가 없는 문서도 있으니 그냥 진행 */ });
     await new Promise((r) => setTimeout(r, 300));
 
-    return await page.pdf({
+    const buf = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
       preferCSSPageSize: true,
     });
+
+    // 진짜 PDF 인지 확인 (앞 4바이트가 %PDF)
+    if (!buf || buf.length < 1000 || buf.slice(0, 4).toString() !== '%PDF') {
+      throw new Error('PDF 생성 결과가 올바르지 않습니다.');
+    }
+    return Buffer.from(buf);
   } finally {
     await page.close().catch(() => {});
   }
@@ -121,8 +127,26 @@ function pdfFilename(name, type) {
   return {
     ascii: 'saju-report.pdf',
     utf8: encodeURIComponent(safe),
+    korean: safe,
   };
 }
 
-module.exports = { htmlToPdf, pdfFilename };
+/**
+ * PDF 파일로 내려보낸다.
+ * ⚠️ 카톡·삼성인터넷 같은 인앱 브라우저는 Content-Disposition 을 무시하고
+ *    URL 끝을 보고 파일명을 정한다. 그래서 라우트 주소가 .pdf 로 끝나야 한다.
+ */
+function sendPdf(res, buf, name, type) {
+  const fn = pdfFilename(name, type);
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Length': String(buf.length),
+    'Content-Transfer-Encoding': 'binary',
+    'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+  });
+  res.end(buf);   // send() 는 변형이 끼어들 수 있어 end() 로 그대로 흘린다
+}
 
+module.exports = { htmlToPdf, pdfFilename, sendPdf };

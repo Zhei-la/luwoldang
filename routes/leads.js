@@ -9,7 +9,7 @@ const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { ensureToken } = require('./share');
-const { htmlToPdf, pdfFilename } = require('../services/pdfFile');
+const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 
 const FREE = '무료사주';
 
@@ -350,7 +350,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   <div class="pv-actions">
     <button id="btnEdit">수정하기</button>
     <button id="btnDone" style="display:none">수정 완료</button>
-    <a id="btnDl" class="dlbtn" href="/pdfs/${pdf.id}/download">PDF 다운받기</a>
+    <a id="btnDl" class="dlbtn" href="/pdfs/${pdf.id}/report.pdf">PDF 다운받기</a>
     <button id="btnPrint">인쇄</button>
     <button id="btnSend" class="send">이메일 보내기</button>
   </div>
@@ -740,7 +740,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
 
 /* ===== 미리보기에서 PDF 파일로 내려받기 (교육생) =====
    브라우저 인쇄는 카톡·메일 앱 안에서 막혀 있어서, 서버가 직접 만들어 준다. */
-router.get('/pdfs/:id/download', async (req, res) => {
+async function downloadPdf(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT p.id, p.type, p.sections, p.extra,
@@ -783,217 +783,15 @@ router.get('/pdfs/:id/download', async (req, res) => {
         });
 
     const buf = await htmlToPdf(html);
-    const fn = pdfFilename(pdf.name, pdf.type);
-
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Length': buf.length,
-      'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
-      'Cache-Control': 'no-store',
-    });
-    res.send(buf);
+    sendPdf(res, buf, pdf.name, pdf.type);
   } catch (e) {
     console.error('[PDF] 미리보기 다운로드 실패:', e.message);
     res.status(500).send('PDF를 만들지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
-});
+}
 
-module.exports = router;
-/* ===== PDF 만들기 — 내담자 직접 입력 (외부 신청분) ===== */
-router.get('/pdf/create', (req, res) => {
-  res.render('dash/pdf-create', {
-    user: req.user,
-    active: 'pdf',
-    types: PDF_TYPES,
-    hasKey: !!req.user.openai_key,
-    error: null,
-    form: {},
-  });
-});
-
-router.post('/pdf/create', async (req, res, next) => {
-  try {
-    const b = req.body || {};
-    const back = (error, form) => res.status(400).render('dash/pdf-create', {
-      user: req.user, active: 'pdf', types: PDF_TYPES,
-      hasKey: !!req.user.openai_key, error, form,
-    });
-
-    if (!b.name || !b.birthDate) return back('이름과 생년월일은 필수입니다.', b);
-    if (!req.user.openai_key) return back('OpenAI API 키를 먼저 등록해주세요.', b);
-
-    const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력') RETURNING id`,
-      [req.user.id, b.name, b.gender || null, b.birthDate, b.calendar || '양력',
-       b.timeUnknown ? null : (b.birthTime || null), b.region || '서울특별시',
-       (b.email || '').trim() || null, (b.phone || '').trim() || null, (b.memo || '').trim() || null]
-    );
-
-    res.redirect('/leads/' + lead.rows[0].id);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/* ===== PDF · 이메일 발송 기록 ===== */
-router.get('/records', async (req, res, next) => {
-  try {
-    const f = req.query.f || 'all';
-    const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email AS lead_email, l.source
-       FROM pdfs p JOIN leads l ON l.id = p.lead_id
-       WHERE p.teacher_id = $1
-       ORDER BY p.created_at DESC LIMIT 200`,
-      [req.user.id]
-    );
-
-    const free = await pool.query(
-      `SELECT f.id, f.created_at, f.mail_sent, f.input
-       FROM free_logs f WHERE f.teacher_id = $1
-       ORDER BY f.created_at DESC LIMIT 100`,
-      [req.user.id]
-    );
-
-    let records = rows;
-    if (f === '발송완료') records = rows.filter((r) => r.mail_sent);
-    else if (f === '미발송') records = rows.filter((r) => !r.mail_sent);
-
-    const counts = {
-      all: rows.length,
-      발송완료: rows.filter((r) => r.mail_sent).length,
-      미발송: rows.filter((r) => !r.mail_sent).length,
-      무료사주: free.rows.length,
-    };
-
-    res.render('dash/records', {
-      user: req.user, active: 'records',
-      records, freeLogs: free.rows, filter: f, counts,
-    });
-  } catch (e) {
-    next(e);
-  }
-});
-
-/* ===== 묶어서 보내기 — 리포트 여러 개를 메일 한 통에 ===== */
-router.post('/leads/:id/send-bundle', async (req, res) => {
-  try {
-    const ids = (req.body.pdfIds || []).map(Number).filter(Boolean);
-    if (!ids.length) return res.status(400).json({ error: '리포트를 선택해주세요.' });
-
-    // 내 리포트인지 + 같은 신청자 것인지 확인
-    const { rows } = await pool.query(
-      `SELECT p.id, p.type, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.gender
-       FROM pdfs p JOIN leads l ON l.id = p.lead_id
-       WHERE p.id = ANY($1) AND p.teacher_id = $2 AND p.lead_id = $3
-       ORDER BY p.created_at ASC`,
-      [ids, req.user.id, req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: '리포트를 찾을 수 없습니다.' });
-
-    const lead = rows[0];
-    const to = String(req.body.email || lead.email || '').trim();
-    if (!to) return res.status(400).json({ error: '이메일이 없습니다.' });
-
-    let saju = null;
-    try {
-      saju = calcSaju({
-        birthDate: normalizeBirth(lead.birth),
-        birthTime: parseHour(lead.hour),
-        calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
-        isLeapMonth: lead.calendar === '윤달',
-        region: lead.region || '서울특별시',
-        gender: lead.gender,
-      });
-    } catch (e) { /* 만세력 실패해도 메일은 나간다 */ }
-
-    const base = process.env.BASE_URL || '';
-    const items = [];
-    for (const p of rows) {
-      const token = await ensureToken(p.id);
-      items.push({ type: p.type, shareUrl: `${base}/r/${token}` });
-    }
-
-    await sendBundle({
-      to,
-      teacher: req.user,
-      saju,
-      input: { name: lead.name },
-      items,
-      baseUrl: base,
-    });
-
-    await pool.query(
-      'UPDATE pdfs SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1 WHERE id = ANY($2)',
-      [to, ids]
-    );
-
-    console.log('[MAIL] 묶음 발송:', to, '·', rows.map((x) => x.type).join(', '));
-    res.json({ ok: true, to, count: rows.length });
-  } catch (e) {
-    console.error('[MAIL] 묶음 발송 실패:', e.message);
-    res.status(500).json({ error: e.message || '발송에 실패했습니다.' });
-  }
-});
-
-/* ===== 미리보기에서 PDF 파일로 내려받기 (교육생) =====
-   브라우저 인쇄는 카톡·메일 앱 안에서 막혀 있어서, 서버가 직접 만들어 준다. */
-router.get('/pdfs/:id/download', async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT p.id, p.type, p.sections, p.extra,
-              l.name, l.birth, l.hour, l.calendar, l.region, l.gender
-       FROM pdfs p JOIN leads l ON l.id = p.lead_id
-       WHERE p.id = $1 AND p.teacher_id = $2`,
-      [req.params.id, req.user.id]
-    );
-    const pdf = rows[0];
-    if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
-
-    const client = {
-      name: pdf.name,
-      birthDate: normalizeBirth(pdf.birth),
-      birthTime: parseHour(pdf.hour),
-      calendar: pdf.calendar,
-      region: pdf.region,
-      gender: pdf.gender,
-    };
-
-    let saju = null;
-    try {
-      saju = calcSaju({
-        birthDate: client.birthDate,
-        birthTime: client.birthTime,
-        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-        isLeapMonth: pdf.calendar === '윤달',
-        region: pdf.region || '서울특별시',
-        gender: pdf.gender,
-      });
-    } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
-
-    const baseUrl = process.env.BASE_URL || '';
-    const html = pdf.type === FREE
-      ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
-      : buildReportHtml({
-          type: pdf.type, client, saju,
-          chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-          teacher: req.user, extra: pdf.extra || null, baseUrl,
-        });
-
-    const buf = await htmlToPdf(html);
-    const fn = pdfFilename(pdf.name, pdf.type);
-
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Length': buf.length,
-      'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
-      'Cache-Control': 'no-store',
-    });
-    res.send(buf);
-  } catch (e) {
-    console.error('[PDF] 미리보기 다운로드 실패:', e.message);
-    res.status(500).send('PDF를 만들지 못했습니다. 잠시 후 다시 시도해주세요.');
-  }
-});
+// 주소가 .pdf 로 끝나야 인앱 브라우저에서 확장자가 붙는다
+router.get('/pdfs/:id/report.pdf', downloadPdf);
+router.get('/pdfs/:id/download', downloadPdf);   // 예전 주소 호환
 
 module.exports = router;
