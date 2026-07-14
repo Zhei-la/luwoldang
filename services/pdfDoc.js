@@ -36,6 +36,7 @@ const COVERS = {
   결혼운:    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   연인궁합:  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
   재물운:    { img: '/img/pdf/cover-jaemul.jpg',   style: 'circle', brandTop: 18.2 },
+  건강운:    { img: '/img/pdf/cover-geongang.jpg', style: 'circle', brandTop: 18.2 },
   무료사주:  { img: '/img/pdf/cover-free.jpg',     style: 'circle', brandTop: 18.2 },
 };
 
