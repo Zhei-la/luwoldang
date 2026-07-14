@@ -3,7 +3,7 @@
 <%
   function fmtDate(d) {
     if (!d) return '-';
-    try { return new Date(d).toLocaleDateString('ko-KR'); } catch (e) { return '-'; }
+    try { return new Date(d).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'}); } catch (e) { return '-'; }
   }
   function roleLabel(r) { return r === 'admin' ? '관리자' : '교육생'; }
 %>

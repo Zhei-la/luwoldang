@@ -1,7 +1,7 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: 'PDF · 이메일 발송 기록' }) %>
 
 <%
-  function fmt(d){ try { return new Date(d).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return '-'; } }
+  function fmt(d){ try { return new Date(d).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return '-'; } }
   var tabs = [['all','전체 리포트'],['발송완료','발송완료'],['미발송','미발송']];
 %>
 

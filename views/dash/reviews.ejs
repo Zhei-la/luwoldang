@@ -1,7 +1,7 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: '후기' }) %>
 
 <%
-  function fmt(d){ try { return new Date(d).toLocaleDateString('ko-KR',{year:'2-digit',month:'numeric',day:'numeric'}); } catch(e){ return '-'; } }
+  function fmt(d){ try { return new Date(d).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'2-digit',month:'numeric',day:'numeric'}); } catch(e){ return '-'; } }
 %>
 
 <!-- 요약 -->

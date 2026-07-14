@@ -79,7 +79,23 @@ const REGIONS = {
   '경남':128.69, '경상남도':128.69,
   '제주':126.53, '제주특별자치도':126.53,
 };
-const STANDARD_MERIDIAN = 135; // KST
+/* ⚠️ 한국 표준시의 기준 자오선은 역사적으로 바뀌었다.
+ *
+ *   1908-04-01 ~ 1911-12-31 : 127.5°E (UTC+8:30)
+ *   1912-01-01 ~ 1954-03-20 : 135°E   (UTC+9,   일제강점기)
+ *   1954-03-21 ~ 1961-08-09 : 127.5°E (UTC+8:30)  ← 이 구간을 놓치면 시주가 통째로 틀린다
+ *   1961-08-10 ~ 현재       : 135°E   (UTC+9)
+ *
+ * 예) 1957년 광주 출생
+ *     135° 기준 → -33분 (틀림)
+ *     127.5° 기준 → -3분 (맞음)
+ */
+function standardMeridian(dateStr) {
+  const d = String(dateStr);
+  if (d >= '1954-03-21' && d <= '1961-08-09') return 127.5;
+  if (d >= '1908-04-01' && d <= '1911-12-31') return 127.5;
+  return 135;
+}
 
 function findLongitude(region) {
   if (!region) return REGIONS['서울'];
@@ -92,9 +108,10 @@ function findLongitude(region) {
 }
 
 // 경도차 1도 = 4분
-function localTimeCorrection(region) {
+function localTimeCorrection(region, dateStr) {
   const lon = findLongitude(region);
-  return Math.round((lon - STANDARD_MERIDIAN) * 4); // 음수 = 늦춰짐
+  const meridian = standardMeridian(dateStr);
+  return Math.round((lon - meridian) * 4); // 음수 = 늦춰짐
 }
 
 /* ---------- 한국 서머타임 구간 (-60분) ---------- */
@@ -158,9 +175,11 @@ function calcSaju(o) {
   if (timeKnown) {
     if (applyDST && isDST(dateStr)) { correction -= 60; notes.push('서머타임 -60분'); }
     if (useLocalSolarTime) {
-      const lt = localTimeCorrection(region);
+      const lt = localTimeCorrection(region, dateStr);
       correction += lt;
-      notes.push('지역시 ' + (lt > 0 ? '+' : '') + lt + '분');
+      const mer = standardMeridian(dateStr);
+      notes.push('지역시 ' + (lt > 0 ? '+' : '') + lt + '분'
+        + (mer !== 135 ? ` (당시 표준자오선 ${mer}°E)` : ''));
     }
   }
 

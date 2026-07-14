@@ -23,7 +23,7 @@
         </div>
         <div class="cr-sub"><%= r.type %></div>
         <div class="cr-date">
-          <%= new Date(r.created_at).toLocaleDateString('ko-KR') %>
+          <%= new Date(r.created_at).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'}) %>
           <% if (r.mail_sent) { %> · 발송완료<% } %>
         </div>
       </a>
