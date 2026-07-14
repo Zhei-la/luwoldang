@@ -104,9 +104,27 @@
   <% if (pdfs.length === 0) { %>
     <div class="empty-box">아직 제작한 리포트가 없습니다.</div>
   <% } else { %>
+    <% if (pdfs.length > 1) { %>
+      <div class="bundle-bar">
+        <label class="bundle-all">
+          <input type="checkbox" id="bdAll"> 전체 선택
+        </label>
+        <span class="bundle-cnt" id="bdCnt">0개 선택</span>
+        <button class="btn btn-approve" id="bdSend" disabled>묶어서 보내기</button>
+      </div>
+      <p class="block-desc" style="margin:-4px 0 12px">
+        여러 리포트를 <b>메일 한 통</b>에 담아 보냅니다. 내담자는 각각 PDF로 받을 수 있습니다.
+      </p>
+    <% } %>
+
     <div class="tbl">
       <% pdfs.forEach(function(p){ %>
         <div class="tbl-row" id="pdf-<%= p.id %>">
+          <% if (pdfs.length > 1) { %>
+            <label class="bd-check">
+              <input type="checkbox" class="bd-item" value="<%= p.id %>" data-type="<%= p.type %>">
+            </label>
+          <% } %>
           <div class="tbl-main">
             <div class="u-name"><%= p.type %>
               <% if (p.mail_sent) { %><span class="badge-sent">✓ 발송완료</span>
@@ -150,7 +168,6 @@
     btnMake.onclick = function(){
       if(!picked) return;
       var prog = document.getElementById('prog');
-      var bar  = document.getElementById('progBar');
       btnMake.disabled = true;
       btnMake.textContent = '작성 중...';
       prog.className = 'prog on';
@@ -213,6 +230,64 @@
       }
     };
   });
+</script>
+
+<script>
+/* 묶어서 보내기 */
+(function(){
+  var all = document.getElementById('bdAll');
+  var btn = document.getElementById('bdSend');
+  var cnt = document.getElementById('bdCnt');
+  if (!btn) return;
+
+  var EMAIL = <%- JSON.stringify(lead.email || '') %>;
+  var LEAD_ID = <%= lead.id %>;
+
+  function items(){ return Array.prototype.slice.call(document.querySelectorAll('.bd-item')); }
+  function chosen(){ return items().filter(function(x){ return x.checked; }); }
+
+  function sync(){
+    var n = chosen().length;
+    cnt.textContent = n + '개 선택';
+    btn.disabled = n < 1;
+    all.checked = n > 0 && n === items().length;
+  }
+
+  all.addEventListener('change', function(){
+    items().forEach(function(x){ x.checked = all.checked; });
+    sync();
+  });
+  items().forEach(function(x){ x.addEventListener('change', sync); });
+
+  btn.addEventListener('click', async function(){
+    var sel = chosen();
+    if (!sel.length) return;
+    if (!EMAIL) { alert('이 신청자의 이메일이 없습니다.'); return; }
+
+    var names = sel.map(function(x){ return x.dataset.type; }).join(', ');
+    if (!confirm(EMAIL + ' 로 아래 리포트를 한 통에 담아 보낼까요?\n\n' + names)) return;
+
+    btn.disabled = true;
+    btn.textContent = '보내는 중...';
+    try {
+      var r = await fetch('/leads/' + LEAD_ID + '/send-bundle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdfIds: sel.map(function(x){ return Number(x.value); }) })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      alert('발송 완료: ' + d.to + '\n리포트 ' + d.count + '개');
+      location.reload();
+    } catch (e) {
+      alert('발송 실패: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = '묶어서 보내기';
+    }
+  });
+
+  sync();
+})();
 </script>
 
 <%- include('../partials/dash-bottom') %>
