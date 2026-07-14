@@ -430,113 +430,7 @@ function toast(msg, bad){
   setTimeout(function(){ t.classList.remove('on'); }, 1800);
 }
 
-/* 1. 리플로우 — 실제 높이를 재서 페이지를 다시 채운다 */
-function movable(sec){
-  return Array.prototype.filter.call(sec.children, function(el){
-    return !el.classList.contains('fn') && !el.classList.contains('pg-tools');
-  });
-}
-function capacity(sec){
-  var cs = getComputedStyle(sec);
-  var fn = sec.querySelector('.fn');
-  return sec.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-       - (fn ? fn.offsetHeight + 12 : 0) - 6;
-}
-/* ⚠️ 자식 높이를 더하면 margin collapse 때문에 실제보다 크게 나온다.
-   마지막 요소의 아래 끝을 직접 재야 정확하다. */
-function contentH(sec){
-  var kids = movable(sec);
-  if (!kids.length) return 0;
-  var cs = getComputedStyle(sec);
-  var top = sec.getBoundingClientRect().top + parseFloat(cs.paddingTop);
-  var last = kids[kids.length - 1].getBoundingClientRect();
-  return Math.max(0, last.bottom - top);
-}
-function lastPara(sec){
-  var blocks = sec.querySelectorAll('.ch-block');
-  for (var i = blocks.length - 1; i >= 0; i--) {
-    var ps = blocks[i].querySelectorAll('p');
-    if (ps.length) return ps[ps.length - 1];
-  }
-  return null;
-}
-function firstPara(sec){
-  var b = sec.querySelector('.ch-block');
-  return b ? b.querySelector('p') : null;
-}
-function pushDown(p, next){
-  var src = p.parentNode;
-  var first = next.querySelector('.ch-block');
-  if (first && !first.querySelector('.ch-sub')) first.insertBefore(p, first.firstChild);
-  else {
-    var nb = document.createElement('div');
-    nb.className = 'ch-block';
-    nb.appendChild(p);
-    next.insertBefore(nb, next.firstChild);
-  }
-  if (src && !src.querySelector('p') && !src.querySelector('.ch-sub')) src.remove();
-}
-function pullUp(p, sec){
-  var src = p.parentNode;
-  var anchor = p.nextSibling;
-  var srcHasSub = !!src.querySelector('.ch-sub');
-  var isFirstOfBlock = !p.previousElementSibling || p.previousElementSibling.classList.contains('ch-sub');
-
-  // 소제목이 붙은 블록의 첫 문단이면 소제목까지 통째로 올린다 (소제목만 홀로 남으면 흉하다)
-  if (srcHasSub && isFirstOfBlock) {
-    var srcAnchor = src.nextSibling;
-    var srcParent = src.parentNode;
-    sec.appendChild(src);
-    return function undo(){ srcParent.insertBefore(src, srcAnchor); };
-  }
-
-  var blocks = sec.querySelectorAll('.ch-block');
-  var last = blocks.length ? blocks[blocks.length - 1] : null;
-  if (last) last.appendChild(p);
-  else {
-    var nb = document.createElement('div');
-    nb.className = 'ch-block';
-    nb.appendChild(p);
-    sec.appendChild(nb);
-  }
-  return function undo(){ if (src) src.insertBefore(p, anchor); };
-}
-function reflow(){
-  var groups = {};
-  pagesOf().forEach(function(sec){
-    var k = sec.dataset.ch;
-    (groups[k] = groups[k] || []).push(sec);
-  });
-
-  Object.keys(groups).forEach(function(k){
-    var g = groups[k];
-    for (var i = 0; i < g.length; i++) {
-      var guard = 0;
-      while (contentH(g[i]) > capacity(g[i]) && guard++ < 60) {
-        var p = lastPara(g[i]);
-        if (!p) break;
-        if (!g[i + 1]) {
-          var ns = document.createElement('section');
-          ns.className = 'page sheet chapter';
-          ns.dataset.ch = k;
-          g[i].parentNode.insertBefore(ns, g[i].nextSibling);
-          g.splice(i + 1, 0, ns);
-        }
-        pushDown(p, g[i + 1]);
-      }
-      guard = 0;
-      while (g[i + 1] && guard++ < 60) {
-        var q = firstPara(g[i + 1]);
-        if (!q) break;
-        var undo = pullUp(q, g[i]);
-        if (contentH(g[i]) > capacity(g[i])) { undo(); break; }
-      }
-    }
-    g.slice().forEach(function(sec){
-      if (!sec.querySelector('p') && !sec.querySelector('.ch-head')) sec.remove();
-    });
-  });
-}
+/* 리플로우는 PDF 본체(pdfDoc.js)에 내장돼 있어 여기선 안 돌린다 */
 
 /* 2. 페이지별 편집 */
 function addPageTools(){
@@ -683,22 +577,7 @@ window.addEventListener('beforeunload', function(e){
   if (EDITING && DIRTY) { e.preventDefault(); e.returnValue = ''; }
 });
 
-// 폰트가 다 뜬 뒤에 재배치해야 높이가 정확하다
-function runReflow(){
-  try {
-    reflow();
-    // 빈 블록 정리
-    document.querySelectorAll('.ch-block').forEach(function(b){
-      if (!b.querySelector('p') && !b.querySelector('.ch-sub')) b.remove();
-    });
-  } catch (e) { console.error('[reflow]', e); }
-}
-function boot(){
-  runReflow();
-  setTimeout(runReflow, 400);   // 웹폰트가 늦게 뜨는 경우 대비해 한 번 더
-}
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(boot, 60); });
-else window.addEventListener('load', function(){ setTimeout(boot, 200); });
+
 </script>`;
 
     const html = inner.replace('<body>', '<body>' + toolbar);
