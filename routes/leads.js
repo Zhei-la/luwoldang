@@ -3,7 +3,7 @@ const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
-const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL } = require('../services/ai');
+const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL, rewriteBlock } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
@@ -400,9 +400,15 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   body.editing .ch-title{outline:1px dashed #c8b98e;outline-offset:3px;border-radius:3px}
   body.editing [contenteditable]:focus{outline:2px solid #B59A62;background:#fffdf5}
   body.editing .ch-block{position:relative}
-  .blk-del{position:absolute;right:-32px;top:2px;width:24px;height:24px;border-radius:6px;
-    border:1px solid #e0c4c0;background:#fff;color:#b0392c;font-size:13px;cursor:pointer;display:none;line-height:1}
-  body.editing .blk-del{display:block}
+  .blk-tools{position:absolute;right:-118px;top:0;display:none;gap:5px;align-items:flex-start}
+  body.editing .blk-tools{display:flex}
+  .blk-ai{padding:5px 9px;border-radius:6px;border:1px solid #B59A62;background:#fff;color:#8a6f3c;
+    font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Pretendard,sans-serif;line-height:1.4}
+  .blk-ai:hover{background:#B59A62;color:#fff}
+  .blk-ai:disabled{opacity:.5}
+  .blk-del{width:24px;height:24px;border-radius:6px;flex:none;
+    border:1px solid #e0c4c0;background:#fff;color:#b0392c;font-size:13px;cursor:pointer;line-height:1}
+  @media(max-width:1100px){ .blk-tools{right:4px;top:-30px} }
   .edit-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#182234;color:#e8e3d6;
     padding:10px 20px;border-radius:8px;font-size:13px;z-index:98;display:none;
     font-family:Pretendard,-apple-system,sans-serif}
@@ -413,7 +419,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   .toast.on{opacity:1;transform:translateX(-50%)}
 </style>
 
-<div class="edit-hint no-print">글을 눌러 바로 고칠 수 있습니다. 페이지마다 <b>저장</b> · <b>되돌리기</b> 버튼이 있습니다.</div>
+<div class="edit-hint no-print">글을 눌러 바로 고칠 수 있습니다. 문단 옆 <b>AI 다시 쓰기</b>로 그 부분만 새로 받을 수도 있습니다.</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -427,7 +433,9 @@ var ORIGINAL = {};
 var DIRTY = false;
 
 function $(id){ return document.getElementById(id); }
-function pagesOf(){ return Array.prototype.slice.call(document.querySelectorAll('.page.chapter')); }
+// ⚠️ '사주 용어 풀이' 페이지도 .page.chapter 라서, 그냥 긁으면 가짜 챕터가 저장된다.
+// data-ch 가 붙은 진짜 본문 페이지만 잡는다.
+function pagesOf(){ return Array.prototype.slice.call(document.querySelectorAll('.page.chapter[data-ch]')); }
 function toast(msg, bad){
   var t = $('toast');
   t.textContent = msg;
@@ -467,13 +475,81 @@ function makeEditable(root){
     el.oninput = function(){ DIRTY = true; };
   });
   root.querySelectorAll('.ch-block').forEach(function(b){
-    if (b.querySelector('.blk-del')) return;
+    if (b.querySelector('.blk-tools')) return;
+
+    var box = document.createElement('div');
+    box.className = 'blk-tools no-print';
+
+    var ai = document.createElement('button');
+    ai.type = 'button';
+    ai.className = 'blk-ai';
+    ai.textContent = 'AI 다시 쓰기';
+    ai.onclick = function(){ rewriteBlock(b, ai); };
+
     var x = document.createElement('button');
-    x.className = 'blk-del no-print';
+    x.type = 'button';
+    x.className = 'blk-del';
     x.textContent = '×';
+    x.title = '이 문단 묶음 삭제';
     x.onclick = function(){ if (confirm('이 문단 묶음을 삭제할까요?')) { b.remove(); DIRTY = true; } };
-    b.appendChild(x);
+
+    box.appendChild(ai);
+    box.appendChild(x);
+    b.appendChild(box);
   });
+}
+
+/* 이 블록만 AI 에게 다시 쓰게 한다 */
+async function rewriteBlock(blk, btn){
+  var sec = blk.closest('.page.chapter[data-ch]');
+  if (!sec) return;
+
+  var note = prompt('어떻게 고칠까요? (비워두면 문체만 다듬습니다)\n\n예) 더 구체적으로 / 좀 더 짧게 / 재물 얘기를 더');
+  if (note === null) return;
+
+  var subEl = blk.querySelector('.ch-sub');
+  var paras = [];
+  blk.querySelectorAll('p').forEach(function(p){
+    var t = p.innerText.trim();
+    if (t) paras.push(t);
+  });
+  if (!paras.length) { alert('내용이 없습니다.'); return; }
+
+  var old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '다시 쓰는 중...';
+
+  try {
+    var r = await fetch('/pdfs/' + PDF_ID + '/rewrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chapterTitle: (sec.querySelector('.ch-title') || {}).innerText || '',
+        sub: subEl ? subEl.innerText.trim() : '',
+        body: paras.join('\n\n'),
+        note: (note || '').trim()
+      })
+    });
+    var d = await r.json();
+    if (!d.ok) throw new Error(d.error || '실패');
+
+    // 새 문단으로 갈아끼운다
+    blk.querySelectorAll('p').forEach(function(p){ p.remove(); });
+    var tools = blk.querySelector('.blk-tools');
+    String(d.body).split(/\n{2,}|\n/).filter(Boolean).forEach(function(t){
+      var p = document.createElement('p');
+      p.textContent = t.trim();
+      p.setAttribute('contenteditable', 'true');
+      p.oninput = function(){ DIRTY = true; };
+      blk.insertBefore(p, tools);
+    });
+    DIRTY = true;
+    toast('다시 썼습니다. 확인하고 저장하세요.');
+  } catch (e) {
+    toast('실패: ' + e.message, true);
+  }
+  btn.disabled = false;
+  btn.textContent = old;
 }
 
 /* 화면 → 데이터 (페이지가 아니라 '챕터' 단위로 합친다) */
@@ -528,7 +604,7 @@ $('btnEdit').onclick = function(){
   EDITING = true;
   document.body.classList.add('editing');
   addPageTools();
-  makeEditable(document);
+  pagesOf().forEach(makeEditable);   // 용어 풀이·표지·목차는 건드리지 않는다
   $('btnEdit').style.display = 'none';
   $('btnDone').style.display = '';
   $('pvMode').textContent = '수정 중';
@@ -793,5 +869,61 @@ async function downloadPdf(req, res) {
 // 주소가 .pdf 로 끝나야 인앱 브라우저에서 확장자가 붙는다
 router.get('/pdfs/:id/report.pdf', downloadPdf);
 router.get('/pdfs/:id/download', downloadPdf);   // 예전 주소 호환
+
+/* ===== 블록 하나만 AI 로 다시 쓰기 ===== */
+router.post('/pdfs/:id/rewrite', async (req, res) => {
+  try {
+    if (!req.user.openai_key) {
+      return res.status(400).json({ ok: false, error: 'OpenAI 키를 먼저 등록해주세요.' });
+    }
+    const { chapterTitle, sub, body, note } = req.body || {};
+    if (!body || String(body).trim().length < 20) {
+      return res.status(400).json({ ok: false, error: '다시 쓸 내용이 없습니다.' });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT p.type, l.name, l.birth, l.hour, l.calendar, l.region, l.gender, l.memo
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = $1 AND p.teacher_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+
+    const client = {
+      name: pdf.name,
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar,
+      region: pdf.region,
+      gender: pdf.gender,
+      question: pdf.memo || '',
+    };
+
+    const saju = calcSaju({
+      birthDate: client.birthDate,
+      birthTime: client.birthTime,
+      calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
+      isLeapMonth: pdf.calendar === '윤달',
+      region: pdf.region || '서울특별시',
+      gender: pdf.gender,
+    });
+
+    const text = await rewriteBlock({
+      type: pdf.type,
+      chapterTitle: String(chapterTitle || '').trim(),
+      sub: String(sub || '').trim(),
+      body: String(body),
+      note: String(note || '').trim(),
+      client, saju,
+      openaiKey: req.user.openai_key,
+    });
+
+    res.json({ ok: true, body: text });
+  } catch (e) {
+    console.error('[PDF] 다시쓰기 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message || '다시 쓰지 못했습니다.' });
+  }
+});
 
 module.exports = router;

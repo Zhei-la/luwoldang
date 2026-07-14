@@ -950,3 +950,72 @@ ${STYLE_RULES}`;
 
 module.exports.answerFollowUp = answerFollowUp;
 module.exports.reportContext = reportContext;
+
+
+/* ============================================================
+ * 블록 하나만 다시 쓰기 (미리보기의 "AI 다시 쓰기")
+ * ============================================================ */
+async function rewriteBlock({ type, chapterTitle, sub, body, note, client, saju, openaiKey, model }) {
+  const info = sajuBlock(client, saju);
+
+  const user = `## 이 사람의 사주
+${info}
+
+## 지금 쓰고 있는 리포트
+${type} — "${chapterTitle}" 챕터의 "${sub || '본문'}" 부분
+
+## 지금 글
+${body}
+
+## 요청
+${note ? note : '내용은 유지하되 문체만 다듬어주세요.'}
+
+같은 자리에 들어갈 글을 다시 써주세요.
+분량은 지금과 비슷하게 유지하세요. 제목이나 소제목은 쓰지 말고 본문만 쓰세요.
+JSON 으로 답하세요: { "body": "다시 쓴 글" }`;
+
+  const out = await callAI({
+    system: PDF_SYSTEM,
+    user,
+    openaiKey,
+    model,
+    maxTokens: 3000,
+  });
+
+  let text = String(out.body || '').trim();
+  if (!text) throw new Error('다시 쓴 글을 받지 못했습니다.');
+
+  // 문체 검사 — 걸리면 한 번 더
+  const issues = checkStyle(text, client.name);
+  if (issues.length) {
+    console.log('[문체] 다시쓰기 재작성:', issues.join(', '));
+    try {
+      const fix = await callAI({
+        system: PDF_SYSTEM,
+        user: `${user}
+
+⚠️ 방금 쓴 글의 문체가 어색합니다. 아래 문제를 고쳐 다시 쓰세요.
+${issues.map((x) => '- ' + x).join('\n')}
+
+- 짧은 문장을 툭툭 떨어뜨리지 말고 연결어미(~는데/~라/~어서/~기 때문에)로 물려 쓰세요.
+- 같은 어미를 두 번 연속 쓰지 마세요.
+- 한 문단은 2~3문장.
+
+[방금 쓴 글]
+${text}
+
+JSON 으로 답하세요: { "body": "다시 쓴 글" }`,
+        openaiKey,
+        model,
+        maxTokens: 3000,
+      });
+      if (fix.body && String(fix.body).trim().length > 50) text = String(fix.body).trim();
+    } catch (e) {
+      console.error('[문체] 다시쓰기 재작성 실패:', e.message);
+    }
+  }
+
+  return text;
+}
+
+module.exports.rewriteBlock = rewriteBlock;
