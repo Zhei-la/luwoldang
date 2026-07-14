@@ -168,6 +168,7 @@
     btnMake.onclick = function(){
       if(!picked) return;
       var prog = document.getElementById('prog');
+      var bar  = document.getElementById('progBar');
       btnMake.disabled = true;
       btnMake.textContent = '작성 중...';
       prog.className = 'prog on';
@@ -242,19 +243,6 @@
   var cancel = document.getElementById('bdCancel');
   if (!btn || !start) return;
 
-  var EMAIL = <%- JSON.stringify(lead.email || '') %>;
-  var LEAD_ID = <%= lead.id %>;
-
-  function items(){ return Array.prototype.slice.call(document.querySelectorAll('.bd-item')); }
-  function chosen(){ return items().filter(function(x){ return x.checked; }); }
-
-  function sync(){
-    var n = chosen().length;
-    cnt.textContent = n + '개 선택';
-    btn.disabled = n < 1;
-    all.checked = n > 0 && n === items().length;
-  }
-
   start.addEventListener('click', function(){
     document.body.classList.add('bundling');
   });
@@ -264,6 +252,19 @@
     sync();
   });
 
+  var EMAIL = <%- JSON.stringify(lead.email || '') %>;
+  var LEAD_ID = <%= lead.id %>;
+
+  function items(){ return Array.prototype.slice.call(document.querySelectorAll('.bd-item')); }
+  function picked(){ return items().filter(function(x){ return x.checked; }); }
+
+  function sync(){
+    var n = picked().length;
+    cnt.textContent = n + '개 선택';
+    btn.disabled = n < 1;
+    all.checked = n > 0 && n === items().length;
+  }
+
   all.addEventListener('change', function(){
     items().forEach(function(x){ x.checked = all.checked; });
     sync();
@@ -271,7 +272,7 @@
   items().forEach(function(x){ x.addEventListener('change', sync); });
 
   btn.addEventListener('click', async function(){
-    var sel = chosen();
+    var sel = picked();
     if (!sel.length) return;
     if (!EMAIL) { alert('이 신청자의 이메일이 없습니다.'); return; }
 

@@ -1,0 +1,93 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '후기' }) %>
+
+<%
+  function fmt(d){ try { return new Date(d).toLocaleDateString('ko-KR',{year:'2-digit',month:'numeric',day:'numeric'}); } catch(e){ return '-'; } }
+%>
+
+<!-- 요약 -->
+<div class="settings-block">
+  <h2 class="section-h">받은 후기</h2>
+  <div class="rv-stat">
+    <div><b><%= stat.total %></b><span>전체</span></div>
+    <div><b class="gold"><%= stat.avg %></b><span>평균 별점</span></div>
+    <div><b class="gold"><%= stat.shown %></b><span>홈페이지 노출</span></div>
+  </div>
+  <p class="block-desc" style="margin-top:12px">
+    내담자가 리포트 링크 아래에서 직접 남긴 후기입니다. <b>내가 받은 후기만</b> 보입니다.<br>
+    <b>홈페이지에 넣기</b>를 켠 후기만 <a href="/builder">웹사이트</a>의 후기 블록에 나옵니다.
+    끄면 바로 빠집니다.
+  </p>
+</div>
+
+<!-- 목록 -->
+<div class="settings-block">
+  <% if (!reviews.length) { %>
+    <div class="empty-box">
+      아직 받은 후기가 없습니다.<br>
+      리포트를 이메일로 보내면 내담자가 링크 아래에서 후기를 남길 수 있습니다.
+    </div>
+  <% } else { %>
+    <% reviews.forEach(function(r){ %>
+      <div class="rv-card <%= r.shown ? 'on' : '' %>" id="rv-<%= r.id %>">
+        <div class="rv-top">
+          <span class="rv-stars"><%= '★'.repeat(r.rating) %><span class="dim"><%= '★'.repeat(5 - r.rating) %></span></span>
+          <b class="rv-name"><%= r.name %></b>
+          <span class="rv-meta"><%= r.type || '리포트' %> · <%= fmt(r.created_at) %></span>
+
+          <label class="rv-toggle">
+            <input type="checkbox" data-show="<%= r.id %>" <%= r.shown ? 'checked' : '' %>>
+            <span>홈페이지에 넣기</span>
+          </label>
+        </div>
+
+        <p class="rv-body"><%= r.body %></p>
+
+        <% if (r.photo) { %>
+          <img class="rv-photo" src="<%= r.photo %>" alt="후기 사진">
+        <% } %>
+
+        <div class="rv-actions">
+          <button class="btn btn-ghost" data-del="<%= r.id %>">삭제</button>
+        </div>
+      </div>
+    <% }); %>
+  <% } %>
+</div>
+
+<script>
+document.querySelectorAll('[data-show]').forEach(function(cb){
+  cb.addEventListener('change', async function(){
+    var id = cb.dataset.show;
+    var card = document.getElementById('rv-' + id);
+    try {
+      var r = await fetch('/api/reviews/' + id + '/show', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shown: cb.checked })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      card.classList.toggle('on', d.shown);
+    } catch (e) {
+      alert('변경 실패: ' + e.message);
+      cb.checked = !cb.checked;
+    }
+  });
+});
+
+document.querySelectorAll('[data-del]').forEach(function(btn){
+  btn.addEventListener('click', async function(){
+    if (!confirm('이 후기를 지울까요? 되돌릴 수 없습니다.')) return;
+    var id = btn.dataset.del;
+    try {
+      await fetch('/api/reviews/' + id + '/delete', { method: 'POST' });
+      var card = document.getElementById('rv-' + id);
+      if (card) card.remove();
+    } catch (e) {
+      alert('삭제 실패');
+    }
+  });
+});
+</script>
+
+<%- include('../partials/dash-bottom') %>

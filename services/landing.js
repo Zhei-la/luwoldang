@@ -157,6 +157,15 @@ img{max-width:100%;display:block}
 .rv .star{margin-left:auto;letter-spacing:2px;color:var(--ac);font-size:9px}
 .rv .dots{display:flex;justify-content:center;gap:5px;margin-top:14px}
 .rv .dots i{width:5px;height:5px;border-radius:99px;background:var(--ln);cursor:pointer;transition:.2s}
+.rphoto{width:100%;border-radius:8px;margin-bottom:11px;display:block;border:1px solid var(--ln)}
+/* 목록형 */
+.rv-list .it{padding:0 20px;margin-bottom:11px}
+.rv-list .bx{border:1px solid var(--ln);border-radius:var(--rd);padding:16px;background:var(--cd)}
+/* 카드 2열 */
+.rv-grid .gwrap{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 20px}
+.rv-grid .bx{border:1px solid var(--ln);border-radius:var(--rd);padding:13px;background:var(--cd);height:100%}
+.rv-grid .qt{font-size:12.8px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.rv-grid .hd{font-size:11px;margin-top:8px}
 .rv .dots i.on{background:var(--ac);width:16px}
 .bl{padding:24px 20px}
 .bl h3,.fq h3{font-family:${v.disp};font-size:18px;font-weight:700;margin-bottom:16px;letter-spacing:-.01em}
@@ -326,13 +335,35 @@ function renderBlock(b, ctx) {
     case 'reviews': {
       const items = b.items || [];
       if (!items.length) return '';
+
       const stars = (r) => (sk === 'plain' ? '★'.repeat(Math.round(r || 5)) + '☆'.repeat(5 - Math.round(r || 5))
                                           : '●'.repeat(Math.round(r || 5)) + '○'.repeat(5 - Math.round(r || 5)));
-      const it = items.map((x) => `<div class="it"><div class="bx">
+
+      const card = (x) => `<div class="bx">
+        ${x.photo ? `<img class="rphoto" src="${esc(x.photo)}" alt="">` : ''}
         <div class="qt">${esc(x.t)}</div>
-        <div class="hd"><b>${esc(x.n)}</b><span class="star">${stars(x.r)}</span></div></div></div>`).join('');
+        <div class="hd"><b>${esc(x.n)}</b><span class="star">${stars(x.r)}</span></div>
+      </div>`;
+
+      const view = b.view || 'slide';   // slide | list | grid
+      const head = b.title ? `<h3>${esc(b.title)}</h3>` : '';
+
+      // 목록 — 위아래로 쭉 (넘기지 않아도 다 보임)
+      if (view === 'list') {
+        return `<div class="rv rv-list mt">${head}
+          ${items.map((x) => `<div class="it">${card(x)}</div>`).join('')}</div>`;
+      }
+
+      // 카드 2열 — 한눈에
+      if (view === 'grid') {
+        return `<div class="rv rv-grid mt">${head}
+          <div class="gwrap">${items.map((x) => `<div class="it">${card(x)}</div>`).join('')}</div></div>`;
+      }
+
+      // 슬라이드 (기본)
+      const it = items.map((x) => `<div class="it">${card(x)}</div>`).join('');
       const dots = items.map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('');
-      return `<div class="rv mt" data-rv>${b.title ? `<h3>${esc(b.title)}</h3>` : ''}
+      return `<div class="rv mt" data-rv>${head}
         <div class="vp"><div class="track">${it}</div></div><div class="dots">${dots}</div></div>`;
     }
 
@@ -614,4 +645,3 @@ function defaultLanding(name) {
 }
 
 module.exports = { renderLanding, defaultLanding, SKINS };
-

@@ -1300,4 +1300,3 @@ module.exports = {
   coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
   sentenceBreaks,
 };
-

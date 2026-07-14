@@ -131,8 +131,25 @@ async function initDb() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_chat_qa_pdf ON chat_qa(pdf_id);`);
 
+  // 내담자 후기 (리포트 링크에서 작성 → 교육생이 골라서 랜딩에 노출)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id),
+      pdf_id      INTEGER REFERENCES pdfs(id) ON DELETE SET NULL,
+      lead_id     INTEGER,
+      name        TEXT,           -- 표시 이름 (김*영)
+      rating      INTEGER,        -- 1~5
+      body        TEXT,
+      photo       TEXT,           -- data URI (선택)
+      shown       BOOLEAN DEFAULT FALSE,   -- 랜딩에 노출할지
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_teacher ON reviews(teacher_id);`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_pdf ON reviews(pdf_id) WHERE pdf_id IS NOT NULL;`);
+
   console.log('[DB] 준비 완료');
 }
 
 module.exports = { pool, initDb };
-

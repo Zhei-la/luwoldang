@@ -498,4 +498,3 @@ async function sendBundle({ to, teacher, saju, input, items, baseUrl }) {
 
 module.exports.sendBundle = sendBundle;
 module.exports.buildBundleHtml = buildBundleHtml;
-

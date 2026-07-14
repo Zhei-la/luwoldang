@@ -505,3 +505,40 @@ body.bundling .bd-check { display: flex; }
 /* ⚠️ .tbl-row 에 display:flex 를 새로 주면 안 된다. 원래 레이아웃이 깨진다. */
 .tbl-row .tbl-main { min-width: 0; }
 
+/* ===== 후기 ===== */
+.rv-stat { display: flex; gap: 10px; }
+.rv-stat > div {
+  flex: 1; text-align: center; padding: 14px 8px;
+  background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 10px;
+}
+.rv-stat b { display: block; font-size: 22px; font-weight: 800; color: #252522; }
+.rv-stat b.gold { color: #B59A62; }
+.rv-stat span { font-size: 11.5px; color: #8a8577; }
+
+.rv-card {
+  border: 1px solid #E9E0CF; border-radius: 12px; padding: 16px 18px;
+  margin-bottom: 10px; background: #fff;
+}
+.rv-card.on { border-color: #B59A62; background: #FFFDF7; }
+.rv-top { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 9px; }
+.rv-stars { color: #f5b301; font-size: 14px; letter-spacing: 1px; }
+.rv-stars .dim { color: #e0d8c6; }
+.rv-name { font-size: 14px; }
+.rv-meta { font-size: 11.5px; color: #a49c8b; }
+
+.rv-toggle {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: #6b6656; cursor: pointer; white-space: nowrap;
+}
+.rv-toggle input { width: 16px; height: 16px; accent-color: #B59A62; }
+
+.rv-body {
+  margin: 0 0 10px; font-size: 14px; line-height: 1.8; color: #3d3a33;
+  white-space: pre-wrap; word-break: break-word;
+}
+.rv-photo {
+  width: 100%; max-width: 320px; border-radius: 10px;
+  border: 1px solid #E9E0CF; display: block; margin-bottom: 10px;
+}
+.rv-actions { display: flex; justify-content: flex-end; }
+.rv-actions .btn { padding: 6px 12px; font-size: 12px; }

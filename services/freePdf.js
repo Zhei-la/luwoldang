@@ -274,4 +274,3 @@ ${endPage({ teacher })}
 }
 
 module.exports = { buildFreePdfHtml, freeChapters };
-

@@ -9,6 +9,7 @@ const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { ensureToken } = require('./share');
+const { htmlToPdf, pdfFilename } = require('../services/pdfFile');
 
 const FREE = '무료사주';
 
@@ -349,7 +350,8 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   <div class="pv-actions">
     <button id="btnEdit">수정하기</button>
     <button id="btnDone" style="display:none">수정 완료</button>
-    <button id="btnPrint">PDF로 저장</button>
+    <a id="btnDl" class="dlbtn" href="/pdfs/${pdf.id}/download">PDF 다운받기</a>
+    <button id="btnPrint">인쇄</button>
     <button id="btnSend" class="send">이메일 보내기</button>
   </div>
   <div class="pv-warn" id="pvWarn">
@@ -369,17 +371,21 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   .pv-title{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:6px}
   .pv-actions{display:flex;gap:8px;flex-wrap:wrap}
-  .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;
-    border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:40px}
+  .pv-actions button,.pv-actions .dlbtn{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;
+    border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:40px;
+    text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+  .pv-actions .dlbtn{background:#2f9e5e;border-color:#2f9e5e;color:#fff;font-weight:700}
+  .pv-actions .dlbtn.loading{opacity:.6;pointer-events:none}
   .pv-actions button.send{background:#B59A62;color:#241a06;font-weight:700}
   .pv-actions button:disabled{opacity:.45}
   .pv-warn{display:none;flex:1 1 100%;margin-top:8px;padding:9px 12px;border-radius:7px;
     background:#3a2e1a;border:1px solid #6b5a33;color:#f0dcae;font-size:12.5px;line-height:1.6}
   @media (max-width:760px){
-    .pv-bar{padding:10px 12px;gap:8px}
-    body{padding-top:108px}
-    .pv-actions{flex:1 1 100%;gap:6px}
-    .pv-actions button{flex:1;padding:11px 4px;font-size:12.5px;min-height:44px}
+    .pv-bar{padding:10px 12px;gap:7px}
+    body{padding-top:152px}
+    .pv-title{flex:1 1 100%;font-size:12.5px}
+    .pv-actions{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .pv-actions button,.pv-actions .dlbtn{width:100%;padding:11px 4px;font-size:12.5px;min-height:44px}
   }
   @media print{ body{padding-top:0} .pv-bar,.pg-tools,.blk-del,.edit-hint,.toast{display:none!important} }
 
@@ -536,6 +542,13 @@ $('btnDone').onclick = async function(){
   toast('정리된 내용으로 다시 만듭니다');
   setTimeout(function(){ location.reload(); }, 700);
 };
+
+var dl = $('btnDl');
+if (dl) dl.addEventListener('click', function(){
+  dl.classList.add('loading');
+  dl.textContent = 'PDF 만드는 중… (20초쯤)';
+  setTimeout(function(){ dl.classList.remove('loading'); dl.textContent = 'PDF 다운받기'; }, 45000);
+});
 
 $('btnPrint').onclick = function(){
   if (IN_APP) {
@@ -725,6 +738,66 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
   }
 });
 
+/* ===== 미리보기에서 PDF 파일로 내려받기 (교육생) =====
+   브라우저 인쇄는 카톡·메일 앱 안에서 막혀 있어서, 서버가 직접 만들어 준다. */
+router.get('/pdfs/:id/download', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.id, p.type, p.sections, p.extra,
+              l.name, l.birth, l.hour, l.calendar, l.region, l.gender
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = $1 AND p.teacher_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
+
+    const client = {
+      name: pdf.name,
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar,
+      region: pdf.region,
+      gender: pdf.gender,
+    };
+
+    let saju = null;
+    try {
+      saju = calcSaju({
+        birthDate: client.birthDate,
+        birthTime: client.birthTime,
+        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
+        isLeapMonth: pdf.calendar === '윤달',
+        region: pdf.region || '서울특별시',
+        gender: pdf.gender,
+      });
+    } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
+
+    const baseUrl = process.env.BASE_URL || '';
+    const html = pdf.type === FREE
+      ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
+      : buildReportHtml({
+          type: pdf.type, client, saju,
+          chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
+          teacher: req.user, extra: pdf.extra || null, baseUrl,
+        });
+
+    const buf = await htmlToPdf(html);
+    const fn = pdfFilename(pdf.name, pdf.type);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': buf.length,
+      'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
+      'Cache-Control': 'no-store',
+    });
+    res.send(buf);
+  } catch (e) {
+    console.error('[PDF] 미리보기 다운로드 실패:', e.message);
+    res.status(500).send('PDF를 만들지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
+
 module.exports = router;
 /* ===== PDF 만들기 — 내담자 직접 입력 (외부 신청분) ===== */
 router.get('/pdf/create', (req, res) => {
@@ -863,5 +936,64 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
   }
 });
 
-module.exports = router;
+/* ===== 미리보기에서 PDF 파일로 내려받기 (교육생) =====
+   브라우저 인쇄는 카톡·메일 앱 안에서 막혀 있어서, 서버가 직접 만들어 준다. */
+router.get('/pdfs/:id/download', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.id, p.type, p.sections, p.extra,
+              l.name, l.birth, l.hour, l.calendar, l.region, l.gender
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = $1 AND p.teacher_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
 
+    const client = {
+      name: pdf.name,
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar,
+      region: pdf.region,
+      gender: pdf.gender,
+    };
+
+    let saju = null;
+    try {
+      saju = calcSaju({
+        birthDate: client.birthDate,
+        birthTime: client.birthTime,
+        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
+        isLeapMonth: pdf.calendar === '윤달',
+        region: pdf.region || '서울특별시',
+        gender: pdf.gender,
+      });
+    } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
+
+    const baseUrl = process.env.BASE_URL || '';
+    const html = pdf.type === FREE
+      ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
+      : buildReportHtml({
+          type: pdf.type, client, saju,
+          chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
+          teacher: req.user, extra: pdf.extra || null, baseUrl,
+        });
+
+    const buf = await htmlToPdf(html);
+    const fn = pdfFilename(pdf.name, pdf.type);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': buf.length,
+      'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
+      'Cache-Control': 'no-store',
+    });
+    res.send(buf);
+  } catch (e) {
+    console.error('[PDF] 미리보기 다운로드 실패:', e.message);
+    res.status(500).send('PDF를 만들지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
+
+module.exports = router;

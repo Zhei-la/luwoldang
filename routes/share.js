@@ -15,6 +15,7 @@ const { normalizeBirth, parseHour } = require('../services/birth');
 const { buildReportHtml } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { htmlToPdf, pdfFilename } = require('../services/pdfFile');
+const { maskName } = require('./reviews');
 
 const FREE = '무료사주';
 
@@ -131,10 +132,156 @@ router.get('/r/:token', async (req, res, next) => {
 })();
 </script>`;
 
+    // 이미 쓴 후기가 있으면 보여준다
+    const rv = await pool.query(
+      'SELECT rating, body FROM reviews WHERE pdf_id = $1',
+      [pdf.id]
+    );
+    const mine = rv.rows[0] || null;
+
+    const reviewBox = `
+<style>
+  .rvw{max-width:620px;margin:26px auto 40px;padding:0 16px;
+    font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif}
+  .rvw-card{background:#fff;border:1px solid #E9E0CF;border-radius:14px;padding:24px 20px}
+  .rvw-h{font-size:17px;font-weight:800;color:#252522;margin:0 0 6px;text-align:center}
+  .rvw-s{font-size:13px;color:#8a8574;margin:0 0 18px;text-align:center;line-height:1.7}
+  .rvw-stars{display:flex;justify-content:center;gap:6px;margin-bottom:18px}
+  .rvw-stars button{font-size:34px;line-height:1;background:none;border:0;cursor:pointer;
+    color:#e0d8c6;padding:0;transition:.12s}
+  .rvw-stars button.on{color:#f5b301}
+  .rvw textarea{width:100%;min-height:110px;padding:12px;border:1px solid #E9E0CF;border-radius:10px;
+    font-size:14.5px;line-height:1.7;font-family:inherit;resize:vertical;background:#fdfcfa;outline:none}
+  .rvw textarea:focus{border-color:#B59A62}
+  .rvw-photo{margin-top:10px}
+  .rvw-photo label{display:block;padding:12px;border:1.5px dashed #E0D8C6;border-radius:10px;
+    text-align:center;font-size:13px;color:#8a8574;cursor:pointer;background:#fdfcfa}
+  .rvw-photo label:hover{border-color:#B59A62;color:#8a6f3c}
+  .rvw-photo input{display:none}
+  .rvw-prev{margin-top:10px;position:relative;display:none}
+  .rvw-prev img{width:100%;border-radius:10px;border:1px solid #E9E0CF;display:block}
+  .rvw-prev button{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;
+    border:0;background:rgba(0,0,0,.6);color:#fff;font-size:15px;cursor:pointer;line-height:1}
+  .rvw-send{width:100%;margin-top:14px;padding:15px;border:0;border-radius:10px;background:#B59A62;
+    color:#fff;font-size:15.5px;font-weight:800;cursor:pointer}
+  .rvw-send:disabled{opacity:.5}
+  .rvw-done{text-align:center;padding:24px 10px}
+  .rvw-done b{display:block;font-size:16px;color:#252522;margin-bottom:6px}
+  .rvw-done span{font-size:13.5px;color:#8a8574}
+  @media print{ .rvw{display:none} }
+</style>
+
+<div class="rvw no-print" id="rvwWrap">
+  <div class="rvw-card">
+    ${mine ? `
+      <div class="rvw-done">
+        <b>후기를 남겨주셔서 감사합니다.</b>
+        <span>${'★'.repeat(mine.rating)}${'☆'.repeat(5 - mine.rating)} · 아래에서 다시 고칠 수 있습니다.</span>
+      </div>` : ''}
+
+    <h3 class="rvw-h">${mine ? '후기 고치기' : '후기를 남겨주세요'}</h3>
+    <p class="rvw-s">읽어보신 소감을 남겨주시면 큰 힘이 됩니다.<br>
+    이름은 <b>${escapeHtml(maskName(pdf.name))}</b> 처럼 가려서 표시됩니다.</p>
+
+    <div class="rvw-stars" id="rvwStars">
+      ${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-n="${n}">★</button>`).join('')}
+    </div>
+
+    <textarea id="rvwBody" placeholder="어떤 점이 좋았는지, 무엇이 도움이 됐는지 편하게 적어주세요.">${mine ? escapeHtml(mine.body) : ''}</textarea>
+
+    <div class="rvw-photo">
+      <label for="rvwFile">사진 넣기 (선택)</label>
+      <input type="file" id="rvwFile" accept="image/*">
+    </div>
+    <div class="rvw-prev" id="rvwPrev">
+      <img id="rvwImg" alt="">
+      <button type="button" id="rvwDel">×</button>
+    </div>
+
+    <button class="rvw-send" id="rvwSend">${mine ? '후기 다시 저장' : '후기 남기기'}</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var TOKEN = ${JSON.stringify(req.params.token)};
+  var rating = ${mine ? mine.rating : 0};
+  var photo = '';
+
+  var stars = document.getElementById('rvwStars');
+  var send = document.getElementById('rvwSend');
+  var body = document.getElementById('rvwBody');
+  var file = document.getElementById('rvwFile');
+  var prev = document.getElementById('rvwPrev');
+  var img = document.getElementById('rvwImg');
+
+  function paint(){
+    Array.prototype.forEach.call(stars.children, function(b, i){
+      b.classList.toggle('on', i < rating);
+    });
+  }
+  stars.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    rating = Number(b.dataset.n);
+    paint();
+  });
+  paint();
+
+  // 사진은 줄여서 보낸다
+  file.addEventListener('change', function(){
+    var f = file.files[0]; if (!f) return;
+    var im = new Image();
+    im.onload = function(){
+      var MAX = 1000, w = im.width, h = im.height;
+      var long = Math.max(w, h);
+      if (long > MAX) { var r = MAX / long; w = Math.round(w * r); h = Math.round(h * r); }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(im, 0, 0, w, h);
+      photo = c.toDataURL('image/jpeg', 0.75);
+      img.src = photo;
+      prev.style.display = 'block';
+    };
+    im.src = URL.createObjectURL(f);
+  });
+  document.getElementById('rvwDel').onclick = function(){
+    photo = ''; prev.style.display = 'none'; file.value = '';
+  };
+
+  send.onclick = async function(){
+    if (!rating) { alert('별점을 골라주세요.'); return; }
+    var text = (body.value || '').trim();
+    if (text.length < 5) { alert('후기를 조금만 더 적어주세요.'); return; }
+
+    send.disabled = true;
+    send.textContent = '보내는 중...';
+    try {
+      var r = await fetch('/r/' + TOKEN + '/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: rating, body: text, photo: photo })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      document.getElementById('rvwWrap').innerHTML =
+        '<div class="rvw-card"><div class="rvw-done">' +
+        '<b>후기 감사합니다.</b><span>소중히 읽겠습니다.</span></div></div>';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    } catch (e) {
+      alert('저장 실패: ' + e.message);
+      send.disabled = false;
+      send.textContent = '후기 남기기';
+    }
+  };
+})();
+</script>`;
+
     res
       .set('Content-Type', 'text/html; charset=utf-8')
       .set('X-Robots-Tag', 'noindex, nofollow')
-      .send(html.replace('<body>', '<body>' + bar));
+      .send(html.replace('<body>', '<body>' + bar).replace('</body>', reviewBox + '</body>'));
   } catch (e) {
     next(e);
   }
@@ -171,4 +318,3 @@ function escapeHtml(s) {
 }
 
 module.exports = { router, ensureToken };
-

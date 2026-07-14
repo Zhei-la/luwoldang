@@ -17,7 +17,7 @@ const DEFS = {
                 cdStyle:'urgent', numColor:'', boxColor:'', labColor:'', txtColor:'' }) },
   gauge:    { name:'남은 자리',      ico:'◐', make:()=>({ title:'남은 자리', total:30, note:'회차당 인원을 넘기면 풀이가 얕아집니다' }) },
   live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황' }) },
-  reviews:  { name:'받아본 이야기',   ico:'❝', make:()=>({ title:'받아본 이야기', items:[] }) },
+  reviews:  { name:'받아본 이야기',   ico:'❝', make:()=>({ title:'받아본 이야기', view:'slide', items:[] }) },
   bullets:  { name:'이런 분들께',     ico:'✓', make:()=>({ title:'이런 분들이 찾아옵니다', items:['이직·창업 시기를 재고 있는 분','재회와 궁합의 결이 궁금한 분','올해 재물의 흐름을 보고 싶은 분'] }) },
   faq:      { name:'묻고 답하기',     ico:'?', make:()=>({ title:'묻고 답하기', items:[{q:'결과는 언제 받나요?',a:'접수 후 영업일 기준 1~2일 안에 보내드립니다.'}] }) },
   button:   { name:'버튼',           ico:'▭', make:()=>({ text:'상담 신청하기', action:'form', href:'' }) },
@@ -238,6 +238,7 @@ function renderBlock(b, S){
       const items = b.items||[];
       if(!items.length) return `<div class="wrap mt"><div class="card" style="padding:24px;text-align:center;color:var(--sb);font-size:12.5px">후기를 추가하면 여기에 표시됩니다</div></div>`;
       const stars = r => '●'.repeat(Math.round(r||5)) + '○'.repeat(5-Math.round(r||5));
+      const VIEW = b.view || 'slide';
       return `<div class="rv mt">${b.title?`<h3>${esc(b.title)}</h3>`:''}
         ${items.map(x=>`<div class="it"><div class="bx"><div class="qt">“${esc(x.t)}”</div>
         <div class="hd"><b>${esc(x.n)}</b><span class="star">${stars(x.r)}</span></div></div></div>`).join('')}</div>`;
@@ -428,8 +429,18 @@ function paintInspector(){
         + `<div class="fld"><div class="hint"><b>실제 신청 내역</b>이 자동으로 표시됩니다. 이름·전화번호는 자동 마스킹(김*희 / 010-****-3421). 신청이 없으면 "접수 내역이 없습니다"로 표시됩니다.</div></div>`;
       break;
     case 'reviews':
-      h += T('title','섹션 제목') + listEditor(b,[['n','작성자 (예: 서른셋, 이직 고민)'],['r','별점 1~5'],['t','내용','area']],{n:'',r:5,t:''})
-        + `<div class="fld"><div class="hint">실제 받은 후기만 넣어주세요.</div></div>`;
+      h += T('title','섹션 제목')
+        + SL('view','보여주는 방식',[
+            ['slide','슬라이드 — 옆으로 넘기기'],
+            ['list','목록 — 위아래로 쭉 (다 보임)'],
+            ['grid','카드 2열 — 한눈에'],
+          ])
+        + `<div class="fld">
+             <button class="btn sm" data-pull-rv style="width:100%">받은 후기 불러오기</button>
+             <div class="hint"><a href="/reviews" target="_blank" style="color:var(--moon)">후기 메뉴</a>에서
+               <b>홈페이지에 넣기</b>를 켠 것만 들어옵니다. 끄면 여기서도 빠집니다.</div>
+           </div>`
+        + listEditor(b,[['n','작성자'],['r','별점 1~5'],['t','내용','area']],{n:'',r:5,t:''});
       break;
     case 'bullets': h += T('title','제목') + strListEditor(b,'items','항목'); break;
     case 'faq':     h += T('title','제목') + listEditor(b,[['q','질문'],['a','답변','area']],{q:'',a:''}); break;
@@ -562,6 +573,25 @@ function bindFields(b){
     el.onclick = ()=> pickImage(src=>{ b[key]=src; paint(); });
   });
   inspector.querySelectorAll('[data-clear]').forEach(el=> el.onclick = ()=>{ b[el.dataset.clear]=''; paint(); });
+
+  // 실제로 받은 후기 불러오기 (조작 없이 진짜 후기만)
+  const pull = inspector.querySelector('[data-pull-rv]');
+  if(pull) pull.onclick = async ()=>{
+    pull.disabled = true; pull.textContent = '불러오는 중...';
+    try {
+      const r = await fetch('/api/reviews/published');
+      const d = await r.json();
+      if(!d.ok) throw new Error(d.error || '실패');
+      if(!d.reviews.length){
+        alert('홈페이지에 넣을 후기가 없습니다.\n\n후기 메뉴에서 "홈페이지에 넣기"를 켜주세요.');
+      } else {
+        b.items = d.reviews.map(x=>({ n:x.name, r:x.rating, t:x.body, photo:x.photo || '' }));
+        paint();
+        toast(d.reviews.length + '개 불러왔어요');
+      }
+    } catch(e){ alert('불러오기 실패: ' + e.message); }
+    pull.disabled = false; pull.textContent = '받은 후기 불러오기';
+  };
   const blankEl = inspector.querySelector('[data-blank]');
   inspector.querySelectorAll('[data-li]').forEach(el=>{
     const ev = el.type==='checkbox' ? 'change' : 'input';
