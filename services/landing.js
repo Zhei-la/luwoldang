@@ -377,8 +377,11 @@ function renderBlock(b, ctx) {
         <label><input type="radio" name="cal" value="양력" checked><span>양력</span></label>
         <label><input type="radio" name="cal" value="음력"><span>음력</span></label>
         <label><input type="radio" name="cal" value="윤달"><span>윤달</span></label></div></div>`;
-      if (u.hour) f += `<div class="g"><span class="lb">태어난 시각</span><select name="hour">${HOURS.map((h) => `<option>${h}</option>`).join('')}</select>
-        <div class="tip">정확한 시각을 모르면 '모름'을 고르세요.</div></div>`;
+      if (u.hour) f += `<div class="g"><span class="lb">태어난 시각</span>
+        <input type="time" name="hour" data-hour step="60">
+        <label class="ag" style="margin-top:9px"><input type="checkbox" data-hour-unknown> 태어난 시간을 몰라요</label>
+        <div class="tip">가족관계증명서·아기수첩의 <b>출생 시각 그대로</b> 넣어주세요.<br>
+        밤 11시 30분 이후 출생은 사주에서 <b>다음 날</b>로 넘어갑니다. 분 단위까지 정확해야 풀이가 맞습니다.</div></div>`;
       if (u.region) f += `<div class="g"><span class="lb">태어난 지역</span><select name="region">${REGIONS.map((r) => `<option${r === '서울특별시' ? ' selected' : ''}>${r}</option>`).join('')}</select></div>`;
       if (u.phone) f += `<div class="g"><span class="lb">연락처<i>*</i></span><input name="phone" inputmode="numeric" placeholder="010-0000-0000" required></div>`;
       if (u.email) f += `<div class="g"><span class="lb">이메일</span><input name="email" type="email" placeholder="example@naver.com"></div>`;
@@ -396,6 +399,23 @@ function renderBlock(b, ctx) {
 }
 
 const RUNTIME = `(function(){
+  // 태어난 시각 — '모름' 체크하면 시각 입력을 끄고 '모름'으로 보낸다
+  document.querySelectorAll('[data-hour-unknown]').forEach(function(cb){
+    var wrap = cb.closest('.g');
+    var t = wrap.querySelector('[data-hour]');
+    var hidden = null;
+    cb.addEventListener('change', function(){
+      if (cb.checked) {
+        t.value = ''; t.disabled = true;
+        hidden = document.createElement('input');
+        hidden.type = 'hidden'; hidden.name = 'hour'; hidden.value = '모름';
+        wrap.appendChild(hidden);
+      } else {
+        t.disabled = false;
+        if (hidden) { hidden.remove(); hidden = null; }
+      }
+    });
+  });
   document.querySelectorAll('[data-cd]').forEach(function(el){
     var cyc = parseFloat(el.dataset.cycle) || 0;                 // 주기(시간) — 반복 모드
     var anc = el.dataset.anchor ? new Date(el.dataset.anchor).getTime() : null;
@@ -582,7 +602,7 @@ function defaultLanding(name) {
       ] },
       { id: uid(), type: 'faq', title: '묻고 답하기', items: [
         { q: '결과는 언제 받나요?', a: '접수 후 영업일 기준 1~2일 안에 보내드립니다.' },
-        { q: '태어난 시간을 모릅니다.', a: "'모름'을 고르시면 시주 없이 풀이합니다. 큰 흐름은 확인할 수 있습니다." },
+        { q: '태어난 시간을 모릅니다.', a: "'모름'에 체크하시면 시주 없이 풀이합니다. 다만 시각을 아시면 훨씬 정확합니다." },
       ] },
       { id: uid(), type: 'form', title: '상담 신청',
         products: ['정밀 풀이 (29,800원)', '기본 풀이 (9,900원)'],
@@ -594,3 +614,4 @@ function defaultLanding(name) {
 }
 
 module.exports = { renderLanding, defaultLanding, SKINS };
+
