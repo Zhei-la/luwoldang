@@ -1,0 +1,11 @@
+# Railway 빌드 설정
+#
+# 서버에서 PDF 파일을 만들려면 크롬이 필요하다.
+# puppeteer-core 는 크롬을 내려받지 않으므로, 여기서 시스템 chromium 을 깔아준다.
+# (한글 폰트는 리포트가 웹폰트로 불러오지만, 대체 폰트도 함께 깐다)
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "chromium", "noto-fonts-cjk-sans", "noto-fonts"]
+
+[variables]
+PUPPETEER_SKIP_DOWNLOAD = "true"
