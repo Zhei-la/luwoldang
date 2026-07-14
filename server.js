@@ -68,6 +68,10 @@ app.post('/logout', (req, res) => {
 });
 
 // 무료사주 공개 페이지 (로그인 없음) — 인증 라우터보다 먼저
+// ⚠️ 공개 라우트는 로그인 검사가 걸린 라우터들보다 먼저 붙여야 한다.
+// (leads/chat 라우터는 접두사 없이 마운트돼서 requireAuth 가 모든 요청을 가로챈다)
+app.use(shareRoutes);   // /r/:token — 내담자가 로그인 없이 리포트 열람
+
 app.use('/', freeRouter);
 
 // 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
@@ -79,7 +83,6 @@ app.use('/', builderRouter);
 // 사주 신청자 + PDF 제작/발송
 app.use('/', leadsRouter);
 app.use(chatRoutes);
-app.use(shareRoutes);   // /r/:token — 내담자 공개 열람
 
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', pagesRouter);
