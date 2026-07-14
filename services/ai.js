@@ -300,6 +300,9 @@ ${year}년 기준으로 올해 운세를 써주세요.`;
       ],
       response_format: { type: 'json_object' },
       temperature: 0.85,
+      // ⚠️ 이걸 안 주면 기본 한도에서 잘려서 뒤쪽 섹션(건강운·종합조언)이 통째로 사라진다.
+      //    8섹션 × 750자 ≈ 6000자 ≈ 4500토큰. 넉넉히 잡는다.
+      max_tokens: 8000,
     }),
   });
 
@@ -310,12 +313,45 @@ ${year}년 기준으로 올해 운세를 써주세요.`;
     throw err;
   }
 
+  const finish = data.choices?.[0]?.finish_reason;
+  if (finish === 'length') {
+    console.error('[무료사주] 응답이 토큰 한도에서 잘렸습니다. max_tokens 를 올려야 합니다.');
+  }
+
   const text = data.choices?.[0]?.message?.content || '{}';
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch (e) {
+    console.error('[무료사주] JSON 파싱 실패 (응답이 잘린 듯):', String(text).slice(-120));
     parsed = {};
+  }
+
+  /* 빠진 섹션이 있으면 그것만 다시 받아온다 (잘렸든 모델이 빼먹었든) */
+  const NEED = ['manse', 'self', 'personality', 'year', 'love', 'wealth', 'health', 'advice'];
+  const missing = NEED.filter((k) => !parsed[k] || String(parsed[k]).trim().length < 50);
+
+  if (missing.length) {
+    console.log('[무료사주] 빠진 섹션 다시 요청:', missing.join(', '));
+    try {
+      const more = await callAI({
+        system: SYSTEM_PROMPT,
+        user: `${userPrompt}
+
+⚠️ 방금 응답에서 아래 항목이 빠졌습니다. **이 항목만** JSON 으로 다시 써주세요.
+다른 항목은 넣지 마세요.
+
+${missing.map((k) => '- ' + k).join('\n')}`,
+        openaiKey,
+        model,
+        maxTokens: 4000,
+      });
+      missing.forEach((k) => {
+        if (more[k] && String(more[k]).trim().length > 30) parsed[k] = more[k];
+      });
+    } catch (e) {
+      console.error('[무료사주] 빠진 섹션 보충 실패:', e.message);
+    }
   }
   /* 문체 검사 — 걸린 섹션만 다시 쓴다 (유료 리포트와 같은 기준) */
   const LONG = ['manse', 'self', 'personality', 'year', 'love', 'wealth', 'health', 'advice'];
@@ -511,6 +547,10 @@ async function callAI({ system, user, openaiKey, model, maxTokens }) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || 'OpenAI 호출 실패');
+
+  if (data.choices?.[0]?.finish_reason === 'length') {
+    console.error('[AI] 응답이 토큰 한도에서 잘렸습니다. 내용이 빠질 수 있습니다.');
+  }
   const text = data.choices?.[0]?.message?.content || '{}';
   try { return JSON.parse(text); } catch (e) { return {}; }
 }
@@ -664,7 +704,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     user,
     openaiKey,
     model,
-    maxTokens: 4000,
+    maxTokens: 6000,
   });
 
   let blocks = Array.isArray(out.blocks) ? out.blocks : [];
