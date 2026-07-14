@@ -568,19 +568,38 @@ function sameEnding(body) {
   return worst >= 3 ? `같은 어미 "${which}" ${worst}회 연속 (어미를 바꿔 쓰세요)` : null;
 }
 
-/** 문장이 뚝뚝 끊기는지 검사 — 짧은 "~니다." 문장만 줄줄이 나열되는 경우 */
-function choppy(body) {
-  const sents = String(body).split(/(?<=[다요][.!?])\s+/).map((x) => x.trim()).filter(Boolean);
-  if (sents.length < 4) return null;
+/** 문장이 뚝뚝 끊기는지 검사
+ *
+ * 예전엔 '연결어미가 있나' 로 봤는데, "다양하고" 의 '하고' 까지 연결어미로 세는 바람에
+ * 정작 끊긴 글이 다 통과했다. 이제 문단 단위로 잰다.
+ *
+ * 목표 문체: 한 문단 2~3문장. 첫 문장은 짧게 치고 뒤는 길게 이어 붙인다.
+ *   → 문단에 문장이 4개 이상이면 나열이다.
+ *   → 평균 문장 길이가 35자 미만이면 토막글이다.
+ */
+function splitSents(t) {
+  return String(t).split(/(?<=[다요][.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+}
 
-  let run = 0, worst = 0;
-  sents.forEach((x) => {
-    // 연결어미 없이 짧게 끝나는 문장
-    const linked = /(하고|지만|는데|어서|아서|하며|탓에|덕분에|면서|으로써|보니|하니|때문에|라서|니까|므로)/.test(x);
-    if (!linked && x.length < 55) { run++; worst = Math.max(worst, run); }
-    else run = 0;
+function choppy(body) {
+  const paras = String(body).split(/\n{2,}|\n/).map((x) => x.trim()).filter(Boolean);
+  const bad = [];
+
+  paras.forEach((p, i) => {
+    const sents = splitSents(p);
+    if (sents.length < 2) return;
+
+    const avg = sents.reduce((a, x) => a + x.length, 0) / sents.length;
+
+    if (sents.length >= 4) {
+      bad.push(`${i + 1}번째 문단이 ${sents.length}문장 (2~3문장으로 줄이고 이어 쓰세요)`);
+    } else if (avg < 35) {
+      bad.push(`${i + 1}번째 문단이 토막글 (평균 ${Math.round(avg)}자, 문장을 물려 이으세요)`);
+    }
   });
-  return worst >= 4 ? `끊기는 문장 ${worst}개 연속 (연결어미로 이어 쓰세요)` : null;
+
+  if (!bad.length) return null;
+  return bad.slice(0, 3).join(' / ');
 }
 
 /** 블록 하나 검사 → 문제 목록 반환 */
