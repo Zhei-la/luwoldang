@@ -355,20 +355,15 @@ function paraLines(text) {
   return Math.ceil(len / CHARS_PER_LINE) + LINES_PARA_GAP;
 }
 
-/* 문장이 끝나면 줄을 바꾼다 (가독성).
- * 문단 사이 빈 줄은 그대로 두고, 문단 '안'에서만 문장 단위로 줄을 나눈다.
- *   "~합니다. 다음 문장." →  ~합니다.
- *                            다음 문장.
- * "3.5%" 같은 숫자에서 끊기지 않게 한글 어미 뒤에서만 나눈다. */
+/* 문단은 그대로 흘려 쓴다. 문장마다 줄을 바꾸면 시집처럼 보인다.
+ * 문단 사이 빈 줄만으로 충분하다. */
 function sentenceBreaks(text) {
-  return esc(text).replace(/([다요][.!?])\s+/g, '$1<br>');
+  return esc(text);
 }
 
-/** 문장 줄바꿈을 반영한 줄 수 (페이지 계산용) */
+/** 문단 줄 수 (페이지 계산용) */
 function paraLinesBr(text) {
-  const sents = String(text || '').split(/(?<=[다요][.!?])\s+/).filter(Boolean);
-  if (!sents.length) return LINES_PARA_GAP;
-  return sents.reduce((a, x) => a + Math.ceil(x.length / CHARS_PER_LINE), 0) + LINES_PARA_GAP;
+  return paraLines(text);
 }
 
 /**
