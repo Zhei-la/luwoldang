@@ -98,6 +98,10 @@ async function initDb() {
   // 리포트 부가 데이터 (체크리스트 · 연애카드 등) — leads.js 에서 JSON 으로 저장
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS extra JSONB;`);
 
+  // 내담자 공개 열람 링크 (/r/:token) — 로그인 없이 리포트를 보고 PDF로 저장
+  await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS share_token TEXT;`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_pdfs_share ON pdfs(share_token) WHERE share_token IS NOT NULL;`);
+
   // 무료사주 웹사이트 기록
   await pool.query(`
     CREATE TABLE IF NOT EXISTS free_logs (
@@ -131,3 +135,4 @@ async function initDb() {
 }
 
 module.exports = { pool, initDb };
+
