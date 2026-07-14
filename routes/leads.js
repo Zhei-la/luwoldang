@@ -345,135 +345,231 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     const toolbar = `
 <div class="pv-bar no-print">
   <a class="pv-back" href="/leads/${pdf.lead_id}">← 돌아가기</a>
-  <span class="pv-title">${pdf.name}님 · ${pdf.type} <em id="pvMode">${chapters.length}개 챕터</em></span>
+  <span class="pv-title">${esc(pdf.name)}님 · ${esc(pdf.type)} <em id="pvMode">${chapters.length}개 챕터</em></span>
   <div class="pv-actions">
-    <button id="btnEdit" onclick="toggleEdit()">수정하기</button>
-    <button id="btnSave" onclick="saveEdit()" style="display:none">저장</button>
-    <button id="btnCancel" onclick="cancelEdit()" style="display:none">취소</button>
-    <button id="btnPrint" onclick="window.print()">PDF로 저장 / 인쇄</button>
-    <button id="btnSend" class="send" onclick="sendMail()">이메일 보내기</button>
+    <button id="btnEdit">수정하기</button>
+    <button id="btnDone" style="display:none">수정 완료</button>
+    <button id="btnPrint">PDF로 저장</button>
+    <button id="btnSend" class="send">이메일 보내기</button>
+  </div>
+  <div class="pv-warn" id="pvWarn">
+    <b>앱 안의 브라우저</b>라서 PDF 저장이 막혀 있습니다.
+    오른쪽 위 <b>⋮</b> → <b>다른 브라우저로 열기</b>를 눌러주세요.
   </div>
 </div>
+
 <style>
-  /* ⚠️ sticky 로 두면 본문(A4 794px)을 따라가서 모바일에선 버튼이 화면 밖으로 나간다.
-     fixed 로 화면에 고정해야 폰에서도 눌린다. */
-  .pv-bar{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;
-    gap:14px;padding:12px 18px;background:#182234;color:#e8e3d6;
+  /* sticky 로 두면 본문(A4 794px)을 따라가 모바일에선 버튼이 화면 밖으로 나간다 */
+  .pv-bar{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;gap:14px;
+    padding:12px 18px;background:#182234;color:#e8e3d6;flex-wrap:wrap;
     font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif;font-size:14px;
-    flex-wrap:wrap;box-shadow:0 2px 12px rgba(0,0,0,.25)}
-  body{padding-top:58px}                      /* 고정 바 자리 */
+    box-shadow:0 2px 12px rgba(0,0,0,.25)}
+  body{padding-top:60px}
   .pv-back{color:#b3ad9c;text-decoration:none}
-  .pv-back:hover{color:#B59A62}
   .pv-title{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:6px}
   .pv-actions{display:flex;gap:8px;flex-wrap:wrap}
-  .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
-  .pv-actions button:hover{background:rgba(181,154,98,.2)}
+  .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;
+    border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:40px}
   .pv-actions button.send{background:#B59A62;color:#241a06;font-weight:700}
-  .pv-actions button:disabled{opacity:.5}
-
-  /* 모바일 — 버튼을 한 줄로 펴서 손가락으로 누를 수 있게 */
-  @media (max-width: 760px) {
-    .pv-bar{padding:10px 12px;gap:8px;font-size:13px}
-    body{padding-top:104px}
-    .pv-title{flex:1 1 auto;font-size:13px}
-    .pv-back{order:-1}
+  .pv-actions button:disabled{opacity:.45}
+  .pv-warn{display:none;flex:1 1 100%;margin-top:8px;padding:9px 12px;border-radius:7px;
+    background:#3a2e1a;border:1px solid #6b5a33;color:#f0dcae;font-size:12.5px;line-height:1.6}
+  @media (max-width:760px){
+    .pv-bar{padding:10px 12px;gap:8px}
+    body{padding-top:108px}
     .pv-actions{flex:1 1 100%;gap:6px}
-    .pv-actions button{flex:1;padding:11px 6px;font-size:12.5px;min-height:42px}
+    .pv-actions button{flex:1;padding:11px 4px;font-size:12.5px;min-height:44px}
   }
+  @media print{ body{padding-top:0} .pv-bar,.pg-tools,.blk-del,.edit-hint,.toast{display:none!important} }
 
-  /* 인쇄할 땐 위 여백 제거 */
-  @media print { body{padding-top:0} .pv-bar{display:none} }
+  .pg-tools{position:absolute;top:8px;right:10px;display:none;gap:5px;z-index:20}
+  body.editing .pg-tools{display:flex}
+  .pg-tools button{padding:5px 10px;border:1px solid #d8cfb8;background:#fff;color:#6b6656;
+    border-radius:6px;font-size:11.5px;cursor:pointer;font-family:Pretendard,sans-serif;line-height:1.4}
+  .pg-tools button.save{background:#B59A62;border-color:#B59A62;color:#fff;font-weight:700}
 
-  /* 수정 모드 */
   body.editing .ch-block p,
   body.editing .ch-sub,
-  body.editing .ch-title {
-    outline: 1px dashed #c8b98e;
-    outline-offset: 3px;
-    border-radius: 3px;
-    transition: background .15s;
-  }
-  body.editing [contenteditable]:hover { background: #fdf8ea; }
-  body.editing [contenteditable]:focus { outline: 2px solid #B59A62; background: #fffdf5; }
-  body.editing .ch-block { position: relative; }
-  .blk-del {
-    position: absolute; right: -34px; top: 2px;
-    width: 26px; height: 26px; border-radius: 6px;
-    border: 1px solid #e0c4c0; background: #fff; color: #b0392c;
-    font-size: 14px; cursor: pointer; display: none; line-height: 1;
-  }
-  body.editing .blk-del { display: block; }
-  .blk-del:hover { background: #fdecea; }
-  .edit-hint {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: #182234; color: #e8e3d6; padding: 10px 20px; border-radius: 8px;
-    font-size: 13px; z-index: 98; display: none;
-    font-family: Pretendard, -apple-system, sans-serif;
-  }
-  body.editing .edit-hint { display: block; }
+  body.editing .ch-title{outline:1px dashed #c8b98e;outline-offset:3px;border-radius:3px}
+  body.editing [contenteditable]:focus{outline:2px solid #B59A62;background:#fffdf5}
+  body.editing .ch-block{position:relative}
+  .blk-del{position:absolute;right:-32px;top:2px;width:24px;height:24px;border-radius:6px;
+    border:1px solid #e0c4c0;background:#fff;color:#b0392c;font-size:13px;cursor:pointer;display:none;line-height:1}
+  body.editing .blk-del{display:block}
+  .edit-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#182234;color:#e8e3d6;
+    padding:10px 20px;border-radius:8px;font-size:13px;z-index:98;display:none;
+    font-family:Pretendard,-apple-system,sans-serif}
+  body.editing .edit-hint{display:block}
+  .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);opacity:0;
+    background:#2f9e5e;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;
+    z-index:99;transition:.25s;pointer-events:none;font-family:Pretendard,sans-serif}
+  .toast.on{opacity:1;transform:translateX(-50%)}
 </style>
-<div class="edit-hint no-print">글을 클릭해서 바로 고칠 수 있습니다. 오른쪽 <b>×</b>를 누르면 그 문단이 삭제됩니다.</div>
-<script>
-var EDITING = false;
-var SNAPSHOT = null;
 
-function eachBlock(fn) {
-  document.querySelectorAll('.page.chapter').forEach(function(ch, ci){
-    ch.querySelectorAll('.ch-block').forEach(function(b, bi){ fn(ch, b, ci, bi); });
+<div class="edit-hint no-print">글을 눌러 바로 고칠 수 있습니다. 페이지마다 <b>저장</b> · <b>되돌리기</b> 버튼이 있습니다.</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var PDF_ID = ${pdf.id};
+var LEAD_ID = ${pdf.lead_id};
+var EMAIL = ${JSON.stringify(pdf.email || '')};
+var UA = navigator.userAgent || '';
+var IN_APP = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(UA);
+var EDITING = false;
+var ORIGINAL = {};
+var DIRTY = false;
+
+function $(id){ return document.getElementById(id); }
+function pagesOf(){ return Array.prototype.slice.call(document.querySelectorAll('.page.chapter')); }
+function toast(msg, bad){
+  var t = $('toast');
+  t.textContent = msg;
+  t.style.background = bad ? '#c0392b' : '#2f9e5e';
+  t.classList.add('on');
+  setTimeout(function(){ t.classList.remove('on'); }, 1800);
+}
+
+/* 1. 리플로우 — 실제 높이를 재서 페이지를 다시 채운다 */
+function capacity(sec){
+  var cs = getComputedStyle(sec);
+  var fn = sec.querySelector('.fn');
+  return sec.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+       - (fn ? fn.offsetHeight + 12 : 0) - 4;
+}
+function contentH(sec){
+  var h = 0;
+  Array.prototype.forEach.call(sec.children, function(el){
+    if (el.classList.contains('fn') || el.classList.contains('pg-tools')) return;
+    var m = getComputedStyle(el);
+    h += el.offsetHeight + parseFloat(m.marginTop) + parseFloat(m.marginBottom);
+  });
+  return h;
+}
+function lastPara(sec){
+  var blocks = sec.querySelectorAll('.ch-block');
+  for (var i = blocks.length - 1; i >= 0; i--) {
+    var ps = blocks[i].querySelectorAll('p');
+    if (ps.length) return ps[ps.length - 1];
+  }
+  return null;
+}
+function firstPara(sec){
+  var b = sec.querySelector('.ch-block');
+  return b ? b.querySelector('p') : null;
+}
+function pushDown(p, next){
+  var src = p.parentNode;
+  var first = next.querySelector('.ch-block');
+  if (first && !first.querySelector('.ch-sub')) first.insertBefore(p, first.firstChild);
+  else {
+    var nb = document.createElement('div');
+    nb.className = 'ch-block';
+    nb.appendChild(p);
+    next.insertBefore(nb, next.firstChild);
+  }
+  if (src && !src.querySelector('p') && !src.querySelector('.ch-sub')) src.remove();
+}
+function pullUp(p, sec){
+  var src = p.parentNode;
+  var anchor = p.nextSibling;
+  var blocks = sec.querySelectorAll('.ch-block');
+  var last = blocks.length ? blocks[blocks.length - 1] : null;
+  if (last) last.appendChild(p);
+  else {
+    var nb = document.createElement('div');
+    nb.className = 'ch-block';
+    nb.appendChild(p);
+    sec.appendChild(nb);
+  }
+  return function undo(){ if (src) src.insertBefore(p, anchor); };
+}
+function reflow(){
+  var groups = {};
+  pagesOf().forEach(function(sec){
+    var k = sec.dataset.ch;
+    (groups[k] = groups[k] || []).push(sec);
+  });
+
+  Object.keys(groups).forEach(function(k){
+    var g = groups[k];
+    for (var i = 0; i < g.length; i++) {
+      var guard = 0;
+      while (contentH(g[i]) > capacity(g[i]) && guard++ < 60) {
+        var p = lastPara(g[i]);
+        if (!p) break;
+        if (!g[i + 1]) {
+          var ns = document.createElement('section');
+          ns.className = 'page sheet chapter';
+          ns.dataset.ch = k;
+          g[i].parentNode.insertBefore(ns, g[i].nextSibling);
+          g.splice(i + 1, 0, ns);
+        }
+        pushDown(p, g[i + 1]);
+      }
+      guard = 0;
+      while (g[i + 1] && guard++ < 60) {
+        var q = firstPara(g[i + 1]);
+        if (!q) break;
+        var undo = pullUp(q, g[i]);
+        if (contentH(g[i]) > capacity(g[i])) { undo(); break; }
+      }
+    }
+    g.slice().forEach(function(sec){
+      if (!sec.querySelector('p') && !sec.querySelector('.ch-head')) sec.remove();
+    });
   });
 }
 
-function toggleEdit(){
-  EDITING = true;
-  document.body.classList.add('editing');
-  SNAPSHOT = collect();
+/* 2. 페이지별 편집 */
+function addPageTools(){
+  pagesOf().forEach(function(sec, idx){
+    if (sec.querySelector('.pg-tools')) return;
+    ORIGINAL[idx] = sec.innerHTML;
 
-  document.querySelectorAll('.ch-title, .ch-sub, .ch-block p').forEach(function(el){
-    el.setAttribute('contenteditable', 'true');
+    var box = document.createElement('div');
+    box.className = 'pg-tools no-print';
+    box.innerHTML = '<button type="button" data-revert>되돌리기</button>' +
+                    '<button type="button" class="save" data-save>이 페이지 저장</button>';
+    sec.appendChild(box);
+
+    box.querySelector('[data-revert]').onclick = function(){
+      if (!confirm('이 페이지를 처음 만들어진 글로 되돌릴까요?')) return;
+      sec.innerHTML = ORIGINAL[idx];
+      sec.appendChild(box);
+      makeEditable(sec);
+      DIRTY = true;
+      toast('되돌렸습니다');
+    };
+    box.querySelector('[data-save]').onclick = function(){ save(box); };
   });
-
-  eachBlock(function(ch, b){
+}
+function makeEditable(root){
+  root.querySelectorAll('.ch-title, .ch-sub, .ch-block p').forEach(function(el){
+    el.setAttribute('contenteditable', 'true');
+    el.oninput = function(){ DIRTY = true; };
+  });
+  root.querySelectorAll('.ch-block').forEach(function(b){
     if (b.querySelector('.blk-del')) return;
     var x = document.createElement('button');
     x.className = 'blk-del no-print';
     x.textContent = '×';
-    x.title = '이 문단 삭제';
-    x.onclick = function(){
-      if (confirm('이 문단을 삭제할까요?')) b.remove();
-    };
+    x.onclick = function(){ if (confirm('이 문단 묶음을 삭제할까요?')) { b.remove(); DIRTY = true; } };
     b.appendChild(x);
   });
-
-  document.getElementById('btnEdit').style.display = 'none';
-  document.getElementById('btnPrint').style.display = 'none';
-  document.getElementById('btnSend').style.display = 'none';
-  document.getElementById('btnSave').style.display = '';
-  document.getElementById('btnCancel').style.display = '';
-  document.getElementById('pvMode').textContent = '수정 중';
 }
 
-function endEdit(){
-  EDITING = false;
-  document.body.classList.remove('editing');
-  document.querySelectorAll('[contenteditable]').forEach(function(el){
-    el.removeAttribute('contenteditable');
-  });
-  document.querySelectorAll('.blk-del').forEach(function(x){ x.remove(); });
-  document.getElementById('btnEdit').style.display = '';
-  document.getElementById('btnPrint').style.display = '';
-  document.getElementById('btnSend').style.display = '';
-  document.getElementById('btnSave').style.display = 'none';
-  document.getElementById('btnCancel').style.display = 'none';
-}
-
-/* 화면 → 데이터 */
+/* 화면 → 데이터 (페이지가 아니라 '챕터' 단위로 합친다) */
 function collect(){
-  var chapters = [];
-  document.querySelectorAll('.page.chapter').forEach(function(ch){
-    var titleEl = ch.querySelector('.ch-title');
-    var blocks = [];
-    ch.querySelectorAll('.ch-block').forEach(function(b){
+  var byCh = {}, order = [];
+  pagesOf().forEach(function(sec){
+    var k = sec.dataset.ch;
+    if (!byCh[k]) {
+      var t = sec.querySelector('.ch-title');
+      byCh[k] = { title: t ? t.innerText.trim() : '', blocks: [] };
+      order.push(k);
+    }
+    sec.querySelectorAll('.ch-block').forEach(function(b){
       var subEl = b.querySelector('.ch-sub');
       var paras = [];
       b.querySelectorAll('p').forEach(function(p){
@@ -481,71 +577,98 @@ function collect(){
         if (t) paras.push(t);
       });
       if (!subEl && !paras.length) return;
-      blocks.push({
-        sub: subEl ? subEl.innerText.trim() : '',
-        body: paras.join('\n\n')
-      });
-    });
-    chapters.push({
-      title: titleEl ? titleEl.innerText.trim() : '',
-      blocks: blocks
+      var sub = subEl ? subEl.innerText.trim() : '';
+      var arr = byCh[k].blocks;
+      var last = arr[arr.length - 1];
+      if (!sub && last) last.body += '\n\n' + paras.join('\n\n');
+      else arr.push({ sub: sub, body: paras.join('\n\n') });
     });
   });
-  return chapters;
+  return order.map(function(k){ return byCh[k]; });
 }
 
-function cancelEdit(){
-  if (!confirm('수정한 내용을 취소하고 되돌릴까요?')) return;
-  location.reload();
-}
-
-async function saveEdit(){
-  var btn = document.getElementById('btnSave');
-  btn.disabled = true;
-  btn.textContent = '저장 중...';
+async function save(box){
+  var btn = box ? box.querySelector('[data-save]') : null;
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
   try {
-    var chapters = collect();
-    var r = await fetch('/pdfs/${pdf.id}/edit', {
+    var r = await fetch('/pdfs/' + PDF_ID + '/edit', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ chapters: chapters })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapters: collect() })
     });
     var d = await r.json();
     if (!d.ok) throw new Error(d.error || '실패');
-    endEdit();
-    document.getElementById('pvMode').textContent = '저장됨 ✓';
-    setTimeout(function(){ location.reload(); }, 600);
-  } catch(e) {
-    alert('저장 실패: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '저장';
+    DIRTY = false;
+    toast('저장했습니다');
+  } catch (e) {
+    toast('저장 실패: ' + e.message, true);
   }
+  if (btn) { btn.disabled = false; btn.textContent = '이 페이지 저장'; }
 }
 
-async function sendMail(){
-  var email = ${JSON.stringify(pdf.email || '')};
-  if(!email){ alert('이 신청자의 이메일이 없습니다.'); return; }
-  if(!confirm(email + ' 로 보낼까요?')) return;
+/* 3. 상단 버튼 */
+$('btnEdit').onclick = function(){
+  EDITING = true;
+  document.body.classList.add('editing');
+  addPageTools();
+  makeEditable(document);
+  $('btnEdit').style.display = 'none';
+  $('btnDone').style.display = '';
+  $('pvMode').textContent = '수정 중';
+};
+
+$('btnDone').onclick = async function(){
+  if (DIRTY) {
+    if (confirm('저장하지 않은 수정이 있습니다. 저장할까요?')) await save(null);
+  }
+  EDITING = false;
+  toast('정리된 내용으로 다시 만듭니다');
+  setTimeout(function(){ location.reload(); }, 700);
+};
+
+$('btnPrint').onclick = function(){
+  if (IN_APP) {
+    $('pvWarn').style.display = 'block';
+    alert('앱 안의 브라우저에서는 PDF 저장이 안 됩니다.\n\n오른쪽 위 메뉴에서 "다른 브라우저로 열기"를 눌러주세요.');
+    return;
+  }
+  window.print();
+};
+
+$('btnSend').onclick = async function(){
+  if (!EMAIL) { alert('이 신청자의 이메일이 없습니다.'); return; }
+  if (DIRTY && !confirm('저장하지 않은 수정이 있습니다. 그대로 보낼까요?')) return;
+  if (!confirm(EMAIL + ' 로 보낼까요?')) return;
+
   var btns = document.querySelectorAll('.pv-actions button');
   btns.forEach(function(b){ b.disabled = true; });
-  try{
-    var r = await fetch('/pdfs/${pdf.id}/send', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email: email })
+  $('btnSend').textContent = '보내는 중...';
+  try {
+    var r = await fetch('/pdfs/' + PDF_ID + '/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: EMAIL })
     });
     var d = await r.json();
-    if(!d.ok) throw new Error(d.error || '실패');
+    if (!d.ok) throw new Error(d.error || '실패');
     alert('발송 완료: ' + d.to);
-    location.href = '/leads/${pdf.lead_id}';
-  }catch(e){
+    location.href = '/leads/' + LEAD_ID;
+  } catch (e) {
     alert('발송 실패: ' + e.message);
     btns.forEach(function(b){ b.disabled = false; });
+    $('btnSend').textContent = '이메일 보내기';
   }
-}
+};
+
+if (IN_APP) $('pvWarn').style.display = 'block';
 
 window.addEventListener('beforeunload', function(e){
-  if (EDITING) { e.preventDefault(); e.returnValue = ''; }
+  if (EDITING && DIRTY) { e.preventDefault(); e.returnValue = ''; }
 });
+
+// 폰트가 다 뜬 뒤에 재배치해야 높이가 정확하다
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(reflow, 80); });
+else window.addEventListener('load', function(){ setTimeout(reflow, 150); });
 </script>`;
 
     const html = inner.replace('<body>', '<body>' + toolbar);
