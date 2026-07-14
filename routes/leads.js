@@ -4,7 +4,7 @@ const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
 const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL } = require('../services/ai');
-const { sendPdfReport, buildPdfHtml, sendFreeSaju } = require('../services/mail');
+const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
@@ -664,6 +664,67 @@ router.get('/records', async (req, res, next) => {
   }
 });
 
+/* ===== 묶어서 보내기 — 리포트 여러 개를 메일 한 통에 ===== */
+router.post('/leads/:id/send-bundle', async (req, res) => {
+  try {
+    const ids = (req.body.pdfIds || []).map(Number).filter(Boolean);
+    if (!ids.length) return res.status(400).json({ error: '리포트를 선택해주세요.' });
+
+    // 내 리포트인지 + 같은 신청자 것인지 확인
+    const { rows } = await pool.query(
+      `SELECT p.id, p.type, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.gender
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = ANY($1) AND p.teacher_id = $2 AND p.lead_id = $3
+       ORDER BY p.created_at ASC`,
+      [ids, req.user.id, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: '리포트를 찾을 수 없습니다.' });
+
+    const lead = rows[0];
+    const to = String(req.body.email || lead.email || '').trim();
+    if (!to) return res.status(400).json({ error: '이메일이 없습니다.' });
+
+    let saju = null;
+    try {
+      saju = calcSaju({
+        birthDate: normalizeBirth(lead.birth),
+        birthTime: parseHour(lead.hour),
+        calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
+        isLeapMonth: lead.calendar === '윤달',
+        region: lead.region || '서울특별시',
+        gender: lead.gender,
+      });
+    } catch (e) { /* 만세력 실패해도 메일은 나간다 */ }
+
+    const base = process.env.BASE_URL || '';
+    const items = [];
+    for (const p of rows) {
+      const token = await ensureToken(p.id);
+      items.push({ type: p.type, shareUrl: `${base}/r/${token}` });
+    }
+
+    await sendBundle({
+      to,
+      teacher: req.user,
+      saju,
+      input: { name: lead.name },
+      items,
+      baseUrl: base,
+    });
+
+    await pool.query(
+      'UPDATE pdfs SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1 WHERE id = ANY($2)',
+      [to, ids]
+    );
+
+    console.log('[MAIL] 묶음 발송:', to, '·', rows.map((x) => x.type).join(', '));
+    res.json({ ok: true, to, count: rows.length });
+  } catch (e) {
+    console.error('[MAIL] 묶음 발송 실패:', e.message);
+    res.status(500).json({ error: e.message || '발송에 실패했습니다.' });
+  }
+});
+
 module.exports = router;
 /* ===== PDF 만들기 — 내담자 직접 입력 (외부 신청분) ===== */
 router.get('/pdf/create', (req, res) => {
@@ -738,6 +799,67 @@ router.get('/records', async (req, res, next) => {
     });
   } catch (e) {
     next(e);
+  }
+});
+
+/* ===== 묶어서 보내기 — 리포트 여러 개를 메일 한 통에 ===== */
+router.post('/leads/:id/send-bundle', async (req, res) => {
+  try {
+    const ids = (req.body.pdfIds || []).map(Number).filter(Boolean);
+    if (!ids.length) return res.status(400).json({ error: '리포트를 선택해주세요.' });
+
+    // 내 리포트인지 + 같은 신청자 것인지 확인
+    const { rows } = await pool.query(
+      `SELECT p.id, p.type, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.gender
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = ANY($1) AND p.teacher_id = $2 AND p.lead_id = $3
+       ORDER BY p.created_at ASC`,
+      [ids, req.user.id, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: '리포트를 찾을 수 없습니다.' });
+
+    const lead = rows[0];
+    const to = String(req.body.email || lead.email || '').trim();
+    if (!to) return res.status(400).json({ error: '이메일이 없습니다.' });
+
+    let saju = null;
+    try {
+      saju = calcSaju({
+        birthDate: normalizeBirth(lead.birth),
+        birthTime: parseHour(lead.hour),
+        calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
+        isLeapMonth: lead.calendar === '윤달',
+        region: lead.region || '서울특별시',
+        gender: lead.gender,
+      });
+    } catch (e) { /* 만세력 실패해도 메일은 나간다 */ }
+
+    const base = process.env.BASE_URL || '';
+    const items = [];
+    for (const p of rows) {
+      const token = await ensureToken(p.id);
+      items.push({ type: p.type, shareUrl: `${base}/r/${token}` });
+    }
+
+    await sendBundle({
+      to,
+      teacher: req.user,
+      saju,
+      input: { name: lead.name },
+      items,
+      baseUrl: base,
+    });
+
+    await pool.query(
+      'UPDATE pdfs SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1 WHERE id = ANY($2)',
+      [to, ids]
+    );
+
+    console.log('[MAIL] 묶음 발송:', to, '·', rows.map((x) => x.type).join(', '));
+    res.json({ ok: true, to, count: rows.length });
+  } catch (e) {
+    console.error('[MAIL] 묶음 발송 실패:', e.message);
+    res.status(500).json({ error: e.message || '발송에 실패했습니다.' });
   }
 });
 
