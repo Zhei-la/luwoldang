@@ -16,6 +16,7 @@ const freeRouter = require('./routes/free');
 const builderRouter = require('./routes/builder');
 const leadsRouter = require('./routes/leads');
 const chatRoutes = require('./routes/chat');
+const { router: shareRoutes } = require('./routes/share');
 const { requireAuth } = require('./middleware/auth');
 
 const app = express();
@@ -78,6 +79,7 @@ app.use('/', builderRouter);
 // 사주 신청자 + PDF 제작/발송
 app.use('/', leadsRouter);
 app.use(chatRoutes);
+app.use(shareRoutes);   // /r/:token — 내담자 공개 열람
 
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', pagesRouter);
@@ -96,3 +98,4 @@ initDb()
     console.error('[DB] 초기화 실패:', e);
     process.exit(1);
   });
+
