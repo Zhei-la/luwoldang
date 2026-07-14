@@ -465,6 +465,32 @@ ${STYLE_RULES}
 - 단정적 예언("반드시 ~한다", "~하게 된다")은 피하고 경향으로 씁니다.
 - 본문에 한자를 쓰지 마세요. 한글로만 씁니다.
 
+## ⭐ 용어 — 쓰되, 반드시 풀어서 씁니다 (가장 많이 틀리는 부분)
+
+내담자는 명리학을 모릅니다. **용어를 그냥 던지면 서너 장 만에 읽기를 포기합니다.**
+그렇다고 용어를 빼면 "누구에게나 해당되는 말"이 되어버립니다.
+**답은 "용어를 쓰되 그 자리에서 풀어주는 것"입니다.**
+
+### 규칙 1 — 처음 나오는 용어는 그 자리에서 괄호로 풉니다
+❌ "일지에 편재를 두어 재물의 흐름이 활발합니다."
+✅ "일지(배우자 자리이자 속마음이 앉는 자리)에 편재(큰돈을 굴리는 기운)를 두었습니다.
+   그래서 돈이 눈에 보이면 몸이 먼저 움직입니다."
+
+### 규칙 2 — 각 소제목의 **첫 문장은 용어 없이** 쉬운 말로 결론부터
+❌ "정관이 월지에 뿌리내려 12운성 건록에 놓였습니다."   ← 첫 문장부터 벽
+✅ "책임을 맡으면 끝까지 해내는 사람입니다."           ← 결론부터
+   → 그 다음 문장에서 "정관(규칙과 책임을 지키는 기운)이 월지에 자리를 잡아…" 로 근거를 댑니다.
+
+**결론 먼저, 근거는 그 다음.** 이 순서를 뒤집지 마세요.
+
+### 규칙 3 — 용어는 소제목당 10회 이하
+같은 용어를 반복해서 늘어놓지 마세요. 한 번 풀어줬으면 그 다음은 쉬운 말로 받습니다.
+예: "정관" → 이후에는 "그 책임감이", "규칙을 지키려는 마음이" 로 바꿔 부릅니다.
+
+### 규칙 4 — 다른 챕터와 같은 말을 하지 마세요
+아래에 리포트 전체 목차를 드립니다. **당신이 맡은 챕터의 소제목에만 집중하세요.**
+다른 챕터가 다룰 내용을 미리 요약하거나 앞질러 말하지 마세요. 그게 "반복된다"는 느낌의 원인입니다.
+
 ## 분량
 - **각 소제목마다 700~900자.** 짧게 끝내지 마세요.
 - 소제목당 3~4문단. 문단 구분은 \n\n 입니다.
@@ -559,6 +585,92 @@ async function callAI({ system, user, openaiKey, model, maxTokens }) {
  * 문체 검사 — AI 티 나는 표현을 잡아낸다
  * ============================================================ */
 
+/* ============================================================
+ * 내용 검사 — 문체가 아니라 "내용"을 본다
+ *
+ * 지금까지 검사기는 어미·접속사·문장길이만 봤다.
+ * 그래서 PDF_SYSTEM 이 "명식에서 근거를 가져와라" 라고 시켜도
+ * 안 지킨 글이 그대로 통과했고, 결과가 "누구에게나 해당되는 말"이 됐다.
+ * 이제 근거 없는 글은 재작성 루프로 돌려보낸다.
+ * ============================================================ */
+
+/** 명식 전문용어 (이게 나와야 '근거를 댄 글') */
+const JARGON = [
+  // 자리
+  '일간', '일지', '월간', '월지', '연간', '연지', '년지', '시간', '시지',
+  '연주', '년주', '월주', '일주', '시주', '원국', '명식', '배우자궁',
+  // 십성
+  '비견', '겁재', '식신', '상관', '정재', '편재', '정관', '편관', '정인', '편인',
+  '비겁', '식상', '재성', '관성', '인성', '십성', '관살', '식상생재',
+  // 12운성
+  '십이운성', '12운성', '장생', '목욕', '관대', '건록', '제왕', '쇠지', '병지', '묘지', '절지', '태지',
+  // 흐름·기타
+  '대운', '세운', '월운', '지장간', '오행', '신강', '신약', '용신', '기신', '합충', '충',
+];
+
+/** 본문에 전문용어가 몇 번 나오는가 */
+function jargonHits(body) {
+  const t = String(body);
+  let total = 0;
+  const kinds = new Set();
+  JARGON.forEach((w) => {
+    const m = t.match(new RegExp(w, 'g'));
+    if (m && m.length) {
+      total += m.length;
+      kinds.add(w);
+    }
+  });
+  return { total, kinds: kinds.size };
+}
+
+/** ① 명식 근거가 있는가 — 없으면 바넘 문장이다 */
+function noGround(body) {
+  const { kinds } = jargonHits(body);
+  if (kinds < 3) {
+    return `명식 근거 부족 (전문용어 ${kinds}종만 등장 — 십성·12운성·오행·대운 중 최소 3가지를 근거로 쓰세요)`;
+  }
+  return null;
+}
+
+/** ② 용어를 던져놓고 안 풀어주는가 — 읽다 지치는 원인 */
+function jargonUnexplained(body) {
+  const t = String(body);
+  const { total } = jargonHits(t);
+  if (total === 0) return null;
+
+  // 괄호 풀이 "일지(배우자 자리)" 또는 줄표 풀이 "일지 — 배우자 자리"
+  const explains = (t.match(/[(（][^)）]{2,40}[)）]/g) || []).length
+                 + (t.match(/—\s*[^—\n]{2,30}(?:자리|기운|힘|뜻|의미|구조|모습)/g) || []).length;
+
+  if (total >= 4 && explains === 0) {
+    return `전문용어 ${total}회를 쓰면서 쉬운 말 풀이가 하나도 없음 (처음 나오는 용어는 괄호로 풀어주세요)`;
+  }
+  return null;
+}
+
+/** ③ 용어가 너무 빽빽한가 — 읽기 힘들어진다 */
+function jargonHeavy(body) {
+  const t = String(body);
+  const { total } = jargonHits(t);
+  const len = t.length || 1;
+
+  // 700~900자 기준으로 14회를 넘으면 명리학 교재가 된다
+  if (total > 14 && total / len > 0.013) {
+    return `전문용어 과다 (${total}회 — 10회 이하로 줄이고, 대신 쉬운 말로 풀어 쓰세요)`;
+  }
+  return null;
+}
+
+/** ④ 첫 문장부터 용어로 시작하는가 — 진입 장벽 */
+function hardOpening(body) {
+  const first = splitSents(String(body))[0] || '';
+  const hit = JARGON.filter((w) => first.includes(w));
+  if (hit.length >= 2) {
+    return `첫 문장이 용어투성이 (${hit.slice(0, 3).join('·')}) — 첫 문장은 쉬운 말로 결론부터 쓰세요`;
+  }
+  return null;
+}
+
 const BAD_PATTERNS = [
   { re: /\bAI\b|인공지능|분석 결과|데이터를 통해|알고리즘/g, label: '기계적 표현' },
 
@@ -642,9 +754,28 @@ function choppy(body) {
   return bad.slice(0, 3).join(' / ');
 }
 
-/** 블록 하나 검사 → 문제 목록 반환 */
+/** 블록 하나 검사 → 문제 목록 반환
+ *
+ *  문체(어미·접속사·길이) + 내용(명식 근거·용어 풀이·용어 밀도) 둘 다 본다.
+ *  내용 문제는 앞에 [내용] 을 붙여서, 재작성할 때 다르게 대응하게 한다.
+ */
 function checkStyle(body, name) {
   const issues = [];
+
+  // ── 내용 (여기가 새로 생긴 부분) ──
+  const g = noGround(body);
+  if (g) issues.push(`[내용] ${g}`);
+
+  const u = jargonUnexplained(body);
+  if (u) issues.push(`[내용] ${u}`);
+
+  const h = jargonHeavy(body);
+  if (h) issues.push(`[내용] ${h}`);
+
+  const o = hardOpening(body);
+  if (o) issues.push(`[내용] ${o}`);
+
+  // ── 문체 ──
   BAD_PATTERNS.forEach((p) => {
     const m = String(body).match(p.re);
     if (m && m.length) issues.push(`${p.label} ${m.length}회`);
@@ -655,37 +786,65 @@ function checkStyle(body, name) {
   if (e) issues.push(e);
   const n = countName(body, name);
   if (n > 2) issues.push(`이름 ${n}회 반복 (2회 이하로)`);
+
   return issues;
 }
 
 /**
  * 챕터 하나 생성
  */
-async function generateChapter({ type, chapter, index, total, client, saju, openaiKey, model }) {
+async function generateChapter({ type, chapter, index, total, client, saju, openaiKey, model, allChapters }) {
   const info = sajuBlock(client, saju);
   const subs = chapter.sub || [];
 
   const isQuestion = chapter.title === QUESTION_CHAPTER.title;
 
+  /* 리포트 전체 목차 — 다른 챕터 영역을 침범하지 않게 한다.
+     챕터를 병렬로 생성하다 보니 서로 뭘 썼는지 모른 채
+     비슷한 얘기를 반복하는 문제가 있었다. */
+  const mapBlock = (Array.isArray(allChapters) && allChapters.length > 1)
+    ? `\n[리포트 전체 목차 — 남의 챕터를 침범하지 마세요]\n` +
+      allChapters.map((c, i) => {
+        const mine = i === index ? '  ⬅ 당신이 맡은 챕터' : '';
+        return `${i + 1}. ${c.title}${mine}\n` +
+               (c.sub || []).map((s) => `     · ${s}`).join('\n');
+      }).join('\n') +
+      `\n\n⚠️ 위 목록에서 "당신이 맡은 챕터"의 소제목만 씁니다.\n` +
+      `다른 챕터가 다룰 내용은 미리 요약하지도, 앞질러 말하지도 마세요.`
+    : '';
+
   // 질문 답변 챕터는 전용 지시를 준다
   const questionGuide = isQuestion ? `
 
 ⚠️ 이 챕터는 **내담자가 직접 남긴 질문에 답하는 챕터**입니다.
+돈을 내고 물어본 것이고, 리포트 전체에서 **가장 궁금해하는 부분**입니다.
 
 [내담자의 질문]
 "${client.question}"
 
-이 질문에만 집중해서 답하세요.
-- 다른 챕터에서 이미 다룬 내용을 반복하지 마세요.
+### 첫 번째 소제목 "먼저, 물어보신 것에 대한 답"
+- **첫 문단에서 질문에 대한 답을 직접 말합니다.** 뜸 들이지 마세요.
+- 명식 설명으로 시작하지 마세요. 답부터 하고, 근거는 두 번째 소제목에서 댑니다.
+- 예: 질문이 "올해 이직해도 될까요?" 라면
+  → "지금 자리를 옮기는 것 자체는 나쁘지 않습니다. 다만 시기가 문제입니다. 상반기보다는…"
+- 애매하게 얼버무리지 마세요. 물어본 것에 대해 답을 하세요.
+
+### 네 소제목은 각각 다른 각도입니다 — 같은 말을 네 번 하지 마세요
+1. **먼저, 물어보신 것에 대한 답** → 결론. 직답.
+2. **명식에서 이 답이 나온 근거** → 왜 그런지. 어느 글자를 보고 그렇게 말하는지.
+3. **흐름이 바뀌는 시기** → 언제. 대운·세운을 근거로 구체적인 나이/연도.
+4. **지금 할 수 있는 것 / 하지 말아야 할 것** → 행동. 실제로 뭘 하라는 건지.
+
 - 질문에 나온 주제를 명식에서 직접 찾아 근거로 삼으세요.
   (예: 결혼 질문 → 일지·배우자성·대운 / 이직 질문 → 관성·재성·현재 대운)
-- 두루뭉술하게 넘기지 말고, 이 사람의 명식에서 답을 끌어내세요.
-- 다만 단정("~하게 됩니다")은 피하고 흐름과 경향으로 씁니다.
+- 다른 챕터에서 이미 다룬 내용을 반복하지 마세요.
+- 단정("~하게 됩니다")은 피하고 흐름과 경향으로 씁니다.
 - 답을 회피하지 마세요. 물어본 것에 대해 최선을 다해 답하세요.` : '';
 
   const user = `${info}
 
 ${fieldBlock(type)}
+${mapBlock}
 
 [작성할 챕터]
 리포트 종류: ${type}
@@ -697,7 +856,9 @@ blocks 배열에 소제목 순서대로 담아주세요. sub는 아래 소제목
 
 ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
 
-⚠️ 각 소제목마다 반드시 700자 이상 써주세요. 짧게 끝내면 안 됩니다.`;
+⚠️ 각 소제목마다 반드시 700자 이상 써주세요. 짧게 끝내면 안 됩니다.
+⚠️ 각 소제목의 **첫 문장은 전문용어 없이** 쉬운 말로 결론부터 씁니다.
+⚠️ 처음 나오는 전문용어는 그 자리에서 괄호로 풀어주세요. 예: 편재(큰돈을 굴리는 기운)`;
 
   let out = await callAI({
     system: PDF_SYSTEM,
@@ -726,19 +887,54 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     });
     if (!probs.length) break;
 
-    console.log(`[문체] ${chapter.title} — ${probs.length}개 블록 재작성 (${attempt}차)`);
+    /* 내용 문제([내용] 표시)가 섞여 있으면 "문장만 고치라"고 하면 안 된다.
+       그러면 근거 없는 글이 문체만 다듬어진 채로 통과한다. */
+    const hasContent = probs.some((p) => p.includes('[내용]'));
+
+    console.log(
+      `[검사] ${chapter.title} — ${probs.length}개 블록 재작성 (${attempt}차)` +
+      (hasContent ? ' ⚠️ 내용 문제 포함' : '')
+    );
+
+    const contentFix = hasContent ? `
+
+[⚠️ 내용 문제 — 문장만 다듬어서는 해결되지 않습니다. 다시 생각해서 쓰세요]
+
+**명식 근거 부족**이라고 나왔다면:
+  이 사람의 사주를 안 보고 누구에게나 할 수 있는 말을 썼다는 뜻입니다.
+  위에 드린 [사주 원국]·[오행 분포]·[대운] 을 다시 읽고,
+  **이 사람에게만 해당되는 이야기**로 처음부터 다시 쓰세요.
+  ❌ "책임감이 강하고 성실한 편입니다."           ← 누구에게나 해당
+  ✅ "정관(규칙과 책임을 지키는 기운)이 월지에 뿌리를 내렸습니다.
+     맡은 일을 놓지 못해서, 남들이 대충 넘기는 것도 혼자 붙들고 있습니다."
+
+**용어 풀이 없음**이라고 나왔다면:
+  처음 나오는 용어마다 그 자리에서 괄호로 풀어주세요.
+  예: 편재(큰돈을 굴리는 기운) / 일지(배우자 자리) / 12운성 쇠(기운이 한풀 꺾이는 자리)
+
+**용어 과다**라고 나왔다면:
+  한 번 풀어준 용어는 그 다음부터 쉬운 말로 바꿔 부르세요.
+  "정관" → "그 책임감이" / "규칙을 지키려는 마음이"
+
+**첫 문장이 용어투성이**라고 나왔다면:
+  첫 문장은 용어 없이 결론부터 씁니다. 근거는 두 번째 문장부터.
+  ❌ "정관이 월지에 뿌리내려 12운성 건록에 놓였습니다."
+  ✅ "책임을 맡으면 끝까지 해내는 사람입니다."
+
+- 분량(700~900자)은 그대로 유지하세요.` : `
+
+⚠️ 방금 쓴 글의 문체가 어색합니다. 해석과 내용은 그대로 두고 문장만 고쳐 다시 쓰세요.`;
 
     try {
       const fix = await callAI({
         system: PDF_SYSTEM,
         user: `${user}
-
-⚠️ 방금 쓴 글의 문체가 어색합니다. 해석과 내용은 그대로 두고 문장만 고쳐 다시 쓰세요.
+${contentFix}
 
 [발견된 문제]
 ${probs.join('\n')}
 
-[가장 중요 — 이걸 못 고치면 실패입니다]
+[문체 — 이것도 같이 지키세요]
 짧은 문장을 하나씩 툭툭 떨어뜨리지 마세요. 아래처럼 물려서 이으세요.
 
 ❌ "일주가 병화입니다. 이 기운은 밝고 화사한 성격을 나타냅니다.
@@ -760,13 +956,13 @@ ${probs.join('\n')}
 ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}`,
         openaiKey,
         model,
-        maxTokens: 4000,
+        maxTokens: 6000,
       });
       const fixed = Array.isArray(fix.blocks) ? fix.blocks : [];
       if (fixed.length === blocks.length) blocks = fixed;
       else break;
     } catch (e) {
-      console.error('[문체] 재작성 실패:', e.message);
+      console.error('[검사] 재작성 실패:', e.message);
       break;
     }
   }
@@ -802,6 +998,7 @@ async function generatePdfReport({ type, client, saju, openaiKey, model, onProgr
         out[i] = await generateChapter({
           type, chapter: ch, index: i, total: chapters.length,
           client, saju, openaiKey, model,
+          allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
         });
       } catch (e) {
         console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패:`, e.message);

@@ -603,17 +603,22 @@ module.exports = { OUTLINES, chapterCount, titles };
  * ============================================================ */
 
 const QUESTION_CHAPTER = {
-  title: '내담자 질문 답변',
+  title: '남겨주신 질문에 답합니다',
   sub: [
-    '질문에 대한 사주풀이',
-    '지금의 흐름에서 본 답',
-    '앞으로의 시기와 흐름',
-    '이 질문에 대한 조언',
+    '먼저, 물어보신 것에 대한 답',
+    '명식에서 이 답이 나온 근거',
+    '흐름이 바뀌는 시기',
+    '지금 할 수 있는 것 / 하지 말아야 할 것',
   ],
 };
 
 /**
- * 질문이 있으면 마지막 챕터 앞에 질문 답변 챕터를 끼워 넣는다.
+ * 질문이 있으면 질문 답변 챕터를 앞쪽에 끼워 넣는다.
+ *
+ * ⚠️ 예전에는 맨 뒤(마지막 챕터 앞)에 넣었는데,
+ *    거기까지 읽기 전에 지쳐서 "질문 답이 없다"는 피드백이 나왔다.
+ *    돈 내고 물어본 것이 가장 궁금한 것이므로 앞쪽에 둔다.
+ *
  * @param {string} type 리포트 종류
  * @param {string|null} question 내담자 질문
  */
@@ -623,7 +628,7 @@ function outlineWithQuestion(type, question) {
   if (!q) return base;
 
   const out = base.slice();
-  const at = Math.max(0, out.length - 1);   // 마지막 챕터 앞
+  const at = Math.min(1, out.length);   // 첫 챕터(도입) 바로 다음
   out.splice(at, 0, QUESTION_CHAPTER);
   return out;
 }
