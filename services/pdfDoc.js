@@ -999,11 +999,150 @@ ${sajuPages({ client, saju, type })}
 ${glossaryPage()}
 ${chapterPages(chapters, client.question)}
 ${endPage({ teacher })}
+<script>${REFLOW_SCRIPT}<\/script>
 </body>
 </html>`;
 }
 
 /** baseUrl을 주입한 CSS */
+/* ============================================================
+ * 리플로우 — 브라우저가 실제 높이를 재서 페이지를 다시 채운다.
+ *
+ * 서버는 글자 수로 페이지를 어림잡을 수밖에 없어서 빈칸이 생기고
+ * 소제목이 혼자 다음 장으로 밀려난다. 그려진 뒤 실제 높이로 바로잡는다.
+ *
+ *   - 페이지가 넘치면 → 마지막 문단(또는 블록)을 다음 장으로
+ *   - 페이지가 비면   → 다음 장 첫 블록을 통째로 끌어올린다
+ *                       (소제목 + 내용이 짧으면 앞장에 합쳐진다)
+ * ============================================================ */
+const REFLOW_SCRIPT = `
+(function(){
+  function movable(sec){
+    return Array.prototype.filter.call(sec.children, function(el){
+      return !el.classList.contains('fn') && !el.classList.contains('pg-tools');
+    });
+  }
+  function capacity(sec){
+    var cs = getComputedStyle(sec);
+    var fn = sec.querySelector('.fn');
+    return sec.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+         - (fn ? fn.offsetHeight + 12 : 0) - 6;
+  }
+  // 자식 높이를 더하면 margin collapse 때문에 실제보다 크게 나온다.
+  // 마지막 요소의 아래 끝을 직접 재야 정확하다.
+  function contentH(sec){
+    var kids = movable(sec);
+    if (!kids.length) return 0;
+    var cs = getComputedStyle(sec);
+    var top = sec.getBoundingClientRect().top + parseFloat(cs.paddingTop);
+    var last = kids[kids.length - 1].getBoundingClientRect();
+    return Math.max(0, last.bottom - top);
+  }
+  function fits(sec){ return contentH(sec) <= capacity(sec); }
+
+  function lastPara(sec){
+    var bs = sec.querySelectorAll('.ch-block');
+    for (var i = bs.length - 1; i >= 0; i--) {
+      var ps = bs[i].querySelectorAll('p');
+      if (ps.length) return ps[ps.length - 1];
+    }
+    return null;
+  }
+
+  function pushDown(p, next){
+    var src = p.parentNode;
+    var first = next.querySelector('.ch-block');
+    if (first && !first.querySelector('.ch-sub')) first.insertBefore(p, first.firstChild);
+    else {
+      var nb = document.createElement('div');
+      nb.className = 'ch-block';
+      nb.appendChild(p);
+      next.insertBefore(nb, next.firstChild);
+    }
+    if (src && !src.querySelector('p') && !src.querySelector('.ch-sub')) src.remove();
+  }
+
+  function newPage(after, ch){
+    var ns = document.createElement('section');
+    ns.className = 'page sheet chapter';
+    ns.dataset.ch = ch;
+    after.parentNode.insertBefore(ns, after.nextSibling);
+    return ns;
+  }
+
+  function reflow(){
+    var groups = {};
+    Array.prototype.forEach.call(document.querySelectorAll('.page.chapter'), function(sec){
+      var k = sec.dataset.ch;
+      if (k === undefined) return;                 // 용어 풀이 등 고정 페이지는 건드리지 않는다
+      (groups[k] = groups[k] || []).push(sec);
+    });
+
+    Object.keys(groups).forEach(function(k){
+      var g = groups[k];
+
+      for (var i = 0; i < g.length; i++) {
+        var guard = 0;
+
+        // ① 넘치면 아래로 밀어낸다
+        while (!fits(g[i]) && guard++ < 80) {
+          var p = lastPara(g[i]);
+          if (!p) break;
+          if (!g[i + 1]) g.splice(i + 1, 0, newPage(g[i], k));
+          pushDown(p, g[i + 1]);
+        }
+
+        // ② 자리가 남으면 다음 장에서 끌어올린다
+        guard = 0;
+        while (g[i + 1] && guard++ < 80) {
+          var blk = g[i + 1].querySelector('.ch-block');
+          if (!blk) break;
+
+          var hasSub = !!blk.querySelector('.ch-sub');
+          var srcParent = blk.parentNode, srcAnchor = blk.nextSibling;
+
+          if (hasSub) {
+            // 소제목 블록은 통째로 옮긴다 (짧으면 앞장에 합쳐지고, 길면 그대로 남는다)
+            g[i].appendChild(blk);
+            if (!fits(g[i])) { srcParent.insertBefore(blk, srcAnchor); break; }
+          } else {
+            // 소제목 없는 블록은 문단 하나씩 당겨 올린다
+            var q = blk.querySelector('p');
+            if (!q) { blk.remove(); continue; }
+            var qAnchor = q.nextSibling;
+            var bs = g[i].querySelectorAll('.ch-block');
+            var last = bs.length ? bs[bs.length - 1] : null;
+            if (last) last.appendChild(q);
+            else {
+              var nb = document.createElement('div');
+              nb.className = 'ch-block';
+              nb.appendChild(q);
+              g[i].appendChild(nb);
+            }
+            if (!fits(g[i])) { blk.insertBefore(q, qAnchor); break; }
+          }
+        }
+      }
+
+      // 빈 페이지 · 빈 블록 정리
+      g.forEach(function(sec){
+        sec.querySelectorAll('.ch-block').forEach(function(b){
+          if (!b.querySelector('p') && !b.querySelector('.ch-sub')) b.remove();
+        });
+        if (!sec.querySelector('p') && !sec.querySelector('.ch-head')) sec.remove();
+      });
+    });
+  }
+
+  function boot(){
+    try { reflow(); } catch (e) { console.error('[reflow]', e); }
+    setTimeout(function(){ try { reflow(); } catch (e) {} }, 400);  // 웹폰트 늦게 뜨는 경우
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(boot, 60); });
+  else window.addEventListener('load', function(){ setTimeout(boot, 200); });
+})();
+`;
+
 function buildCSS(baseUrl) {
   return CSS_TEMPLATE.split('BASE_URL').join(baseUrl || '');
 }
@@ -1011,6 +1150,6 @@ function buildCSS(baseUrl) {
 module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
-  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote,
+  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
 };
 
