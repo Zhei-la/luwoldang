@@ -342,7 +342,7 @@ function sajuPages({ client, saju, type }) {
 
 /* 실측값 기준 (한 줄 = 14.2px × 2.05 = 29.1px = 7.70mm)
  * 예전에는 여백을 전부 '1줄'로 올려 세서 페이지가 25%씩 비었다. 소수점으로 정확히 센다. */
-const LINES_PER_PAGE = 31;      // 241mm ÷ 7.70mm
+const LINES_PER_PAGE = 27.5;    // 241mm ÷ 7.70mm = 31줄, 각주 자리 3.5줄 확보
 const CHARS_PER_LINE = 42;      // word-break:keep-all 이라 45자보다 일찍 줄이 바뀐다
 const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
 const LINES_SUB = 1.3;          // 소제목(16.5px) + margin 13px
@@ -407,6 +407,55 @@ function paginateChapter(ch) {
   return pages.length ? pages : [{ isFirst: true, blocks: [] }];
 }
 
+/* ── 페이지 각주 ──
+ * 용어가 나온 페이지 맨 아래에 * 로 짧게 달아준다.
+ * (뒤에 용어 풀이 장이 있어도, 읽다 보면 까먹는다) */
+const TERM_NOTES = {
+  '비견': '나와 같은 기운. 자립심과 경쟁심.',
+  '겁재': '나와 같은 기운이되 어긋난 쪽. 경쟁·나눠 갖기.',
+  '식신': '내가 내보내는 기운. 꾸준한 표현과 재능.',
+  '상관': '내가 내보내는 기운이되 튀는 쪽. 재기·반발.',
+  '편재': '내가 다스리는 재물. 크게 벌고 크게 쓰는 돈.',
+  '정재': '내가 다스리는 재물. 꾸준히 쌓이는 돈.',
+  '편관': '나를 누르는 기운. 갑작스러운 압박·시련.',
+  '정관': '나를 누르는 기운. 직장·규율·명예.',
+  '편인': '나를 돕는 기운. 남다른 배움·직관.',
+  '정인': '나를 돕는 기운. 정통한 배움·보호.',
+  '지장간': '지지 속에 숨은 천간. 겉으론 안 보이나 작동하는 기운.',
+  '12운성': '기운의 생애 단계. 장생에서 제왕을 지나 묘까지.',
+  '일간': '나 자신을 나타내는 글자. 사주를 읽는 기준점.',
+  '천간': '겉으로 드러나는 기운.',
+  '지지': '바탕에 깔린 기운. 실제 환경과 현실.',
+  '원국': '태어날 때 정해진 여덟 글자. 사주의 본판.',
+  '대운': '10년마다 바뀌는 큰 흐름.',
+  '세운': '한 해의 운.',
+  '용신': '내 사주의 균형을 잡아주는 기운. 도움이 되는 방향.',
+  '기신': '균형을 깨뜨리는 기운. 조심할 방향.',
+  '공망': '비어 있는 자리. 채워도 손에 남지 않는 영역.',
+  '십성': '나와 다른 기운의 관계를 열 가지로 나눈 것.',
+};
+const TERM_KEYS = Object.keys(TERM_NOTES).sort((a, b) => b.length - a.length);
+const FOOTNOTE_MAX = 4;    // 한 페이지에 최대 4개
+
+/** 이 페이지 글에 나온 용어를 찾는다 */
+function pageTerms(text) {
+  const found = [];
+  TERM_KEYS.forEach((k) => {
+    if (found.length >= FOOTNOTE_MAX) return;
+    if (String(text).includes(k)) found.push(k);
+  });
+  return found;
+}
+
+function footnote(text) {
+  const ts = pageTerms(text);
+  if (!ts.length) return '';
+  return `
+  <div class="fn">
+    ${ts.map((t) => `<div class="fn-i"><b>* ${esc(t)}</b> ${esc(TERM_NOTES[t])}</div>`).join('')}
+  </div>`;
+}
+
 function chapterPages(chapters, question) {
   return chapters.map((ch, i) => {
     const pages = paginateChapter(ch);
@@ -433,10 +482,15 @@ function chapterPages(chapters, question) {
         ${b.paras.map((p) => `<p>${esc(p)}</p>`).join('')}
       </div>`).join('');
 
+      // 이 페이지에 나온 용어만 맨 아래 각주로
+      const pageText = pg.blocks.map((b) => (b.sub || '') + ' ' + b.paras.join(' ')).join(' ');
+      const fn = footnote(pageText);
+
       return `
 <section class="page sheet chapter${pg.isFirst ? ' chapter-start' : ''}">
   ${head}
   ${body || (pg.isFirst ? '<p class="ch-empty">내용을 생성하지 못했습니다.</p>' : '')}
+  ${fn}
 </section>`;
     }).join('');
   }).join('');
@@ -635,6 +689,21 @@ body {
   white-space: nowrap;
 }
 .gl-v { padding: 6px 0; font-size: 12.6px; line-height: 1.7; color: #4a473e; }
+
+/* 페이지 하단 용어 각주 */
+.page { position: relative; }
+.fn {
+  position: absolute;
+  left: 20mm; right: 20mm; bottom: 11mm;
+  padding-top: 6px;
+  border-top: 1px dotted #ddd3bd;
+}
+.fn-i {
+  font-size: 10.2px; line-height: 1.55; color: #8f8a7c;
+  margin-bottom: 2px; word-break: keep-all;
+}
+.fn-i:last-child { margin-bottom: 0; }
+.fn-i b { color: #a08a5c; font-weight: 700; margin-right: 3px; }
 .toc-fixed { color: #a08a5c; font-weight: 700; font-family: 'Nanum Myeongjo', serif; }
 .toc-no { font-family: 'Nanum Myeongjo', serif; font-weight: 700; color: #b59a62; min-width: 26px; }
 .toc-name { flex: 1; }
@@ -932,6 +1001,6 @@ function buildCSS(baseUrl) {
 module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
-  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage,
+  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote,
 };
 
