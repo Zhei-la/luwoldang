@@ -130,16 +130,7 @@ const GLOSSARY = [
 ];
 
 function glossaryPage() {
-  return `
-<section class="page sheet chapter chapter-start">
-  <div class="ch-head">
-    <span class="ch-no">※</span>
-    <h2 class="ch-title">사주 용어 풀이</h2>
-  </div>
-  <div class="pg-line"></div>
-  <p class="gl-lead">리포트를 읽다가 낯선 말이 나오면 이 장으로 돌아오세요.<br>
-  용어를 알고 읽으면 같은 문장도 훨씬 또렷하게 들어옵니다.</p>
-  ${GLOSSARY.map((g) => `
+  const group = (g) => `
   <div class="gl-group">
     <h3 class="gl-h">${esc(g.h)}</h3>
     <table class="gl-tbl">
@@ -149,7 +140,26 @@ function glossaryPage() {
         <td class="gl-v">${esc(v)}</td>
       </tr>`).join('')}
     </table>
-  </div>`).join('')}
+  </div>`;
+
+  // 네 묶음을 한 장에 넣으면 마지막(용신·기신)이 잘린다. 두 장으로 나눈다.
+  const half = Math.ceil(GLOSSARY.length / 2);
+
+  return `
+<section class="page sheet chapter chapter-start">
+  <div class="ch-head">
+    <span class="ch-no">※</span>
+    <h2 class="ch-title">사주 용어 풀이</h2>
+  </div>
+  <div class="pg-line"></div>
+  <p class="gl-lead">리포트를 읽다가 낯선 말이 나오면 이 장으로 돌아오세요.<br>
+  용어를 알고 읽으면 같은 문장도 훨씬 또렷하게 들어옵니다.</p>
+  ${GLOSSARY.slice(0, half).map(group).join('')}
+</section>
+<section class="page sheet chapter">
+  ${GLOSSARY.slice(half).map(group).join('')}
+  <p class="gl-lead" style="margin-top:22px;padding-top:14px;border-top:1px dotted #ddd3bd">
+  본문 페이지 아래에도 그 장에 나온 용어를 <b>*</b> 표시로 짧게 달아두었습니다.</p>
 </section>`;
 }
 
@@ -487,7 +497,7 @@ function chapterPages(chapters, question) {
       const fn = footnote(pageText);
 
       return `
-<section class="page sheet chapter${pg.isFirst ? ' chapter-start' : ''}">
+<section class="page sheet chapter${pg.isFirst ? ' chapter-start' : ''}" data-ch="${i}" data-pg="${pi}">
   ${head}
   ${body || (pg.isFirst ? '<p class="ch-empty">내용을 생성하지 못했습니다.</p>' : '')}
   ${fn}
