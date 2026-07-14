@@ -431,20 +431,26 @@ function toast(msg, bad){
 }
 
 /* 1. 리플로우 — 실제 높이를 재서 페이지를 다시 채운다 */
+function movable(sec){
+  return Array.prototype.filter.call(sec.children, function(el){
+    return !el.classList.contains('fn') && !el.classList.contains('pg-tools');
+  });
+}
 function capacity(sec){
   var cs = getComputedStyle(sec);
   var fn = sec.querySelector('.fn');
   return sec.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-       - (fn ? fn.offsetHeight + 12 : 0) - 4;
+       - (fn ? fn.offsetHeight + 12 : 0) - 6;
 }
+/* ⚠️ 자식 높이를 더하면 margin collapse 때문에 실제보다 크게 나온다.
+   마지막 요소의 아래 끝을 직접 재야 정확하다. */
 function contentH(sec){
-  var h = 0;
-  Array.prototype.forEach.call(sec.children, function(el){
-    if (el.classList.contains('fn') || el.classList.contains('pg-tools')) return;
-    var m = getComputedStyle(el);
-    h += el.offsetHeight + parseFloat(m.marginTop) + parseFloat(m.marginBottom);
-  });
-  return h;
+  var kids = movable(sec);
+  if (!kids.length) return 0;
+  var cs = getComputedStyle(sec);
+  var top = sec.getBoundingClientRect().top + parseFloat(cs.paddingTop);
+  var last = kids[kids.length - 1].getBoundingClientRect();
+  return Math.max(0, last.bottom - top);
 }
 function lastPara(sec){
   var blocks = sec.querySelectorAll('.ch-block');
@@ -473,6 +479,17 @@ function pushDown(p, next){
 function pullUp(p, sec){
   var src = p.parentNode;
   var anchor = p.nextSibling;
+  var srcHasSub = !!src.querySelector('.ch-sub');
+  var isFirstOfBlock = !p.previousElementSibling || p.previousElementSibling.classList.contains('ch-sub');
+
+  // 소제목이 붙은 블록의 첫 문단이면 소제목까지 통째로 올린다 (소제목만 홀로 남으면 흉하다)
+  if (srcHasSub && isFirstOfBlock) {
+    var srcAnchor = src.nextSibling;
+    var srcParent = src.parentNode;
+    sec.appendChild(src);
+    return function undo(){ srcParent.insertBefore(src, srcAnchor); };
+  }
+
   var blocks = sec.querySelectorAll('.ch-block');
   var last = blocks.length ? blocks[blocks.length - 1] : null;
   if (last) last.appendChild(p);
@@ -667,8 +684,21 @@ window.addEventListener('beforeunload', function(e){
 });
 
 // 폰트가 다 뜬 뒤에 재배치해야 높이가 정확하다
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(reflow, 80); });
-else window.addEventListener('load', function(){ setTimeout(reflow, 150); });
+function runReflow(){
+  try {
+    reflow();
+    // 빈 블록 정리
+    document.querySelectorAll('.ch-block').forEach(function(b){
+      if (!b.querySelector('p') && !b.querySelector('.ch-sub')) b.remove();
+    });
+  } catch (e) { console.error('[reflow]', e); }
+}
+function boot(){
+  runReflow();
+  setTimeout(runReflow, 400);   // 웹폰트가 늦게 뜨는 경우 대비해 한 번 더
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(boot, 60); });
+else window.addEventListener('load', function(){ setTimeout(boot, 200); });
 </script>`;
 
     const html = inner.replace('<body>', '<body>' + toolbar);
