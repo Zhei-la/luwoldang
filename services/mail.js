@@ -224,10 +224,9 @@ module.exports = { sendFreeSaju, buildFreeSajuHtml, mailReady, sendMail, fromAdd
 /* ============================================================
  * 유료 PDF 리포트 이메일 발송
  * ============================================================ */
-function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl }) {
-  const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
-    .map((x) => `<p style="margin:0 0 11px;line-height:1.85;font-size:14.5px;color:#3f3b33">${esc(x)}</p>`).join('');
-
+/* 사주 원국 표 — 여러 메일 템플릿이 같이 쓴다 */
+function sajuTable(input, saju) {
+  if (!saju || !saju.pillars) return '';
   const EL_COLOR = { 목: '#2e8b57', 화: '#cf4038', 토: '#b8860b', 금: '#6b7684', 수: '#2f6bb0' };
   const cols = ['hour', 'day', 'month', 'year'];
   const labels = { hour: '생시', day: '생일', month: '생월', year: '생년' };
@@ -284,6 +283,16 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
     </td></tr>
     ${dw}` : '';
 
+
+  return chart;
+}
+function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl }) {
+  const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
+    .map((x) => `<p style="margin:0 0 11px;line-height:1.85;font-size:14.5px;color:#3f3b33">${esc(x)}</p>`).join('');
+
+  const EL_COLOR = { 목: '#2e8b57', 화: '#cf4038', 토: '#b8860b', 금: '#6b7684', 수: '#2f6bb0' };
+  const cols = ['hour', 'day', 'month', 'year'];
+  const chart = sajuTable(input, saju);
   /* ── 오행 분포 막대 (메일 클라이언트는 SVG를 자주 지우므로 표+배경색으로 그린다) ── */
   const EL_LABEL = { 목: '목 (木)', 화: '화 (火)', 토: '토 (土)', 금: '금 (金)', 수: '수 (水)' };
   const elBars = (saju && saju.elements) ? (() => {
@@ -398,4 +407,95 @@ async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl
 
 module.exports.sendPdfReport = sendPdfReport;
 module.exports.buildPdfHtml = buildPdfHtml;
+
+
+/* ============================================================
+ * 묶어서 보내기 — 리포트 여러 개를 메일 한 통에
+ * ============================================================ */
+
+/**
+ * @param {object} o { teacher, saju, input, items:[{type, shareUrl}], baseUrl }
+ */
+function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
+  const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
+    .map((x) => `<p style="margin:0 0 11px;font-size:14.5px;line-height:1.85;color:#3d3a33">${esc(x)}</p>`).join('');
+
+  const brand = esc(teacher.site_name || teacher.name || '사주 풀이');
+
+  const cards = items.map((it) => `
+    <tr><td style="padding:0 24px 12px">
+      <table width="100%" cellpadding="0" cellspacing="0"
+        style="border-collapse:separate;border:1px solid #E9E0CF;border-radius:10px;background:#fff">
+        <tr>
+          <td style="padding:16px 18px">
+            <div style="font-size:16px;font-weight:800;color:#182234;margin-bottom:3px">${esc(it.type)}</div>
+            <div style="font-size:12px;color:#8a8574">PDF 파일로 받거나 웹에서 바로 읽을 수 있습니다.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 18px 16px">
+            <a href="${esc(it.shareUrl)}/download"
+               style="display:inline-block;padding:11px 18px;background:#B59A62;color:#fff;
+                      font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px;margin-right:6px">
+              PDF 다운받기
+            </a>
+            <a href="${esc(it.shareUrl)}"
+               style="display:inline-block;padding:11px 18px;background:#182234;color:#fff;
+                      font-weight:700;font-size:13.5px;text-decoration:none;border-radius:8px">
+              웹에서 읽기
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td></tr>`).join('');
+
+  const consultBtn = teacher.kakao_consult_link
+    ? `<a href="${esc(teacher.kakao_consult_link)}" style="display:inline-block;padding:14px 26px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">${esc(teacher.button_text || '카카오톡으로 문의하기')}</a>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F3EEE3;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F3EEE3;padding:26px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FBF8F1;border-radius:14px;overflow:hidden">
+
+  <tr><td style="padding:30px 24px 8px;text-align:center">
+    <div style="font-size:12px;letter-spacing:.2em;color:#B59A62;margin-bottom:9px">${brand}</div>
+    <h1 style="margin:0 0 6px;font-size:22px;color:#252522">${esc(input.name)}님의 사주 리포트</h1>
+    <p style="margin:0;font-size:13.5px;color:#8a8574">
+      리포트 ${items.length}편이 준비되었습니다.
+    </p>
+  </td></tr>
+
+  ${sajuTable(input, saju)}
+
+  <tr><td style="padding:6px 24px 12px">
+    <p style="margin:0;font-size:13px;color:#182234;font-weight:700">받으신 리포트</p>
+  </td></tr>
+  ${cards}
+
+  ${consultBtn ? `
+  <tr><td style="padding:14px 24px 30px;text-align:center;border-top:1px solid #EFE7D8">
+    <p style="margin:0 0 12px;font-size:13.5px;color:#6b6656">더 궁금한 점이 있으시면 편하게 문의해주세요.</p>
+    ${consultBtn}
+  </td></tr>` : '<tr><td style="height:24px"></td></tr>'}
+
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
+async function sendBundle({ to, teacher, saju, input, items, baseUrl }) {
+  const html = buildBundleHtml({ teacher, saju, input, items, baseUrl });
+  const names = items.map((x) => x.type).join(' · ');
+  return sendMail(teacher, {
+    to,
+    subject: `${input.name}님의 사주 리포트가 도착했습니다. (${names})`,
+    html,
+  });
+}
+
+module.exports.sendBundle = sendBundle;
+module.exports.buildBundleHtml = buildBundleHtml;
 
