@@ -21,7 +21,7 @@
  */
 
 const {
-  coverPage, tocPage, sajuPages, endPage, buildCSS, esc, footnote,
+  coverPage, tocPage, sajuPages, endPage, buildCSS, esc, footnote, REFLOW_SCRIPT,
 } = require('./pdfDoc');
 const { getPromo } = require('./freePromo');
 
@@ -100,7 +100,7 @@ function renderFlow(chapters) {
     // 이 페이지에 나온 용어만 맨 아래 각주로
     const pageText = items.filter((x) => x.t === 'p').map((x) => x.text).join(' ');
     return `
-<section class="page sheet chapter">
+<section class="page sheet chapter" data-ch="free">
   ${items.map((it) => it.t === 'head' ? `
   <div class="ch-head"${it.second ? ' style="margin-top:26px;padding-top:22px;border-top:1px solid #e6dfd0"' : ''}>
     <span class="ch-no">${it.no}</span>
@@ -268,6 +268,7 @@ ${sajuPages({ client, saju, type: TYPE })}
 ${renderFlow(chapters)}
 ${promoPages}
 ${endPage({ teacher })}
+<script>${REFLOW_SCRIPT}<\/script>
 </body>
 </html>`;
 }
