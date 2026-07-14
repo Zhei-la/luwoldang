@@ -355,6 +355,22 @@ function paraLines(text) {
   return Math.ceil(len / CHARS_PER_LINE) + LINES_PARA_GAP;
 }
 
+/* 문장이 끝나면 줄을 바꾼다 (가독성).
+ * 문단 사이 빈 줄은 그대로 두고, 문단 '안'에서만 문장 단위로 줄을 나눈다.
+ *   "~합니다. 다음 문장." →  ~합니다.
+ *                            다음 문장.
+ * "3.5%" 같은 숫자에서 끊기지 않게 한글 어미 뒤에서만 나눈다. */
+function sentenceBreaks(text) {
+  return esc(text).replace(/([다요][.!?])\s+/g, '$1<br>');
+}
+
+/** 문장 줄바꿈을 반영한 줄 수 (페이지 계산용) */
+function paraLinesBr(text) {
+  const sents = String(text || '').split(/(?<=[다요][.!?])\s+/).filter(Boolean);
+  if (!sents.length) return LINES_PARA_GAP;
+  return sents.reduce((a, x) => a + Math.ceil(x.length / CHARS_PER_LINE), 0) + LINES_PARA_GAP;
+}
+
 /**
  * 챕터를 A4 페이지 단위로 나눈다.
  * @returns [{ isFirst, blocks: [{sub, paras:[]}] }, ...]
@@ -377,14 +393,14 @@ function paginateChapter(ch) {
 
     // 소제목 + 첫 문단이 이 페이지에 안 들어가면 → 새 페이지에서 시작
     if (used > 0) used += LINES_BLOCK_GAP;   // 블록 사이 여백
-    const firstNeed = need + (paras[0] ? paraLines(paras[0]) : 0);
+    const firstNeed = need + (paras[0] ? paraLinesBr(paras[0]) : 0);
     if (used > 0 && used + firstNeed > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
       pushPage();
     }
     used += need;
 
     paras.forEach((p) => {
-      const n = paraLines(p);
+      const n = paraLinesBr(p);
 
       // 이 문단이 안 들어가면 페이지를 넘긴다 (아슬아슬하면 그냥 붙인다)
       if (used + n > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
@@ -560,7 +576,7 @@ function chapterPages(chapters, question) {
       const body = pg.blocks.map((b) => `
       <div class="ch-block">
         ${b.sub ? `<h3 class="ch-sub">${esc(b.sub)}</h3>` : ''}
-        ${b.paras.map((p) => `<p>${esc(p)}</p>`).join('')}
+        ${b.paras.map((p) => `<p>${sentenceBreaks(p)}</p>`).join('')}
       </div>`).join('');
 
       // 이 페이지에 나온 용어만 맨 아래 각주로
@@ -1287,5 +1303,6 @@ module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
   coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
+  sentenceBreaks,
 };
 
