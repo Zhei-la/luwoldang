@@ -1,0 +1,219 @@
+/* ============================================================
+ * 리포트 미리보기 + 수정하기
+ *
+ * ⚠️ 이 파일은 server.js 에서 leadsRouter 보다 "먼저" 마운트된다.
+ *    그래야 leads.js 안의 옛날 /pdfs/:id/preview 를 덮어쓴다.
+ *    (leads.js 는 손대지 않는다)
+ *
+ * ⚠️ 규칙: 브라우저에서 돌 JS 를 여기(서버 템플릿 리터럴) 안에 넣지 말 것.
+ *    옛날 버그가 딱 그것 때문이었다.
+ *      var IN_APP = /...|Line\//i.test(UA)
+ *      → 백틱 안에서 \/ 가 / 로 풀려서 정규식이 깨지고
+ *      → "i is not defined" 로 스크립트 전체가 죽고
+ *      → 수정하기 버튼이 안 눌렸다.
+ *    브라우저 JS 는 전부 public/js/preview-editor.js 에 있다.
+ *    여기서는 window 값만 넘긴다.
+ * ============================================================ */
+
+const express = require('express');
+const router = express.Router();
+const { pool } = require('../db');
+const { requireAuth, requireApproved } = require('../middleware/auth');
+const { calcSaju } = require('../services/manseryeok');
+const { buildReportHtml, esc } = require('../services/pdfDoc');
+const { buildFreePdfHtml } = require('../services/freePdf');
+const { normalizeBirth, parseHour } = require('../services/birth');
+
+const FREE = '무료사주';
+
+/* 최초 생성 원문 보관 컬럼 (되돌리기용) — 첫 요청 때 한 번만 확인 */
+let columnReady = false;
+async function ensureOrigColumn() {
+  if (columnReady) return;
+  await pool.query('ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS sections_orig JSONB;');
+  columnReady = true;
+  console.log('[DB] pdfs.sections_orig 준비 완료');
+}
+
+router.use(requireAuth, requireApproved);
+
+/* 신청자 정보로 사주를 계산한다 (실패해도 미리보기는 떠야 한다) */
+function sajuOf(pdf) {
+  try {
+    return calcSaju({
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
+      isLeapMonth: pdf.calendar === '윤달',
+      region: pdf.region || '서울특별시',
+      gender: pdf.gender,
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ===== 미리보기 ===== */
+router.get('/pdfs/:id/preview', async (req, res, next) => {
+  try {
+    await ensureOrigColumn();
+
+    const { rows } = await pool.query(
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.memo
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = $1 AND p.teacher_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
+
+    /* 원문이 아직 없으면 지금 내용을 원문으로 한 번 백업해둔다.
+       (예전에 만든 리포트도 이 시점부터 되돌리기가 된다) */
+    if (pdf.sections_orig == null && pdf.sections != null) {
+      await pool.query('UPDATE pdfs SET sections_orig = sections WHERE id = $1', [pdf.id]);
+    }
+
+    const client = {
+      name: pdf.name,
+      gender: pdf.gender,
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar,
+      region: pdf.region,
+      question: pdf.memo,
+    };
+    const saju = sajuOf(pdf);
+    const baseUrl = process.env.BASE_URL || '';
+
+    /* --- 무료사주: 공개 링크 PDF 와 똑같이 --- */
+    if (pdf.type === FREE) {
+      const html = buildFreePdfHtml({
+        teacher: req.user,
+        client,
+        saju,
+        result: pdf.sections || {},
+        baseUrl,
+      });
+      const bar =
+        '<link rel="stylesheet" href="/css/preview-editor.css">' +
+        '<div class="fv-bar no-print">' +
+        '<a href="/leads/' + pdf.lead_id + '">← 돌아가기</a>' +
+        '<span>' + esc(pdf.name) + '님 · 무료사주</span>' +
+        '<span class="tip">여백 <b>없음</b> · 배경 그래픽 <b>체크</b></span>' +
+        '<button type="button" onclick="window.print()">PDF로 저장</button>' +
+        '</div>';
+      return res
+        .set('Content-Type', 'text/html; charset=utf-8')
+        .send(html.replace('<body>', '<body>' + bar));
+    }
+
+    /* --- 유료 리포트 --- */
+    const chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
+    const inner = buildReportHtml({
+      type: pdf.type,
+      client,
+      teacher: req.user,
+      saju,
+      chapters,
+      extra: pdf.extra || null,
+      baseUrl,
+    });
+
+    const toolbar =
+      '<link rel="stylesheet" href="/css/preview-editor.css">' +
+      '<div class="pv-bar no-print">' +
+        '<a class="pv-back" href="/leads/' + pdf.lead_id + '">← 돌아가기</a>' +
+        '<span class="pv-title">' + esc(pdf.name) + '님 · ' + esc(pdf.type) +
+          ' <em id="pvMode">' + chapters.length + '개 챕터</em></span>' +
+        '<div class="pv-actions">' +
+          '<button type="button" id="btnEdit">수정하기</button>' +
+          '<button type="button" id="btnDone" style="display:none">수정 완료</button>' +
+          '<a id="btnDl" class="dlbtn" href="/pdfs/' + pdf.id + '/report.pdf">PDF 다운받기</a>' +
+          '<button type="button" id="btnSend" class="send">이메일 보내기</button>' +
+        '</div>' +
+        '<div class="pv-warn" id="pvWarn">' +
+          '<b>앱 안의 브라우저</b>라서 PDF 저장이 막힐 수 있습니다. ' +
+          '오른쪽 위 <b>⋮</b> → <b>다른 브라우저로 열기</b>를 눌러주세요.' +
+        '</div>' +
+      '</div>' +
+      '<div class="edit-hint no-print">글을 눌러 바로 고칠 수 있습니다. ' +
+        '페이지 오른쪽 위 <b>되돌리기</b>를 누르면 처음 만들어진 글로 돌아갑니다.</div>' +
+      '<div class="toast" id="toast"></div>';
+
+    const boot =
+      '<script>' +
+      'window.PDF_ID=' + Number(pdf.id) + ';' +
+      'window.LEAD_ID=' + Number(pdf.lead_id) + ';' +
+      'window.LEAD_EMAIL=' + JSON.stringify(pdf.email || '') + ';' +
+      '</script>' +
+      '<script src="/js/preview-editor.js" defer></script>';
+
+    let html = inner.replace('<body>', '<body>' + toolbar);
+    html = html.includes('</body>')
+      ? html.replace('</body>', boot + '</body>')
+      : html + boot;
+
+    res.set('Content-Type', 'text/html; charset=utf-8').send(html);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/* ===== 되돌리기 =====
+   { ch: 0 }      → 그 챕터만 처음 글로
+   { ch: 'all' }  → 리포트 전체를 처음 글로
+   chapters 를 같이 보내면 나머지 챕터의 수정분은 먼저 저장하고 되돌린다. */
+router.post('/pdfs/:id/revert', async (req, res) => {
+  try {
+    await ensureOrigColumn();
+
+    const { rows } = await pool.query(
+      'SELECT sections, sections_orig FROM pdfs WHERE id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+
+    const orig = Array.isArray(pdf.sections_orig) ? pdf.sections_orig : null;
+    if (!orig) {
+      return res.status(400).json({ ok: false, error: '처음 글이 보관돼 있지 않습니다.' });
+    }
+
+    const ch = req.body && req.body.ch;
+
+    /* 전체 되돌리기 */
+    if (ch === 'all') {
+      await pool.query(
+        'UPDATE pdfs SET sections = $1 WHERE id = $2 AND teacher_id = $3',
+        [JSON.stringify(orig), req.params.id, req.user.id]
+      );
+      return res.json({ ok: true, scope: 'all' });
+    }
+
+    const idx = Number(ch);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= orig.length) {
+      return res.status(400).json({ ok: false, error: '되돌릴 페이지를 찾을 수 없습니다.' });
+    }
+
+    /* 화면에 떠 있는 현재 내용을 바탕으로 하되, 해당 챕터만 원문으로 갈아끼운다 */
+    const sent = req.body && req.body.chapters;
+    const base = Array.isArray(sent) && sent.length
+      ? sent
+      : (Array.isArray(pdf.sections) ? pdf.sections : []);
+
+    const next = base.slice();
+    next[idx] = orig[idx];
+
+    await pool.query(
+      'UPDATE pdfs SET sections = $1 WHERE id = $2 AND teacher_id = $3',
+      [JSON.stringify(next), req.params.id, req.user.id]
+    );
+
+    res.json({ ok: true, scope: idx });
+  } catch (e) {
+    console.error('[PDF] 되돌리기 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+module.exports = router;

@@ -1,0 +1,127 @@
+/* ============================================================
+ * 리포트 미리보기 · 수정하기 (routes/preview.js 전용)
+ * ============================================================ */
+
+/* ---------- 유료 리포트 상단 바 ---------- */
+/* sticky 로 두면 본문(A4 794px)을 따라가서 모바일에서 버튼이 화면 밖으로 나간다 */
+.pv-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 99;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 18px; background: #182234; color: #e8e3d6;
+  font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; font-size: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .25);
+}
+body { padding-top: 60px; }
+
+.pv-back { color: #b3ad9c; text-decoration: none; }
+.pv-title { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-title em { font-style: normal; color: #B59A62; font-size: 12px; margin-left: 6px; }
+
+.pv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pv-actions button,
+.pv-actions .dlbtn {
+  padding: 8px 16px; border: 1px solid #B59A62; background: transparent; color: #e8e3d6;
+  border-radius: 7px; font-size: 13px; cursor: pointer; font-family: inherit;
+  white-space: nowrap; min-height: 40px; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pv-actions .dlbtn { background: #2f9e5e; border-color: #2f9e5e; color: #fff; font-weight: 700; }
+.pv-actions .dlbtn.loading { opacity: .6; pointer-events: none; }
+.pv-actions button.send { background: #B59A62; color: #241a06; font-weight: 700; }
+.pv-actions button:disabled { opacity: .45; }
+
+.pv-warn {
+  display: none; flex: 1 1 100%; margin-top: 8px; padding: 9px 12px; border-radius: 7px;
+  background: #3a2e1a; border: 1px solid #6b5a33; color: #f0dcae;
+  font-size: 12.5px; line-height: 1.6;
+}
+
+/* ---------- 무료사주 상단 바 ---------- */
+.fv-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;
+  padding: 11px 12px; background: #232220; color: #fff;
+  font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; font-size: 13px;
+}
+.fv-bar a { color: #c8a45c; text-decoration: none; }
+.fv-bar .tip { opacity: .6; }
+.fv-bar button {
+  padding: 9px 18px; border: 0; border-radius: 6px; background: #c8a45c; color: #241a06;
+  font-weight: 800; font-size: 13.5px; cursor: pointer; min-height: 40px;
+}
+
+/* ---------- 페이지 오른쪽 위 (되돌리기 / 이 페이지 저장) ---------- */
+.pg-tools {
+  position: absolute; top: 8px; right: 10px;
+  display: none; gap: 5px; z-index: 20;
+}
+body.editing .pg-tools { display: flex; }
+.pg-tools button {
+  padding: 5px 10px; border: 1px solid #d8cfb8; background: #fff; color: #6b6656;
+  border-radius: 6px; font-size: 11.5px; cursor: pointer;
+  font-family: Pretendard, sans-serif; line-height: 1.4;
+}
+.pg-tools button.save { background: #B59A62; border-color: #B59A62; color: #fff; font-weight: 700; }
+.pg-tools button:disabled { opacity: .5; }
+
+/* ---------- 수정 모드 ---------- */
+body.editing .ch-block p,
+body.editing .ch-sub,
+body.editing .ch-title {
+  outline: 1px dashed #c8b98e; outline-offset: 3px; border-radius: 3px;
+}
+body.editing [contenteditable]:focus { outline: 2px solid #B59A62; background: #fffdf5; }
+body.editing .ch-block { position: relative; }
+
+.blk-tools { position: absolute; right: -118px; top: 0; display: none; gap: 5px; align-items: flex-start; }
+body.editing .blk-tools { display: flex; }
+.blk-ai {
+  padding: 5px 9px; border-radius: 6px; border: 1px solid #B59A62; background: #fff; color: #8a6f3c;
+  font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  font-family: Pretendard, sans-serif; line-height: 1.4;
+}
+.blk-ai:hover { background: #B59A62; color: #fff; }
+.blk-ai:disabled { opacity: .5; }
+.blk-del {
+  width: 24px; height: 24px; border-radius: 6px; flex: none;
+  border: 1px solid #e0c4c0; background: #fff; color: #b0392c;
+  font-size: 13px; cursor: pointer; line-height: 1;
+}
+
+.edit-hint {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  background: #182234; color: #e8e3d6; padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; z-index: 98; display: none;
+  font-family: Pretendard, -apple-system, sans-serif;
+}
+body.editing .edit-hint { display: block; }
+
+.toast {
+  position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%) translateY(10px);
+  opacity: 0; background: #2f9e5e; color: #fff; padding: 9px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; z-index: 99; transition: .25s; pointer-events: none;
+  font-family: Pretendard, sans-serif;
+}
+.toast.on { opacity: 1; transform: translateX(-50%); }
+
+/* ---------- 모바일 ---------- */
+@media (max-width: 1100px) {
+  .blk-tools { right: 4px; top: -30px; }
+}
+@media (max-width: 760px) {
+  .pv-bar { padding: 10px 12px; gap: 7px; }
+  body { padding-top: 118px; }
+  .pv-title { flex: 1 1 100%; font-size: 12.5px; }
+  .pv-actions { flex: 1 1 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .pv-actions button,
+  .pv-actions .dlbtn { width: 100%; padding: 11px 2px; font-size: 11.5px; min-height: 44px; }
+
+  .fv-bar .tip { display: none; }
+  .fv-bar button { flex: 1 1 100%; }
+}
+
+/* ---------- 인쇄 ---------- */
+@media print {
+  body { padding-top: 0; }
+  .pv-bar, .fv-bar, .pg-tools, .blk-tools, .blk-del, .edit-hint, .toast { display: none !important; }
+}
