@@ -15,6 +15,7 @@
   var PDF_ID = window.PDF_ID;
   var LEAD_ID = window.LEAD_ID;
   var EMAIL = window.LEAD_EMAIL || '';
+  var TITLES = window.CH_TITLES || [];   // 챕터 원제목 (제목 유실 방지용)
 
   // ↓ 옛날 버그의 범인. 이제 진짜 파일이라 정규식이 안 깨진다.
   var IN_APP = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent || '');
@@ -41,7 +42,12 @@
 
   /* ---------- 화면 → 저장할 데이터 ----------
      페이지가 아니라 '챕터' 단위로 담는다.
-     (리플로우 때문에 한 챕터가 여러 페이지에 걸쳐 있다) */
+     (리플로우 때문에 한 챕터가 여러 페이지에 걸쳐 있다)
+
+     ⚠️ 제목(.ch-title)은 챕터의 '첫 페이지'에만 있다.
+        리플로우로 페이지가 재배치되면서 그 페이지를 못 찾으면
+        제목이 빈 문자열로 저장돼 목차에서 제목이 사라진다.
+        그래서 화면에서 못 찾으면 서버가 준 원제목(CH_TITLES)을 쓴다. */
   function collect() {
     var byCh = {};
     var order = [];
@@ -49,10 +55,17 @@
     pagesOf().forEach(function (sec) {
       var k = sec.dataset.ch;
       if (!byCh[k]) {
-        var t = sec.querySelector('.ch-title');
-        byCh[k] = { title: t ? t.innerText.trim() : '', blocks: [] };
+        byCh[k] = { title: '', blocks: [] };
         order.push(k);
       }
+
+      // 제목은 있는 페이지에서만 채운다. 빈 값으로 덮어쓰지 않는다.
+      if (!byCh[k].title) {
+        var t = sec.querySelector('.ch-title');
+        var txt = t ? t.innerText.trim() : '';
+        if (txt) byCh[k].title = txt;
+      }
+
       sec.querySelectorAll('.ch-block').forEach(function (b) {
         var subEl = b.querySelector('.ch-sub');
         var paras = [];
@@ -74,7 +87,13 @@
 
     // 챕터 순서대로 (0,1,2...)
     order.sort(function (a, b) { return Number(a) - Number(b); });
-    return order.map(function (k) { return byCh[k]; });
+
+    return order.map(function (k) {
+      var ch = byCh[k];
+      // 마지막 방어선 — 화면에서 못 찾았으면 서버가 준 원제목을 쓴다
+      if (!ch.title) ch.title = TITLES[Number(k)] || '';
+      return ch;
+    });
   }
 
   /* ---------- 저장 ---------- */

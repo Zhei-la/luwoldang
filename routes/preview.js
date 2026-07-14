@@ -37,6 +37,33 @@ async function ensureOrigColumn() {
 
 router.use(requireAuth, requireApproved);
 
+/* ============================================================
+ * 챕터 제목 지키기
+ *
+ * 화면에서 글을 긁어모을 때(collect) 제목은 챕터 첫 페이지의 .ch-title 에서만
+ * 읽어온다. 리플로우로 페이지가 재배치되면서 그 페이지를 못 찾으면
+ * 제목이 빈 문자열로 저장돼 목차에서 제목이 사라졌다.
+ *
+ * → 저장할 때 빈 제목이 오면 무시하고, 원래 제목을 그대로 지킨다.
+ * ============================================================ */
+function keepTitles(next, prev, orig) {
+  if (!Array.isArray(next)) return next;
+
+  return next.map((ch, i) => {
+    const title = String((ch && ch.title) || '').trim();
+    if (title) return ch;
+
+    // 빈 제목 → 이전 저장본 → 최초 원문 순으로 되찾는다
+    const fallback =
+      (Array.isArray(prev) && prev[i] && prev[i].title) ||
+      (Array.isArray(orig) && orig[i] && orig[i].title) ||
+      '';
+
+    if (fallback) console.log(`[PDF] 빈 제목 복구: ${i + 1}번 챕터 → "${fallback}"`);
+    return Object.assign({}, ch, { title: fallback });
+  });
+}
+
 /* 신청자 정보로 사주를 계산한다 (실패해도 미리보기는 떠야 한다) */
 function sajuOf(pdf) {
   try {
@@ -108,7 +135,26 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     }
 
     /* --- 유료 리포트 --- */
-    const chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
+    let chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
+
+    /* 이미 제목이 날아간 리포트는 여기서 되살린다.
+       (미리보기를 한 번 열기만 하면 DB까지 고쳐진다) */
+    const lost = chapters.some((c) => !String((c && c.title) || '').trim());
+    if (lost) {
+      const fixed = keepTitles(chapters, null, pdf.sections_orig);
+      const stillLost = fixed.some((c) => !String((c && c.title) || '').trim());
+
+      if (!stillLost) {
+        await pool.query('UPDATE pdfs SET sections = $1 WHERE id = $2', [
+          JSON.stringify(fixed), pdf.id,
+        ]);
+        chapters = fixed;
+        console.log(`[PDF] ${pdf.id}번 리포트의 빈 제목을 되살렸습니다.`);
+      } else {
+        chapters = fixed;   // 되살릴 수 있는 만큼만
+      }
+    }
+
     const inner = buildReportHtml({
       type: pdf.type,
       client,
@@ -145,6 +191,8 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       'window.PDF_ID=' + Number(pdf.id) + ';' +
       'window.LEAD_ID=' + Number(pdf.lead_id) + ';' +
       'window.LEAD_EMAIL=' + JSON.stringify(pdf.email || '') + ';' +
+      // 챕터 원제목 — 화면에서 제목을 못 찾을 때 쓴다 (제목 유실 방지)
+      'window.CH_TITLES=' + JSON.stringify(chapters.map((c) => (c && c.title) || '')) + ';' +
       '</script>' +
       '<script src="/js/preview-editor.js" defer></script>';
 
@@ -156,6 +204,39 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     res.set('Content-Type', 'text/html; charset=utf-8').send(html);
   } catch (e) {
     next(e);
+  }
+});
+
+/* ===== 리포트 내용 저장 =====
+   leads.js 에도 같은 주소가 있지만, 이 라우터가 먼저 마운트돼서 여기가 이긴다.
+   빈 제목이 들어오면 원래 제목을 지켜준다. */
+router.post('/pdfs/:id/edit', async (req, res) => {
+  try {
+    await ensureOrigColumn();
+
+    const chapters = req.body && req.body.chapters;
+    if (!Array.isArray(chapters)) {
+      return res.status(400).json({ ok: false, error: '형식이 올바르지 않습니다.' });
+    }
+
+    const { rows } = await pool.query(
+      'SELECT sections, sections_orig FROM pdfs WHERE id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+
+    const safe = keepTitles(chapters, pdf.sections, pdf.sections_orig);
+
+    await pool.query(
+      'UPDATE pdfs SET sections = $1 WHERE id = $2 AND teacher_id = $3',
+      [JSON.stringify(safe), req.params.id, req.user.id]
+    );
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[PDF] 수정 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
