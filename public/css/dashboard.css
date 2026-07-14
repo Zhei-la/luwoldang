@@ -475,16 +475,33 @@ a.lead-row:hover { background:#fdfbf6; }
 }
 
 /* 묶어서 보내기 */
+.bundle-start {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 15px; margin-bottom: 10px;
+  border: 1px solid #E9E0CF; background: #fff; border-radius: 9px;
+  font-size: 13px; font-weight: 600; color: #6b6656; cursor: pointer;
+}
+.bundle-start:hover { border-color: #B59A62; color: #8a6f3c; }
+
+/* 선택 모드일 때만 보이는 바 */
 .bundle-bar {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding: 11px 14px; margin-bottom: 8px;
+  display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 11px 14px; margin-bottom: 10px;
   background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 10px;
 }
-.bundle-all { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+body.bundling .bundle-bar { display: flex; }
+body.bundling .bundle-start { display: none; }
+
+.bundle-all { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .bundle-all input { width: 16px; height: 16px; accent-color: #B59A62; }
-.bundle-cnt { font-size: 12.5px; color: #8a8577; margin-left: auto; }
-.bundle-bar .btn { padding: 8px 16px; }
-.bd-check { display: flex; align-items: center; padding-right: 12px; }
-.bd-check input { width: 17px; height: 17px; accent-color: #B59A62; cursor: pointer; }
-.tbl-row { display: flex; align-items: center; }
+.bundle-cnt { font-size: 12.5px; color: #8a8577; margin-left: auto; white-space: nowrap; }
+.bundle-bar .btn { padding: 8px 15px; }
+
+/* 체크박스 — 평소엔 숨김, 선택 모드에서만 */
+.bd-check { display: none; align-items: center; padding-right: 12px; flex: 0 0 auto; }
+body.bundling .bd-check { display: flex; }
+.bd-check input { width: 18px; height: 18px; accent-color: #B59A62; cursor: pointer; }
+
+/* ⚠️ .tbl-row 에 display:flex 를 새로 주면 안 된다. 원래 레이아웃이 깨진다. */
+.tbl-row .tbl-main { min-width: 0; }
 
