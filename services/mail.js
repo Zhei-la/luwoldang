@@ -116,7 +116,7 @@ async function sendMail(teacher, opts) {
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
-function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
+function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl, shareUrl }) {
   const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
     .map((x) => `<p style="margin:0 0 10px;line-height:1.8;font-size:14.5px;color:#3f3b33">${esc(x)}</p>`).join('');
 
@@ -166,6 +166,22 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
     ? `<a href="${esc(teacher.kakao_consult_link)}" style="display:inline-block;padding:14px 26px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">${esc(teacher.button_text || '카카오톡으로 상담받기')}</a>`
     : `<a href="${esc(baseUrl)}/s/${esc(teacher.slug)}#lp-form" style="display:inline-block;padding:14px 26px;background:#182234;color:#fff;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">상담 신청하기</a>`;
 
+  /* PDF 다운받기 — 무료사주 리포트는 메일로만 받게 한다 */
+  const pdfBtn = shareUrl ? `
+    <tr><td style="padding:6px 24px 22px" align="center">
+      <a href="${esc(shareUrl)}/report.pdf" style="display:block;padding:17px;background:#B59A62;color:#fff;
+         font-weight:800;font-size:16px;text-decoration:none;border-radius:10px;text-align:center">
+        PDF 리포트 다운받기
+      </a>
+      <a href="${esc(shareUrl)}" style="display:block;margin-top:9px;padding:14px;background:#182234;color:#fff;
+         font-weight:700;font-size:14px;text-decoration:none;border-radius:10px;text-align:center">
+        웹에서 바로 읽기
+      </a>
+      <p style="margin:10px 0 0;font-size:12px;color:#8a8574;line-height:1.6">
+        만세력 해설 · 사주로 보는 나는? · 각 운세 전체 풀이가 담겨 있습니다.
+      </p>
+    </td></tr>` : '';
+
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F7F3EA">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F3EA;padding:24px 12px">
 <tr><td align="center">
@@ -179,6 +195,7 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
   </td></tr>
 
   ${chart}
+  ${pdfBtn}
   ${sec('01', '만세력 기본 정보', result.manse)}
   ${sec('02', '타고난 성향', result.personality)}
   ${sec('03', '올해 운세', result.year, result.yearOutro)}
@@ -209,8 +226,8 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
 </table></td></tr></table></body></html>`;
 }
 
-async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl }) {
-  const html = buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl });
+async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl, shareUrl }) {
+  const html = buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl, shareUrl });
   return sendMail(teacher, {
     to,
     subject: `${input.name}님의 무료 사주 풀이가 도착했습니다.`,

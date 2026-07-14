@@ -117,6 +117,9 @@ async function initDb() {
   // ⚠️ ALTER 는 반드시 CREATE 뒤에 (앞에 두면 새 DB에서 relation does not exist 로 서버가 안 뜸)
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS mail_sent BOOLEAN DEFAULT FALSE;`);
   await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS lead_id INTEGER;`);
+  // 무료사주 PDF 공개 링크 (아이디만 바꿔서 남의 사주를 보는 걸 막는다)
+  await pool.query(`ALTER TABLE free_logs ADD COLUMN IF NOT EXISTS share_token TEXT;`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_free_share ON free_logs(share_token) WHERE share_token IS NOT NULL;`);
 
   // 내담자 추가질문 (리포트별 채팅방)
   await pool.query(`

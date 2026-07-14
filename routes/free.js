@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
@@ -6,6 +7,7 @@ const { generateFreeSaju, UPSELL } = require('../services/ai');
 const { renderLanding, defaultLanding } = require('../services/landing');
 const { sendFreeSaju } = require('../services/mail');
 const { buildFreePdfHtml } = require('../services/freePdf');
+const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 
 async function findTeacher(slug) {
   const { rows } = await pool.query(
@@ -169,17 +171,21 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     );
     const leadId = lead.rows[0].id;
 
+    const token = crypto.randomBytes(16).toString('hex');
     const log = await pool.query(
-      'INSERT INTO free_logs (teacher_id, lead_id, input, result) VALUES ($1, $2, $3, $4) RETURNING id',
-      [teacher.id, leadId, JSON.stringify(client), JSON.stringify(result)]
+      `INSERT INTO free_logs (teacher_id, lead_id, input, result, share_token)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [teacher.id, leadId, JSON.stringify(client), JSON.stringify(result), token]
     );
 
     // 이메일 발송 (실패해도 화면은 정상 표시)
+    const base = process.env.BASE_URL || '';
     let mailSent = false;
     try {
       await sendFreeSaju({
         to: email, teacher, saju, result, input: client,
-        upsell: UPSELL, baseUrl: process.env.BASE_URL || '',
+        upsell: UPSELL, baseUrl: base,
+        shareUrl: `${base}/fr/${token}`,
       });
       mailSent = true;
       await pool.query('UPDATE free_logs SET mail_sent = TRUE WHERE id = $1', [log.rows[0].id]);
@@ -269,5 +275,87 @@ router.get('/free/:logId/pdf', async (req, res, next) => {
     next(e);
   }
 });
+
+/* ===== 무료사주 PDF — 토큰 링크 (메일로만 나간다) =====
+   아이디만 바꿔서 남의 사주를 보는 걸 막으려고 토큰을 쓴다.
+   주소가 .pdf 로 끝나야 인앱 브라우저에서 확장자가 붙는다. */
+async function loadFree(token) {
+  const { rows } = await pool.query(
+    `SELECT f.input, f.result, u.*
+     FROM free_logs f JOIN users u ON u.id = f.teacher_id
+     WHERE f.share_token = $1`,
+    [token]
+  );
+  const row = rows[0];
+  if (!row) return null;
+
+  const client = row.input || {};
+  let saju = null;
+  try {
+    saju = calcSaju({
+      birthDate: client.birthDate,
+      birthTime: client.birthTime || null,
+      calendar: client.calendar === '윤달' ? '음력' : (client.calendar || '양력'),
+      isLeapMonth: client.calendar === '윤달',
+      region: client.region || '서울특별시',
+      gender: client.gender,
+    });
+  } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
+
+  const html = buildFreePdfHtml({
+    teacher: row, client, saju,
+    result: row.result || {},
+    baseUrl: process.env.BASE_URL || '',
+  });
+  return { row, client, html };
+}
+
+/* 웹에서 읽기 */
+router.get('/fr/:token', async (req, res, next) => {
+  try {
+    const r = await loadFree(req.params.token);
+    if (!r) return res.status(404).send('링크가 만료되었거나 잘못된 주소입니다.');
+
+    const bar = `
+<style>
+  .fb{position:fixed;top:0;left:0;right:0;z-index:999;background:#232220;color:#fff;padding:11px 14px;
+    display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
+    font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif;font-size:13px}
+  .fb a{padding:11px 24px;border-radius:7px;background:#c8a45c;color:#241a06;
+    font-weight:800;font-size:14px;text-decoration:none;min-height:44px;
+    display:inline-flex;align-items:center}
+  body{padding-top:66px}
+  @media(max-width:760px){ .fb a{flex:1 1 100%;justify-content:center} body{padding-top:112px} }
+  @media print{ body{padding-top:0} .fb{display:none} }
+</style>
+<div class="fb no-print">
+  <span>${String(r.client.name || '').replace(/[<>&]/g, '')}님의 무료 사주</span>
+  <a href="/fr/${req.params.token}/report.pdf">PDF 다운받기</a>
+</div>`;
+
+    res
+      .set('Content-Type', 'text/html; charset=utf-8')
+      .set('X-Robots-Tag', 'noindex, nofollow')
+      .send(r.html.replace('<body>', '<body>' + bar));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/* PDF 파일로 받기 */
+async function downloadFree(req, res) {
+  try {
+    const r = await loadFree(req.params.token);
+    if (!r) return res.status(404).send('링크가 만료되었거나 잘못된 주소입니다.');
+
+    const buf = await htmlToPdf(r.html);
+    sendPdf(res, buf, r.client.name, '무료사주');
+  } catch (e) {
+    console.error('[PDF] 무료사주 파일 생성 실패:', e.message);
+    res.status(302).redirect(`/fr/${req.params.token}`);
+  }
+}
+router.get('/fr/:token/report.pdf', downloadFree);
+router.get('/fr/:token/download', downloadFree);   // 예전 링크 호환
 
 module.exports = router;
