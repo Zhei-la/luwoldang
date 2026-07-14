@@ -8,6 +8,7 @@ const { sendPdfReport, buildPdfHtml, sendFreeSaju } = require('../services/mail'
 const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
+const { ensureToken } = require('./share');
 
 const FREE = '무료사주';
 
@@ -212,6 +213,8 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
         baseUrl: process.env.BASE_URL || '',
       });
     } else {
+      const token = await ensureToken(pdf.id);
+      const base = process.env.BASE_URL || '';
       await sendPdfReport({
         to,
         teacher: req.user,
@@ -219,7 +222,8 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
         sections: pdf.sections,
         saju,
         input: { name: pdf.name },
-        baseUrl: process.env.BASE_URL || '',
+        baseUrl: base,
+        shareUrl: `${base}/r/${token}`,
       });
     }
 
@@ -304,16 +308,23 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
         baseUrl: process.env.BASE_URL || '',
       });
       const bar = `
-<div class="no-print" style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:12px;align-items:center;
-     justify-content:center;padding:11px;background:#232220;color:#fff;font-family:Pretendard,sans-serif;font-size:13px">
-  <a href="/leads/${pdf.lead_id}" style="color:#c8a45c;text-decoration:none">← 돌아가기</a>
+<style>
+  .fv-bar{position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:10px;align-items:center;
+    justify-content:center;flex-wrap:wrap;padding:11px 12px;background:#232220;color:#fff;
+    font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif;font-size:13px}
+  .fv-bar a{color:#c8a45c;text-decoration:none}
+  .fv-bar button{padding:9px 18px;border:0;border-radius:6px;background:#c8a45c;color:#241a06;
+    font-weight:800;font-size:13.5px;cursor:pointer;min-height:40px}
+  body{padding-top:50px}
+  @media (max-width:760px){ .fv-bar .tip{display:none} .fv-bar button{flex:1 1 100%} body{padding-top:96px} }
+  @media print{ body{padding-top:0} .fv-bar{display:none} }
+</style>
+<div class="fv-bar no-print">
+  <a href="/leads/${pdf.lead_id}">← 돌아가기</a>
   <span>${esc(pdf.name)}님 · 무료사주</span>
-  <span style="opacity:.6">인쇄창에서 여백 <b>없음</b> · 배경 그래픽 <b>체크</b></span>
-  <button onclick="window.print()" style="padding:7px 16px;border:0;border-radius:5px;background:#c8a45c;color:#241a06;font-weight:800;cursor:pointer">
-    PDF로 저장
-  </button>
-</div>
-<div class="no-print" style="height:44px"></div>`;
+  <span class="tip" style="opacity:.6">여백 <b>없음</b> · 배경 그래픽 <b>체크</b></span>
+  <button onclick="window.print()">PDF로 저장</button>
+</div>`;
       return res
         .set('Content-Type', 'text/html; charset=utf-8')
         .send(html.replace('<body>', '<body>' + bar));
@@ -344,16 +355,35 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   </div>
 </div>
 <style>
-  .pv-bar{position:sticky;top:0;z-index:99;display:flex;align-items:center;gap:14px;padding:12px 18px;background:#182234;color:#e8e3d6;font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif;font-size:14px}
+  /* ⚠️ sticky 로 두면 본문(A4 794px)을 따라가서 모바일에선 버튼이 화면 밖으로 나간다.
+     fixed 로 화면에 고정해야 폰에서도 눌린다. */
+  .pv-bar{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;
+    gap:14px;padding:12px 18px;background:#182234;color:#e8e3d6;
+    font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif;font-size:14px;
+    flex-wrap:wrap;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+  body{padding-top:58px}                      /* 고정 바 자리 */
   .pv-back{color:#b3ad9c;text-decoration:none}
   .pv-back:hover{color:#B59A62}
-  .pv-title{flex:1;font-weight:600}
+  .pv-title{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pv-title em{font-style:normal;color:#B59A62;font-size:12px;margin-left:6px}
-  .pv-actions{display:flex;gap:8px}
+  .pv-actions{display:flex;gap:8px;flex-wrap:wrap}
   .pv-actions button{padding:8px 16px;border:1px solid #B59A62;background:transparent;color:#e8e3d6;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
   .pv-actions button:hover{background:rgba(181,154,98,.2)}
   .pv-actions button.send{background:#B59A62;color:#241a06;font-weight:700}
   .pv-actions button:disabled{opacity:.5}
+
+  /* 모바일 — 버튼을 한 줄로 펴서 손가락으로 누를 수 있게 */
+  @media (max-width: 760px) {
+    .pv-bar{padding:10px 12px;gap:8px;font-size:13px}
+    body{padding-top:104px}
+    .pv-title{flex:1 1 auto;font-size:13px}
+    .pv-back{order:-1}
+    .pv-actions{flex:1 1 100%;gap:6px}
+    .pv-actions button{flex:1;padding:11px 6px;font-size:12.5px;min-height:42px}
+  }
+
+  /* 인쇄할 땐 위 여백 제거 */
+  @media print { body{padding-top:0} .pv-bar{display:none} }
 
   /* 수정 모드 */
   body.editing .ch-block p,
@@ -680,3 +710,4 @@ router.get('/records', async (req, res, next) => {
 });
 
 module.exports = router;
+
