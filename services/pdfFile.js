@@ -104,18 +104,22 @@ async function htmlToPdf(html) {
       .catch(() => { /* 리플로우가 없는 문서도 있으니 그냥 진행 */ });
     await new Promise((r) => setTimeout(r, 300));
 
-    const buf = await page.pdf({
+    const out = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
       preferCSSPageSize: true,
     });
 
-    // 진짜 PDF 인지 확인 (앞 4바이트가 %PDF)
-    if (!buf || buf.length < 1000 || buf.slice(0, 4).toString() !== '%PDF') {
-      throw new Error('PDF 생성 결과가 올바르지 않습니다.');
+    // ⚠️ puppeteer 23 부터 page.pdf() 는 Buffer 가 아니라 Uint8Array 를 준다.
+    //    Uint8Array 에 .toString() 을 쓰면 "37,80,68,70" 같은 숫자 나열이 나온다.
+    //    반드시 Buffer 로 감싼 다음에 검사해야 한다.
+    const buf = Buffer.from(out);
+
+    if (buf.length < 1000 || buf.subarray(0, 4).toString('latin1') !== '%PDF') {
+      throw new Error(`PDF 생성 결과가 올바르지 않습니다. (${buf.length} bytes)`);
     }
-    return Buffer.from(buf);
+    return buf;
   } finally {
     await page.close().catch(() => {});
   }
