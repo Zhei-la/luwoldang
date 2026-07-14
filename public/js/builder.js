@@ -23,6 +23,7 @@ const DEFS = {
   button:   { name:'버튼',           ico:'▭', make:()=>({ text:'상담 신청하기', action:'form', href:'' }) },
   form:     { name:'신청 폼',        ico:'▤', make:()=>({
                 title:'상담 신청',
+                kakaoAlt:'',
                 products:['정밀 풀이 (29,800원)','기본 풀이 (9,900원)'],
                 use:{gender:true,name:true,birth:true,cal:true,hour:true,region:true,phone:true,email:true,product:true,memo:true},
                 agree:'수집항목: 이름, 생년월일, 연락처 · 수집목적: 상담 제공 · 보유기간: 상담 완료 후 1년',
@@ -456,7 +457,12 @@ function paintInspector(){
             .map(([k,l])=>`<label class="sw"><input type="checkbox" data-use="${k}" ${b.use[k]?'checked':''}>${l}</label>`).join('')
         + `<div class="sec">상품</div>` + strListEditor(b,'products','상품명 (가격 포함)')
         + `<div class="sec">문구</div>` + T('submit','버튼 문구') + A('agree','개인정보 동의문') + A('done','완료 문구')
-        + `<div class="fld"><div class="hint">신청이 들어오면 <b>신청 내역</b> 메뉴에서 바로 확인할 수 있습니다.</div></div>`;
+        + `<div class="fld"><label>번호 남기기 싫은 분을 위한 카톡 링크</label>
+             <input type="text" data-k="kakaoAlt" value="${esc(b.kakaoAlt)}" placeholder="https://open.kakao.com/o/...">
+             <div class="hint">연락처 칸 아래에 <b>"번호를 남기기 어려우시면 카카오톡으로 문의해주세요"</b> 안내가 뜹니다.
+             비워두면 안 나옵니다.</div></div>`
+        + `<div class="fld"><div class="hint">신청이 들어오면 <b>신청 내역</b> 메뉴에서 바로 확인할 수 있습니다.<br>
+             연락처와 이메일은 <b>둘 다 필수</b>입니다. 복채 안내는 문자로, 리포트는 메일로 갑니다.</div></div>`;
       break;
   }
   inspector.innerHTML = h;

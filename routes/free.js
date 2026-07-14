@@ -81,7 +81,16 @@ router.post('/s/:slug/apply', async (req, res, next) => {
     if (!teacher) return res.status(404).json({ ok: false });
 
     const b = req.body || {};
-    if (!b.name || !b.phone) return res.status(400).json({ ok: false, error: '필수 항목 누락' });
+    // 폼에서 required 를 지우고 보내는 경우도 있으니 서버에서 다시 막는다
+    if (!b.name || !b.phone || !b.email) {
+      return res.status(400).json({ ok: false, error: '이름 · 연락처 · 이메일은 필수입니다.' });
+    }
+    if (!/^01[016789][-.]?\d{3,4}[-.]?\d{4}$/.test(String(b.phone).trim())) {
+      return res.status(400).json({ ok: false, error: '연락처 형식을 확인해주세요.' });
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(b.email).trim())) {
+      return res.status(400).json({ ok: false, error: '이메일 형식을 확인해주세요.' });
+    }
 
     const birth = [b.year, b.month, b.day].filter(Boolean).join('-');
     await pool.query(
@@ -113,11 +122,11 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     const teacher = await findTeacher(req.params.slug);
     if (!teacher) return res.status(404).render('free/notfound');
 
-    const { name, gender, birthDate, birthTime, calendar, region, timeUnknown, email, agree } = req.body;
+    const { name, gender, birthDate, birthTime, calendar, region, timeUnknown, email, phone, agree } = req.body;
 
-    if (!name || !birthDate || !email || !agree) {
+    if (!name || !birthDate || !email || !phone || !agree) {
       return res.status(400).render('free/input', {
-        teacher, error: '이름, 생년월일, 이메일, 개인정보 수집 동의는 필수입니다.', form: req.body,
+        teacher, error: '이름, 생년월일, 이메일, 연락처, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
       });
     }
 
@@ -129,7 +138,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     }
 
     const client = {
-      name, gender, birthDate, email,
+      name, gender, birthDate, email, phone,
       birthTime: timeUnknown ? null : (birthTime || null),
       calendar: calendar || '양력',
       region: region || '서울특별시',
@@ -164,10 +173,10 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     // 무료사주 본 사람도 신청자 목록에 기록 (source = 무료사주)
     const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'무료사주 발송','무료사주') RETURNING id`,
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, status, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'무료사주 발송','무료사주') RETURNING id`,
       [teacher.id, client.name, client.gender, client.birthDate, client.calendar,
-       client.birthTime || null, client.region, client.email]
+       client.birthTime || null, client.region, client.email, client.phone]
     );
     const leadId = lead.rows[0].id;
 

@@ -196,7 +196,10 @@ img{max-width:100%;display:block}
 .fm .seg input{display:none}
 .fm .seg label:has(input:checked){border-color:var(--ac);color:var(--ac);font-weight:700}
 .fm .g3{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:7px}
-.fm .tip{font-size:11px;color:var(--sb);margin-top:7px;line-height:1.55}
+.fm .tip{font-size:11px;color:var(--sb);margin-top:7px;line-height:1.6}
+.fm .tip b{color:var(--tx)}
+.fm .tip.alt{margin-top:6px;padding:8px 10px;border-radius:var(--rd);background:rgba(254,229,0,.14);border:1px solid rgba(254,229,0,.4)}
+.fm .tip.alt a{color:var(--ac);font-weight:700;text-decoration:underline}
 .fm .ag{display:flex;gap:9px;align-items:flex-start;font-size:11.5px;color:var(--sb);line-height:1.6}
 .fm .ag input{width:16px;height:16px;flex:none;margin-top:2px;accent-color:var(--ac)}
 .fm .sub{width:100%;padding:17px;border:0;border-radius:var(--rd);background:var(--ac);color:var(--btx);font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
@@ -414,8 +417,17 @@ function renderBlock(b, ctx) {
         <div class="tip">가족관계증명서·아기수첩의 <b>출생 시각 그대로</b> 넣어주세요.<br>
         밤 11시 30분 이후 출생은 사주에서 <b>다음 날</b>로 넘어갑니다. 분 단위까지 정확해야 풀이가 맞습니다.</div></div>`;
       if (u.region) f += `<div class="g"><span class="lb">태어난 지역</span><select name="region">${REGIONS.map((r) => `<option${r === '서울특별시' ? ' selected' : ''}>${r}</option>`).join('')}</select></div>`;
-      if (u.phone) f += `<div class="g"><span class="lb">연락처<i>*</i></span><input name="phone" inputmode="numeric" placeholder="010-0000-0000" required></div>`;
-      if (u.email) f += `<div class="g"><span class="lb">이메일</span><input name="email" type="email" placeholder="example@naver.com"></div>`;
+      if (u.phone) f += `<div class="g"><span class="lb">연락처<i>*</i></span>
+        <input name="phone" type="tel" inputmode="numeric" placeholder="010-0000-0000"
+               pattern="01[016789][-.]?[0-9]{3,4}[-.]?[0-9]{4}" required>
+        <div class="tip"><b>복채 안내를 문자로 보내드립니다.</b> 연락처가 없으면 안내가 어렵습니다.</div>
+        ${b.kakaoAlt ? `<div class="tip alt">번호를 남기기 어려우시면
+          <a href="${esc(b.kakaoAlt)}" target="_blank" rel="noopener">카카오톡으로 문의</a>해주세요.
+          카톡으로도 안내받으실 수 있습니다.</div>` : ''}
+        </div>`;
+      if (u.email) f += `<div class="g"><span class="lb">이메일<i>*</i></span>
+        <input name="email" type="email" placeholder="example@naver.com" required>
+        <div class="tip">완성된 <b>PDF 사주 리포트</b>를 이 메일로 보내드립니다.</div></div>`;
       if (u.product) f += `<div class="g"><span class="lb">상품<i>*</i></span><select name="product" required><option value="">선택해주세요</option>${(b.products || []).map((p) => `<option>${esc(p)}</option>`).join('')}</select></div>`;
       if (u.memo) f += `<div class="g"><span class="lb">묻고 싶은 것</span><textarea name="memo" placeholder="가장 궁금한 한 가지를 적어주세요"></textarea></div>`;
       f += `<div class="g"><label class="ag"><input type="checkbox" required><span><b>개인정보 수집 및 이용 동의</b><br>${esc(b.agree)}</span></label></div>`;

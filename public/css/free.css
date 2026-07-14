@@ -299,3 +299,11 @@ table.chart th.rowh.sub { font-size:10.5px; color:#b3ad9c; }
   background: #B59A62; color: #fff; text-decoration: none;
   font-size: 15px; font-weight: 800;
 }
+
+/* 필수 표시 */
+.fl .req {
+  display: inline-block; margin-left: 5px; padding: 2px 6px;
+  font-size: 10.5px; font-style: normal; font-weight: 700;
+  color: #b0392c; background: #fdf0ee; border: 1px solid #f0d6d1;
+  border-radius: 4px; vertical-align: 1px;
+}

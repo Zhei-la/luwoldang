@@ -33,8 +33,8 @@ const TYPE = '무료사주';
  * 무료는 챕터가 짧아서 그러면 페이지 절반이 빈다.
  * → 남은 줄이 충분하면 다음 챕터를 같은 페이지에 이어 붙인다. (보통 2개/장)
  */
-const LINES_PER_PAGE = 27.5; // A4 31줄 - 각주 자리 3.5줄
-const CHARS_PER_LINE = 42;   // word-break:keep-all 이라 일찍 줄이 바뀐다
+const LINES_PER_PAGE = 26.5; // 본문 폰트 상향 반영 (30줄 - 각주 3.5줄)
+const CHARS_PER_LINE = 40;   // 글자가 커져서 한 줄 글자 수도 줄었다
 const LINES_HEAD = 5;        // 챕터 제목 + 구분선
 const LINES_GAP = 2;         // 같은 페이지에서 챕터 사이 여백
 
@@ -99,8 +99,12 @@ function renderFlow(chapters) {
   return flowPages(chapters).map((items) => {
     // 이 페이지에 나온 용어만 맨 아래 각주로
     const pageText = items.filter((x) => x.t === 'p').map((x) => x.text).join(' ');
+    /* ⚠️ data-ch 를 달면 pdfDoc 의 리플로우가 이 페이지를 건드린다.
+       무료 PDF 는 제목(ch-head)과 본문(ch-block)이 형제라서, 리플로우가 본문만
+       앞 장으로 끌어올려 제목만 덩그러니 남는다. 여기선 자체 배치기(flowPages)를 쓰므로
+       data-ch 를 달지 않는다. */
     return `
-<section class="page sheet chapter" data-ch="free">
+<section class="page sheet chapter">
   ${items.map((it) => it.t === 'head' ? `
   <div class="ch-head"${it.second ? ' style="margin-top:26px;padding-top:22px;border-top:1px solid #e6dfd0"' : ''}>
     <span class="ch-no">${it.no}</span>
