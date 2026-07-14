@@ -105,16 +105,16 @@
     <div class="empty-box">아직 제작한 리포트가 없습니다.</div>
   <% } else { %>
     <% if (pdfs.length > 1) { %>
+      <button type="button" class="bundle-start" id="bdStart">☑ 묶어서 보내기</button>
+
       <div class="bundle-bar">
         <label class="bundle-all">
           <input type="checkbox" id="bdAll"> 전체 선택
         </label>
         <span class="bundle-cnt" id="bdCnt">0개 선택</span>
-        <button class="btn btn-approve" id="bdSend" disabled>묶어서 보내기</button>
+        <button type="button" class="btn btn-ghost" id="bdCancel">취소</button>
+        <button type="button" class="btn btn-approve" id="bdSend" disabled>한 통에 보내기</button>
       </div>
-      <p class="block-desc" style="margin:-4px 0 12px">
-        여러 리포트를 <b>메일 한 통</b>에 담아 보냅니다. 내담자는 각각 PDF로 받을 수 있습니다.
-      </p>
     <% } %>
 
     <div class="tbl">
@@ -238,7 +238,9 @@
   var all = document.getElementById('bdAll');
   var btn = document.getElementById('bdSend');
   var cnt = document.getElementById('bdCnt');
-  if (!btn) return;
+  var start = document.getElementById('bdStart');
+  var cancel = document.getElementById('bdCancel');
+  if (!btn || !start) return;
 
   var EMAIL = <%- JSON.stringify(lead.email || '') %>;
   var LEAD_ID = <%= lead.id %>;
@@ -252,6 +254,15 @@
     btn.disabled = n < 1;
     all.checked = n > 0 && n === items().length;
   }
+
+  start.addEventListener('click', function(){
+    document.body.classList.add('bundling');
+  });
+  cancel.addEventListener('click', function(){
+    document.body.classList.remove('bundling');
+    items().forEach(function(x){ x.checked = false; });
+    sync();
+  });
 
   all.addEventListener('change', function(){
     items().forEach(function(x){ x.checked = all.checked; });
