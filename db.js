@@ -79,6 +79,8 @@ async function initDb() {
   // 개인정보 자동 폐기 (발송 완료 후 3일 → 연락처·이메일 마스킹)
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS masked_at TIMESTAMPTZ;`);
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;`);
+  // 이메일 말고 카톡 등으로 직접 전달한 경우를 구분한다
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS delivered_by TEXT;`);
 
   // 제작한 PDF (내담자별)
   await pool.query(`

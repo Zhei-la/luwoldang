@@ -22,8 +22,15 @@
     <% } %>
   </div>
 <% } else { %>
-  <div class="tbl">
+  <div class="lead-bar">
+    <button type="button" class="lead-edit-btn" id="ldEdit">편집</button>
+    <button type="button" class="lead-edit-btn done" id="ldDone">완료</button>
+    <span class="lead-hint">목록을 <b>길게 누르면</b> 바로 편집으로 들어갑니다.</span>
+  </div>
+
+  <div class="tbl" id="leadList">
     <% leads.forEach(function(l){ %>
+      <div class="lead-wrap" id="lead-<%= l.id %>">
       <a class="tbl-row lead-row" href="/leads/<%= l.id %>">
         <div class="tbl-main">
           <div class="u-name">
@@ -51,6 +58,9 @@
           <% if (l.mail_sent) { %>
             <span class="badge-sent">✓ 발송완료</span>
             <span class="lead-time"><%= l.pdf_type %></span>
+          <% } else if (l.delivered_at) { %>
+            <span class="badge-sent hand">✓ <%= l.delivered_by || '직접 전달' %></span>
+            <span class="lead-time"><%= fmt(l.delivered_at) %></span>
           <% } else if (l.pdf_id) { %>
             <span class="badge-made">PDF 제작됨</span>
             <span class="lead-time">미발송</span>
@@ -62,8 +72,120 @@
           <span class="lead-time"><%= fmt(l.created_at) %></span>
         </div>
       </a>
+
+      <div class="lead-tools">
+        <button type="button" class="lt-deliver <%= l.delivered_at ? 'on' : '' %>"
+                data-deliver="<%= l.id %>" data-on="<%= l.delivered_at ? '1' : '' %>">
+          <%= l.delivered_at ? '전달 취소' : '직접 전달 완료' %>
+        </button>
+        <button type="button" class="lt-del" data-del="<%= l.id %>" data-name="<%= l.name %>">삭제</button>
+      </div>
+      </div>
     <% }); %>
   </div>
 <% } %>
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+(function(){
+  var list = document.getElementById('leadList');
+  if (!list) return;
+
+  var edit = document.getElementById('ldEdit');
+  var done = document.getElementById('ldDone');
+
+  function setMode(on){ document.body.classList.toggle('lead-editing', on); }
+  edit.onclick = function(){ setMode(true); };
+  done.onclick = function(){ setMode(false); };
+
+  /* 길게 누르면 편집 모드 (모바일) */
+  var timer = null, moved = false;
+  list.addEventListener('touchstart', function(){
+    if (document.body.classList.contains('lead-editing')) return;
+    moved = false;
+    timer = setTimeout(function(){
+      if (moved) return;
+      setMode(true);
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 500);
+  }, { passive: true });
+  list.addEventListener('touchmove', function(){ moved = true; clearTimeout(timer); }, { passive: true });
+  list.addEventListener('touchend', function(){ clearTimeout(timer); });
+
+  /* PC 는 우클릭으로도 */
+  list.addEventListener('contextmenu', function(e){
+    if (document.body.classList.contains('lead-editing')) return;
+    e.preventDefault();
+    setMode(true);
+  });
+
+  /* 편집 중엔 상세로 안 들어가게 */
+  list.addEventListener('click', function(e){
+    if (!document.body.classList.contains('lead-editing')) return;
+    if (e.target.closest('.lead-row')) e.preventDefault();
+  });
+
+  function toast(msg, bad){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = bad ? '#c0392b' : '#2f9e5e';
+    t.classList.add('on');
+    setTimeout(function(){ t.classList.remove('on'); }, 1900);
+  }
+
+  /* 직접 전달 완료 */
+  document.querySelectorAll('[data-deliver]').forEach(function(btn){
+    btn.onclick = async function(){
+      var id = btn.dataset.deliver;
+      var isOn = btn.dataset.on === '1';
+      var by = '';
+
+      if (!isOn) {
+        by = prompt('어떻게 전달하셨나요?', '카카오톡');
+        if (by === null) return;
+      } else if (!confirm('전달 완료 표시를 지울까요?')) return;
+
+      btn.disabled = true;
+      try {
+        var r = await fetch('/api/leads/' + id + '/delivered', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delivered: !isOn, by: (by || '직접 전달').trim() })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        toast(d.delivered ? (d.by + ' 전달 완료로 표시했습니다') : '전달 표시를 지웠습니다');
+        setTimeout(function(){ location.reload(); }, 700);
+      } catch (e) {
+        toast('실패: ' + e.message, true);
+        btn.disabled = false;
+      }
+    };
+  });
+
+  /* 삭제 */
+  document.querySelectorAll('[data-del]').forEach(function(btn){
+    btn.onclick = async function(){
+      var id = btn.dataset.del, name = btn.dataset.name;
+      if (!confirm(name + '님을 지울까요?\n\n제작된 리포트도 함께 지워집니다. 되돌릴 수 없습니다.')) return;
+
+      btn.disabled = true;
+      try {
+        var r = await fetch('/api/leads/' + id + '/delete', { method: 'POST' });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        var el = document.getElementById('lead-' + id);
+        if (el) el.remove();
+        toast(name + '님을 지웠습니다');
+      } catch (e) {
+        toast('삭제 실패: ' + e.message, true);
+        btn.disabled = false;
+      }
+    };
+  });
+})();
+</script>
 
 <%- include('../partials/dash-bottom') %>

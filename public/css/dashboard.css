@@ -542,3 +542,42 @@ body.bundling .bd-check { display: flex; }
 }
 .rv-actions { display: flex; justify-content: flex-end; }
 .rv-actions .btn { padding: 6px 12px; font-size: 12px; }
+
+/* ===== 신청자 편집 모드 ===== */
+.lead-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.lead-edit-btn {
+  padding: 8px 16px; border: 1px solid #E9E0CF; background: #fff;
+  border-radius: 8px; font-size: 13px; font-weight: 600; color: #6b6656; cursor: pointer;
+}
+.lead-edit-btn:hover { border-color: #B59A62; color: #8a6f3c; }
+.lead-edit-btn.done { display: none; background: #B59A62; border-color: #B59A62; color: #fff; }
+body.lead-editing .lead-edit-btn { display: none; }
+body.lead-editing .lead-edit-btn.done { display: inline-block; }
+.lead-hint { font-size: 12px; color: #a49c8b; }
+body.lead-editing .lead-hint { display: none; }
+
+.lead-wrap { position: relative; }
+.lead-tools {
+  display: none; gap: 6px; justify-content: flex-end;
+  padding: 0 4px 10px;
+}
+body.lead-editing .lead-tools { display: flex; }
+body.lead-editing .lead-row {
+  border-color: #E0D8C6; background: #FBF8F1; cursor: default;
+}
+.lt-deliver, .lt-del {
+  padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
+  cursor: pointer; border: 1px solid; background: #fff;
+}
+.lt-deliver { border-color: #B59A62; color: #8a6f3c; }
+.lt-deliver:hover { background: #B59A62; color: #fff; }
+.lt-deliver.on { background: #FBF8F1; color: #a49c8b; border-color: #E0D8C6; }
+.lt-del { border-color: #e0c4c0; color: #b0392c; }
+.lt-del:hover { background: #b0392c; color: #fff; }
+.lt-deliver:disabled, .lt-del:disabled { opacity: .5; }
+
+/* 카톡 등 직접 전달 뱃지 */
+.badge-sent.hand { background: #eaf3ff; color: #2f6bb0; border-color: #cfe1f7; }

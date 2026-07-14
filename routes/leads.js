@@ -33,17 +33,20 @@ router.get('/leads', async (req, res, next) => {
     );
 
     let leads = rows;
+    // 이메일 발송이든, 카톡으로 직접 전달했든 '전달 완료'로 본다
+    const done = (r) => r.mail_sent || r.delivered_at;
+
     if (filter === '상담신청') leads = rows.filter((r) => r.source !== '무료사주');
     else if (filter === '무료사주') leads = rows.filter((r) => r.source === '무료사주');
-    else if (filter === '미발송') leads = rows.filter((r) => !r.mail_sent);
-    else if (filter === '발송완료') leads = rows.filter((r) => r.mail_sent);
+    else if (filter === '미발송') leads = rows.filter((r) => !done(r));
+    else if (filter === '발송완료') leads = rows.filter((r) => done(r));
 
     const counts = {
       all: rows.length,
       상담신청: rows.filter((r) => r.source !== '무료사주').length,
       무료사주: rows.filter((r) => r.source === '무료사주').length,
-      미발송: rows.filter((r) => !r.mail_sent).length,
-      발송완료: rows.filter((r) => r.mail_sent).length,
+      미발송: rows.filter((r) => !done(r)).length,
+      발송완료: rows.filter((r) => done(r)).length,
     };
 
     res.render('dash/leads', { user: req.user, active: 'leads', leads, filter, counts });
@@ -913,6 +916,45 @@ router.post('/pdfs/:id/rewrite', async (req, res) => {
   } catch (e) {
     console.error('[PDF] 다시쓰기 실패:', e.message);
     res.status(500).json({ ok: false, error: e.message || '다시 쓰지 못했습니다.' });
+  }
+});
+
+/* ===== 신청자 삭제 ===== */
+router.post('/api/leads/:id/delete', async (req, res) => {
+  try {
+    // 리포트가 있으면 같이 지운다 (없는 리포트를 참조하는 껍데기가 남지 않게)
+    await pool.query('DELETE FROM pdfs WHERE lead_id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]);
+    const { rowCount } = await pool.query('DELETE FROM leads WHERE id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]);
+    if (!rowCount) return res.status(404).json({ ok: false, error: '신청자를 찾을 수 없습니다.' });
+
+    console.log('[신청자] 삭제:', req.params.id);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[신청자] 삭제 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ===== 전달 완료 표시 (이메일 말고 카톡 등으로 직접 보낸 경우) ===== */
+router.post('/api/leads/:id/delivered', async (req, res) => {
+  try {
+    const on = req.body.delivered !== false;
+    const by = String(req.body.by || '직접 전달').slice(0, 20);
+
+    const { rows } = await pool.query(
+      `UPDATE leads
+       SET delivered_at = $1, delivered_by = $2
+       WHERE id = $3 AND teacher_id = $4
+       RETURNING delivered_at, delivered_by`,
+      [on ? new Date() : null, on ? by : null, req.params.id, req.user.id]
+    );
+    if (!rows[0]) return res.status(404).json({ ok: false, error: '신청자를 찾을 수 없습니다.' });
+
+    res.json({ ok: true, delivered: !!rows[0].delivered_at, by: rows[0].delivered_by });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
