@@ -225,7 +225,7 @@ module.exports = { sendFreeSaju, buildFreeSajuHtml, mailReady, sendMail, fromAdd
 /* ============================================================
  * 유료 PDF 리포트 이메일 발송
  * ============================================================ */
-function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl }) {
+function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl }) {
   const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
     .map((x) => `<p style="margin:0 0 11px;line-height:1.85;font-size:14.5px;color:#3f3b33">${esc(x)}</p>`).join('');
 
@@ -285,12 +285,84 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl }) {
     </td></tr>
     ${dw}` : '';
 
-  const body = (sections || []).map((s, i) => `
-    <tr><td style="padding:0 24px 26px">
-      <h3 style="margin:0 0 10px;font-size:17px;color:#252522;border-left:3px solid #B59A62;padding-left:11px">
-        <span style="color:#B59A62;font-size:12px;margin-right:6px">${String(i + 1).padStart(2, '0')}</span>${esc(s.title)}</h3>
-      ${P(s.body)}
-    </td></tr>`).join('');
+  /* ── 오행 분포 막대 (메일 클라이언트는 SVG를 자주 지우므로 표+배경색으로 그린다) ── */
+  const EL_LABEL = { 목: '목 (木)', 화: '화 (火)', 토: '토 (土)', 금: '금 (金)', 수: '수 (水)' };
+  const elBars = (saju && saju.elements) ? (() => {
+    const e = saju.elements;
+    const total = Object.values(e).reduce((a, b) => a + b, 0) || 1;
+    const rows = Object.keys(EL_LABEL).map((k) => {
+      const n = e[k] || 0;
+      const pct = Math.round((n / total) * 100);
+      const c = EL_COLOR[k];
+      return `
+      <tr>
+        <td style="padding:5px 8px 5px 0;font-size:12.5px;color:${c};font-weight:700;white-space:nowrap;width:62px">${EL_LABEL[k]}</td>
+        <td style="padding:5px 0">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+            <tr>
+              <td width="${Math.max(pct, 1)}%" style="height:14px;background:${c};border-radius:7px 0 0 7px;font-size:0;line-height:0">&nbsp;</td>
+              <td style="height:14px;background:#EFE9DC;border-radius:0 7px 7px 0;font-size:0;line-height:0">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+        <td style="padding:5px 0 5px 9px;font-size:12px;color:#8a8574;width:56px;text-align:right;white-space:nowrap">${n}개 · ${pct}%</td>
+      </tr>`;
+    }).join('');
+
+    const zero = Object.keys(EL_LABEL).filter((k) => !e[k]);
+    const note = zero.length
+      ? `<p style="margin:10px 0 0;font-size:12px;color:#8a8574;line-height:1.6">
+           ${zero.map((k) => `<b style="color:${EL_COLOR[k]}">${k}</b>`).join(' · ')} 기운이 원국에 없습니다.
+           비어 있는 기운은 리포트에서 자세히 다룹니다.</p>`
+      : '';
+
+    return `
+    <tr><td style="padding:0 24px 22px">
+      <p style="margin:0 0 10px;font-size:13px;color:#182234;font-weight:700">오행 분포</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #E9E0CF;border-radius:8px;background:#fff;padding:6px">
+        <tr><td style="padding:10px 12px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows}</table>
+          ${note}
+        </td></tr>
+      </table>
+    </td></tr>`;
+  })() : '';
+
+  /* ── 요약: 첫 챕터의 앞부분만 (전문은 링크에서) ── */
+  const firstBody = (() => {
+    const ch = (sections || [])[0];
+    if (!ch) return '';
+    if (Array.isArray(ch.blocks)) {
+      return (ch.blocks[0] && ch.blocks[0].body) || '';
+    }
+    return ch.body || '';
+  })();
+  const lead2 = String(firstBody).split(/\n{2,}|\n/).filter(Boolean).slice(0, 2).join('\n\n');
+
+  const summary = lead2 ? `
+    <tr><td style="padding:0 24px 24px">
+      <p style="margin:0 0 10px;font-size:13px;color:#182234;font-weight:700">리포트 미리보기</p>
+      <div style="border:1px solid #E9E0CF;border-radius:8px;background:#fff;padding:16px 16px 8px">
+        ${P(lead2)}
+        <p style="margin:6px 0 0;font-size:12.5px;color:#8a8574">
+          이어지는 내용은 아래 버튼에서 전부 확인하실 수 있습니다.
+        </p>
+      </div>
+    </td></tr>` : '';
+
+  /* ── 리포트 전체 보기 (로그인 없이 열리는 링크 · PDF 저장 가능) ── */
+  const reportBtn = shareUrl ? `
+    <tr><td style="padding:0 24px 26px" align="center">
+      <a href="${esc(shareUrl)}" style="display:block;padding:17px;background:#182234;color:#fff;
+         font-weight:800;font-size:16px;text-decoration:none;border-radius:10px;text-align:center">
+        사주 리포트 전체 보기
+      </a>
+      <p style="margin:10px 0 0;font-size:12px;color:#8a8574;line-height:1.6">
+        링크를 열고 <b>PDF로 저장</b>을 누르면 파일로 보관하실 수 있습니다.
+      </p>
+    </td></tr>` : '';
+
+  const body = elBars + summary + reportBtn;
 
   const consultBtn = teacher.kakao_consult_link
     ? `<a href="${esc(teacher.kakao_consult_link)}" style="display:inline-block;padding:14px 26px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">${esc(teacher.button_text || '카카오톡으로 문의하기')}</a>`
@@ -316,8 +388,8 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl }) {
 </table></td></tr></table></body></html>`;
 }
 
-async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl }) {
-  const html = buildPdfHtml({ teacher, type, sections, saju, input, baseUrl });
+async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl, shareUrl }) {
+  const html = buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl });
   return sendMail(teacher, {
     to,
     subject: `${input.name}님의 ${type} 사주 리포트가 도착했습니다.`,
@@ -327,3 +399,4 @@ async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl
 
 module.exports.sendPdfReport = sendPdfReport;
 module.exports.buildPdfHtml = buildPdfHtml;
+
