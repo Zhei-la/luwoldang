@@ -205,7 +205,6 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl }) {
   </td></tr>
 
   <tr><td style="padding:16px;background:#fbf7ee;text-align:center;border-top:1px solid #E9E0CF">
-    <p style="margin:0;font-size:11px;color:#b3ad9c">본 사주 풀이는 참고용 콘텐츠입니다.</p>
   </td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -353,13 +352,14 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
   /* ── 리포트 전체 보기 (로그인 없이 열리는 링크 · PDF 저장 가능) ── */
   const reportBtn = shareUrl ? `
     <tr><td style="padding:0 24px 26px" align="center">
-      <a href="${esc(shareUrl)}" style="display:block;padding:17px;background:#182234;color:#fff;
+      <a href="${esc(shareUrl)}/download" style="display:block;padding:17px;background:#B59A62;color:#fff;
          font-weight:800;font-size:16px;text-decoration:none;border-radius:10px;text-align:center">
-        사주 리포트 전체 보기
+        PDF 다운받기
       </a>
-      <p style="margin:10px 0 0;font-size:12px;color:#8a8574;line-height:1.6">
-        링크를 열고 <b>PDF로 저장</b>을 누르면 파일로 보관하실 수 있습니다.
-      </p>
+      <a href="${esc(shareUrl)}" style="display:block;margin-top:9px;padding:14px;background:#182234;color:#fff;
+         font-weight:700;font-size:14px;text-decoration:none;border-radius:10px;text-align:center">
+        웹에서 바로 읽기
+      </a>
     </td></tr>` : '';
 
   const body = elBars + summary + reportBtn;
@@ -383,7 +383,6 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
     ${consultBtn}
   </td></tr>
   <tr><td style="padding:16px;background:#fbf7ee;text-align:center;border-top:1px solid #E9E0CF">
-    <p style="margin:0;font-size:11px;color:#b3ad9c">본 사주 풀이는 참고용 콘텐츠이며, 의학적·법률적 조언을 대신하지 않습니다.</p>
   </td></tr>
 </table></td></tr></table></body></html>`;
 }
