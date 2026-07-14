@@ -421,26 +421,41 @@ ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}
  * PDF 리포트 전체 생성 (챕터별 순차 호출)
  * @param onProgress (done, total, title) => void
  */
+const CONCURRENCY = 3;   // 동시에 굴릴 챕터 수 (올릴수록 빠르지만 OpenAI 레이트리밋에 걸린다)
+
 async function generatePdfReport({ type, client, saju, openaiKey, model, onProgress }) {
   // 내담자가 질문을 남겼으면 '질문 답변' 챕터를 마지막 조언 앞에 끼워 넣는다
   const chapters = outlineWithQuestion(type, client.question);
-  const out = [];
+  const out = new Array(chapters.length);
 
-  for (let i = 0; i < chapters.length; i++) {
-    const ch = chapters[i];
-    if (onProgress) onProgress(i, chapters.length, ch.title);
+  let cursor = 0;
+  let done = 0;
 
-    try {
-      const r = await generateChapter({
-        type, chapter: ch, index: i, total: chapters.length,
-        client, saju, openaiKey, model,
-      });
-      out.push(r);
-    } catch (e) {
-      console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패:`, e.message);
-      out.push({ title: ch.title, blocks: [], error: e.message });
+  // 순차로 하나씩 돌리면 16챕터 × 30초 = 8분. 동시에 여러 개 굴린다.
+  async function worker() {
+    for (;;) {
+      const i = cursor++;
+      if (i >= chapters.length) return;
+      const ch = chapters[i];
+
+      try {
+        out[i] = await generateChapter({
+          type, chapter: ch, index: i, total: chapters.length,
+          client, saju, openaiKey, model,
+        });
+      } catch (e) {
+        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패:`, e.message);
+        out[i] = { title: ch.title, blocks: [], error: e.message };
+      }
+
+      done++;
+      if (onProgress) onProgress(done, chapters.length, ch.title);
     }
   }
+
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, chapters.length) }, worker)
+  );
 
   if (onProgress) onProgress(chapters.length, chapters.length, '완료');
   return out;
@@ -539,3 +554,4 @@ ${reportContext(sections).slice(0, 6000)}
 
 module.exports.answerFollowUp = answerFollowUp;
 module.exports.reportContext = reportContext;
+
