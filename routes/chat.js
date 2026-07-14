@@ -6,7 +6,10 @@ const { calcSaju } = require('../services/manseryeok');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { answerFollowUp } = require('../services/ai');
 
-router.use(requireAuth, requireApproved);
+// ⚠️ router.use() 로 걸면 이 라우터를 스쳐가는 '모든' 요청에 로그인 검사가 붙는다.
+// (접두사 없이 마운트돼 있어서 공개 링크까지 /pending 으로 튕겼다)
+// 라우트마다 개별로 건다.
+const AUTH = [requireAuth, requireApproved];
 
 /** 채팅방 = 내가 만든 리포트 하나 */
 async function roomList(teacherId) {
@@ -28,7 +31,7 @@ async function roomList(teacherId) {
 }
 
 /* ===== 화면 ===== */
-router.get('/chat', async (req, res, next) => {
+router.get('/chat', AUTH, async (req, res, next) => {
   try {
     const rooms = await roomList(req.user.id);
     const pdfId = Number(req.query.pdf) || (rooms[0] ? rooms[0].id : null);
@@ -61,7 +64,7 @@ router.get('/chat', async (req, res, next) => {
 });
 
 /* ===== 질문 → 답변 ===== */
-router.post('/api/chat/:pdfId/ask', async (req, res) => {
+router.post('/api/chat/:pdfId/ask', AUTH, async (req, res) => {
   try {
     const question = String(req.body.question || '').trim();
     if (!question) return res.status(400).json({ error: '질문을 입력해주세요.' });
@@ -126,7 +129,7 @@ router.post('/api/chat/:pdfId/ask', async (req, res) => {
 });
 
 /* ===== 문답 삭제 ===== */
-router.post('/api/chat/:pdfId/delete/:qaId', async (req, res) => {
+router.post('/api/chat/:pdfId/delete/:qaId', AUTH, async (req, res) => {
   try {
     await pool.query('DELETE FROM chat_qa WHERE id = $1 AND teacher_id = $2',
       [req.params.qaId, req.user.id]);
@@ -137,3 +140,4 @@ router.post('/api/chat/:pdfId/delete/:qaId', async (req, res) => {
 });
 
 module.exports = router;
+
