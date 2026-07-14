@@ -33,8 +33,8 @@ const TYPE = '무료사주';
  * 무료는 챕터가 짧아서 그러면 페이지 절반이 빈다.
  * → 남은 줄이 충분하면 다음 챕터를 같은 페이지에 이어 붙인다. (보통 2개/장)
  */
-const LINES_PER_PAGE = 26.5; // 본문 폰트 상향 반영 (30줄 - 각주 3.5줄)
-const CHARS_PER_LINE = 40;   // 글자가 커져서 한 줄 글자 수도 줄었다
+const LINES_PER_PAGE = 24.5; // 본문 16.6px 기준 (28줄 - 각주 3.5줄)
+const CHARS_PER_LINE = 36;   // 글자가 커져서 한 줄 글자 수도 줄었다
 const LINES_HEAD = 5;        // 챕터 제목 + 구분선
 const LINES_GAP = 2;         // 같은 페이지에서 챕터 사이 여백
 

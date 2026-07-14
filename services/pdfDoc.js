@@ -341,10 +341,10 @@ function sajuPages({ client, saju, type }) {
 
 /* 실측값 기준 (한 줄 = 14.2px × 2.05 = 29.1px = 7.70mm)
  * 예전에는 여백을 전부 '1줄'로 올려 세서 페이지가 25%씩 비었다. 소수점으로 정확히 센다. */
-/* 본문 15.1px × 2.0 = 30.2px = 8.0mm.
- * 241mm ÷ 8.0mm = 30줄. 각주 자리 3.5줄 빼면 26.5줄. */
-const LINES_PER_PAGE = 26.5;
-const CHARS_PER_LINE = 40;      // 글자가 커졌으니 한 줄에 들어가는 글자도 줄어든다
+/* 본문 16.6px × 1.95 = 32.4px = 8.57mm.
+ * 241mm ÷ 8.57mm = 28줄. 각주 자리 3.5줄 빼면 24.5줄. */
+const LINES_PER_PAGE = 24.5;
+const CHARS_PER_LINE = 36;      // 170mm ÷ (16.6px = 4.4mm) = 38자. 여유 두고 36.
 const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
 const LINES_SUB = 1.3;          // 소제목(16.5px) + margin 13px
 const LINES_PARA_GAP = 0.45;    // 문단 margin-bottom 12px = 3.17mm
@@ -761,14 +761,14 @@ body {
 
 /* 목차 */
 .toc-list { list-style: none; margin-top: 10px; }
-.toc-list li { display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px dotted #e2d9c5; font-size: 15.9px; }
+.toc-list li { display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px dotted #e2d9c5; font-size: 17.5px; }
 .toc-list li:last-child { border-bottom: none; }
 /* 항목이 많을 때 — 줄 간격을 줄여서 한 장에 담는다 */
-.toc-compact .toc-list li { padding: 6.5px 0; font-size: 14.3px; gap: 10px; }
+.toc-compact .toc-list li { padding: 6px 0; font-size: 15.7px; gap: 10px; }
 .toc-compact .toc-list { margin-top: 4px; }
 
 /* 사주 용어 풀이 */
-.gl-lead { font-size: 14.3px; line-height: 1.85; color: #6b6656; margin: 4px 0 20px; }
+.gl-lead { font-size: 15.7px; line-height: 1.85; color: #6b6656; margin: 4px 0 20px; }
 .gl-group { margin-bottom: 17px; page-break-inside: avoid; break-inside: avoid; }
 .gl-h {
   font-family: 'Nanum Myeongjo', serif; font-size: 14.5px; font-weight: 800;
@@ -779,10 +779,10 @@ body {
 .gl-tbl tr:last-child { border-bottom: none; }
 .gl-k {
   width: 124px; padding: 6px 10px 6px 10px; vertical-align: top;
-  font-family: 'Nanum Myeongjo', serif; font-size: 13.6px; font-weight: 700; color: #8a6f3c;
+  font-family: 'Nanum Myeongjo', serif; font-size: 14.9px; font-weight: 700; color: #8a6f3c;
   white-space: nowrap;
 }
-.gl-v { padding: 6px 0; font-size: 13.4px; line-height: 1.7; color: #4a473e; }
+.gl-v { padding: 6px 0; font-size: 14.7px; line-height: 1.7; color: #4a473e; }
 
 /* 오행 오각형 (상생·상극) */
 .ew-wrap { margin: 16px 0 14px; text-align: center; }
@@ -815,7 +815,7 @@ body {
   border-top: 1px dotted #ddd3bd;
 }
 .fn-i {
-  font-size: 10.8px; line-height: 1.55; color: #8f8a7c;
+  font-size: 11.9px; line-height: 1.55; color: #8f8a7c;
   margin-bottom: 2px; word-break: keep-all;
 }
 .fn-i:last-child { margin-bottom: 0; }
@@ -876,14 +876,14 @@ body {
 
 /* 소제목 — 혼자 페이지 끝에 남지 않게 (제목만 남고 본문 넘어가는 것 방지) */
 .ch-sub {
-  font-family: 'Nanum Myeongjo', serif; font-size: 17.5px; font-weight: 700;
+  font-family: 'Nanum Myeongjo', serif; font-size: 19.3px; font-weight: 700;
   color: #1f2a3d; margin: 0 0 13px; padding-left: 11px; border-left: 3px solid #b59a62;
   page-break-after: avoid; break-after: avoid;
   page-break-inside: avoid; break-inside: avoid;
 }
 
 .ch-block p {
-  font-size: 15.1px; line-height: 2.0; color: #3a3831;
+  font-size: 16.6px; line-height: 1.95; color: #3a3831;
   margin-bottom: 12px; text-align: justify; word-break: keep-all;
   /* 문단이 페이지 경계에서 한두 줄만 남지 않게 */
   orphans: 3; widows: 3;
