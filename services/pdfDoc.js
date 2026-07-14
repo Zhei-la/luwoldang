@@ -284,19 +284,8 @@ function sajuPages({ client, saju, type }) {
   <h2 class="pg-title">오행 · 대운</h2>
   <div class="pg-line"></div>
 
-  <h3 class="ms-h">오행 분포</h3>
-  <table class="ms-el-tbl">
-    <tr>${['목', '화', '토', '금', '수'].map((k) => `<th style="color:${EL_COLOR[k]}">${k}</th>`).join('')}</tr>
-    <tr>
-      ${['목', '화', '토', '금', '수'].map((k) =>
-        `<td><b style="color:${EL_COLOR[k]}">${saju.elements[k]}</b>
-         <i>${Math.round((saju.elements[k] / total) * 100)}%</i></td>`).join('')}
-    </tr>
-  </table>
-  ${wheel.length ? `
-    <p class="ms-wheel">
-      ${wheel.map((w) => `<span style="color:${EL_COLOR[w.el]}">${w.el}(${w.group}) ${w.pct}%</span>`).join(' · ')}
-    </p>` : ''}
+  ${elementWheelSvg(wheel, saju.dayMasterKo, saju.dayMasterElement)}
+
   <p class="ms-sum">
     강한 기운 <b>${esc(saju.strong.join(', '))}</b> · 부족한 기운 <b>${esc(saju.weak.join(', '))}</b>
   </p>
@@ -415,6 +404,88 @@ function paginateChapter(ch) {
 
   if (cur.blocks.length) pages.push(cur);
   return pages.length ? pages : [{ isFirst: true, blocks: [] }];
+}
+
+/* ── 오행 오각형 (상생·상극 다이어그램) ──
+ * 대시보드 미리보기(element-wheel.ejs)와 같은 그림을 PDF 에도 그린다.
+ * 일간이 12시 방향, 시계방향으로 상생 순서. 원 안의 물 높이 = 그 기운의 비율.
+ */
+const EL_FILL = { 목: '#7fd0e8', 화: '#f5a9b8', 토: '#f5cb6b', 금: '#d8dade', 수: '#a9aec4' };
+const EL_LINE = { 목: '#2e8b57', 화: '#cf4038', 토: '#b8860b', 금: '#6b7684', 수: '#2f6bb0' };
+
+function elementWheelSvg(wheel, dayMasterKo, dayMasterElement) {
+  if (!wheel || !wheel.length) return '';
+
+  const CX = 200, CY = 190, R = 128, NR = 46;
+  const pts = wheel.map((w, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;   // 12시부터 시계방향
+    return { x: CX + R * Math.cos(a), y: CY + R * Math.sin(a), w };
+  });
+
+  // 노드 가장자리에서 멈추는 화살표
+  const edge = (from, to, pad) => {
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    return {
+      x1: from.x + ux * (NR + 4), y1: from.y + uy * (NR + 4),
+      x2: to.x - ux * (NR + pad), y2: to.y - uy * (NR + pad),
+    };
+  };
+
+  const ke = [0, 1, 2, 3, 4].map((i) => {
+    const e = edge(pts[i], pts[(i + 2) % 5], 6);   // 극 — 두 칸 건너 (별 모양)
+    return `<line x1="${e.x1.toFixed(1)}" y1="${e.y1.toFixed(1)}" x2="${e.x2.toFixed(1)}" y2="${e.y2.toFixed(1)}"
+      stroke="#e05b52" stroke-width="1.6" marker-end="url(#ah-k)" opacity=".85"/>`;
+  }).join('');
+
+  const sheng = [0, 1, 2, 3, 4].map((i) => {
+    const e = edge(pts[i], pts[(i + 1) % 5], 6);   // 생 — 한 칸씩 (바깥 원)
+    return `<line x1="${e.x1.toFixed(1)}" y1="${e.y1.toFixed(1)}" x2="${e.x2.toFixed(1)}" y2="${e.y2.toFixed(1)}"
+      stroke="#4a90d9" stroke-width="2" marker-end="url(#ah-s)"/>`;
+  }).join('');
+
+  const clips = pts.map((p, i) => {
+    const fillY = p.y + NR - (NR * 2 * (p.w.pct / 100));
+    return `<clipPath id="ewclip${i}"><rect x="${(p.x - NR).toFixed(1)}" y="${fillY.toFixed(1)}"
+      width="${NR * 2}" height="${NR * 2}"/></clipPath>`;
+  }).join('');
+
+  const nodes = pts.map((p, i) => {
+    const w = p.w;
+    const on = w.pct > 0;
+    return `
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${NR}" fill="#fff"/>
+    ${on ? `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${NR}"
+       fill="${EL_FILL[w.el]}" clip-path="url(#ewclip${i})"/>` : ''}
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${NR}" fill="none"
+       stroke="${on ? EL_LINE[w.el] : '#dcd6c8'}" stroke-width="${on ? 1.4 : 1}" opacity="${on ? 0.55 : 1}"/>
+    <text x="${p.x.toFixed(1)}" y="${(p.y - 6).toFixed(1)}" text-anchor="middle" class="ew-name">${esc(w.el)}(${esc(w.group)})</text>
+    <text x="${p.x.toFixed(1)}" y="${(p.y + 15).toFixed(1)}" text-anchor="middle" class="ew-pct">${w.pct}%</text>`;
+  }).join('');
+
+  return `
+  <div class="ew-wrap">
+    <div class="ew-title">나의 오행: <b>${esc(dayMasterKo || '')}${esc(dayMasterElement || '')}</b></div>
+    <div class="ew-legend">
+      <span><i class="ln-sheng"></i>생(生)</span>
+      <span><i class="ln-ke"></i>극(剋)</span>
+    </div>
+    <svg viewBox="0 0 400 390" class="ew-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#4a90d9"/>
+        </marker>
+        <marker id="ah-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#e05b52"/>
+        </marker>
+        ${clips}
+      </defs>
+      ${ke}
+      ${sheng}
+      ${nodes}
+    </svg>
+  </div>`;
 }
 
 /* ── 페이지 각주 ──
@@ -699,6 +770,28 @@ body {
   white-space: nowrap;
 }
 .gl-v { padding: 6px 0; font-size: 12.6px; line-height: 1.7; color: #4a473e; }
+
+/* 오행 오각형 (상생·상극) */
+.ew-wrap { margin: 16px 0 14px; text-align: center; }
+.ew-title { font-size: 14px; color: #1f2a3d; font-weight: 700; margin-bottom: 7px; }
+.ew-title b { color: #b59a62; }
+.ew-legend {
+  display: flex; gap: 16px; justify-content: center;
+  font-size: 11.5px; color: #8a8574; margin-bottom: 6px;
+}
+.ew-legend span { display: flex; align-items: center; gap: 5px; }
+.ew-legend i { width: 17px; height: 2px; display: inline-block; }
+.ew-legend i.ln-sheng { background: #4a90d9; }
+.ew-legend i.ln-ke { background: #e05b52; }
+.ew-svg { width: 100%; max-width: 400px; height: auto; display: block; margin: 0 auto; }
+.ew-name {
+  font-family: Pretendard, -apple-system, sans-serif;
+  font-size: 13px; font-weight: 700; fill: #2c2a25;
+}
+.ew-pct {
+  font-family: Pretendard, -apple-system, sans-serif;
+  font-size: 14px; font-weight: 800; fill: #1f2a3d;
+}
 
 /* 페이지 하단 용어 각주 */
 .page { position: relative; }
