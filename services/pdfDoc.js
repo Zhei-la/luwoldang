@@ -84,22 +84,121 @@ function coverPage({ type, client, teacher, baseUrl }) {
 }
 
 /* ── 2. 목차 ── */
+/* ── 사주 용어 풀이 ──
+ * 십성·12운성·지장간 같은 말이 설명 없이 나오면 내담자가 못 읽는다.
+ * 만세력 표 뒤, 본문 앞에 한 장 넣는다. */
+const GLOSSARY = [
+  {
+    h: '오행 (五行)',
+    items: [
+      ['목 (木)', '뻗어나가는 기운. 시작·성장·기획. 나무가 위로 자라는 모습.'],
+      ['화 (火)', '퍼지는 기운. 표현·열정·확산. 사람을 끌어당기는 힘.'],
+      ['토 (土)', '머무는 기운. 중심·안정·신뢰. 무엇이든 받아 담는 자리.'],
+      ['금 (金)', '거두는 기운. 결단·정리·원칙. 단단하게 마무리하는 힘.'],
+      ['수 (水)', '흐르는 기운. 지혜·유연함·저장. 상황을 읽고 돌아가는 힘.'],
+    ],
+  },
+  {
+    h: '십성 (十星) — 나와 다른 기운의 관계',
+    items: [
+      ['비견 · 겁재', '나와 같은 기운. 자립심과 경쟁심. 동료이자 라이벌.'],
+      ['식신 · 상관', '내가 내보내는 기운. 표현력·재능·창의. 말과 일로 드러나는 나.'],
+      ['편재 · 정재', '내가 다스리는 기운. 재물·현실감각·결과. 손에 쥐는 것들.'],
+      ['편관 · 정관', '나를 누르는 기운. 책임·직장·규율. 나를 다듬는 압박.'],
+      ['편인 · 정인', '나를 돕는 기운. 배움·보호·인정. 뒤에서 받쳐주는 힘.'],
+    ],
+  },
+  {
+    h: '원국을 읽는 말들',
+    items: [
+      ['천간 (天干)', '겉으로 드러나는 기운. 남들이 보는 나의 모습.'],
+      ['지지 (地支)', '바탕에 깔린 기운. 실제로 살아가는 환경과 현실.'],
+      ['지장간 (支藏干)', '지지 속에 숨어 있는 천간. 겉으론 안 보이지만 작동하는 기운.'],
+      ['일간 (日干)', '나 자신을 나타내는 글자. 사주 전체를 읽는 기준점.'],
+      ['12운성', '기운의 생애 단계. 장생(태어남)에서 제왕(정점)을 지나 묘(쉼)까지.'],
+    ],
+  },
+  {
+    h: '흐름을 읽는 말들',
+    items: [
+      ['대운 (大運)', '10년마다 바뀌는 큰 흐름. 인생의 계절이 바뀌는 구간.'],
+      ['세운 (歲運)', '한 해의 운. 올해 어떤 기운이 들어오는지.'],
+      ['용신 (用神)', '내 사주의 균형을 잡아주는 기운. 도움이 되는 방향.'],
+      ['기신 (忌神)', '균형을 깨뜨리는 기운. 조심해야 할 방향.'],
+    ],
+  },
+];
+
+function glossaryPage() {
+  return `
+<section class="page sheet chapter chapter-start">
+  <div class="ch-head">
+    <span class="ch-no">※</span>
+    <h2 class="ch-title">사주 용어 풀이</h2>
+  </div>
+  <div class="pg-line"></div>
+  <p class="gl-lead">리포트를 읽다가 낯선 말이 나오면 이 장으로 돌아오세요.<br>
+  용어를 알고 읽으면 같은 문장도 훨씬 또렷하게 들어옵니다.</p>
+  ${GLOSSARY.map((g) => `
+  <div class="gl-group">
+    <h3 class="gl-h">${esc(g.h)}</h3>
+    <table class="gl-tbl">
+      ${g.items.map(([k, v]) => `
+      <tr>
+        <td class="gl-k">${esc(k)}</td>
+        <td class="gl-v">${esc(v)}</td>
+      </tr>`).join('')}
+    </table>
+  </div>`).join('')}
+</section>`;
+}
+
+/* 목차 — 항목이 많으면 촘촘하게, 아주 많으면 두 장으로 나눈다.
+ * (예전엔 전부 한 장에 밀어넣어서 마지막 항목이 구분선 밖으로 튀어나갔다) */
+const TOC_ROWS_NORMAL = 14;   // 이보다 많으면 촘촘히
+const TOC_ROWS_MAX = 24;      // 이보다 많으면 두 장
+
 function tocPage(chapters, type) {
   const isNewYear = type === '신년운세';
-  return `
-<section class="page sheet toc">
-  <h2 class="pg-title">목 차</h2>
-  <div class="pg-line"></div>
-  <ol class="toc-list">
-    <li class="toc-fixed"><span>만세력 · 사주 원국</span></li>
-    <li class="toc-fixed"><span>오행 · 대운</span></li>
-    ${isNewYear ? `<li class="toc-fixed"><span>올해 운의 흐름 (세운 · 월운)</span></li>` : ''}
-    ${chapters.map((c, i) => `
+
+  const fixed = [
+    '만세력 · 사주 원국',
+    '오행 · 대운',
+    ...(isNewYear ? ['올해 운의 흐름 (세운 · 월운)'] : []),
+    '사주 용어 풀이',
+  ];
+
+  const rows = [
+    ...fixed.map((t) => `<li class="toc-fixed"><span>${esc(t)}</span></li>`),
+    ...chapters.map((c, i) => `
       <li>
         <span class="toc-no">${String(i + 1).padStart(2, '0')}</span>
         <span class="toc-name">${esc(c.title)}</span>
-      </li>`).join('')}
-  </ol>
+      </li>`),
+  ];
+
+  const total = rows.length;
+  const compact = total > TOC_ROWS_NORMAL ? ' toc-compact' : '';
+
+  // 한 장에 담기 벅차면 반으로 쪼갠다
+  if (total > TOC_ROWS_MAX) {
+    const half = Math.ceil(total / 2);
+    return `
+<section class="page sheet toc${compact}">
+  <h2 class="pg-title">목 차</h2>
+  <div class="pg-line"></div>
+  <ol class="toc-list">${rows.slice(0, half).join('')}</ol>
+</section>
+<section class="page sheet toc${compact}">
+  <ol class="toc-list" style="margin-top:0">${rows.slice(half).join('')}</ol>
+</section>`;
+  }
+
+  return `
+<section class="page sheet toc${compact}">
+  <h2 class="pg-title">목 차</h2>
+  <div class="pg-line"></div>
+  <ol class="toc-list">${rows.join('')}</ol>
 </section>`;
 }
 
@@ -241,11 +340,15 @@ function sajuPages({ client, saju, type }) {
  *   본문 한 줄 ≈ 7.7mm → 페이지당 약 32줄
  * ── */
 
-const LINES_PER_PAGE = 31;      // 페이지당 줄 수 (251mm ÷ 7.7mm = 32, 여유 1줄)
-const CHARS_PER_LINE = 45;      // 한 줄 글자 수 (170mm ÷ 3.76mm)
+/* 실측값 기준 (한 줄 = 14.2px × 2.05 = 29.1px = 7.70mm)
+ * 예전에는 여백을 전부 '1줄'로 올려 세서 페이지가 25%씩 비었다. 소수점으로 정확히 센다. */
+const LINES_PER_PAGE = 31;      // 241mm ÷ 7.70mm
+const CHARS_PER_LINE = 42;      // word-break:keep-all 이라 45자보다 일찍 줄이 바뀐다
 const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
-const LINES_SUB = 3;            // 소제목 + 여백
-const LINES_PARA_GAP = 1;       // 문단 사이 여백
+const LINES_SUB = 1.3;          // 소제목(16.5px) + margin 13px
+const LINES_PARA_GAP = 0.45;    // 문단 margin-bottom 12px = 3.17mm
+const LINES_BLOCK_GAP = 1.05;   // .ch-block margin-bottom 30px = 7.94mm
+const OVERFLOW_TOLERANCE = 0.6; // 0.6줄까지는 넘쳐도 한 장에 붙인다 (한 줄만 넘어가는 꼴 방지)
 
 /** 문단이 차지하는 줄 수 */
 function paraLines(text) {
@@ -274,8 +377,9 @@ function paginateChapter(ch) {
     let need = b.sub ? LINES_SUB : 0;
 
     // 소제목 + 첫 문단이 이 페이지에 안 들어가면 → 새 페이지에서 시작
+    if (used > 0) used += LINES_BLOCK_GAP;   // 블록 사이 여백
     const firstNeed = need + (paras[0] ? paraLines(paras[0]) : 0);
-    if (used > 0 && used + firstNeed > LINES_PER_PAGE) {
+    if (used > 0 && used + firstNeed > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
       pushPage();
     }
     used += need;
@@ -283,8 +387,8 @@ function paginateChapter(ch) {
     paras.forEach((p) => {
       const n = paraLines(p);
 
-      // 이 문단이 안 들어가면 페이지를 넘긴다
-      if (used + n > LINES_PER_PAGE) {
+      // 이 문단이 안 들어가면 페이지를 넘긴다 (아슬아슬하면 그냥 붙인다)
+      if (used + n > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
         if (block.paras.length || block.sub) {
           cur.blocks.push(block);
           block = { sub: '', paras: [] };   // 이어지는 페이지엔 소제목 반복 안 함
@@ -511,6 +615,26 @@ body {
 .toc-list { list-style: none; margin-top: 10px; }
 .toc-list li { display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px dotted #e2d9c5; font-size: 15px; }
 .toc-list li:last-child { border-bottom: none; }
+/* 항목이 많을 때 — 줄 간격을 줄여서 한 장에 담는다 */
+.toc-compact .toc-list li { padding: 6.5px 0; font-size: 13.5px; gap: 10px; }
+.toc-compact .toc-list { margin-top: 4px; }
+
+/* 사주 용어 풀이 */
+.gl-lead { font-size: 13.5px; line-height: 1.85; color: #6b6656; margin: 4px 0 20px; }
+.gl-group { margin-bottom: 17px; page-break-inside: avoid; break-inside: avoid; }
+.gl-h {
+  font-family: 'Nanum Myeongjo', serif; font-size: 14.5px; font-weight: 800;
+  color: #1f2a3d; margin: 0 0 8px; padding-left: 9px; border-left: 3px solid #b59a62;
+}
+.gl-tbl { width: 100%; border-collapse: collapse; }
+.gl-tbl tr { border-bottom: 1px dotted #e6ddc8; }
+.gl-tbl tr:last-child { border-bottom: none; }
+.gl-k {
+  width: 118px; padding: 6px 10px 6px 10px; vertical-align: top;
+  font-family: 'Nanum Myeongjo', serif; font-size: 12.8px; font-weight: 700; color: #8a6f3c;
+  white-space: nowrap;
+}
+.gl-v { padding: 6px 0; font-size: 12.6px; line-height: 1.7; color: #4a473e; }
 .toc-fixed { color: #a08a5c; font-weight: 700; font-family: 'Nanum Myeongjo', serif; }
 .toc-no { font-family: 'Nanum Myeongjo', serif; font-weight: 700; color: #b59a62; min-width: 26px; }
 .toc-name { flex: 1; }
@@ -793,6 +917,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl }) {
 ${coverPage({ type, client, teacher, baseUrl })}
 ${tocPage(chapters, type)}
 ${sajuPages({ client, saju, type })}
+${glossaryPage()}
 ${chapterPages(chapters, client.question)}
 ${endPage({ teacher })}
 </body>
@@ -807,5 +932,6 @@ function buildCSS(baseUrl) {
 module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
-  coverPage, tocPage, sajuPages, chapterPages, endPage, esc,
+  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage,
 };
+
