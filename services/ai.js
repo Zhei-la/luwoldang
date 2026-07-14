@@ -1,6 +1,12 @@
 // 무료사주 AI 생성 (교육생 OpenAI 키 사용)
 const { fieldBlock } = require('./sajuFields');
 
+/* 쓰는 모델
+ * gpt-4o-mini 는 문체 지시(끊지 말고 이어 써라)를 거의 못 따른다.
+ * 리포트가 상품이므로 gpt-4o 를 쓴다. 리포트 한 편에 300~500원 수준.
+ * 환경변수 AI_MODEL 로 바꿀 수 있다. */
+const MODEL = process.env.AI_MODEL || 'gpt-4o';
+
 /* ============================================================
  * 문체 규칙 — 무료사주와 유료 리포트가 같이 쓴다.
  * (한쪽만 고치면 결이 갈라진다)
@@ -287,7 +293,7 @@ ${year}년 기준으로 올해 운세를 써주세요.`;
       Authorization: `Bearer ${openaiKey}`,
     },
     body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
+      model: model || MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
@@ -493,7 +499,7 @@ async function callAI({ system, user, openaiKey, model, maxTokens }) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
     body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
+      model: model || MODEL,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
@@ -651,29 +657,45 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     if (issues.length) problems.push(`- "${b.sub}": ${issues.join(', ')}`);
   });
 
-  if (problems.length) {
-    console.log(`[문체] ${chapter.title} — ${problems.length}개 블록 재작성`);
+  /* 통과할 때까지 다시 쓴다 (최대 2회).
+     예전에는 한 번 고치고 끝이라, 고친 글이 또 끊겨도 그대로 저장됐다. */
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const probs = [];
+    blocks.forEach((b) => {
+      const issues = checkStyle(b.body || '', client.name);
+      if (issues.length) probs.push(`- "${b.sub}": ${issues.join(', ')}`);
+    });
+    if (!probs.length) break;
+
+    console.log(`[문체] ${chapter.title} — ${probs.length}개 블록 재작성 (${attempt}차)`);
+
     try {
       const fix = await callAI({
         system: PDF_SYSTEM,
         user: `${user}
 
-⚠️ 방금 작성한 글에서 아래 문제가 발견됐습니다. 같은 내용을 유지하되 문체만 고쳐서 다시 써주세요.
+⚠️ 방금 쓴 글의 문체가 어색합니다. 해석과 내용은 그대로 두고 문장만 고쳐 다시 쓰세요.
 
-${problems.join('\n')}
+[발견된 문제]
+${probs.join('\n')}
 
-[다시 강조]
-- 이름("${client.name}")은 소제목당 2번 이하로만 쓰세요. 나머지는 주어를 생략하세요.
-- "결국", "또한", "이러한", "이를 통해", "따라서"로 문장을 시작하지 마세요.
-- "~할 수 있을 것입니다", "~하는 데 도움이 될 것입니다" 같은 뭉개는 어미를 쓰지 마세요.
-- 요약 문장으로 마무리하지 마세요.
-- 문장이 뚝뚝 끊기지 않게 이어 쓰세요. 이게 제일 중요합니다.
-- 반드시 명식(십성·12운성·지장간·대운)에서 근거를 가져와 쓰세요.
-- 짧은 "~니다." 문장만 나열하지 말고, 연결어미(~하고/~지만/~는데/~어서/~탓에)로 이어 쓰세요.
-- 어미를 바꿔 쓰세요. "~입니다"만 반복하지 마세요.
-- 쉼표는 긴 절을 이을 때만 쓰세요. 짧은 구 뒤에는 찍지 마세요.
+[가장 중요 — 이걸 못 고치면 실패입니다]
+짧은 문장을 하나씩 툭툭 떨어뜨리지 마세요. 아래처럼 물려서 이으세요.
+
+❌ "일주가 병화입니다. 이 기운은 밝고 화사한 성격을 나타냅니다.
+    자유롭고 긍정적인 성정이 타인에게 좋은 영향을 미칩니다."
+
+✅ "일주가 병화입니다.
+    한낮의 해처럼 밝고 뜨거운 기운이라 어디에 있든 눈에 띄고, 사람들이 먼저 다가옵니다.
+    스스로도 그 분위기를 알고 있어서 자리를 만들거나 사람을 모으는 일이 어렵지 않습니다."
+
+- 한 문단은 2~3문장. 첫 문장은 짧게 치고, 뒷문장은 길게 이어 붙이세요.
+- 연결어미(~라 / ~는데 / ~어서 / ~기 때문에 / ~되니)로 물리세요.
 - 같은 어미를 두 번 연속 쓰지 마세요.
+- 짧은 구 뒤에는 쉼표를 찍지 마세요.
+- 이름("${client.name}")은 소제목당 2번 이하.
 - "또한 / 따라서 / 즉 / 이러한" 으로 문장을 시작하지 마세요.
+- 분량은 줄이지 마세요.
 
 [방금 쓴 글]
 ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}`,
@@ -683,8 +705,10 @@ ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}
       });
       const fixed = Array.isArray(fix.blocks) ? fix.blocks : [];
       if (fixed.length === blocks.length) blocks = fixed;
+      else break;
     } catch (e) {
       console.error('[문체] 재작성 실패:', e.message);
+      break;
     }
   }
 
@@ -781,7 +805,7 @@ async function callAIText({ system, messages, openaiKey, model, maxTokens }) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
     body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
+      model: model || MODEL,
       messages: [{ role: 'system', content: system }, ...messages],
       temperature: 0.8,
       max_tokens: maxTokens || 1400,
