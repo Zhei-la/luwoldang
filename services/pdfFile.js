@@ -14,28 +14,49 @@ let browserPromise = null;
 
 /** 크롬 실행 파일 찾기 */
 function findChrome() {
-  if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  const tried = [];
+
+  const ok = (p) => {
+    tried.push(p);
+    try { return p && fs.existsSync(p) ? p : null; } catch (e) { return null; }
+  };
+
+  // 1) 환경변수
+  let p = process.env.PUPPETEER_EXECUTABLE_PATH && ok(process.env.PUPPETEER_EXECUTABLE_PATH);
+  if (p) return p;
+
+  // 2) 흔한 경로
+  for (const c of [
+    '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable', '/root/.nix-profile/bin/chromium',
+    '/nix/var/nix/profiles/default/bin/chromium',
+  ]) {
+    if (ok(c)) return c;
   }
 
-  const candidates = [
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-    '/root/.nix-profile/bin/chromium',
-  ];
-  for (const p of candidates) {
-    try { if (fs.existsSync(p)) return p; } catch (e) { /* noop */ }
-  }
-
-  // nix 는 경로가 매번 바뀐다. PATH 에서 직접 찾는다.
+  // 3) PATH 에서 찾기
   for (const cmd of ['chromium', 'chromium-browser', 'google-chrome']) {
     try {
-      const p = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
-      if (p && fs.existsSync(p)) return p;
+      const found = execSync(`command -v ${cmd} 2>/dev/null`).toString().trim();
+      if (found && ok(found)) return found;
     } catch (e) { /* noop */ }
   }
-  throw new Error('크롬을 찾을 수 없습니다. nixpacks.toml 에 chromium 이 있는지 확인하세요.');
+
+  // 4) nix 는 경로가 매번 바뀐다. /nix/store 를 직접 뒤진다.
+  try {
+    const dirs = fs.readdirSync('/nix/store')
+      .filter((d) => d.includes('chromium') && !d.endsWith('.drv'));
+    for (const d of dirs) {
+      const cand = `/nix/store/${d}/bin/chromium`;
+      if (ok(cand)) return cand;
+    }
+  } catch (e) { /* /nix/store 가 없는 환경 */ }
+
+  console.error('[PDF] 크롬 탐색 실패. 확인한 경로:', tried.join(' | '));
+  console.error('[PDF] PATH =', process.env.PATH);
+  throw new Error(
+    '크롬을 찾을 수 없습니다. 레포 루트에 nixpacks.toml 이 있고 nixPkgs 에 "chromium" 이 들어 있는지 확인하세요.'
+  );
 }
 
 async function getBrowser() {
@@ -104,3 +125,4 @@ function pdfFilename(name, type) {
 }
 
 module.exports = { htmlToPdf, pdfFilename };
+
