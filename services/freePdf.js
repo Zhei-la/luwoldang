@@ -21,7 +21,7 @@
  */
 
 const {
-  coverPage, tocPage, sajuPages, endPage, buildCSS, esc, footnote, REFLOW_SCRIPT,
+  coverPage, tocPage, sajuPages, endPage, buildCSS, esc, footnote, REFLOW_SCRIPT, sentenceBreaks,
 } = require('./pdfDoc');
 const { getPromo } = require('./freePromo');
 
@@ -107,7 +107,7 @@ function renderFlow(chapters) {
     <h2 class="ch-title">${esc(it.title)}</h2>
   </div>
   <div class="pg-line"></div>` : `
-  <div class="ch-block"><p>${esc(it.text)}</p></div>`).join('')}
+  <div class="ch-block"><p>${sentenceBreaks(it.text)}</p></div>`).join('')}
   ${footnote(pageText)}
 </section>`;
   }).join('');
