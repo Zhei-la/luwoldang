@@ -351,7 +351,6 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     <button id="btnEdit">수정하기</button>
     <button id="btnDone" style="display:none">수정 완료</button>
     <a id="btnDl" class="dlbtn" href="/pdfs/${pdf.id}/report.pdf">PDF 다운받기</a>
-    <button id="btnPrint">인쇄</button>
     <button id="btnSend" class="send">이메일 보내기</button>
   </div>
   <div class="pv-warn" id="pvWarn">
@@ -382,10 +381,10 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     background:#3a2e1a;border:1px solid #6b5a33;color:#f0dcae;font-size:12.5px;line-height:1.6}
   @media (max-width:760px){
     .pv-bar{padding:10px 12px;gap:7px}
-    body{padding-top:152px}
+    body{padding-top:118px}
     .pv-title{flex:1 1 100%;font-size:12.5px}
-    .pv-actions{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
-    .pv-actions button,.pv-actions .dlbtn{width:100%;padding:11px 4px;font-size:12.5px;min-height:44px}
+    .pv-actions{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+    .pv-actions button,.pv-actions .dlbtn{width:100%;padding:11px 2px;font-size:11.5px;min-height:44px}
   }
   @media print{ body{padding-top:0} .pv-bar,.pg-tools,.blk-del,.edit-hint,.toast{display:none!important} }
 
@@ -504,7 +503,7 @@ async function rewriteBlock(blk, btn){
   var sec = blk.closest('.page.chapter[data-ch]');
   if (!sec) return;
 
-  var note = prompt('어떻게 고칠까요? (비워두면 문체만 다듬습니다)\n\n예) 더 구체적으로 / 좀 더 짧게 / 재물 얘기를 더');
+  var note = prompt('어떻게 고칠까요? (비워두면 문체만 다듬습니다)\\n\\n예) 더 구체적으로 / 좀 더 짧게 / 재물 얘기를 더');
   if (note === null) return;
 
   var subEl = blk.querySelector('.ch-sub');
@@ -526,7 +525,7 @@ async function rewriteBlock(blk, btn){
       body: JSON.stringify({
         chapterTitle: (sec.querySelector('.ch-title') || {}).innerText || '',
         sub: subEl ? subEl.innerText.trim() : '',
-        body: paras.join('\n\n'),
+        body: paras.join('\\n\\n'),
         note: (note || '').trim()
       })
     });
@@ -536,7 +535,7 @@ async function rewriteBlock(blk, btn){
     // 새 문단으로 갈아끼운다
     blk.querySelectorAll('p').forEach(function(p){ p.remove(); });
     var tools = blk.querySelector('.blk-tools');
-    String(d.body).split(/\n{2,}|\n/).filter(Boolean).forEach(function(t){
+    String(d.body).split(/\\n{2,}|\\n/).filter(Boolean).forEach(function(t){
       var p = document.createElement('p');
       p.textContent = t.trim();
       p.setAttribute('contenteditable', 'true');
@@ -573,8 +572,8 @@ function collect(){
       var sub = subEl ? subEl.innerText.trim() : '';
       var arr = byCh[k].blocks;
       var last = arr[arr.length - 1];
-      if (!sub && last) last.body += '\n\n' + paras.join('\n\n');
-      else arr.push({ sub: sub, body: paras.join('\n\n') });
+      if (!sub && last) last.body += '\\n\\n' + paras.join('\\n\\n');
+      else arr.push({ sub: sub, body: paras.join('\\n\\n') });
     });
   });
   return order.map(function(k){ return byCh[k]; });
@@ -625,15 +624,6 @@ if (dl) dl.addEventListener('click', function(){
   dl.textContent = 'PDF 만드는 중… (20초쯤)';
   setTimeout(function(){ dl.classList.remove('loading'); dl.textContent = 'PDF 다운받기'; }, 45000);
 });
-
-$('btnPrint').onclick = function(){
-  if (IN_APP) {
-    $('pvWarn').style.display = 'block';
-    alert('앱 안의 브라우저에서는 PDF 저장이 안 됩니다.\n\n오른쪽 위 메뉴에서 "다른 브라우저로 열기"를 눌러주세요.');
-    return;
-  }
-  window.print();
-};
 
 $('btnSend').onclick = async function(){
   if (!EMAIL) { alert('이 신청자의 이메일이 없습니다.'); return; }
