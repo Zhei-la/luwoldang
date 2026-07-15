@@ -236,6 +236,7 @@ router.post('/test', async (req, res, next) => {
     }
 
     req.session.userId = row.id;
+    req.session.testLogin = acc.user;   // 테스트 로그인 표시 (계정 전환 허용용)
     console.log('[TEST] 로그인 성공:', acc.user);
     res.redirect('/home');
   } catch (e) {
@@ -243,6 +244,55 @@ router.post('/test', async (req, res, next) => {
   }
 });
 
+/* ===== 테스트 계정 전환 (비번 없이) =====
+ * 테스트 로그인 상태(session.testLogin 있음)일 때만 작동한다.
+ * 카카오 관리자 계정에는 영향 없다.
+ *   /auth/switch?to=아이디  → 그 계정으로 즉시 전환
+ */
+router.get('/switch', async (req, res, next) => {
+  if (!req.session.testLogin) return res.status(404).send('Not found');
+
+  const to = String(req.query.to || '').trim();
+  const acc = testAccounts().find((a) => a.user === to);
+  if (!acc) return res.redirect('/home');
+
+  try {
+    const kid = 'test:' + acc.user;
+    const found = await pool.query('SELECT * FROM users WHERE kakao_id = $1', [kid]);
+    let row = found.rows[0];
+
+    // 아직 한 번도 로그인 안 한 계정이면 만들어준다
+    if (!row) {
+      const slug = crypto.randomBytes(5).toString('hex');
+      const inserted = await pool.query(
+        `INSERT INTO users (kakao_id, name, account_email, role, status, slug, approved_at)
+         VALUES ($1, $2, $3, 'trainee', 'approved', $4, NOW())
+         RETURNING *`,
+        [kid, acc.user, acc.user + '@test.luwolsaju.com', slug]
+      );
+      row = inserted.rows[0];
+    }
+
+    req.session.userId = row.id;
+    req.session.testLogin = acc.user;
+    console.log('[TEST] 계정 전환:', acc.user);
+    res.redirect('/home');
+  } catch (e) {
+    next(e);
+  }
+});
+
+/* 현재 로그인 계정이 테스트 계정이면, 전환 가능한 계정 목록을 준다.
+ * (다른 라우터/뷰에서 계정 전환 바를 그릴 때 쓴다) */
+function testSwitchInfo(req) {
+  if (!req || !req.session || !req.session.testLogin) return null;
+  return {
+    current: req.session.testLogin,
+    accounts: testAccounts().map((a) => a.user),
+  };
+}
+
 module.exports = router;
+module.exports.testSwitchInfo = testSwitchInfo;
 
 
