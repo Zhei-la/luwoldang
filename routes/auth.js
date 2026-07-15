@@ -120,4 +120,87 @@ router.get('/admin', async (req, res, next) => {
   }
 });
 
+/* ===== 테스트 로그인 (카카오 없이) =====
+ * 개발/테스트용. 환경변수 TEST_LOGIN_USER + TEST_LOGIN_PASS 가
+ * 둘 다 있을 때만 작동한다. 하나라도 비면 기능 자체가 꺼진다(404).
+ *
+ *   /auth/test        → 로그인 폼
+ *   /auth/test (POST) → 아이디·비번 확인 후 관리자 계정으로 로그인
+ *
+ * 이 계정은 kakao_id = 'test-account' 로 고정. 관리자 권한.
+ */
+function testEnabled() {
+  return !!(process.env.TEST_LOGIN_USER && process.env.TEST_LOGIN_PASS);
+}
+
+router.get('/test', (req, res) => {
+  if (!testEnabled()) return res.status(404).send('Not found');
+  res.set('Content-Type', 'text/html; charset=utf-8').send(`<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>테스트 로그인</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#182234;font-family:-apple-system,'Malgun Gothic',sans-serif}
+  .box{background:#fff;padding:32px 26px;border-radius:14px;width:300px;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+  h1{margin:0 0 4px;font-size:18px;color:#241a06}
+  p{margin:0 0 20px;font-size:12.5px;color:#8a7f66}
+  input{width:100%;box-sizing:border-box;padding:12px;margin-bottom:10px;border:1px solid #d8cfb8;
+    border-radius:8px;font-size:15px}
+  button{width:100%;padding:13px;border:0;border-radius:8px;background:#B59A62;color:#241a06;
+    font-weight:800;font-size:15px;cursor:pointer}
+  .err{color:#c0392b;font-size:13px;margin-bottom:10px;min-height:18px}
+</style></head>
+<body>
+  <form class="box" method="post" action="/auth/test">
+    <h1>테스트 로그인</h1>
+    <p>카카오 없이 들어가는 테스트 계정입니다.</p>
+    <div class="err">${req.query.e ? '아이디 또는 비밀번호가 틀렸습니다.' : ''}</div>
+    <input name="user" placeholder="아이디" autocomplete="username" autofocus>
+    <input name="pass" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <button type="submit">로그인</button>
+  </form>
+</body></html>`);
+});
+
+router.post('/test', async (req, res, next) => {
+  if (!testEnabled()) return res.status(404).send('Not found');
+
+  const { user, pass } = req.body || {};
+  if (user !== process.env.TEST_LOGIN_USER || pass !== process.env.TEST_LOGIN_PASS) {
+    return res.redirect('/auth/test?e=1');
+  }
+
+  try {
+    // 테스트 계정 조회 or 생성 (관리자 권한)
+    const found = await pool.query("SELECT * FROM users WHERE kakao_id = 'test-account'");
+    let acc = found.rows[0];
+
+    if (!acc) {
+      const slug = crypto.randomBytes(5).toString('hex');
+      const inserted = await pool.query(
+        `INSERT INTO users (kakao_id, name, account_email, role, status, slug, approved_at)
+         VALUES ('test-account', $1, $2, 'admin', 'approved', $3, NOW())
+         RETURNING *`,
+        ['테스트 계정', 'test@luwolsaju.com', slug]
+      );
+      acc = inserted.rows[0];
+      console.log('[TEST] 테스트 계정 생성');
+    } else if (acc.role !== 'admin' || acc.status !== 'approved') {
+      // 혹시 권한이 빠져 있으면 복구
+      await pool.query(
+        "UPDATE users SET role='admin', status='approved', approved_at=COALESCE(approved_at,NOW()) WHERE id=$1",
+        [acc.id]
+      );
+    }
+
+    req.session.userId = acc.id;
+    console.log('[TEST] 테스트 로그인 성공');
+    res.redirect('/home');
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
+
