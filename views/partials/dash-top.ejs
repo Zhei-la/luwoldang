@@ -7,6 +7,30 @@
   <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
+<% if (typeof testSwitch !== 'undefined' && testSwitch) { %>
+  <div class="test-switch-bar">
+    <span class="tsb-label">🧪 테스트</span>
+    <% testSwitch.accounts.forEach(function (u) { %>
+      <% if (u === testSwitch.current) { %>
+        <span class="tsb-chip on"><%= u %></span>
+      <% } else { %>
+        <a class="tsb-chip" href="/auth/switch?to=<%= encodeURIComponent(u) %>"><%= u %></a>
+      <% } %>
+    <% }); %>
+  </div>
+  <style>
+    .test-switch-bar{position:sticky;top:0;z-index:200;display:flex;align-items:center;gap:6px;
+      flex-wrap:wrap;padding:7px 12px;background:#241a06;color:#e8e3d6;font-size:12.5px;
+      font-family:-apple-system,'Malgun Gothic',sans-serif}
+    .tsb-label{font-weight:800;color:#c8a45c;margin-right:4px}
+    .tsb-chip{padding:4px 11px;border-radius:20px;background:#3a3527;color:#e8e3d6;
+      text-decoration:none;font-weight:600}
+    .tsb-chip.on{background:#c8a45c;color:#241a06;font-weight:800}
+    .tsb-chip:hover{background:#4a4436}
+    .tsb-chip.on:hover{background:#c8a45c}
+  </style>
+<% } %>
+
 <div class="layout">
   <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
