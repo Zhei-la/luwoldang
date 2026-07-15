@@ -159,7 +159,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     const cover = await resolveCover(req.user.id, pdf.type);
     const { ensureToken } = require('./share');
     const token = await ensureToken(pdf.id);
-    const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token;
+    const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
     const inner = buildReportHtml({
       type: pdf.type,
       client,
@@ -339,7 +339,7 @@ async function downloadWithCover(req, res) {
       const cover = await resolveCover(req.user.id, pdf.type);
       const { ensureToken } = require('./share');
       const token = await ensureToken(pdf.id);
-      const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token;
+      const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
       html = buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],

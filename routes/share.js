@@ -286,6 +286,17 @@ router.get('/r/:token', async (req, res, next) => {
     }
   };
 })();
+
+// PDF 등 다른 곳에서 #rvwWrap 을 달고 들어온 경우,
+// 콘텐츠(이미지 포함)가 다 그려진 뒤 후기 폼으로 확실히 내려준다.
+(function(){
+  if (location.hash !== '#rvwWrap') return;
+  function toReview(){
+    var el = document.getElementById('rvwWrap');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.addEventListener('load', function(){ setTimeout(toReview, 400); });
+})();
 </script>`;
 
     res
