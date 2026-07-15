@@ -74,15 +74,19 @@ async function loadReport(token) {
     pdf_cta_text: pdf.pdf_cta_text,
     pdf_cta_desc: pdf.pdf_cta_desc,
     free_promo: pdf.free_promo,
+    review_on: pdf.review_on,
+    review_notice: pdf.review_notice,
   };
   const baseUrl = process.env.BASE_URL || '';
+  // 후기 작성 링크 (리포트 하단 후기 폼으로 스크롤)
+  const reviewUrl = baseUrl + '/r/' + token + '#rvwWrap';
 
   const html = pdf.type === FREE
     ? buildFreePdfHtml({ teacher, client, saju, result: pdf.sections || {}, baseUrl })
     : buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher, extra: pdf.extra || null, baseUrl,
+        teacher, extra: pdf.extra || null, baseUrl, reviewUrl,
       });
 
   return { pdf, html };

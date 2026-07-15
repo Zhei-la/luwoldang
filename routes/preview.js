@@ -157,6 +157,9 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     }
 
     const cover = await resolveCover(req.user.id, pdf.type);
+    const { ensureToken } = require('./share');
+    const token = await ensureToken(pdf.id);
+    const reviewUrl = (process.env.BASE_URL || '') + '/r/' + token + '#rvwWrap';
     const inner = buildReportHtml({
       type: pdf.type,
       client,
@@ -166,6 +169,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       extra: pdf.extra || null,
       baseUrl,
       cover,
+      reviewUrl,
     });
 
     const toolbar =
@@ -332,10 +336,13 @@ async function downloadWithCover(req, res) {
       html = buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl });
     } else {
       const cover = await resolveCover(req.user.id, pdf.type);
+      const { ensureToken } = require('./share');
+      const token = await ensureToken(pdf.id);
+      const reviewUrl = (process.env.BASE_URL || '') + '/r/' + token + '#rvwWrap';
       html = buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher: req.user, extra: pdf.extra || null, baseUrl, cover,
+        teacher: req.user, extra: pdf.extra || null, baseUrl, cover, reviewUrl,
       });
     }
 

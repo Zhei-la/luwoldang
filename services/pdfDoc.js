@@ -597,7 +597,7 @@ function chapterPages(chapters, question) {
 }
 
 /* ── 5. 마무리 + 추가질문 CTA ── */
-function endPage({ teacher }) {
+function endPage({ teacher, reviewUrl }) {
   const link = teacher.kakao_consult_link || '';
   const btnText = teacher.pdf_cta_text || '추가 질문하러 가기';
   const desc = teacher.pdf_cta_desc
@@ -609,11 +609,20 @@ function endPage({ teacher }) {
       <a class="end-cta-btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(btnText)}</a>
     </div>` : '';
 
+  // 후기 CTA — reviewUrl 이 있고, 교육생이 후기 받기를 켰을 때만
+  const reviewCta = (reviewUrl && teacher.review_on !== false) ? `
+    <div class="end-review">
+      ${teacher.review_notice ? `<p class="end-review-notice">${esc(teacher.review_notice)}</p>` : ''}
+      <p class="end-review-desc">읽어보신 소감을 남겨주시면 큰 힘이 됩니다.</p>
+      <a class="end-review-btn" href="${esc(reviewUrl)}" target="_blank" rel="noopener">후기 남기러 가기</a>
+    </div>` : '';
+
   return `
 <section class="page sheet end">
   <div class="end-box">
     <p class="end-msg">${esc(teacher.consult_message || '여기까지 읽어주셔서 감사합니다.')}</p>
     ${cta}
+    ${reviewCta}
     <p class="end-brand">${esc(teacher.site_name || teacher.name || '')}</p>
   </div>
 </section>`;
@@ -973,6 +982,31 @@ body {
   word-break: break-all; letter-spacing: .3px;
 }
 
+/* 후기 CTA */
+.end-review {
+  margin-top: 38px; padding-top: 34px;
+  border-top: 1px solid #e2d9c4;
+  text-align: center;
+}
+.end-review-notice {
+  display: inline-block;
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 15px; color: #8a6f3c; line-height: 1.7;
+  background: #fbf6ec; border: 1px solid #ecdfc4;
+  border-radius: 8px; padding: 12px 20px; margin-bottom: 16px;
+}
+.end-review-desc { font-size: 14px; color: #7c7466; margin-bottom: 18px; line-height: 1.7; }
+.end-review-btn {
+  display: inline-block;
+  padding: 15px 44px;
+  border-radius: 2px;
+  background: #a08a5c;
+  color: #fff;
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 17px; font-weight: 700; letter-spacing: 2px;
+  text-decoration: none;
+}
+
 .end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 17px; letter-spacing: 6px; color: #a08a5c; }
 
 /* ============================================================
@@ -1095,7 +1129,7 @@ body {
  * 리포트 전체 HTML
  * @param {object} o { type, client, teacher, saju, chapters }
  */
-function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover }) {
+function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1110,7 +1144,7 @@ ${tocPage(chapters, type)}
 ${sajuPages({ client, saju, type })}
 ${glossaryPage()}
 ${chapterPages(chapters, client.question)}
-${endPage({ teacher })}
+${endPage({ teacher, reviewUrl })}
 <script>${REFLOW_SCRIPT}<\/script>
 </body>
 </html>`;
