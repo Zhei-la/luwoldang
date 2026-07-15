@@ -45,6 +45,8 @@
           { key: 'pdf',     href: '/pdf/create',         label: 'PDF 만들기' },
           { key: 'chat',    href: '/chat',               label: '내담자 추가질문' },
           { key: 'reviews', href: '/reviews',            label: '후기' },
+          { key: 'covers',  href: '/covers',             label: 'PDF 표지 꾸미기' },
+          { key: 'manse-sheet', href: '/manse-sheet',    label: '만세력 작성' },
           { key: 'records', href: '/records',            label: 'PDF · 이메일 발송 기록' },
           { key: 'settings',href: '/free-saju-settings', label: '무료사주 · API 설정' },
           { key: 'account', href: '/account',            label: '내 계정' }
@@ -57,6 +59,7 @@
       <% if (user.role === 'admin') { %>
         <div class="nav-sep">관리자</div>
         <a href="/admin/approvals" class="nav-item <%= active === 'admin' ? 'active' : '' %>">회원 승인 · 관리</a>
+        <a href="/admin/covers" class="nav-item <%= active === 'admin-covers' ? 'active' : '' %>">기본 표지 관리</a>
       <% } %>
     </nav>
     <form method="post" action="/logout" class="logout-form">

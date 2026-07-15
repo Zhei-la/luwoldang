@@ -168,4 +168,9 @@ router.post('/free-saju-settings/slug', async (req, res, next) => {
   }
 });
 
+/* 만세력 작성 워크시트 (직접 입력 -> 캡처용) */
+router.get('/manse-sheet', (req, res) => {
+  res.render('dash/manse-sheet', { user: req.user, active: 'manse-sheet' });
+});
+
 module.exports = router;
