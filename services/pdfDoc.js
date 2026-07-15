@@ -30,8 +30,8 @@ function fmtDate(d) {
  *   brandTop: 브랜드명 세로 위치 (%)
  */
 const COVERS = {
-  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 9.5 },
-  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 9.5 },
+  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 7.5 },
+  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 7.5 },
   연애운:    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
   결혼운:    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   연인궁합:  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
@@ -733,7 +733,7 @@ body {
 /* 수묵화 표지 — 배경 없이 글자만 얹는다 (이미지에서 원래 글자 제거됨) */
 .cv-brand-overlay.ink {
   height: auto;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 6px;
   color: #3f3a33;
@@ -1405,3 +1405,4 @@ module.exports = {
   coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
   sentenceBreaks,
 };
+
