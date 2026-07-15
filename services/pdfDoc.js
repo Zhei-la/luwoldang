@@ -597,7 +597,7 @@ function chapterPages(chapters, question) {
 }
 
 /* ── 5. 마무리 + 추가질문 CTA ── */
-function endPage({ teacher, reviewUrl }) {
+function endPage({ teacher, reviewUrl, reviewMode }) {
   const link = teacher.kakao_consult_link || '';
   const btnText = teacher.pdf_cta_text || '추가 질문하러 가기';
   const desc = teacher.pdf_cta_desc
@@ -610,11 +610,15 @@ function endPage({ teacher, reviewUrl }) {
     </div>` : '';
 
   // 후기 CTA — reviewUrl 이 있고, 교육생이 후기 받기를 켰을 때만
+  //   reviewMode='web'  : 같은 페이지 아래 후기 폼으로 스크롤 (새 창 X)
+  //   reviewMode='pdf'  : 웹 후기 페이지를 새 창으로 열기
   const reviewCta = (reviewUrl && teacher.review_on !== false) ? `
     <div class="end-review">
       ${teacher.review_notice ? `<p class="end-review-notice">${esc(teacher.review_notice)}</p>` : ''}
       <p class="end-review-desc">읽어보신 소감을 남겨주시면 큰 힘이 됩니다.</p>
-      <a class="end-review-btn" href="${esc(reviewUrl)}" target="_blank" rel="noopener">후기 남기러 가기</a>
+      ${reviewMode === 'web'
+        ? `<a class="end-review-btn" href="#rvwWrap">후기 남기러 가기</a>`
+        : `<a class="end-review-btn" href="${esc(reviewUrl)}" target="_blank" rel="noopener">후기 남기러 가기</a>`}
     </div>` : '';
 
   return `
@@ -1129,7 +1133,7 @@ body {
  * 리포트 전체 HTML
  * @param {object} o { type, client, teacher, saju, chapters }
  */
-function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl }) {
+function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl, reviewMode }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1144,7 +1148,7 @@ ${tocPage(chapters, type)}
 ${sajuPages({ client, saju, type })}
 ${glossaryPage()}
 ${chapterPages(chapters, client.question)}
-${endPage({ teacher, reviewUrl })}
+${endPage({ teacher, reviewUrl, reviewMode })}
 <script>${REFLOW_SCRIPT}<\/script>
 </body>
 </html>`;

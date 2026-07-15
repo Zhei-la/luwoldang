@@ -86,7 +86,7 @@ async function loadReport(token) {
     : buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher, extra: pdf.extra || null, baseUrl, reviewUrl,
+        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web',
       });
 
   return { pdf, html };
@@ -145,7 +145,8 @@ router.get('/r/:token', async (req, res, next) => {
 
     const reviewBox = `
 <style>
-  .rvw{position:relative;left:50%;transform:translateX(-50%);
+  html{scroll-behavior:smooth}
+  .rvw{position:relative;left:50%;transform:translateX(-50%);scroll-margin-top:70px;
     width:92vw;max-width:640px;margin:26px 0 40px;padding:0;box-sizing:border-box;
     font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif}
   .rvw-card{box-sizing:border-box}

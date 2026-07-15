@@ -170,6 +170,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       baseUrl,
       cover,
       reviewUrl,
+      reviewMode: 'pdf',
     });
 
     const toolbar =
@@ -342,7 +343,7 @@ async function downloadWithCover(req, res) {
       html = buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher: req.user, extra: pdf.extra || null, baseUrl, cover, reviewUrl,
+        teacher: req.user, extra: pdf.extra || null, baseUrl, cover, reviewUrl, reviewMode: 'pdf',
       });
     }
 
