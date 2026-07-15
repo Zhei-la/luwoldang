@@ -49,6 +49,18 @@ app.get('/', (req, res) => {
 });
 // 카카오 로그인
 app.use('/auth', authRoutes);
+
+// 테스트 로그인 상태면 계정 전환 바 정보를 모든 화면에 넘긴다
+app.use((req, res, next) => {
+  try {
+    res.locals.testSwitch = authRoutes.testSwitchInfo
+      ? authRoutes.testSwitchInfo(req)
+      : null;
+  } catch (e) {
+    res.locals.testSwitch = null;
+  }
+  next();
+});
 // 승인 대기
 app.get('/pending', requireAuth, (req, res) => {
   if (req.user.status === 'approved') return res.redirect('/home');
