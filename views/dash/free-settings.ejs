@@ -115,6 +115,28 @@
   </div>
 
   <div class="settings-block">
+    <h2 class="section-h">리포트 후기 받기</h2>
+    <label class="fl" style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" name="review_on" <%= (user.review_on === false ? '' : 'checked') %>>
+      리포트 맨 아래에 후기 작성란 넣기
+    </label>
+    <p class="hint">
+      켜면, 리포트를 받은 사람이 리포트 맨 아래에서 별점·후기·사진을 남길 수 있습니다.
+      남긴 후기는 <b>후기 메뉴</b>에서 확인하고, 골라서 내 웹사이트에 띄울 수 있습니다.<br>
+      리포트 하나당 한 번만 작성되며, 다시 쓰면 이전 후기가 갱신됩니다.
+    </p>
+
+    <label class="fl">후기 유도 문구 <span style="color:#8a8574;font-weight:400">(선택)</span></label>
+    <textarea class="fi" name="review_notice" rows="2" list="rvExamples" placeholder="예: 후기를 남겨주시면 추가 질문 1회를 무료로 드립니다."><%= user.review_notice || '' %></textarea>
+    <datalist id="rvExamples">
+      <option value="후기를 남겨주시면 추가 질문 1회를 무료로 드립니다.">
+      <option value="솔직한 후기를 남겨주시면 다음 상담 때 할인해 드립니다.">
+      <option value="후기를 남겨주시면 더 정성껏 답변드리겠습니다.">
+    </datalist>
+    <p class="hint">후기 작성란 위에 눈에 띄게 표시됩니다. 후기를 남길 이유를 만들어주면 훨씬 많이 작성합니다.</p>
+  </div>
+
+  <div class="settings-block">
     <h2 class="section-h">PDF 마지막 페이지 · 추가질문 버튼</h2>
     <p class="block-desc">
       리포트 마지막 장에 <b>추가질문 버튼</b>이 들어갑니다. 위에서 등록한 <b>카카오톡 상담 링크</b>로 연결됩니다.

@@ -13,6 +13,7 @@ const adminRouter = require('./routes/admin');
 const freeRouter = require('./routes/free');
 const builderRouter = require('./routes/builder');
 const previewRouter = require('./routes/preview');
+const coversRouter = require('./routes/covers');
 const leadsRouter = require('./routes/leads');
 const chatRoutes = require('./routes/chat');
 const { router: shareRoutes } = require('./routes/share');
@@ -49,6 +50,18 @@ app.get('/', (req, res) => {
 });
 // 카카오 로그인
 app.use('/auth', authRoutes);
+
+// 테스트 로그인 상태면 계정 전환 바 정보를 모든 화면에 넘긴다
+app.use((req, res, next) => {
+  try {
+    res.locals.testSwitch = authRoutes.testSwitchInfo
+      ? authRoutes.testSwitchInfo(req)
+      : null;
+  } catch (e) {
+    res.locals.testSwitch = null;
+  }
+  next();
+});
 // 승인 대기
 app.get('/pending', requireAuth, (req, res) => {
   if (req.user.status === 'approved') return res.redirect('/home');
@@ -75,6 +88,7 @@ app.use('/', previewRouter);
 app.use('/', leadsRouter);
 app.use(chatRoutes);
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
+app.use('/', coversRouter);   // 교육생: 내 PDF 표지
 app.use('/', pagesRouter);
 // 에러 핸들러
 app.use((err, req, res, next) => {

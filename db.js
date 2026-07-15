@@ -154,6 +154,40 @@ async function initDb() {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_teacher ON reviews(teacher_id);`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_pdf ON reviews(pdf_id) WHERE pdf_id IS NOT NULL;`);
 
+  // 리포트 하단 후기 폼 표시 여부 (교육생이 켜고 끔, 기본 켜짐)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_on BOOLEAN DEFAULT TRUE;`);
+  // 후기 유도 문구 (교육생이 직접 작성 — 예: '후기를 남기시면 추가질문이 가능합니다')
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_notice TEXT;`);
+
+  // ── PDF 표지 ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cover_presets (
+      id          SERIAL PRIMARY KEY,
+      type        TEXT NOT NULL,
+      name        TEXT,
+      img         TEXT NOT NULL,
+      style       TEXT DEFAULT 'circle',
+      brand_top   REAL DEFAULT 18.2,
+      active      BOOLEAN DEFAULT TRUE,
+      sort        INTEGER DEFAULT 0,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_cover_presets_type ON cover_presets(type) WHERE active;`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS teacher_covers (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      type        TEXT NOT NULL,
+      img         TEXT NOT NULL,
+      style       TEXT DEFAULT 'circle',
+      brand_top   REAL DEFAULT 18.2,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_teacher_covers ON teacher_covers(teacher_id, type);`);
+
   console.log('[DB] 준비 완료');
 }
 

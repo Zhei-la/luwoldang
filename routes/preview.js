@@ -23,6 +23,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
+const { resolveCover } = require('../services/coverStore');
 
 const FREE = '무료사주';
 
@@ -155,6 +156,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       }
     }
 
+    const cover = await resolveCover(req.user.id, pdf.type);
     const inner = buildReportHtml({
       type: pdf.type,
       client,
@@ -163,6 +165,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       chapters,
       extra: pdf.extra || null,
       baseUrl,
+      cover,
     });
 
     const toolbar =
@@ -296,5 +299,55 @@ router.post('/pdfs/:id/revert', async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+/* ===== PDF 다운로드 (표지 적용) =====
+   leads.js 에도 같은 주소가 있지만 이 라우터가 먼저 마운트돼서 여기가 이긴다. */
+async function downloadWithCover(req, res) {
+  try {
+    const { htmlToPdf, sendPdf } = require('../services/pdfFile');
+
+    const { rows } = await pool.query(
+      `SELECT p.id, p.type, p.sections, p.extra,
+              l.name, l.birth, l.hour, l.calendar, l.region, l.gender
+       FROM pdfs p JOIN leads l ON l.id = p.lead_id
+       WHERE p.id = $1 AND p.teacher_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const pdf = rows[0];
+    if (!pdf) return res.status(404).send('리포트를 찾을 수 없습니다.');
+
+    const client = {
+      name: pdf.name,
+      birthDate: normalizeBirth(pdf.birth),
+      birthTime: parseHour(pdf.hour),
+      calendar: pdf.calendar,
+      region: pdf.region,
+      gender: pdf.gender,
+    };
+    const saju = sajuOf(pdf);
+    const baseUrl = process.env.BASE_URL || '';
+
+    let html;
+    if (pdf.type === FREE) {
+      html = buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl });
+    } else {
+      const cover = await resolveCover(req.user.id, pdf.type);
+      html = buildReportHtml({
+        type: pdf.type, client, saju,
+        chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
+        teacher: req.user, extra: pdf.extra || null, baseUrl, cover,
+      });
+    }
+
+    const buf = await htmlToPdf(html);
+    sendPdf(res, buf, pdf.name, pdf.type);
+  } catch (e) {
+    console.error('[PDF] 표지 다운로드 실패:', e.message);
+    res.status(500).send('PDF를 만들지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+}
+
+router.get('/pdfs/:id/report.pdf', downloadWithCover);
+router.get('/pdfs/:id/download', downloadWithCover);
 
 module.exports = router;

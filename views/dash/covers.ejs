@@ -1,0 +1,123 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: 'PDF 표지 꾸미기' }) %>
+
+<div class="settings-block">
+  <h2 class="section-h">PDF 표지 꾸미기</h2>
+  <p class="block-desc">
+    리포트 종류마다 <b>나만의 표지</b>를 올릴 수 있습니다.
+    올린 표지는 <b>나에게만</b> 적용됩니다. 안 올린 종류는 기본 표지로 나갑니다.<br>
+    A4 세로 비율(가로:세로 = 1:1.414)에 맞춘 이미지를 권장합니다. JPG·PNG, 3MB 이하.
+  </p>
+</div>
+
+<div class="settings-block">
+  <div class="cv-grid">
+    <% types.forEach(function (t) { var has = mine[t]; %>
+      <div class="cv-card" data-type="<%= t %>">
+        <div class="cv-thumb <%= has ? 'on' : '' %>">
+          <% if (has) { %>
+            <span class="cv-badge">내 표지</span>
+            <span class="cv-thumb-txt">적용 중</span>
+          <% } else { %>
+            <span class="cv-thumb-txt muted">기본 표지</span>
+          <% } %>
+        </div>
+        <div class="cv-name"><%= t %></div>
+        <div class="cv-actions">
+          <label class="cv-btn">
+            <%= has ? '바꾸기' : '올리기' %>
+            <input type="file" accept="image/*" hidden onchange="uploadCover(this, '<%= t %>')">
+          </label>
+          <% if (has) { %>
+            <button type="button" class="cv-btn ghost" onclick="deleteCover('<%= t %>')">기본으로</button>
+          <% } %>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<style>
+  .cv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px; }
+  .cv-card { border:1px solid #e6e0d2; border-radius:12px; padding:12px; background:#fff; }
+  .cv-thumb { aspect-ratio:1/1.414; border-radius:8px; background:#f3efe4; border:1px dashed #d8cfb8;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    position:relative; overflow:hidden; background-size:cover; background-position:center; }
+  .cv-thumb.on { border-style:solid; border-color:#B59A62; }
+  .cv-thumb-txt { font-size:12px; color:#8a6f3c; font-weight:700; }
+  .cv-thumb-txt.muted { color:#b3ad9c; font-weight:500; }
+  .cv-badge { position:absolute; top:8px; left:8px; background:#B59A62; color:#fff;
+    font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:20px; }
+  .cv-name { margin:10px 2px 8px; font-weight:700; font-size:14px; color:#3a3527; }
+  .cv-actions { display:flex; gap:6px; }
+  .cv-btn { flex:1; text-align:center; padding:8px 4px; border-radius:7px; cursor:pointer;
+    font-size:12.5px; font-weight:700; background:#B59A62; color:#241a06; border:0;
+    font-family:inherit; display:inline-flex; align-items:center; justify-content:center; }
+  .cv-btn.ghost { background:#fff; border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
+  .cv-btn:hover { opacity:.9; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px); opacity:0;
+    background:#2f9e5e; color:#fff; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700;
+    z-index:99; transition:.25s; pointer-events:none; }
+  .toast.on { opacity:1; transform:translateX(-50%); }
+</style>
+
+<script>
+  function toast(msg, bad) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = bad ? '#c0392b' : '#2f9e5e';
+    t.classList.add('on');
+    setTimeout(function () { t.classList.remove('on'); }, 2000);
+  }
+
+  function uploadCover(input, type) {
+    var file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast('이미지가 너무 큽니다. 3MB 이하로 올려주세요.', true); return; }
+
+    var reader = new FileReader();
+    reader.onload = async function () {
+      var card = document.querySelector('.cv-card[data-type="' + type + '"] .cv-thumb');
+      toast('올리는 중...');
+      try {
+        var r = await fetch('/covers/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: type, img: reader.result, style: 'plain' })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        // 화면에 바로 반영
+        if (card) {
+          card.style.backgroundImage = "url('" + reader.result + "')";
+          card.classList.add('on');
+          card.innerHTML = '<span class="cv-badge">내 표지</span>';
+        }
+        toast('표지를 올렸습니다');
+        setTimeout(function () { location.reload(); }, 900);
+      } catch (e) {
+        toast(e.message, true);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function deleteCover(type) {
+    if (!confirm(type + ' 표지를 기본으로 되돌릴까요?')) return;
+    try {
+      var r = await fetch('/covers/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: type })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      toast('기본 표지로 되돌렸습니다');
+      setTimeout(function () { location.reload(); }, 700);
+    } catch (e) {
+      toast(e.message, true);
+    }
+  }
+</script>

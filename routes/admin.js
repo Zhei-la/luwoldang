@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved, requireAdmin } = require('../middleware/auth');
+const coverStore = require('../services/coverStore');
+
+const COVER_TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '무료사주'];
 
 // 관리자 전용
 router.use(requireAuth, requireApproved, requireAdmin);
@@ -96,6 +99,47 @@ router.post('/role/:id', async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+
+/* ══════════════ 기본 표지 관리 (전 교육생 공용) ══════════════ */
+
+router.get('/covers', async (req, res, next) => {
+  try {
+    const presets = await coverStore.listPresets();
+    res.render('dash/admin-covers', {
+      user: req.user, active: 'admin-covers', types: COVER_TYPES, presets,
+    });
+  } catch (e) { next(e); }
+});
+
+router.post('/covers/add', async (req, res) => {
+  try {
+    const { type, name, img, style, brandTop } = req.body || {};
+    if (COVER_TYPES.indexOf(type) < 0) return res.status(400).json({ ok: false, error: '알 수 없는 리포트 종류입니다.' });
+    await coverStore.addPreset({
+      type, name, img,
+      style: style || 'circle',
+      brandTop: brandTop != null ? Number(brandTop) : 18.2,
+    });
+    console.log('[ADMIN] 기본 표지 추가:', type);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+
+router.post('/covers/delete/:id', async (req, res) => {
+  try { await coverStore.deletePreset(req.params.id); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.get('/covers/img/:id', async (req, res) => {
+  try {
+    const row = await coverStore.getPresetImg(req.params.id);
+    if (!row) return res.status(404).end();
+    const m = /^data:(image\/[a-z.+-]+);base64,(.*)$/i.exec(row.img);
+    if (!m) return res.status(415).end();
+    res.set('Content-Type', m[1]);
+    res.send(Buffer.from(m[2], 'base64'));
+  } catch (e) { res.status(500).end(); }
 });
 
 module.exports = router;

@@ -40,19 +40,24 @@ const COVERS = {
   무료사주:  { img: '/img/pdf/cover-free.jpg',     style: 'circle', brandTop: 18.2 },
 };
 
-function coverPage({ type, client, teacher, baseUrl }) {
-  const cfg = COVERS[type];
+function coverPage({ type, client, teacher, baseUrl, cover }) {
   const brand = teacher.site_name || teacher.name || '';
+  // 교육생/관리자가 올린 표지가 있으면 최우선. 없으면 코드 기본값(COVERS).
+  const cfg = cover || COVERS[type];
 
   if (cfg) {
-    const url = (baseUrl || '') + cfg.img;
-    // 수묵화 표지는 이미지에 이름이 박혀 있어 배경으로 가려야 한다.
-    // 원형 표지는 자리가 비어 있으므로 배경 없이 얹는다.
-    const cls = cfg.style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle';
+    const raw = cfg.img || '';
+    const url = /^data:/.test(raw) ? raw : (baseUrl || '') + raw;
+    const style = cfg.style || 'circle';
+    const brandTop = cfg.brandTop == null ? 18.2 : cfg.brandTop;
+    // plain = 브랜드명을 안 얹음 (표지에 이미 다 그려둔 경우)
+    const overlay = style === 'plain'
+      ? ''
+      : `<div class="${style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle'}" style="top:${brandTop}%">${esc(brand)}</div>`;
 
     return `
-<section class="page sheet cover cover-img cover-${cfg.style}" style="background-image:url('${esc(url)}')">
-  <div class="${cls}" style="top:${cfg.brandTop}%">${esc(brand)}</div>
+<section class="page sheet cover cover-img cover-${style}" style="background-image:url('${esc(url)}')">
+  ${overlay}
   <div class="cv-info">
     <p class="cv-name">${esc(client.name)} 님</p>
     <p class="cv-birth">
@@ -342,12 +347,12 @@ function sajuPages({ client, saju, type }) {
 
 /* 실측값 기준 (한 줄 = 14.2px × 2.05 = 29.1px = 7.70mm)
  * 예전에는 여백을 전부 '1줄'로 올려 세서 페이지가 25%씩 비었다. 소수점으로 정확히 센다. */
-/* 본문 16.6px × 1.95 = 32.4px = 8.57mm.
- * 241mm ÷ 8.57mm = 28줄. 각주 자리 3.5줄 빼면 24.5줄. */
-const LINES_PER_PAGE = 24.5;
-const CHARS_PER_LINE = 36;      // 170mm ÷ (16.6px = 4.4mm) = 38자. 여유 두고 36.
+/* 본문 18.5px × 1.95 = 36.1px = 9.54mm.
+ * 241mm ÷ 9.54mm = 25.3줄. 각주 자리 3.5줄 빼면 21.8줄. */
+const LINES_PER_PAGE = 21.8;
+const CHARS_PER_LINE = 33;      // 170mm ÷ (18.5px = 4.90mm) = 34.7자. 여유 두고 33.
 const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
-const LINES_SUB = 1.3;          // 소제목(16.5px) + margin 13px
+const LINES_SUB = 1.4;          // 소제목(21px) + margin 14px
 const LINES_PARA_GAP = 0.45;    // 문단 margin-bottom 12px = 3.17mm
 const LINES_BLOCK_GAP = 1.05;   // .ch-block margin-bottom 30px = 7.94mm
 const OVERFLOW_TOLERANCE = 0.6; // 0.6줄까지는 넘쳐도 한 장에 붙인다 (한 줄만 넘어가는 꼴 방지)
@@ -870,21 +875,21 @@ body {
 .chapter { padding-top: 32mm; }              /* 챕터 첫 페이지는 위 여백 넉넉히 */
 .ch-head { display: flex; align-items: baseline; gap: 12px; }
 .ch-no { font-family: 'Nanum Myeongjo', serif; font-size: 30px; font-weight: 800; color: #d8cfb8; }
-.ch-title { font-family: 'Nanum Myeongjo', serif; font-size: 25px; font-weight: 800; letter-spacing: 2px; color: #1f2a3d; }
+.ch-title { font-family: 'Nanum Myeongjo', serif; font-size: 27px; font-weight: 800; letter-spacing: 2px; color: #1f2a3d; }
 
 .ch-block { margin-bottom: 30px; }
 .ch-block:last-child { margin-bottom: 0; }
 
 /* 소제목 — 혼자 페이지 끝에 남지 않게 (제목만 남고 본문 넘어가는 것 방지) */
 .ch-sub {
-  font-family: 'Nanum Myeongjo', serif; font-size: 19.3px; font-weight: 700;
-  color: #1f2a3d; margin: 0 0 13px; padding-left: 11px; border-left: 3px solid #b59a62;
+  font-family: 'Nanum Myeongjo', serif; font-size: 21px; font-weight: 700;
+  color: #1f2a3d; margin: 0 0 14px; padding-left: 11px; border-left: 3px solid #b59a62;
   page-break-after: avoid; break-after: avoid;
   page-break-inside: avoid; break-inside: avoid;
 }
 
 .ch-block p {
-  font-size: 16.6px; line-height: 1.95; color: #3a3831;
+  font-size: 18.5px; line-height: 1.95; color: #3a3831;
   margin-bottom: 12px; text-align: justify; word-break: keep-all;
   /* 문단이 페이지 경계에서 한두 줄만 남지 않게 */
   orphans: 3; widows: 3;
@@ -1090,7 +1095,7 @@ body {
  * 리포트 전체 HTML
  * @param {object} o { type, client, teacher, saju, chapters }
  */
-function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl }) {
+function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1100,7 +1105,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl }) {
 <style>${buildCSS(baseUrl)}</style>
 </head>
 <body>
-${coverPage({ type, client, teacher, baseUrl })}
+${coverPage({ type, client, teacher, baseUrl, cover })}
 ${tocPage(chapters, type)}
 ${sajuPages({ client, saju, type })}
 ${glossaryPage()}

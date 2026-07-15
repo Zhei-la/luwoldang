@@ -35,7 +35,7 @@ async function loadReport(token) {
     `SELECT p.id, p.type, p.sections, p.extra,
             l.name, l.birth, l.hour, l.calendar, l.region, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
-            u.pdf_cta_text, u.pdf_cta_desc, u.free_promo
+            u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice
      FROM pdfs p
      JOIN leads l ON l.id = p.lead_id
      JOIN users u ON u.id = p.teacher_id
@@ -141,11 +141,15 @@ router.get('/r/:token', async (req, res, next) => {
 
     const reviewBox = `
 <style>
-  .rvw{max-width:620px;margin:26px auto 40px;padding:0 16px;
+  .rvw{position:relative;left:50%;transform:translateX(-50%);
+    width:92vw;max-width:640px;margin:26px 0 40px;padding:0;box-sizing:border-box;
     font-family:Pretendard,-apple-system,'Malgun Gothic',sans-serif}
+  .rvw-card{box-sizing:border-box}
   .rvw-card{background:#fff;border:1px solid #E9E0CF;border-radius:14px;padding:24px 20px}
   .rvw-h{font-size:17px;font-weight:800;color:#252522;margin:0 0 6px;text-align:center}
   .rvw-s{font-size:13px;color:#8a8574;margin:0 0 18px;text-align:center;line-height:1.7}
+  .rvw-notice{font-size:14px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;
+    border-radius:10px;padding:12px 14px;margin:0 0 14px;text-align:center;line-height:1.6;font-weight:600}
   .rvw-stars{display:flex;justify-content:center;gap:6px;margin-bottom:18px}
   .rvw-stars button{font-size:34px;line-height:1;background:none;border:0;cursor:pointer;
     color:#e0d8c6;padding:0;transition:.12s}
@@ -180,6 +184,7 @@ router.get('/r/:token', async (req, res, next) => {
       </div>` : ''}
 
     <h3 class="rvw-h">${mine ? '후기 고치기' : '후기를 남겨주세요'}</h3>
+    ${pdf.review_notice ? `<p class="rvw-notice">${escapeHtml(pdf.review_notice)}</p>` : ''}
     <p class="rvw-s">읽어보신 소감을 남겨주시면 큰 힘이 됩니다.<br>
     이름은 <b>${escapeHtml(maskName(pdf.name))}</b> 처럼 가려서 표시됩니다.</p>
 
@@ -281,7 +286,7 @@ router.get('/r/:token', async (req, res, next) => {
     res
       .set('Content-Type', 'text/html; charset=utf-8')
       .set('X-Robots-Tag', 'noindex, nofollow')
-      .send(html.replace('<body>', '<body>' + bar).replace('</body>', reviewBox + '</body>'));
+      .send(html.replace('<body>', '<body>' + bar).replace('</body>', (pdf.review_on === false ? '' : reviewBox) + '</body>'));
   } catch (e) {
     next(e);
   }

@@ -46,7 +46,7 @@ router.post('/free-saju-settings', async (req, res, next) => {
   try {
     const { site_name, kakao_consult_link, consult_message, button_text,
             openai_key, mail_local, mail_name, mail_reply,
-            pdf_cta_text, pdf_cta_desc, promo_json } = req.body;
+            pdf_cta_text, pdf_cta_desc, promo_json, review_notice } = req.body;
 
     // 무료 PDF 업셀 설정 (프리미엄 안내 · Q&A · 후기 이미지 · 할인 문구)
     if (promo_json) {
@@ -66,16 +66,19 @@ router.post('/free-saju-settings', async (req, res, next) => {
     // 메일 아이디: 영문/숫자/.-_ 만 허용
     const local = String(mail_local || '').toLowerCase().replace(/[^a-z0-9._-]/g, '') || null;
 
+    // 체크박스: 체크하면 'on' 이 넘어오고, 안 하면 아예 안 넘어온다
+    const reviewOn = req.body.review_on != null;
+
     await pool.query(
       `UPDATE users
        SET site_name = $1, kakao_consult_link = $2, consult_message = $3, button_text = $4,
            mail_local = $5, mail_name = $6, mail_reply = $7,
-           pdf_cta_text = $8, pdf_cta_desc = $9
-       WHERE id = $10`,
+           pdf_cta_text = $8, pdf_cta_desc = $9, review_on = $10, review_notice = $11
+       WHERE id = $12`,
       [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
        local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null,
-       (pdf_cta_text || '').trim() || null, (pdf_cta_desc || '').trim() || null,
-       req.user.id]
+       (pdf_cta_text || '').trim() || null, (pdf_cta_desc || '').trim() || null, reviewOn,
+       (review_notice || '').trim() || null, req.user.id]
     );
 
     res.redirect('/free-saju-settings?saved=1');

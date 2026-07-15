@@ -1,0 +1,133 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '기본 표지 관리' }) %>
+
+<div class="settings-block">
+  <h2 class="section-h">기본 표지 관리</h2>
+  <p class="block-desc">
+    여기서 올린 표지는 <b>모든 교육생</b>의 표지 선택 화면에 자동으로 나타납니다.<br>
+    교육생이 자기 표지를 따로 올린 경우에는 그 사람 표지가 우선합니다.<br>
+    A4 세로 비율 권장. JPG·PNG, 3MB 이하.
+  </p>
+</div>
+
+<!-- 새 표지 올리기 -->
+<div class="settings-block">
+  <h3 class="section-h" style="font-size:15px">새 기본 표지 추가</h3>
+  <div class="ac-form">
+    <label class="ac-row">
+      <span>리포트 종류</span>
+      <select id="acType">
+        <% types.forEach(function (t) { %><option value="<%= t %>"><%= t %></option><% }); %>
+      </select>
+    </label>
+    <label class="ac-row">
+      <span>표지 이름 <em>(관리용)</em></span>
+      <input type="text" id="acName" placeholder="예: 봄 에디션 표지">
+    </label>
+    <label class="ac-row">
+      <span>브랜드명 얹기</span>
+      <select id="acStyle">
+        <option value="plain">얹지 않음 (표지에 이미 이름이 있음)</option>
+        <option value="circle">비어있는 자리에 얹기</option>
+        <option value="ink">진한 배경 위에 얹기</option>
+      </select>
+    </label>
+    <label class="ac-row">
+      <span>이미지 파일</span>
+      <input type="file" id="acFile" accept="image/*">
+    </label>
+    <button type="button" class="ac-submit" onclick="addPreset()">기본 표지로 추가</button>
+  </div>
+</div>
+
+<!-- 등록된 표지 목록 -->
+<div class="settings-block">
+  <h3 class="section-h" style="font-size:15px">등록된 기본 표지</h3>
+  <% if (!presets.length) { %>
+    <div class="empty-box">아직 등록된 기본 표지가 없습니다. 위에서 추가해보세요.</div>
+  <% } else { %>
+    <div class="ac-grid">
+      <% presets.forEach(function (p) { %>
+        <div class="ac-card">
+          <div class="ac-thumb" style="background-image:url('/admin/covers/img/<%= p.id %>')"></div>
+          <div class="ac-meta">
+            <div class="ac-type"><%= p.type %></div>
+            <% if (p.name) { %><div class="ac-nm"><%= p.name %></div><% } %>
+          </div>
+          <button type="button" class="ac-del" onclick="delPreset('<%= p.id %>')">삭제</button>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<style>
+  .ac-form { display:flex; flex-direction:column; gap:12px; max-width:460px; }
+  .ac-row { display:flex; flex-direction:column; gap:5px; }
+  .ac-row span { font-size:13px; font-weight:700; color:#3a3527; }
+  .ac-row span em { font-style:normal; color:#b3ad9c; font-weight:500; }
+  .ac-row select, .ac-row input[type=text] { padding:9px 11px; border:1px solid #d8cfb8; border-radius:7px;
+    font-size:14px; font-family:inherit; }
+  .ac-submit { margin-top:4px; padding:11px; border:0; border-radius:8px; background:#B59A62; color:#241a06;
+    font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; }
+  .ac-submit:hover { opacity:.9; }
+  .ac-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
+  .ac-card { border:1px solid #e6e0d2; border-radius:10px; overflow:hidden; background:#fff; }
+  .ac-thumb { aspect-ratio:1/1.414; background:#f3efe4 center/cover no-repeat; }
+  .ac-meta { padding:8px 10px 4px; }
+  .ac-type { font-weight:700; font-size:13px; color:#3a3527; }
+  .ac-nm { font-size:11.5px; color:#8a7f66; margin-top:2px; }
+  .ac-del { width:100%; padding:7px; border:0; border-top:1px solid #eee; background:#fff; color:#b0392c;
+    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .ac-del:hover { background:#fdf0ef; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px); opacity:0;
+    background:#2f9e5e; color:#fff; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700;
+    z-index:99; transition:.25s; pointer-events:none; }
+  .toast.on { opacity:1; transform:translateX(-50%); }
+</style>
+
+<script>
+  function toast(msg, bad) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.style.background = bad ? '#c0392b' : '#2f9e5e';
+    t.classList.add('on'); setTimeout(function () { t.classList.remove('on'); }, 2000);
+  }
+
+  function addPreset() {
+    var type = document.getElementById('acType').value;
+    var name = document.getElementById('acName').value;
+    var style = document.getElementById('acStyle').value;
+    var file = document.getElementById('acFile').files[0];
+    if (!file) { toast('이미지를 골라주세요.', true); return; }
+    if (file.size > 3 * 1024 * 1024) { toast('이미지가 너무 큽니다. 3MB 이하로.', true); return; }
+
+    var reader = new FileReader();
+    reader.onload = async function () {
+      toast('올리는 중...');
+      try {
+        var r = await fetch('/admin/covers/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: type, name: name, img: reader.result, style: style })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        toast('기본 표지를 추가했습니다');
+        setTimeout(function () { location.reload(); }, 900);
+      } catch (e) { toast(e.message, true); }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function delPreset(id) {
+    if (!confirm('이 기본 표지를 삭제할까요?')) return;
+    try {
+      var r = await fetch('/admin/covers/delete/' + id, { method: 'POST' });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      toast('삭제했습니다');
+      setTimeout(function () { location.reload(); }, 700);
+    } catch (e) { toast(e.message, true); }
+  }
+</script>
