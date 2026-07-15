@@ -49,7 +49,7 @@ async function pickCover(teacherId, type) {
       }
       // 2-b) 코드 내장 기본 세트 (public 파일)
       const built = builtinCoverPath(setKey, type);
-      if (built) return { img: built.img, style: built.style, source: 'set-builtin' };
+      if (built) return { img: built.img, style: built.style, brandPos: built.brandPos, source: 'set-builtin' };
     }
   } catch (e) { /* noop */ }
 

@@ -50,12 +50,19 @@ function coverPage({ type, client, teacher, baseUrl, cover }) {
     const url = /^data:/.test(raw) ? raw : (baseUrl || '') + raw;
     const style = cfg.style || 'circle';
     const brandTop = cfg.brandTop == null ? 18.2 : cfg.brandTop;
-    // plain = 표지에 이미 종류 글자가 그려짐. 그래도 교육생 상호명은 상단에 은은하게 얹는다.
+    const brandPos = cfg.brandPos || 'top';
+    // plain = 표지에 이미 종류 글자가 그려짐. 교육생 상호명을 세트 위치에 맞춰 얹는다.
     let overlay;
     if (style === 'plain') {
-      overlay = brand
-        ? `<div class="cv-brand-top">${esc(brand)}</div>`
-        : '';
+      if (!brand) {
+        overlay = '';
+      } else if (brandPos === 'left') {
+        // 왼쪽 세로 (표지 글씨가 세로일 때)
+        overlay = `<div class="cv-brand-vert">${esc(brand)}</div>`;
+      } else {
+        // 위쪽 가로
+        overlay = `<div class="cv-brand-top">${esc(brand)}</div>`;
+      }
     } else {
       overlay = `<div class="${style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle'}" style="top:${brandTop}%">${esc(brand)}</div>`;
     }
@@ -740,17 +747,31 @@ body {
   color: #5c4633;
 }
 
-/* plain 표지 — 표지에 이미 종류 글자가 있음. 상호명만 최상단에 은은하게 */
+/* plain 표지 — 상호명을 세트 위치에 맞춰. 표지 글씨체와 비슷한 크기로 */
 .cv-brand-top {
   position: absolute;
-  top: 5.5%;
+  top: 6%;
   left: 0; right: 0;
   text-align: center;
   font-family: 'Nanum Myeongjo', serif;
-  font-size: 17px;
+  font-size: 30px;
   font-weight: 700;
-  letter-spacing: 5px;
-  color: rgba(60, 50, 38, 0.72);
+  letter-spacing: 8px;
+  color: rgba(55, 45, 33, 0.82);
+  z-index: 2;
+}
+/* 왼쪽 세로 (표지 글씨가 세로일 때) */
+.cv-brand-vert {
+  position: absolute;
+  top: 8%;
+  left: 8%;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: rgba(55, 45, 33, 0.82);
   z-index: 2;
 }
 

@@ -32,25 +32,29 @@ const BUILTIN_SETS = [
   {
     key: 'hanji',
     name: '한지 · 원형',
-    style: 'plain',                       // 표지에 이미 종류 글자가 있음 → 브랜드명 안 얹음
+    style: 'plain',                       // 표지에 이미 종류 글자가 있음
+    brandPos: 'top',                      // 상호명: 위쪽 가로
     kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','결혼운','건강운'], // 재물운 없음
   },
   {
     key: 'maehwa',
     name: '매화 · 낡은 종이',
     style: 'plain',
+    brandPos: 'left',                     // 상호명: 왼쪽 세로
     kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','결혼운','재물운','건강운'],
   },
   {
     key: 'sumuk',
     name: '수묵 · 까치',
     style: 'plain',
+    brandPos: 'left',                     // 상호명: 왼쪽 세로
     kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','결혼운','재물운','건강운'],
   },
   {
     key: 'horang',
     name: '민화 · 호랑이',
     style: 'plain',
+    brandPos: 'left',                     // 상호명: 왼쪽 세로
     kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','결혼운','재물운','건강운'],
   },
 ];
@@ -79,7 +83,7 @@ function builtinCoverPath(setKey, type) {
   }
   const en = KIN_EN_SAFE(type);
   if (!en) return null;
-  return { img: `/img/covers/${setKey}/${en}.jpg`, style: set.style };
+  return { img: `/img/covers/${setKey}/${en}.jpg`, style: set.style, brandPos: set.brandPos || 'top' };
 }
 
 function KIN_EN_SAFE(type) { return KIND_EN[type]; }
