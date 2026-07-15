@@ -30,8 +30,8 @@ function fmtDate(d) {
  *   brandTop: 브랜드명 세로 위치 (%)
  */
 const COVERS = {
-  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 12.4 },
-  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 12.4 },
+  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 6.5 },
+  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 6.5 },
   연애운:    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
   결혼운:    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   연인궁합:  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
