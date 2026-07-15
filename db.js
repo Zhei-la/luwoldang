@@ -191,6 +191,8 @@ async function initDb() {
   // ── 표지 세트 ──
   // 교육생이 고른 세트 키 (null=세트 안 씀)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_set TEXT;`);
+  // 교육생이 고른 본문 배경지 키 (null=기본 frame)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_paper TEXT;`);
   // 관리자가 만든 커스텀 세트 (기본 4세트는 코드 내장이라 여기 없음)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS cover_sets (

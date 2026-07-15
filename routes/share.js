@@ -35,7 +35,8 @@ async function loadReport(token) {
     `SELECT p.id, p.type, p.sections, p.extra,
             l.name, l.birth, l.hour, l.calendar, l.region, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
-            u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice
+            u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice,
+            u.cover_set, u.bg_paper
      FROM pdfs p
      JOIN leads l ON l.id = p.lead_id
      JOIN users u ON u.id = p.teacher_id
@@ -80,13 +81,16 @@ async function loadReport(token) {
   const baseUrl = process.env.BASE_URL || '';
   // 후기 작성 링크 (리포트 하단 후기 폼으로 스크롤)
   const reviewUrl = baseUrl + '/r/' + token + '#rvwWrap';
+  // 본문 배경지
+  const { paperImg } = require('../services/bgPapers');
+  const bgPaper = pdf.bg_paper ? (pdf.bg_paper === 'none' ? 'none' : paperImg(pdf.bg_paper)) : undefined;
 
   const html = pdf.type === FREE
     ? buildFreePdfHtml({ teacher, client, saju, result: pdf.sections || {}, baseUrl })
     : buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web',
+        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web', bgPaper,
       });
 
   return { pdf, html };

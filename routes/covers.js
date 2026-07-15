@@ -8,6 +8,7 @@ const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const store = require('../services/coverStore');
 const { builtinSets } = require('../services/coverSets');
+const { builtinPapers } = require('../services/bgPapers');
 
 // 표지를 지정할 수 있는 리포트 종류
 const TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '무료사주'];
@@ -20,6 +21,8 @@ router.get('/covers', async (req, res, next) => {
     const mine = await store.listMyCovers(req.user.id);
     const custom = await store.listCustomSets();
     const chosen = await store.myChosenSet(req.user.id);
+    const papers = builtinPapers();
+    const chosenPaper = await store.myBgPaper(req.user.id);
     // 기본 세트 + 관리자 커스텀 세트 합치기
     const sets = builtinSets().concat(
       custom.map((c) => ({ key: c.set_key, name: c.name, kinds: null, custom: true }))
@@ -31,6 +34,8 @@ router.get('/covers', async (req, res, next) => {
       mine,
       sets,
       chosen,
+      papers,
+      chosenPaper,
     });
   } catch (e) {
     next(e);
@@ -41,6 +46,16 @@ router.get('/covers', async (req, res, next) => {
 router.post('/covers/choose-set', async (req, res) => {
   try {
     await store.chooseSet(req.user.id, (req.body || {}).setKey || null);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 본문 배경지 고르기 */
+router.post('/covers/choose-paper', async (req, res) => {
+  try {
+    await store.chooseBgPaper(req.user.id, (req.body || {}).paperKey || null);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

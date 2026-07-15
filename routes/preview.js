@@ -23,7 +23,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
-const { resolveCover } = require('../services/coverStore');
+const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 
 const FREE = '무료사주';
 
@@ -157,6 +157,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     }
 
     const cover = await resolveCover(req.user.id, pdf.type);
+    const bgPaper = await resolveBgPaper(req.user.id);
     const { ensureToken } = require('./share');
     const token = await ensureToken(pdf.id);
     const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
@@ -171,6 +172,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       cover,
       reviewUrl,
       reviewMode: 'pdf',
+      bgPaper,
     });
 
     const toolbar =
@@ -337,13 +339,14 @@ async function downloadWithCover(req, res) {
       html = buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl });
     } else {
       const cover = await resolveCover(req.user.id, pdf.type);
+      const bgPaper = await resolveBgPaper(req.user.id);
       const { ensureToken } = require('./share');
       const token = await ensureToken(pdf.id);
       const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
       html = buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher: req.user, extra: pdf.extra || null, baseUrl, cover, reviewUrl, reviewMode: 'pdf',
+        teacher: req.user, extra: pdf.extra || null, baseUrl, cover, reviewUrl, reviewMode: 'pdf', bgPaper,
       });
     }
 

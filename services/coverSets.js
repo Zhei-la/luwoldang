@@ -23,6 +23,13 @@ const KIND_EN = {
 // 기본 제공 세트 (코드 내장, 이미지는 public 에)
 const BUILTIN_SETS = [
   {
+    key: 'original',
+    name: '기본 (원래 디자인)',
+    style: null,                          // 원래 표지는 각자 style(ink/circle) 이 다름 → 특수 처리
+    kinds: ['종합사주','신년운세','연애운','결혼운','연인궁합','재물운','건강운','무료사주'],
+    original: true,                       // 원래 COVERS 를 그대로 쓰라는 표시
+  },
+  {
     key: 'hanji',
     name: '한지 · 원형',
     style: 'plain',                       // 표지에 이미 종류 글자가 있음 → 브랜드명 안 얹음
@@ -48,15 +55,34 @@ const BUILTIN_SETS = [
   },
 ];
 
+// 원래 디자인(COVERS)의 파일명·스타일
+const ORIGINAL = {
+  '종합사주':  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 12.4 },
+  '신년운세':  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 12.4 },
+  '연애운':    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
+  '결혼운':    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
+  '연인궁합':  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
+  '재물운':    { img: '/img/pdf/cover-jaemul.jpg',   style: 'circle', brandTop: 18.2 },
+  '건강운':    { img: '/img/pdf/cover-geongang.jpg', style: 'circle', brandTop: 18.2 },
+  '무료사주':  { img: '/img/pdf/cover-free.jpg',     style: 'circle', brandTop: 18.2 },
+};
+
 /** 세트+종류 → 이미지 경로 (없으면 null) */
 function builtinCoverPath(setKey, type) {
   const set = BUILTIN_SETS.find((s) => s.key === setKey);
   if (!set) return null;
   if (set.kinds.indexOf(type) < 0) return null;   // 이 세트엔 이 종류가 없음
-  const en = KIND_EN[type];
+  // 원래 디자인 세트는 기존 COVERS 경로/스타일 그대로
+  if (set.original) {
+    const o = ORIGINAL[type];
+    return o ? { img: o.img, style: o.style, brandTop: o.brandTop } : null;
+  }
+  const en = KIN_EN_SAFE(type);
   if (!en) return null;
   return { img: `/img/covers/${setKey}/${en}.jpg`, style: set.style };
 }
+
+function KIN_EN_SAFE(type) { return KIND_EN[type]; }
 
 function builtinSets() {
   return BUILTIN_SETS.map((s) => ({ key: s.key, name: s.name, kinds: s.kinds }));

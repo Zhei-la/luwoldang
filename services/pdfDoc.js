@@ -50,10 +50,15 @@ function coverPage({ type, client, teacher, baseUrl, cover }) {
     const url = /^data:/.test(raw) ? raw : (baseUrl || '') + raw;
     const style = cfg.style || 'circle';
     const brandTop = cfg.brandTop == null ? 18.2 : cfg.brandTop;
-    // plain = 브랜드명을 안 얹음 (표지에 이미 다 그려둔 경우)
-    const overlay = style === 'plain'
-      ? ''
-      : `<div class="${style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle'}" style="top:${brandTop}%">${esc(brand)}</div>`;
+    // plain = 표지에 이미 종류 글자가 그려짐. 그래도 교육생 상호명은 상단에 은은하게 얹는다.
+    let overlay;
+    if (style === 'plain') {
+      overlay = brand
+        ? `<div class="cv-brand-top">${esc(brand)}</div>`
+        : '';
+    } else {
+      overlay = `<div class="${style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle'}" style="top:${brandTop}%">${esc(brand)}</div>`;
+    }
 
     return `
 <section class="page sheet cover cover-img cover-${style}" style="background-image:url('${esc(url)}')">
@@ -663,7 +668,7 @@ body {
   padding: 22mm 20mm 24mm;
   margin: 0 auto 10mm;
   background-color: #fdfaf2;
-  background-image: url('BASE_URL/img/pdf/frame.jpg');
+  background-image: url('BG_PAPER_URL');
   background-size: 210mm 297mm;
   background-repeat: no-repeat;
   background-position: center;
@@ -733,6 +738,20 @@ body {
   font-weight: 700;
   letter-spacing: 6px;
   color: #5c4633;
+}
+
+/* plain 표지 — 표지에 이미 종류 글자가 있음. 상호명만 최상단에 은은하게 */
+.cv-brand-top {
+  position: absolute;
+  top: 5.5%;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: rgba(60, 50, 38, 0.72);
+  z-index: 2;
 }
 
 /* 원형 표지는 하단 정보를 조금 더 위로 */
@@ -1133,14 +1152,14 @@ body {
  * 리포트 전체 HTML
  * @param {object} o { type, client, teacher, saju, chapters }
  */
-function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl, reviewMode }) {
+function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl, reviewMode, bgPaper }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(client.name)}님의 ${esc(type)} 리포트</title>
-<style>${buildCSS(baseUrl)}</style>
+<style>${buildCSS(baseUrl, bgPaper)}</style>
 </head>
 <body>
 ${coverPage({ type, client, teacher, baseUrl, cover })}
@@ -1336,8 +1355,22 @@ const REFLOW_SCRIPT = `
 })();
 `;
 
-function buildCSS(baseUrl) {
-  return CSS_TEMPLATE.split('BASE_URL').join(baseUrl || '');
+function buildCSS(baseUrl, bgPaper) {
+  // bgPaper: 배경지 이미지 경로(상대).
+  //   undefined  → 기본 테두리(frame)
+  //   null/'none'→ 배경 없음 (흰 종이)
+  //   경로       → 그 배경지
+  let paperUrl;
+  if (bgPaper === null || bgPaper === 'none') {
+    paperUrl = '';
+  } else if (bgPaper) {
+    paperUrl = (baseUrl || '') + bgPaper;
+  } else {
+    paperUrl = (baseUrl || '') + '/img/pdf/frame.jpg';   // 기본
+  }
+  return CSS_TEMPLATE
+    .split('BG_PAPER_URL').join(paperUrl)
+    .split('BASE_URL').join(baseUrl || '');
 }
 
 module.exports = {

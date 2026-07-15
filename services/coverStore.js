@@ -148,7 +148,36 @@ module.exports = {
   // 세트
   chooseSet, myChosenSet,
   addCustomSet, addSetItem, listCustomSets, deleteCustomSet, getSetItemImg,
+  // 배경지
+  chooseBgPaper, myBgPaper, resolveBgPaper,
 };
+
+/* ── 교육생: 본문 배경지 ── */
+const { paperImg } = require('./bgPapers');
+
+async function chooseBgPaper(teacherId, key) {
+  await pool.query('UPDATE users SET bg_paper = $2 WHERE id = $1', [teacherId, key || null]);
+}
+
+async function myBgPaper(teacherId) {
+  const { rows } = await pool.query('SELECT bg_paper FROM users WHERE id = $1', [teacherId]);
+  return rows[0] ? rows[0].bg_paper : null;
+}
+
+// 리포트 만들 때: 교육생이 고른 배경지 이미지 경로 반환
+//   undefined 반환 → 기본 frame (컬럼 없음/기본)
+//   'none' → 배경 없음
+//   경로 → 그 배경지
+async function resolveBgPaper(teacherId) {
+  try {
+    const key = await myBgPaper(teacherId);
+    if (!key) return undefined;          // 기본 frame
+    if (key === 'none') return 'none';   // 배경 없음
+    return paperImg(key) || undefined;   // 배경지 경로 (없으면 기본)
+  } catch (e) {
+    return undefined;
+  }
+}
 
 /* ── 교육생: 세트 선택 ── */
 
