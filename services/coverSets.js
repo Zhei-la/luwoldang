@@ -54,15 +54,15 @@ const BUILTIN_SETS = [
     key: 'horang',
     name: '민화 · 호랑이',
     style: 'plain',
-    brandPos: 'left',                     // 상호명: 왼쪽 세로
+    brandPos: 'left-light',               // 상호명: 왼쪽 세로, 밝은 색 (배경 어두움)
     kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','결혼운','재물운','건강운'],
   },
 ];
 
 // 원래 디자인(COVERS)의 파일명·스타일
 const ORIGINAL = {
-  '종합사주':  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 6.5 },
-  '신년운세':  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 6.5 },
+  '종합사주':  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 13.5 },
+  '신년운세':  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 13.5 },
   '연애운':    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
   '결혼운':    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   '연인궁합':  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },

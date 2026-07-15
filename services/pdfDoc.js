@@ -30,8 +30,8 @@ function fmtDate(d) {
  *   brandTop: 브랜드명 세로 위치 (%)
  */
 const COVERS = {
-  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 6.5 },
-  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 6.5 },
+  종합사주:  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 13.5 },
+  신년운세:  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 13.5 },
   연애운:    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
   결혼운:    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   연인궁합:  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
@@ -56,9 +56,9 @@ function coverPage({ type, client, teacher, baseUrl, cover }) {
     if (style === 'plain') {
       if (!brand) {
         overlay = '';
-      } else if (brandPos === 'left') {
-        // 왼쪽 세로 (표지 글씨가 세로일 때)
-        overlay = `<div class="cv-brand-vert">${esc(brand)}</div>`;
+      } else if (brandPos === 'left' || brandPos === 'left-light') {
+        // 왼쪽 세로 (표지 글씨가 세로일 때). left-light = 어두운 배경용 밝은 색
+        overlay = `<div class="cv-brand-vert${brandPos === 'left-light' ? ' light' : ''}">${esc(brand)}</div>`;
       } else {
         // 위쪽 가로
         overlay = `<div class="cv-brand-top">${esc(brand)}</div>`;
@@ -732,10 +732,10 @@ body {
 }
 /* 수묵화 표지 — 배경 없이 글자만 얹는다 (이미지에서 원래 글자 제거됨) */
 .cv-brand-overlay.ink {
-  height: 4%;
-  font-size: 21px;
+  height: auto;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 7px;
+  letter-spacing: 6px;
   color: #3f3a33;
 }
 /* 원형 표지 */
@@ -763,16 +763,21 @@ body {
 /* 왼쪽 세로 (표지 글씨가 세로일 때) */
 .cv-brand-vert {
   position: absolute;
-  top: 8%;
-  left: 8%;
+  top: 14%;
+  left: 10%;
   writing-mode: vertical-rl;
   text-orientation: upright;
   font-family: 'Nanum Myeongjo', serif;
-  font-size: 30px;
+  font-size: 27px;
   font-weight: 700;
-  letter-spacing: 6px;
+  letter-spacing: 5px;
   color: rgba(55, 45, 33, 0.82);
   z-index: 2;
+}
+/* 호랑이 세트 — 어두운 배경이라 밝은 색, 찢긴 종이 피해서 더 아래 */
+.cv-brand-vert.light {
+  top: 30%;
+  color: rgba(240, 232, 210, 0.9);
 }
 
 /* 원형 표지는 하단 정보를 조금 더 위로 */
