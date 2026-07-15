@@ -121,16 +121,49 @@ router.get('/admin', async (req, res, next) => {
 });
 
 /* ===== 테스트 로그인 (카카오 없이) =====
- * 개발/테스트용. 환경변수 TEST_LOGIN_USER + TEST_LOGIN_PASS 가
- * 둘 다 있을 때만 작동한다. 하나라도 비면 기능 자체가 꺼진다(404).
+ * 개발/테스트용. 카카오 없이 아이디/비번으로 로그인한다.
+ *
+ * 환경변수 TEST_ACCOUNTS 에 계정들을 몰아넣는다 (최대 5개):
+ *   TEST_ACCOUNTS = test1:pw1 / test2:pw2 / test3:pw3
+ *   - 형식: 아이디:비번   (콜론으로 구분)
+ *   - 계정끼리는 "/" 로 구분
+ *   - 모두 "교육생" 계정. 관리자는 카카오 로그인으로만 된다.
+ *   - 각 계정은 서로 독립된 데이터(자기 신청자·리포트·표지)를 가진다
+ *   - 로그인한 아이디가 그대로 화면 이름(닉네임)으로 표시된다
+ *
+ * (구버전 TEST_LOGIN_USER / TEST_LOGIN_PASS 도 계속 지원 — 교육생 1개로 취급)
  *
  *   /auth/test        → 로그인 폼
- *   /auth/test (POST) → 아이디·비번 확인 후 관리자 계정으로 로그인
- *
- * 이 계정은 kakao_id = 'test-account' 로 고정. 관리자 권한.
+ *   /auth/test (POST) → 아이디·비번 확인 후 로그인
  */
+
+// 환경변수를 파싱해서 계정 목록을 만든다. { user, pass } 배열. 전부 교육생.
+function testAccounts() {
+  const list = [];
+
+  const raw = (process.env.TEST_ACCOUNTS || '').trim();
+  if (raw) {
+    raw.split('/').forEach((chunk) => {
+      const parts = chunk.trim().split(':');
+      const user = (parts[0] || '').trim();
+      const pass = (parts[1] || '').trim();
+      if (user && pass) list.push({ user, pass });
+    });
+  }
+
+  // 구 방식도 지원 (교육생 1개)
+  if (process.env.TEST_LOGIN_USER && process.env.TEST_LOGIN_PASS) {
+    const u = process.env.TEST_LOGIN_USER.trim();
+    if (!list.some((a) => a.user === u)) {
+      list.push({ user: u, pass: process.env.TEST_LOGIN_PASS });
+    }
+  }
+
+  return list.slice(0, 5);   // 최대 5개
+}
+
 function testEnabled() {
-  return !!(process.env.TEST_LOGIN_USER && process.env.TEST_LOGIN_PASS);
+  return testAccounts().length > 0;
 }
 
 router.get('/test', (req, res) => {
@@ -154,7 +187,7 @@ router.get('/test', (req, res) => {
 <body>
   <form class="box" method="post" action="/auth/test">
     <h1>테스트 로그인</h1>
-    <p>카카오 없이 들어가는 테스트 계정입니다.</p>
+    <p>카카오 없이 들어가는 교육생 테스트 계정입니다.</p>
     <div class="err">${req.query.e ? '아이디 또는 비밀번호가 틀렸습니다.' : ''}</div>
     <input name="user" placeholder="아이디" autocomplete="username" autofocus>
     <input name="pass" type="password" placeholder="비밀번호" autocomplete="current-password">
@@ -167,35 +200,43 @@ router.post('/test', async (req, res, next) => {
   if (!testEnabled()) return res.status(404).send('Not found');
 
   const { user, pass } = req.body || {};
-  if (user !== process.env.TEST_LOGIN_USER || pass !== process.env.TEST_LOGIN_PASS) {
-    return res.redirect('/auth/test?e=1');
-  }
+  const acc = testAccounts().find((a) => a.user === user && a.pass === pass);
+  if (!acc) return res.redirect('/auth/test?e=1');
 
   try {
-    // 테스트 계정 조회 or 생성 (관리자 권한)
-    const found = await pool.query("SELECT * FROM users WHERE kakao_id = 'test-account'");
-    let acc = found.rows[0];
+    // 계정마다 고유 kakao_id → 데이터가 서로 분리된다
+    const kid = 'test:' + acc.user;
 
-    if (!acc) {
+    const found = await pool.query('SELECT * FROM users WHERE kakao_id = $1', [kid]);
+    let row = found.rows[0];
+
+    if (!row) {
+      // 이름(닉네임) = 로그인한 아이디 그대로. 전부 교육생(trainee).
       const slug = crypto.randomBytes(5).toString('hex');
       const inserted = await pool.query(
         `INSERT INTO users (kakao_id, name, account_email, role, status, slug, approved_at)
-         VALUES ('test-account', $1, $2, 'admin', 'approved', $3, NOW())
+         VALUES ($1, $2, $3, 'trainee', 'approved', $4, NOW())
          RETURNING *`,
-        ['테스트 계정', 'test@luwolsaju.com', slug]
+        [kid, acc.user, acc.user + '@test.luwolsaju.com', slug]
       );
-      acc = inserted.rows[0];
-      console.log('[TEST] 테스트 계정 생성');
-    } else if (acc.role !== 'admin' || acc.status !== 'approved') {
-      // 혹시 권한이 빠져 있으면 복구
-      await pool.query(
-        "UPDATE users SET role='admin', status='approved', approved_at=COALESCE(approved_at,NOW()) WHERE id=$1",
-        [acc.id]
-      );
+      row = inserted.rows[0];
+      console.log('[TEST] 교육생 계정 생성:', acc.user);
+    } else {
+      // 승인이 빠져 있으면 복구. 역할은 건드리지 않는다(교육생 유지).
+      if (row.status !== 'approved') {
+        await pool.query(
+          "UPDATE users SET status='approved', approved_at=COALESCE(approved_at,NOW()) WHERE id=$1",
+          [row.id]
+        );
+      }
+      // 닉네임을 아이디와 맞춰둔다
+      if (row.name !== acc.user) {
+        await pool.query('UPDATE users SET name=$2 WHERE id=$1', [row.id, acc.user]);
+      }
     }
 
-    req.session.userId = acc.id;
-    console.log('[TEST] 테스트 로그인 성공');
+    req.session.userId = row.id;
+    console.log('[TEST] 로그인 성공:', acc.user);
     res.redirect('/home');
   } catch (e) {
     next(e);
@@ -203,4 +244,5 @@ router.post('/test', async (req, res, next) => {
 });
 
 module.exports = router;
+
 
