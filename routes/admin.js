@@ -4,7 +4,7 @@ const { pool } = require('../db');
 const { requireAuth, requireApproved, requireAdmin } = require('../middleware/auth');
 const coverStore = require('../services/coverStore');
 
-const COVER_TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '무료사주'];
+const COVER_TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '무료사주'];
 
 // 관리자 전용
 router.use(requireAuth, requireApproved, requireAdmin);
@@ -106,8 +106,9 @@ router.post('/role/:id', async (req, res, next) => {
 router.get('/covers', async (req, res, next) => {
   try {
     const presets = await coverStore.listPresets();
+    const customSets = await coverStore.listCustomSets();
     res.render('dash/admin-covers', {
-      user: req.user, active: 'admin-covers', types: COVER_TYPES, presets,
+      user: req.user, active: 'admin-covers', types: COVER_TYPES, presets, customSets,
     });
   } catch (e) { next(e); }
 });
@@ -140,6 +141,35 @@ router.get('/covers/img/:id', async (req, res) => {
     res.set('Content-Type', m[1]);
     res.send(Buffer.from(m[2], 'base64'));
   } catch (e) { res.status(500).end(); }
+});
+
+/* ══════════════ 커스텀 표지 세트 ══════════════ */
+
+// 새 세트 만들기
+router.post('/covers/set/create', async (req, res) => {
+  try {
+    const { key, name } = req.body || {};
+    await coverStore.addCustomSet(key, name);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+
+// 세트에 표지 추가/교체
+router.post('/covers/set/add-item', async (req, res) => {
+  try {
+    const { setKey, type, img, style } = req.body || {};
+    if (COVER_TYPES.indexOf(type) < 0) return res.status(400).json({ ok: false, error: '알 수 없는 종류입니다.' });
+    await coverStore.addSetItem(setKey, { type, img, style: style || 'plain' });
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+
+// 세트 삭제
+router.post('/covers/set/delete/:key', async (req, res) => {
+  try {
+    await coverStore.deleteCustomSet(req.params.key);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 module.exports = router;

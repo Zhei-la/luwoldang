@@ -1,11 +1,55 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: '기본 표지 관리' }) %>
 
 <div class="settings-block">
-  <h2 class="section-h">기본 표지 관리</h2>
+  <h2 class="section-h">표지 세트 관리</h2>
   <p class="block-desc">
-    여기서 올린 표지는 <b>모든 교육생</b>의 표지 선택 화면에 자동으로 나타납니다.<br>
-    교육생이 자기 표지를 따로 올린 경우에는 그 사람 표지가 우선합니다.<br>
-    A4 세로 비율 권장. JPG·PNG, 3MB 이하.
+    <b>세트</b>는 8종 리포트 표지를 한 묶음으로 관리합니다.
+    교육생이 세트를 고르면 8종이 모두 그 디자인으로 나갑니다.<br>
+    기본 세트(한지·매화·수묵·호랑이)는 시스템에 내장돼 있고, 여기서 <b>새 세트</b>를 추가할 수 있습니다.
+  </p>
+
+  <!-- 새 세트 만들기 -->
+  <div class="ac-form" style="max-width:460px">
+    <label class="ac-row">
+      <span>세트 키 <em>(영문·숫자, 예: spring2026)</em></span>
+      <input type="text" id="setKey" placeholder="spring2026">
+    </label>
+    <label class="ac-row">
+      <span>세트 이름</span>
+      <input type="text" id="setName" placeholder="예: 봄 에디션">
+    </label>
+    <button type="button" class="ac-submit" onclick="createSet()">새 세트 만들기</button>
+  </div>
+
+  <!-- 등록된 커스텀 세트 -->
+  <% if (customSets && customSets.length) { %>
+    <div style="margin-top:20px">
+      <% customSets.forEach(function (s) { %>
+        <div class="set-manage">
+          <div class="set-manage-head">
+            <b><%= s.name %></b> <span class="set-key-badge"><%= s.set_key %></span>
+            <span class="set-cnt"><%= s.cnt %>/8종</span>
+            <button type="button" class="set-del" onclick="deleteSet('<%= s.set_key %>')">세트 삭제</button>
+          </div>
+          <div class="set-manage-items">
+            <% types.forEach(function (t) { %>
+              <label class="set-item-up">
+                <span><%= t %></span>
+                <input type="file" accept="image/*" hidden onchange="addSetItem(this, '<%= s.set_key %>', '<%= t %>')">
+                <em>올리기</em>
+              </label>
+            <% }); %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<div class="settings-block">
+  <h2 class="section-h">낱개 기본 표지 (선택)</h2>
+  <p class="block-desc">
+    세트와 별개로, 특정 종류 하나의 기본 표지만 바꾸고 싶을 때 씁니다.
   </p>
 </div>
 
@@ -63,6 +107,22 @@
 <div class="toast" id="toast"></div>
 
 <style>
+  /* 세트 관리 */
+  .set-manage { border:1px solid #e6e0d2; border-radius:10px; padding:14px; margin-bottom:12px; background:#fff; }
+  .set-manage-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .set-key-badge { font-size:11px; color:#8a7f66; background:#f3efe4; padding:2px 8px; border-radius:10px; }
+  .set-cnt { font-size:12px; color:#B59A62; font-weight:700; }
+  .set-del { margin-left:auto; padding:5px 12px; border:1px solid #eab; background:#fff; color:#b0392c;
+    border-radius:6px; font-size:12px; cursor:pointer; font-family:inherit; }
+  .set-manage-items { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+  .set-item-up { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px;
+    border:1px dashed #d8cfb8; border-radius:8px; cursor:pointer; }
+  .set-item-up span { font-size:12px; color:#3a3527; font-weight:600; }
+  .set-item-up em { font-style:normal; font-size:11px; color:#B59A62; font-weight:700; }
+  .set-item-up:hover { background:#fbf6ec; }
+
+</style>
+<style>
   .ac-form { display:flex; flex-direction:column; gap:12px; max-width:460px; }
   .ac-row { display:flex; flex-direction:column; gap:5px; }
   .ac-row span { font-size:13px; font-weight:700; color:#3a3527; }
@@ -92,6 +152,55 @@
     var t = document.getElementById('toast');
     t.textContent = msg; t.style.background = bad ? '#c0392b' : '#2f9e5e';
     t.classList.add('on'); setTimeout(function () { t.classList.remove('on'); }, 2000);
+  }
+
+  async function createSet() {
+    var key = document.getElementById('setKey').value.trim();
+    var name = document.getElementById('setName').value.trim();
+    if (!key || !name) { toast('세트 키와 이름을 입력하세요.', true); return; }
+    try {
+      var r = await fetch('/admin/covers/set/create', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key, name: name })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      toast('세트를 만들었습니다');
+      setTimeout(function () { location.reload(); }, 800);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  function addSetItem(input, setKey, type) {
+    var file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast('이미지가 너무 큽니다. 3MB 이하로.', true); return; }
+    var reader = new FileReader();
+    reader.onload = async function () {
+      toast(type + ' 올리는 중...');
+      try {
+        var r = await fetch('/admin/covers/set/add-item', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ setKey: setKey, type: type, img: reader.result, style: 'plain' })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        toast(type + ' 표지를 올렸습니다');
+        setTimeout(function () { location.reload(); }, 800);
+      } catch (e) { toast(e.message, true); }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function deleteSet(key) {
+    if (!confirm('이 세트를 삭제할까요? (교육생이 이 세트를 쓰고 있으면 기본 표지로 돌아갑니다)')) return;
+    try {
+      var r = await fetch('/admin/covers/set/delete/' + key, { method: 'POST' });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      toast('세트를 삭제했습니다');
+      setTimeout(function () { location.reload(); }, 700);
+    } catch (e) { toast(e.message, true); }
   }
 
   function addPreset() {

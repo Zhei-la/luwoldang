@@ -7,9 +7,10 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const store = require('../services/coverStore');
+const { builtinSets } = require('../services/coverSets');
 
 // 표지를 지정할 수 있는 리포트 종류
-const TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '무료사주'];
+const TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '무료사주'];
 
 router.use(requireAuth, requireApproved);
 
@@ -17,15 +18,45 @@ router.use(requireAuth, requireApproved);
 router.get('/covers', async (req, res, next) => {
   try {
     const mine = await store.listMyCovers(req.user.id);
+    const custom = await store.listCustomSets();
+    const chosen = await store.myChosenSet(req.user.id);
+    // 기본 세트 + 관리자 커스텀 세트 합치기
+    const sets = builtinSets().concat(
+      custom.map((c) => ({ key: c.set_key, name: c.name, kinds: null, custom: true }))
+    );
     res.render('dash/covers', {
       user: req.user,
       active: 'covers',
       types: TYPES,
       mine,
+      sets,
+      chosen,
     });
   } catch (e) {
     next(e);
   }
+});
+
+/* 세트 고르기 */
+router.post('/covers/choose-set', async (req, res) => {
+  try {
+    await store.chooseSet(req.user.id, (req.body || {}).setKey || null);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 기본 세트 표지 미리보기 이미지 (커스텀 세트만 — 기본세트는 public 파일 직접) */
+router.get('/covers/set-img/:setKey/:type', async (req, res) => {
+  try {
+    const row = await store.getSetItemImg(req.params.setKey, req.params.type);
+    if (!row) return res.status(404).end();
+    const m = /^data:(image\/[a-z.+-]+);base64,(.*)$/i.exec(row.img);
+    if (!m) return res.status(415).end();
+    res.set('Content-Type', m[1]);
+    res.send(Buffer.from(m[2], 'base64'));
+  } catch (e) { res.status(500).end(); }
 });
 
 /* 내 표지 올리기 (data URI) */

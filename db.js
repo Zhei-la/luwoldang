@@ -188,6 +188,32 @@ async function initDb() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_teacher_covers ON teacher_covers(teacher_id, type);`);
 
+  // ── 표지 세트 ──
+  // 교육생이 고른 세트 키 (null=세트 안 씀)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_set TEXT;`);
+  // 관리자가 만든 커스텀 세트 (기본 4세트는 코드 내장이라 여기 없음)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cover_sets (
+      set_key     TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      builtin     BOOLEAN DEFAULT FALSE,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  // 세트 안의 종류별 표지 (data URI)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cover_set_items (
+      id          SERIAL PRIMARY KEY,
+      set_key     TEXT NOT NULL,
+      type        TEXT NOT NULL,
+      img         TEXT NOT NULL,
+      style       TEXT DEFAULT 'plain',
+      brand_top   REAL DEFAULT 18.2,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_cover_set_items ON cover_set_items(set_key, type);`);
+
   console.log('[DB] 준비 완료');
 }
 
