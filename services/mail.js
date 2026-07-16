@@ -73,11 +73,39 @@ async function sendMail(teacher, opts) {
   if (!key) throw new Error('메일 API 키가 설정되지 않았습니다. 관리자에게 문의해주세요.');
   if (!domain) throw new Error('메일 도메인이 설정되지 않았습니다. 관리자에게 문의해주세요.');
 
+  // ── 이메일 HTML 안전장치 ──
+  // 어떤 이유로든 html 이 비었거나 깨졌으면, 빈/깨진 메일이 나가지 않도록 한다.
+  const escAttr = (s) => String(s == null ? '' : s)
+    .replace(/[&<>"']/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  let safeHtml = typeof opts.html === 'string' ? opts.html : '';
+  // 제어문자 제거 (메일 클라이언트가 본문을 통째로 텍스트 처리하는 것을 막음)
+  safeHtml = safeHtml.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  const looksBroken =
+    safeHtml.length < 200 ||
+    !/<html[\s>]/i.test(safeHtml) ||
+    !/<\/html>/i.test(safeHtml);
+  if (looksBroken) {
+    // 최소한의 안전한 대체 메일 (제목 + 안내 + 링크가 있으면 링크)
+    const link = (opts.fallbackUrl && String(opts.fallbackUrl)) || '';
+    const linkBtn = link
+      ? `<p style="margin:24px 0"><a href="${escAttr(link)}" style="display:inline-block;padding:14px 26px;background:#B59A62;color:#fff;font-weight:700;text-decoration:none;border-radius:8px">리포트 보기</a></p>`
+      : '';
+    safeHtml =
+      `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F7F3EA">` +
+      `<table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F3EA;padding:32px 16px"><tr><td align="center">` +
+      `<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fffdf8;border:1px solid #E9E0CF;border-radius:14px;font-family:-apple-system,'Malgun Gothic',sans-serif">` +
+      `<tr><td style="padding:36px 28px;text-align:center">` +
+      `<h1 style="margin:0 0 14px;font-size:21px;color:#252522">${escAttr(opts.subject || '사주 리포트가 도착했습니다')}</h1>` +
+      `<p style="margin:0;font-size:14.5px;line-height:1.8;color:#5a5648">리포트가 준비되었습니다.${link ? ' 아래 버튼에서 확인해주세요.' : ' 잠시 후 다시 열어주세요.'}</p>` +
+      linkBtn +
+      `</td></tr></table></td></tr></table></body></html>`;
+  }
+
   const body = {
     from: fromAddr(teacher),
     to: [opts.to],
     subject: opts.subject,
-    html: opts.html,
+    html: safeHtml,
   };
   const rt = replyTo(teacher);
   if (rt) body.reply_to = rt;
@@ -227,11 +255,15 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl, shar
 }
 
 async function sendFreeSaju({ to, teacher, saju, result, input, upsell, baseUrl, shareUrl }) {
-  const html = buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl, shareUrl });
+  let html = '';
+  try {
+    html = buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl, shareUrl });
+  } catch (e) { html = ''; }
   return sendMail(teacher, {
     to,
     subject: `${input.name}님의 무료 사주 풀이가 도착했습니다.`,
     html,
+    fallbackUrl: shareUrl,
   });
 }
 
@@ -414,11 +446,18 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
 }
 
 async function sendPdfReport({ to, teacher, type, sections, saju, input, baseUrl, shareUrl }) {
-  const html = buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl });
+  let html = '';
+  try {
+    html = buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl });
+  } catch (e) {
+    // buildPdfHtml 이 어떤 이유로 실패해도, sendMail 의 안전장치가 대체 메일을 보낸다.
+    html = '';
+  }
   return sendMail(teacher, {
     to,
     subject: `${input.name}님의 ${type} 사주 리포트가 도착했습니다.`,
     html,
+    fallbackUrl: shareUrl,
   });
 }
 
@@ -504,14 +543,20 @@ function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
 }
 
 async function sendBundle({ to, teacher, saju, input, items, baseUrl }) {
-  const html = buildBundleHtml({ teacher, saju, input, items, baseUrl });
+  let html = '';
+  try {
+    html = buildBundleHtml({ teacher, saju, input, items, baseUrl });
+  } catch (e) { html = ''; }
   const names = items.map((x) => x.type).join(' · ');
+  const firstUrl = (items && items[0] && items[0].shareUrl) || '';
   return sendMail(teacher, {
     to,
     subject: `${input.name}님의 사주 리포트가 도착했습니다. (${names})`,
     html,
+    fallbackUrl: firstUrl,
   });
 }
 
 module.exports.sendBundle = sendBundle;
 module.exports.buildBundleHtml = buildBundleHtml;
+
