@@ -6,6 +6,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL, rewriteBlock } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
+const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { ensureToken } = require('./share');
@@ -843,12 +844,14 @@ async function downloadPdf(req, res) {
     } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
 
     const baseUrl = process.env.BASE_URL || '';
+    const cover = await resolveCover(req.user.id, pdf.type);
+    const bgPaper = await resolveBgPaper(req.user.id);
     const html = pdf.type === FREE
       ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
       : buildReportHtml({
           type: pdf.type, client, saju,
           chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-          teacher: req.user, extra: pdf.extra || null, baseUrl,
+          teacher: req.user, extra: pdf.extra || null, baseUrl, cover, bgPaper,
         });
 
     const buf = await htmlToPdf(html);
@@ -959,3 +962,4 @@ router.post('/api/leads/:id/delivered', async (req, res) => {
 });
 
 module.exports = router;
+
