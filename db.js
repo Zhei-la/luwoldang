@@ -209,27 +209,6 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_set TEXT;`);
   // 교육생이 고른 본문 배경지 키 (null=기본 frame)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_paper TEXT;`);
-
-  // ── 모집 파트너 ──
-  //   partner_on     : 관리자가 승인한 모집 파트너만 TRUE (메뉴 노출)
-  //   partner_kakao  : 관리자가 지정하는 이 파트너 전용 카톡 링크
-  //   partner_slug   : 공개 모집 페이지 주소 (/p/:slug)
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_on BOOLEAN DEFAULT FALSE;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_kakao TEXT;`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_slug TEXT;`);
-  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_partner_slug ON users(partner_slug) WHERE partner_slug IS NOT NULL;`);
-
-  // 모집 페이지 방문/클릭 기록
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS partner_hits (
-      id          BIGSERIAL PRIMARY KEY,
-      partner_id  INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      kind        TEXT,           -- 'visit' | 'kakao' (방문 / 카톡버튼 클릭)
-      hit_at      TIMESTAMPTZ DEFAULT NOW(),
-      visitor_key TEXT
-    );
-  `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_partner_hits ON partner_hits(partner_id, kind, hit_at);`);
   // 관리자가 만든 커스텀 세트 (기본 4세트는 코드 내장이라 여기 없음)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS cover_sets (
