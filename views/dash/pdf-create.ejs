@@ -61,11 +61,53 @@
     <label class="fl">묻고 싶은 것</label>
     <textarea class="fi" name="memo" rows="3" placeholder="내담자가 궁금해하는 내용 (선택) — 리포트에 반영됩니다"><%= form.memo || '' %></textarea>
 
+    <!-- 연인궁합용 상대방 정보 -->
+    <div class="partner-sec">
+      <label class="partner-head">
+        <input type="checkbox" id="usePartner" onchange="togglePartner()" <%= form.partnerBirth ? 'checked' : '' %>>
+        <span>💑 연인궁합 리포트인가요? 상대방 정보도 입력하세요</span>
+      </label>
+      <div id="partnerBox" class="partner-box" style="<%= form.partnerBirth ? '' : 'display:none' %>">
+        <label class="fl">상대방 이름</label>
+        <input class="fi" type="text" name="partnerName" value="<%= form.partnerName || '' %>" placeholder="상대방 이름 (선택)">
+
+        <label class="fl">상대방 성별</label>
+        <div class="seg">
+          <label class="seg-item"><input type="radio" name="partnerGender" value="남" <%= form.partnerGender === '남' ? 'checked' : '' %>> 남성</label>
+          <label class="seg-item"><input type="radio" name="partnerGender" value="여" <%= form.partnerGender === '여' ? 'checked' : '' %>> 여성</label>
+        </div>
+
+        <label class="fl">상대방 생년월일</label>
+        <input class="fi" type="date" name="partnerBirth" value="<%= form.partnerBirth || '' %>" min="1930-01-01" max="2025-12-31">
+
+        <label class="fl">상대방 달력</label>
+        <div class="seg">
+          <label class="seg-item"><input type="radio" name="partnerCalendar" value="양력" <%= (form.partnerCalendar || '양력') === '양력' ? 'checked' : '' %>> 양력</label>
+          <label class="seg-item"><input type="radio" name="partnerCalendar" value="음력" <%= form.partnerCalendar === '음력' ? 'checked' : '' %>> 음력</label>
+          <label class="seg-item"><input type="radio" name="partnerCalendar" value="윤달" <%= form.partnerCalendar === '윤달' ? 'checked' : '' %>> 윤달</label>
+        </div>
+
+        <label class="fl">상대방 태어난 시간</label>
+        <input class="fi" type="time" name="partnerTime" id="partnerTime" value="<%= form.partnerTime || '' %>">
+        <label class="chk">
+          <input type="checkbox" name="partnerTimeUnknown" id="partnerTimeUnknown" onchange="togglePartnerTime()" <%= form.partnerTimeUnknown ? 'checked' : '' %>>
+          시간 모름
+        </label>
+      </div>
+    </div>
+
     <button class="free-save-btn" type="submit" style="margin-top:20px">
       저장하고 리포트 만들기 →
     </button>
   </form>
 </div>
+
+<style>
+  .partner-sec { margin-top:20px; border-top:1px solid #ece6d8; padding-top:18px; }
+  .partner-head { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:700; color:#8a6f3c; cursor:pointer; background:#fbf6ec; padding:14px 16px; border-radius:10px; }
+  .partner-head input { width:18px; height:18px; }
+  .partner-box { margin-top:16px; padding:16px; background:#faf8f2; border-radius:10px; }
+</style>
 
 <script>
   function toggleTime() {
@@ -75,6 +117,18 @@
     if (u.checked) t.value = '';
   }
   toggleTime();
+
+  function togglePartner() {
+    var box = document.getElementById('partnerBox');
+    box.style.display = document.getElementById('usePartner').checked ? '' : 'none';
+  }
+  function togglePartnerTime() {
+    var t = document.getElementById('partnerTime');
+    var u = document.getElementById('partnerTimeUnknown');
+    t.disabled = u.checked;
+    if (u.checked) t.value = '';
+  }
+  togglePartnerTime();
 </script>
 
 <%- include('../partials/dash-bottom') %>

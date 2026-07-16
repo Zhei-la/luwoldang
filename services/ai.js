@@ -424,7 +424,7 @@ module.exports = { generateFreeSaju, UPSELL };
 
 const { OUTLINES, titles, outlineWithQuestion, QUESTION_CHAPTER, isSpecialist } = require('./outlines');
 
-const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '무료사주'];
+const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '무료사주'];
 
 // 하위 호환 (기존 코드가 PDF_OUTLINES를 참조)
 const PDF_OUTLINES = {};
@@ -519,7 +519,7 @@ ${STYLE_RULES}
 { "blocks": [ { "sub": "소제목", "body": "본문 (700~900자)" }, ... ] }`;
 
 /** 사주 정보 블록 (프롬프트용) */
-function sajuBlock(client, saju) {
+function sajuBlock(client, saju, partner, partnerSaju) {
   const d = saju.detail;
   const year = new Date().getFullYear();
 
@@ -571,7 +571,36 @@ ${godLine('hour', '시주')}
 목 ${saju.elements.목} · 화 ${saju.elements.화} · 토 ${saju.elements.토} · 금 ${saju.elements.금} · 수 ${saju.elements.수}
 강한 기운: ${saju.strong.join(', ')} / 부족한 기운: ${saju.weak.join(', ')}
 ${dw}
-${yearBlock}`;
+${yearBlock}${partner && partnerSaju ? `
+
+════════════════════════════════════
+[상대방 정보] — 궁합을 볼 상대
+이름: ${partner.name || '상대방'}
+성별: ${partner.gender || '미입력'}
+생년월일: ${partner.birthDate} (${partner.calendar})
+태어난 시간: ${partnerSaju.timeKnown ? partner.birthTime : '모름'}
+
+[상대방 사주 원국]
+${(() => {
+  const pd = partnerSaju.detail;
+  const pl = (key, label) => {
+    const x = pd[key];
+    if (!x || !x.stem) return `${label}: (시간 모름)`;
+    const jj = (x.jijanggan || []).map((g) => g.ko).join('');
+    return `${label}: ${x.stem.ko}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}(${x.branch.el}, ${x.branch.god}) · 12운성 ${x.unseong || '-'} · 지장간 ${jj || '-'}`;
+  };
+  return [pl('year','년주'), pl('month','월주'), pl('day','일주'), pl('hour','시주')].join('\\n');
+})()}
+
+[상대방 중심 기운]
+일간: ${partnerSaju.dayMasterKo} (${partnerSaju.dayMasterElement})
+
+[상대방 오행 분포]
+목 ${partnerSaju.elements.목} · 화 ${partnerSaju.elements.화} · 토 ${partnerSaju.elements.토} · 금 ${partnerSaju.elements.금} · 수 ${partnerSaju.elements.수}
+강한 기운: ${partnerSaju.strong.join(', ')} / 부족한 기운: ${partnerSaju.weak.join(', ')}
+
+→ 이 리포트는 두 사람의 '궁합'입니다. 각자의 사주를 길게 풀지 말고,
+  두 사람이 만났을 때 나타나는 상호작용·차이·조화에 집중해서 작성하세요.` : ''}`;
 }
 
 /** OpenAI 호출 (JSON) */
@@ -868,8 +897,8 @@ function checkStyle(body, name, opts) {
 /**
  * 챕터 하나 생성
  */
-async function generateChapter({ type, chapter, index, total, client, saju, openaiKey, model, allChapters }) {
-  const info = sajuBlock(client, saju);
+async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters }) {
+  const info = sajuBlock(client, saju, partner, partnerSaju);
   const subs = chapter.sub || [];
 
   /* ── 종합사주 vs 전문 리포트 — 역할을 분명히 나눈다 ──
@@ -1127,7 +1156,7 @@ function tidyName(body, name) {
  */
 const CONCURRENCY = 3;   // 동시에 굴릴 챕터 수 (올릴수록 빠르지만 OpenAI 레이트리밋에 걸린다)
 
-async function generatePdfReport({ type, client, saju, openaiKey, model, onProgress }) {
+async function generatePdfReport({ type, client, saju, partner, partnerSaju, openaiKey, model, onProgress }) {
   // 내담자가 질문을 남겼으면 '질문 답변' 챕터를 마지막 조언 앞에 끼워 넣는다
   const chapters = outlineWithQuestion(type, client.question);
   const out = new Array(chapters.length);
@@ -1145,7 +1174,7 @@ async function generatePdfReport({ type, client, saju, openaiKey, model, onProgr
       try {
         out[i] = await generateChapter({
           type, chapter: ch, index: i, total: chapters.length,
-          client, saju, openaiKey, model,
+          client, saju, partner, partnerSaju, openaiKey, model,
           allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
         });
       } catch (e) {

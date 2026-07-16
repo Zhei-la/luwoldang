@@ -136,6 +136,28 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       question: lead.memo,
     };
 
+    // 연인궁합: 상대방 사주도 계산
+    let partner = null, partnerSaju = null;
+    if (type === '연인궁합' && lead.partner_birth) {
+      try {
+        partnerSaju = calcSaju({
+          birthDate: normalizeBirth(lead.partner_birth),
+          birthTime: parseHour(lead.partner_hour),
+          calendar: lead.partner_calendar === '윤달' ? '음력' : (lead.partner_calendar || '양력'),
+          isLeapMonth: lead.partner_calendar === '윤달',
+          region: '서울특별시',
+          gender: lead.partner_gender,
+        });
+        partner = {
+          name: lead.partner_name || '상대방',
+          gender: lead.partner_gender,
+          birthDate: normalizeBirth(lead.partner_birth),
+          birthTime: parseHour(lead.partner_hour),
+          calendar: lead.partner_calendar || '양력',
+        };
+      } catch (e) { /* 상대방 사주 실패해도 본인 기준으로는 나간다 */ }
+    }
+
     /* ── 무료사주: 공개 페이지와 완전히 같은 파이프라인 ── */
     if (type === FREE) {
       send('progress', { done: 0, total: 1, title: '무료 사주 풀이 생성 중' });
@@ -151,7 +173,7 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
     }
 
     const result = await generatePdfReport({
-      type, client, saju, openaiKey: req.user.openai_key,
+      type, client, saju, partner, partnerSaju, openaiKey: req.user.openai_key,
       onProgress: (done, total, title) => send('progress', { done, total, title }),
     });
     // generatePdfReport 는 챕터 배열을 반환한다.
@@ -801,11 +823,16 @@ router.post('/pdf/create', async (req, res, next) => {
     if (!req.user.openai_key) return back('OpenAI API 키를 먼저 등록해주세요.', b);
 
     const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력') RETURNING id`,
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source,
+                          partner_name, partner_gender, partner_birth, partner_hour, partner_calendar)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력',$11,$12,$13,$14,$15) RETURNING id`,
       [req.user.id, b.name, b.gender || null, b.birthDate, b.calendar || '양력',
        b.timeUnknown ? null : (b.birthTime || null), b.region || '서울특별시',
-       (b.email || '').trim() || null, (b.phone || '').trim() || null, (b.memo || '').trim() || null]
+       (b.email || '').trim() || null, (b.phone || '').trim() || null, (b.memo || '').trim() || null,
+       (b.partnerName || '').trim() || null, b.partnerGender || null,
+       (b.partnerBirth || '').trim() || null,
+       b.partnerTimeUnknown ? null : ((b.partnerTime || '').trim() || null),
+       b.partnerCalendar || null]
     );
 
     res.redirect('/leads/' + lead.rows[0].id);

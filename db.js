@@ -93,6 +93,13 @@ async function initDb() {
   // 이메일 말고 카톡 등으로 직접 전달한 경우를 구분한다
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS delivered_by TEXT;`);
 
+  // 연인궁합용 상대방 정보 (연인궁합 리포트일 때만 사용)
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_name TEXT;`);
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_gender TEXT;`);
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_birth TEXT;`);
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_hour TEXT;`);
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_calendar TEXT;`);
+
   // 제작한 PDF (내담자별)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pdfs (
