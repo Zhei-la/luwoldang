@@ -6,6 +6,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL, rewriteBlock } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
+const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { ensureToken } = require('./share');
@@ -231,9 +232,23 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
       });
     }
 
+    // 발송 스냅샷: 이 시점의 리포트 내용 + 상호명/표지/배경지를 고정 보관
+    //   (나중에 교육생이 수정/개명해도, 이미 보낸 리포트는 이대로 유지)
+    const sentMeta = {
+      site_name: req.user.site_name || null,
+      name: req.user.name || null,
+      cover_set: req.user.cover_set || null,
+      bg_paper: req.user.bg_paper || null,
+      kakao_consult_link: req.user.kakao_consult_link || null,
+      pdf_cta_text: req.user.pdf_cta_text || null,
+      pdf_cta_desc: req.user.pdf_cta_desc || null,
+    };
     await pool.query(
-      'UPDATE pdfs SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1 WHERE id = $2',
-      [to, pdf.id]
+      `UPDATE pdfs
+         SET mail_sent = TRUE, sent_at = NOW(), sent_to = $1,
+             sent_sections = $2, sent_meta = $3, edits_pending = FALSE
+       WHERE id = $4`,
+      [to, JSON.stringify(pdf.sections || []), JSON.stringify(sentMeta), pdf.id]
     );
     // 발송 완료 시각 기록 → 3일 뒤 연락처 자동 마스킹
     await pool.query(
@@ -249,23 +264,68 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
 });
 
 
-/* ===== 리포트 내용 수정 저장 ===== */
+/* ===== 리포트 내용 수정 저장 =====
+   applyToSent:
+     - undefined/false → 편집본만 저장. 발송된 리포트면 edits_pending=TRUE (발송본은 그대로)
+     - true            → 편집본 저장 + 발송 스냅샷도 갱신 (내담자가 보는 것도 바뀜)
+   응답의 wasSent 로 프론트가 "발송본에도 적용할까요?" 팝업을 띄운다. */
 router.post('/pdfs/:id/edit', async (req, res) => {
   try {
     const chapters = req.body && req.body.chapters;
+    const applyToSent = !!(req.body && req.body.applyToSent);
     if (!Array.isArray(chapters)) {
       return res.status(400).json({ ok: false, error: '형식이 올바르지 않습니다.' });
     }
 
-    const { rowCount } = await pool.query(
-      'UPDATE pdfs SET sections = $1 WHERE id = $2 AND teacher_id = $3',
-      [JSON.stringify(chapters), req.params.id, req.user.id]
+    // 발송 여부 확인
+    const cur = await pool.query(
+      'SELECT mail_sent FROM pdfs WHERE id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]
     );
-    if (!rowCount) return res.status(404).json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+    if (!cur.rows[0]) return res.status(404).json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+    const wasSent = !!cur.rows[0].mail_sent;
 
-    res.json({ ok: true });
+    if (!wasSent) {
+      // 아직 발송 안 함 → 그냥 저장
+      await pool.query(
+        'UPDATE pdfs SET sections = $1 WHERE id = $2 AND teacher_id = $3',
+        [JSON.stringify(chapters), req.params.id, req.user.id]
+      );
+    } else if (applyToSent) {
+      // 발송됨 + 발송본에도 적용 → 편집본 + 스냅샷 함께 갱신
+      await pool.query(
+        `UPDATE pdfs SET sections = $1, sent_sections = $1, edits_pending = FALSE
+         WHERE id = $2 AND teacher_id = $3`,
+        [JSON.stringify(chapters), req.params.id, req.user.id]
+      );
+    } else {
+      // 발송됨 + 편집본만 저장 → 발송본(sent_sections)은 유지, 미적용 표시
+      await pool.query(
+        `UPDATE pdfs SET sections = $1, edits_pending = TRUE
+         WHERE id = $2 AND teacher_id = $3`,
+        [JSON.stringify(chapters), req.params.id, req.user.id]
+      );
+    }
+
+    res.json({ ok: true, wasSent, applied: !wasSent || applyToSent });
   } catch (e) {
     console.error('[PDF] 수정 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ===== 발송본에 편집 내용 적용 (수정하기 옆 '발송본에 적용' 버튼) ===== */
+router.post('/pdfs/:id/apply-to-sent', async (req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE pdfs SET sent_sections = sections, edits_pending = FALSE
+       WHERE id = $1 AND teacher_id = $2 AND mail_sent = TRUE`,
+      [req.params.id, req.user.id]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: '발송된 리포트를 찾을 수 없습니다.' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[PDF] 발송본 적용 실패:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
@@ -353,6 +413,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
   <div class="pv-actions">
     <button id="btnEdit">수정하기</button>
     <button id="btnDone" style="display:none">수정 완료</button>
+    <button id="btnApplySent" style="display:none">발송본에 적용</button>
     <a id="btnDl" class="dlbtn" href="/pdfs/${pdf.id}/report.pdf">PDF 다운받기</a>
     <button id="btnSend" class="send">이메일 보내기</button>
   </div>
@@ -428,6 +489,8 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
 var PDF_ID = ${pdf.id};
 var LEAD_ID = ${pdf.lead_id};
 var EMAIL = ${JSON.stringify(pdf.email || '')};
+var MAIL_SENT = ${pdf.mail_sent ? 'true' : 'false'};
+var EDITS_PENDING = ${pdf.edits_pending ? 'true' : 'false'};
 var UA = navigator.userAgent || '';
 var IN_APP = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(UA);
 var EDITING = false;
@@ -582,19 +645,26 @@ function collect(){
   return order.map(function(k){ return byCh[k]; });
 }
 
-async function save(box){
+async function save(box, applyToSent){
   var btn = box ? box.querySelector('[data-save]') : null;
   if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
   try {
     var r = await fetch('/pdfs/' + PDF_ID + '/edit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chapters: collect() })
+      body: JSON.stringify({ chapters: collect(), applyToSent: !!applyToSent })
     });
     var d = await r.json();
     if (!d.ok) throw new Error(d.error || '실패');
     DIRTY = false;
-    toast('저장했습니다');
+    if (d.wasSent && !d.applied) {
+      EDITS_PENDING = true;
+      toast('편집본 저장됨 (보낸 리포트엔 미적용)');
+    } else {
+      if (d.applied) EDITS_PENDING = false;
+      toast('저장했습니다');
+    }
+    if (window._refreshApplyBtn) window._refreshApplyBtn();
   } catch (e) {
     toast('저장 실패: ' + e.message, true);
   }
@@ -614,7 +684,19 @@ $('btnEdit').onclick = function(){
 
 $('btnDone').onclick = async function(){
   if (DIRTY) {
-    if (confirm('저장하지 않은 수정이 있습니다. 저장할까요?')) await save(null);
+    if (confirm('저장하지 않은 수정이 있습니다. 저장할까요?')) {
+      // 발송된 리포트면 발송본에도 적용할지 물어본다
+      var applyToSent = false;
+      if (MAIL_SENT) {
+        applyToSent = confirm(
+          '이미 보낸 리포트입니다.\\n\\n' +
+          '수정한 내용을 [이미 보낸 리포트]에도 적용할까요?\\n\\n' +
+          '· 확인 = 내담자가 보는 리포트도 바뀝니다\\n' +
+          '· 취소 = 내 편집본만 저장 (보낸 리포트는 그대로)'
+        );
+      }
+      await save(null, applyToSent);
+    }
   }
   EDITING = false;
   toast('정리된 내용으로 다시 만듭니다');
@@ -654,6 +736,31 @@ $('btnSend').onclick = async function(){
 };
 
 if (IN_APP) $('pvWarn').style.display = 'block';
+
+/* 발송본에 적용 버튼: 발송됐고 편집본이 미적용 상태일 때만 노출 */
+(function(){
+  var b = $('btnApplySent');
+  if (!b) return;
+  function refresh(){ b.style.display = (MAIL_SENT && EDITS_PENDING) ? '' : 'none'; }
+  refresh();
+  b.onclick = async function(){
+    if (!confirm('지금 편집본을 [이미 보낸 리포트]에 적용할까요?\\n내담자가 보는 리포트가 바뀝니다.')) return;
+    b.disabled = true; b.textContent = '적용 중...';
+    try {
+      var r = await fetch('/pdfs/' + PDF_ID + '/apply-to-sent', { method: 'POST' });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      EDITS_PENDING = false;
+      toast('보낸 리포트에 적용했습니다');
+      refresh();
+    } catch (e) {
+      toast('적용 실패: ' + e.message, true);
+    }
+    b.disabled = false; b.textContent = '발송본에 적용';
+  };
+  // 저장 후 상태 변화 반영을 위해 주기적으로 확인
+  window._refreshApplyBtn = refresh;
+})();
 
 window.addEventListener('beforeunload', function(e){
   if (EDITING && DIRTY) { e.preventDefault(); e.returnValue = ''; }
@@ -843,12 +950,14 @@ async function downloadPdf(req, res) {
     } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
 
     const baseUrl = process.env.BASE_URL || '';
+    const cover = await resolveCover(req.user.id, pdf.type);
+    const bgPaper = await resolveBgPaper(req.user.id);
     const html = pdf.type === FREE
       ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
       : buildReportHtml({
           type: pdf.type, client, saju,
           chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-          teacher: req.user, extra: pdf.extra || null, baseUrl,
+          teacher: req.user, extra: pdf.extra || null, baseUrl, cover, bgPaper,
         });
 
     const buf = await htmlToPdf(html);
@@ -959,3 +1068,4 @@ router.post('/api/leads/:id/delivered', async (req, res) => {
 });
 
 module.exports = router;
+

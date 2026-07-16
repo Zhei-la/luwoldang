@@ -99,6 +99,11 @@ async function initDb() {
 
   // 리포트 부가 데이터 (체크리스트 · 연애카드 등) — leads.js 에서 JSON 으로 저장
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS extra JSONB;`);
+  // 발송 스냅샷: 한 번 발송하면 그 시점 리포트를 고정 보관 (나중에 수정해도 발송본은 안 바뀜)
+  await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS sent_sections JSONB;`);
+  await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS sent_meta JSONB;`);
+  // 편집본이 발송본과 달라졌는지 (수정했지만 발송본에 미적용) 표시
+  await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS edits_pending BOOLEAN DEFAULT FALSE;`);
 
   // 내담자 공개 열람 링크 (/r/:token) — 로그인 없이 리포트를 보고 PDF로 저장
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS share_token TEXT;`);

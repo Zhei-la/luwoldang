@@ -13,6 +13,7 @@ const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { buildReportHtml } = require('../services/pdfDoc');
+const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 const { maskName } = require('./reviews');
@@ -32,7 +33,8 @@ async function ensureToken(pdfId) {
 /** 토큰 → 리포트 HTML (열람용 · 다운로드용 공통) */
 async function loadReport(token) {
   const { rows } = await pool.query(
-    `SELECT p.id, p.type, p.sections, p.extra,
+    `SELECT p.id, p.type, p.sections, p.extra, p.teacher_id,
+            p.sent_sections, p.sent_meta,
             l.name, l.birth, l.hour, l.calendar, l.region, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
             u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice,
@@ -67,13 +69,15 @@ async function loadReport(token) {
     });
   } catch (e) { /* 만세력 실패해도 본문은 보여준다 */ }
 
+  // 발송 스냅샷이 있으면 그때의 상호명/표지/배경지를 쓴다 (교육생이 나중에 바꿔도 발송본 유지)
+  const snap = pdf.sent_meta || null;
   const teacher = {
-    site_name: pdf.site_name,
-    name: pdf.teacher_name,
-    kakao_consult_link: pdf.kakao_consult_link,
+    site_name: (snap && snap.site_name != null) ? snap.site_name : pdf.site_name,
+    name: (snap && snap.name != null) ? snap.name : pdf.teacher_name,
+    kakao_consult_link: (snap && snap.kakao_consult_link != null) ? snap.kakao_consult_link : pdf.kakao_consult_link,
     button_text: pdf.button_text,
-    pdf_cta_text: pdf.pdf_cta_text,
-    pdf_cta_desc: pdf.pdf_cta_desc,
+    pdf_cta_text: (snap && snap.pdf_cta_text != null) ? snap.pdf_cta_text : pdf.pdf_cta_text,
+    pdf_cta_desc: (snap && snap.pdf_cta_desc != null) ? snap.pdf_cta_desc : pdf.pdf_cta_desc,
     free_promo: pdf.free_promo,
     review_on: pdf.review_on,
     review_notice: pdf.review_notice,
@@ -81,16 +85,32 @@ async function loadReport(token) {
   const baseUrl = process.env.BASE_URL || '';
   // 후기 작성 링크 (리포트 하단 후기 폼으로 스크롤)
   const reviewUrl = baseUrl + '/r/' + token + '#rvwWrap';
-  // 본문 배경지
+  // 리포트 내용: 발송 스냅샷 우선
+  const reportSections = Array.isArray(pdf.sent_sections) ? pdf.sent_sections
+    : (Array.isArray(pdf.sections) ? pdf.sections : []);
+  // 본문 배경지 (발송 시점 우선)
   const { paperImg } = require('../services/bgPapers');
-  const bgPaper = pdf.bg_paper ? (pdf.bg_paper === 'none' ? 'none' : paperImg(pdf.bg_paper)) : undefined;
+  const bgKey = (snap && snap.bg_paper != null) ? snap.bg_paper : pdf.bg_paper;
+  const bgPaper = bgKey ? (bgKey === 'none' ? 'none' : paperImg(bgKey)) : undefined;
+  // 표지 (발송 스냅샷의 세트 우선, 없으면 현재 교육생 설정)
+  let cover = null;
+  try {
+    if (snap && snap.cover_set) {
+      const { builtinCoverPath } = require('../services/coverSets');
+      const built = builtinCoverPath(snap.cover_set, pdf.type);
+      cover = built ? { img: built.img, style: built.style, brandPos: built.brandPos, brandTop: built.brandTop } : null;
+      if (!cover) cover = await resolveCover(pdf.teacher_id, pdf.type);
+    } else {
+      cover = await resolveCover(pdf.teacher_id, pdf.type);
+    }
+  } catch (e) { cover = null; }
 
   const html = pdf.type === FREE
-    ? buildFreePdfHtml({ teacher, client, saju, result: pdf.sections || {}, baseUrl })
+    ? buildFreePdfHtml({ teacher, client, saju, result: (pdf.sent_sections || pdf.sections) || {}, baseUrl })
     : buildReportHtml({
         type: pdf.type, client, saju,
-        chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web', bgPaper,
+        chapters: reportSections,
+        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web', bgPaper, cover,
       });
 
   return { pdf, html };
@@ -340,3 +360,4 @@ function escapeHtml(s) {
 }
 
 module.exports = { router, ensureToken };
+
