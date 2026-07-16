@@ -74,6 +74,19 @@ router.get('/covers/set-img/:setKey/:type', async (req, res) => {
   } catch (e) { res.status(500).end(); }
 });
 
+/* 내 낱개 표지 미리보기 이미지 */
+router.get('/covers/my-img/:type', async (req, res) => {
+  try {
+    const img = await store.getMyCoverImg(req.user.id, req.params.type);
+    if (!img) return res.status(404).end();
+    const m = /^data:(image\/[a-z.+-]+);base64,(.*)$/i.exec(img);
+    if (!m) return res.status(415).end();
+    res.set('Content-Type', m[1]);
+    res.set('Cache-Control', 'no-store');
+    res.send(Buffer.from(m[2], 'base64'));
+  } catch (e) { res.status(500).end(); }
+});
+
 /* 내 표지 올리기 (data URI) */
 router.post('/covers/upload', async (req, res) => {
   try {

@@ -100,6 +100,19 @@ async function deleteMyCover(teacherId, type) {
   await pool.query('DELETE FROM teacher_covers WHERE teacher_id = $1 AND type = $2', [teacherId, type]);
 }
 
+/* 낱개 표지 이미지(base64) 조회 — 화면 썸네일용 */
+async function getMyCoverImg(teacherId, type) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT img FROM teacher_covers
+       WHERE teacher_id = $1 AND type = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [teacherId, type]
+    );
+    return rows[0] ? rows[0].img : null;
+  } catch (e) { return null; }
+}
+
 async function listMyCovers(teacherId) {
   const { rows } = await pool.query(
     'SELECT type, style, brand_top, created_at FROM teacher_covers WHERE teacher_id = $1',
@@ -143,7 +156,7 @@ async function getPresetImg(id) {
 
 module.exports = {
   resolveCover,
-  saveMyCover, deleteMyCover, listMyCovers,
+  saveMyCover, deleteMyCover, listMyCovers, getMyCoverImg,
   addPreset, deletePreset, listPresets, getPresetImg,
   // 세트
   chooseSet, myChosenSet,

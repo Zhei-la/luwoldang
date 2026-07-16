@@ -39,10 +39,9 @@
   <div class="cv-grid">
     <% types.forEach(function (t) { var has = mine[t]; %>
       <div class="cv-card" data-type="<%= t %>">
-        <div class="cv-thumb <%= has ? 'on' : '' %>">
+        <div class="cv-thumb <%= has ? 'on' : '' %>"<% if (has) { %> style="background-image:url('/covers/my-img/<%= encodeURIComponent(t) %>?v=<%= Date.now() %>')"<% } %>>
           <% if (has) { %>
             <span class="cv-badge">내 표지</span>
-            <span class="cv-thumb-txt">적용 중</span>
           <% } else { %>
             <span class="cv-thumb-txt muted">기본 표지</span>
           <% } %>

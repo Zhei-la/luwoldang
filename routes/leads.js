@@ -952,12 +952,15 @@ async function downloadPdf(req, res) {
     const baseUrl = process.env.BASE_URL || '';
     const cover = await resolveCover(req.user.id, pdf.type);
     const bgPaper = await resolveBgPaper(req.user.id);
+    const token = await ensureToken(pdf.id);
+    const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
     const html = pdf.type === FREE
       ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
       : buildReportHtml({
           type: pdf.type, client, saju,
           chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
           teacher: req.user, extra: pdf.extra || null, baseUrl, cover, bgPaper,
+          reviewUrl, reviewMode: 'pdf',
         });
 
     const buf = await htmlToPdf(html);
