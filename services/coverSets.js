@@ -61,8 +61,8 @@ const BUILTIN_SETS = [
 
 // 원래 디자인(COVERS)의 파일명·스타일
 const ORIGINAL = {
-  '종합사주':  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 3 },
-  '신년운세':  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 3 },
+  '종합사주':  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 12.4 },
+  '신년운세':  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 12.4 },
   '연애운':    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
   '결혼운':    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   '연인궁합':  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
