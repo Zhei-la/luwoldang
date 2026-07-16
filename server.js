@@ -97,6 +97,12 @@ app.use((err, req, res, next) => {
 });
 initDb()
   .then(() => {
+    // 개인정보 자동 마스킹 스케줄 시작 (발송 7일 후 개인정보 파기)
+    try {
+      require('./services/privacy').startMaskingSchedule();
+    } catch (e) {
+      console.error('[개인정보] 스케줄 시작 실패:', e.message);
+    }
     app.listen(PORT, () => console.log(`서버 실행: http://localhost:${PORT}`));
   })
   .catch((e) => {
