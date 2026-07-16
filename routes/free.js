@@ -47,6 +47,19 @@ router.get('/s/:slug', async (req, res, next) => {
     const teacher = await findTeacher(req.params.slug);
     if (!teacher) return res.status(404).render('free/notfound');
 
+    // 방문 기록 (통계용) — IP+UA 로 중복 대충 거름, 실패해도 페이지엔 영향 없음
+    try {
+      const { recordVisit } = require('../services/stats');
+      const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+      const ua = req.headers['user-agent'] || '';
+      const bot = /bot|crawler|spider|slurp|facebookexternalhit|preview/i.test(ua);
+      if (!bot) {
+        const crypto = require('crypto');
+        const key = crypto.createHash('sha1').update(ip + '|' + ua).digest('hex').slice(0, 16);
+        recordVisit(teacher.id, key);   // await 안 함 (페이지 응답 지연 방지)
+      }
+    } catch (e) { /* noop */ }
+
     const S = teacher.landing || defaultLanding(teacher.site_name || teacher.name);
 
     // 실제 신청 내역 (가짜 아님)

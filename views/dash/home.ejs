@@ -32,6 +32,75 @@
   </a>
 </div>
 
+<h2 class="section-h">방문자 통계</h2>
+<div class="stat-cards">
+  <div class="stat-card">
+    <div class="stat-label">오늘 방문</div>
+    <div class="stat-num"><%= visit.visitToday %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">전체 방문</div>
+    <div class="stat-num"><%= visit.visitTotal %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">무료사주 신청</div>
+    <div class="stat-num"><%= visit.freeCnt %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">상담 신청</div>
+    <div class="stat-num"><%= visit.consultCnt %></div>
+  </div>
+  <div class="stat-card accent">
+    <div class="stat-label">방문 → 신청</div>
+    <div class="stat-num"><%= visit.visitToLead %><span class="stat-unit">%</span></div>
+  </div>
+  <div class="stat-card accent">
+    <div class="stat-label">신청 → 유료</div>
+    <div class="stat-num"><%= visit.leadToPaid %><span class="stat-unit">%</span></div>
+  </div>
+</div>
+
+<% if (visitAll) { %>
+  <h2 class="section-h">전체 통계 (관리자)</h2>
+  <div class="stat-cards">
+    <div class="stat-card admin">
+      <div class="stat-label">오늘 방문</div>
+      <div class="stat-num"><%= visitAll.visitToday %></div>
+    </div>
+    <div class="stat-card admin">
+      <div class="stat-label">전체 방문</div>
+      <div class="stat-num"><%= visitAll.visitTotal %></div>
+    </div>
+    <div class="stat-card admin">
+      <div class="stat-label">전체 신청</div>
+      <div class="stat-num"><%= visitAll.totalLeads %></div>
+    </div>
+    <div class="stat-card admin">
+      <div class="stat-label">유료 발송</div>
+      <div class="stat-num"><%= visitAll.paidCount %></div>
+    </div>
+    <div class="stat-card admin accent">
+      <div class="stat-label">방문 → 신청</div>
+      <div class="stat-num"><%= visitAll.visitToLead %><span class="stat-unit">%</span></div>
+    </div>
+    <div class="stat-card admin accent">
+      <div class="stat-label">신청 → 유료</div>
+      <div class="stat-num"><%= visitAll.leadToPaid %><span class="stat-unit">%</span></div>
+    </div>
+  </div>
+<% } %>
+
+<style>
+  .stat-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-bottom:8px; }
+  .stat-card { background:#fff; border:1px solid #e6e0d2; border-radius:12px; padding:16px 14px; text-align:center; }
+  .stat-card.accent { background:#fbf6ec; border-color:#e6d9b8; }
+  .stat-card.admin { background:#f4f1ff; border-color:#ddd6f3; }
+  .stat-card.admin.accent { background:#efeaff; }
+  .stat-label { font-size:12.5px; color:#8a8372; margin-bottom:8px; }
+  .stat-num { font-size:26px; font-weight:800; color:#3a3527; }
+  .stat-unit { font-size:15px; font-weight:600; color:#8a8372; margin-left:2px; }
+</style>
+
 <h2 class="section-h">최근 작업 현황</h2>
 <div class="recent">
   <div class="recent-row"><span>제작한 리포트</span><em><%= stats.pdfs %>건</em></div>

@@ -76,6 +76,17 @@ async function initDb() {
 
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source TEXT DEFAULT '상담신청';`);
 
+  // 랜딩 페이지 방문 기록 (방문자 통계용)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS page_visits (
+      id          BIGSERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      visited_at  TIMESTAMPTZ DEFAULT NOW(),
+      visitor_key TEXT
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_visits_teacher ON page_visits(teacher_id, visited_at);`);
+
   // 개인정보 자동 폐기 (발송 완료 후 3일 → 연락처·이메일 마스킹)
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS masked_at TIMESTAMPTZ;`);
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;`);

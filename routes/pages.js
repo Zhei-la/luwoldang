@@ -17,7 +17,11 @@ router.get('/home', async (req, res, next) => {
       leads: await q('SELECT COUNT(*)::int AS c FROM leads WHERE teacher_id = $1'),
       free:  await q('SELECT COUNT(*)::int AS c FROM free_logs WHERE teacher_id = $1'),
     };
-    res.render('dash/home', { user: req.user, active: 'home', stats });
+    // 방문자 통계 (교육생: 자기 것 / 관리자: 전체도 함께)
+    const { getStats } = require('../services/stats');
+    const visit = await getStats(req.user.id);
+    const visitAll = req.user.role === 'admin' ? await getStats(null) : null;
+    res.render('dash/home', { user: req.user, active: 'home', stats, visit, visitAll });
   } catch (e) {
     next(e);
   }
