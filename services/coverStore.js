@@ -49,7 +49,7 @@ async function pickCover(teacherId, type) {
       }
       // 2-b) 코드 내장 기본 세트 (public 파일)
       const built = builtinCoverPath(setKey, type);
-      if (built) return { img: built.img, style: built.style, brandPos: built.brandPos, source: 'set-builtin' };
+      if (built) return { img: built.img, style: built.style, brandPos: built.brandPos, brandTop: built.brandTop, source: 'set-builtin' };
     }
   } catch (e) { /* noop */ }
 
@@ -236,3 +236,4 @@ async function getSetItemImg(setKey, type) {
     'SELECT img FROM cover_set_items WHERE set_key = $1 AND type = $2 LIMIT 1', [setKey, type]);
   return rows[0] || null;
 }
+
