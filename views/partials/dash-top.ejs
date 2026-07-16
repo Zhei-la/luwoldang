@@ -55,6 +55,10 @@
         <a href="<%= m.href %>" class="nav-item <%= active === m.key ? 'active' : '' %>"><%= m.label %></a>
       <% }); %>
 
+      <% if (user.partner_on) { %>
+        <a href="/partner" class="nav-item <%= active === 'partner' ? 'active' : '' %>">모집하기</a>
+      <% } %>
+
       <% if (user.role === 'admin') { %>
         <div class="nav-sep">관리자</div>
         <a href="/admin/approvals" class="nav-item <%= active === 'admin' ? 'active' : '' %>">회원 승인 · 관리</a>

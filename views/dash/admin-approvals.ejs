@@ -66,9 +66,59 @@
           <% } %>
         </div>
       </div>
+      <!-- 모집 파트너 -->
+      <div class="partner-row" data-id="<%= u.id %>">
+        <label class="partner-toggle">
+          <input type="checkbox" <%= u.partner_on ? 'checked' : '' %> onchange="togglePartner(<%= u.id %>, this)">
+          <span>모집 파트너</span>
+        </label>
+        <div class="partner-detail" style="<%= u.partner_on ? '' : 'display:none' %>">
+          <input type="text" class="partner-kakao" placeholder="이 파트너 전용 카톡 링크" value="<%= u.partner_kakao || '' %>">
+          <button type="button" onclick="saveKakao(<%= u.id %>, this)">저장</button>
+          <% if (u.partner_slug) { %><a class="partner-link" href="/p/<%= u.partner_slug %>" target="_blank">모집페이지 ↗</a><% } %>
+        </div>
+      </div>
     <% }); %>
   </div>
 <% } %>
+
+<style>
+  .partner-row { background:#faf8f2; border:1px solid #ece6d8; border-radius:10px; padding:12px 16px; margin:-6px 0 14px; }
+  .partner-toggle { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:#8a6f3c; cursor:pointer; }
+  .partner-toggle input { width:18px; height:18px; }
+  .partner-detail { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+  .partner-detail .partner-kakao { flex:1; min-width:200px; padding:9px 12px; border:1px solid #ddd2b8; border-radius:8px; font-size:13px; }
+  .partner-detail button { padding:9px 16px; background:#B59A62; color:#fff; border:0; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; }
+  .partner-link { font-size:13px; color:#8a6f3c; font-weight:700; text-decoration:none; white-space:nowrap; }
+</style>
+
+<script>
+  async function togglePartner(id, box){
+    try {
+      var r = await fetch('/admin/partner/' + id + '/toggle', { method:'POST' });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      var row = document.querySelector('.partner-row[data-id="' + id + '"]');
+      row.querySelector('.partner-detail').style.display = d.partner_on ? '' : 'none';
+      if (d.partner_on) setTimeout(function(){ location.reload(); }, 400);
+    } catch(e){ alert('실패: ' + e.message); box.checked = !box.checked; }
+  }
+  async function saveKakao(id, btn){
+    var row = document.querySelector('.partner-row[data-id="' + id + '"]');
+    var kakao = row.querySelector('.partner-kakao').value.trim();
+    btn.disabled = true; btn.textContent = '저장중';
+    try {
+      var r = await fetch('/admin/partner/' + id + '/kakao', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ kakao: kakao })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      btn.textContent = '저장됨';
+      setTimeout(function(){ btn.textContent='저장'; btn.disabled=false; }, 1200);
+    } catch(e){ alert('실패: ' + e.message); btn.textContent='저장'; btn.disabled=false; }
+  }
+</script>
 
 <!-- 거절됨 -->
 <% if (rejected.length > 0) { %>
