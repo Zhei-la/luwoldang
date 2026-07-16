@@ -46,17 +46,29 @@ router.post('/r/:token/review', async (req, res) => {
     if (body.length > 1500) return res.status(400).json({ error: '후기가 너무 깁니다. (1500자 이내)' });
     if (photo && !photo.startsWith('data:image/')) photo = '';   // 외부 URL 주입 차단
 
-    const saved = await pool.query(
-      `INSERT INTO reviews (teacher_id, pdf_id, lead_id, name, rating, body, photo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
-       ON CONFLICT (pdf_id) DO UPDATE
-         SET rating = EXCLUDED.rating,
-             body = EXCLUDED.body,
-             photo = EXCLUDED.photo,
-             created_at = NOW()
-       RETURNING id`,
-      [pdf.teacher_id, pdf.pdf_id, pdf.lead_id, maskName(pdf.name), rating, body, photo || null]
+    // 같은 리포트에 이미 후기가 있으면 수정, 없으면 새로 저장
+    // (ON CONFLICT 대신 직접 처리 — 부분 UNIQUE 인덱스라 ON CONFLICT 가 안 걸림)
+    let saved;
+    const existing = await pool.query(
+      'SELECT id FROM reviews WHERE pdf_id = $1 LIMIT 1',
+      [pdf.pdf_id]
     );
+    if (existing.rows[0]) {
+      saved = await pool.query(
+        `UPDATE reviews
+            SET rating = $2, body = $3, photo = $4, created_at = NOW()
+          WHERE id = $1
+          RETURNING id`,
+        [existing.rows[0].id, rating, body, photo || null]
+      );
+    } else {
+      saved = await pool.query(
+        `INSERT INTO reviews (teacher_id, pdf_id, lead_id, name, rating, body, photo)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         RETURNING id`,
+        [pdf.teacher_id, pdf.pdf_id, pdf.lead_id, maskName(pdf.name), rating, body, photo || null]
+      );
+    }
 
     console.log('[후기] 접수:', maskName(pdf.name), rating + '점');
     res.json({ ok: true, id: saved.rows[0].id });
