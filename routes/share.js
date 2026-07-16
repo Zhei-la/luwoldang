@@ -13,6 +13,7 @@ const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { buildReportHtml } = require('../services/pdfDoc');
+const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 const { maskName } = require('./reviews');
@@ -32,7 +33,7 @@ async function ensureToken(pdfId) {
 /** 토큰 → 리포트 HTML (열람용 · 다운로드용 공통) */
 async function loadReport(token) {
   const { rows } = await pool.query(
-    `SELECT p.id, p.type, p.sections, p.extra,
+    `SELECT p.id, p.type, p.sections, p.extra, p.teacher_id,
             l.name, l.birth, l.hour, l.calendar, l.region, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
             u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice,
@@ -84,13 +85,16 @@ async function loadReport(token) {
   // 본문 배경지
   const { paperImg } = require('../services/bgPapers');
   const bgPaper = pdf.bg_paper ? (pdf.bg_paper === 'none' ? 'none' : paperImg(pdf.bg_paper)) : undefined;
+  // 표지 (교육생이 고른 세트/낱개 반영)
+  let cover = null;
+  try { cover = await resolveCover(pdf.teacher_id, pdf.type); } catch (e) { cover = null; }
 
   const html = pdf.type === FREE
     ? buildFreePdfHtml({ teacher, client, saju, result: pdf.sections || {}, baseUrl })
     : buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
-        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web', bgPaper,
+        teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web', bgPaper, cover,
       });
 
   return { pdf, html };
@@ -340,3 +344,4 @@ function escapeHtml(s) {
 }
 
 module.exports = { router, ensureToken };
+
