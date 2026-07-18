@@ -138,6 +138,11 @@ button{cursor:pointer;background:none;border:none}
   .mtabs button{flex:1;padding:11px 4px;font-size:13.5px;font-weight:700;color:var(--fog);border-bottom:2px solid transparent}
   .mtabs button.on{color:var(--moon-2);border-bottom-color:var(--moon);background:rgba(200,164,92,.06)}
 
+  /* 데스크탑에서 접어둔 상태(hide-left/right)는 모바일에서 무시한다.
+     안 그러면 탭을 눌러도 투명하게 숨겨져 아무것도 안 보인다. */
+  .shell.hide-left,.shell.hide-right,.shell.hide-left.hide-right{grid-template-columns:none}
+  .shell.hide-left .left,.shell.hide-right .right{opacity:1;pointer-events:auto}
+
   /* 한 번에 하나만 보이게 */
   .panel,.center{display:none;width:100%;height:auto}
   .shell[data-tab="blocks"] .left{display:flex}
