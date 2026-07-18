@@ -146,9 +146,9 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     const { name, gender, birthDate, birthTime, calendar, region, timeUnknown, email, phone, agree } = req.body;
 
-    if (!name || !birthDate || !email || !phone || !agree) {
+    if (!name || !birthDate || !agree) {
       return res.status(400).render('free/input', {
-        teacher, error: '이름, 생년월일, 이메일, 연락처, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
+        teacher, error: '이름, 생년월일, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
       });
     }
 
@@ -160,7 +160,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     }
 
     const client = {
-      name, gender, birthDate, email, phone,
+      name, gender, birthDate,
       birthTime: timeUnknown ? null : (birthTime || null),
       calendar: calendar || '양력',
       region: region || '서울특별시',
@@ -195,10 +195,10 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     // 무료사주 본 사람도 신청자 목록에 기록 (source = 무료사주)
     const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'무료사주 발송','무료사주') RETURNING id`,
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, status, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'무료사주 조회','무료사주') RETURNING id`,
       [teacher.id, client.name, client.gender, client.birthDate, client.calendar,
-       client.birthTime || null, client.region, client.email, client.phone]
+       client.birthTime || null, client.region]
     );
     const leadId = lead.rows[0].id;
 
@@ -216,23 +216,11 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
       [teacher.id, leadId, JSON.stringify(client), JSON.stringify(result), token]
     );
 
-    // 이메일 발송 (실패해도 화면은 정상 표시)
-    const base = process.env.BASE_URL || '';
-    let mailSent = false;
-    try {
-      await sendFreeSaju({
-        to: email, teacher, saju, result, input: client,
-        upsell: UPSELL, baseUrl: base,
-        shareUrl: `${base}/fr/${token}`,
-      });
-      mailSent = true;
-      await pool.query('UPDATE free_logs SET mail_sent = TRUE WHERE id = $1', [log.rows[0].id]);
-    } catch (e) {
-      console.error('[MAIL] 무료사주 발송 실패:', e.message);
-    }
+    // 웹에서 바로 결과를 보여주므로 이메일은 보내지 않는다.
+    //   (교육생이 직접 만드는 무료사주 PDF 발송은 그대로 유지)
 
     res.render('free/result', {
-      teacher, saju, result, input: client, mailSent,
+      teacher, saju, result, input: client, mailSent: false,
       logId: log.rows[0].id, upsell: UPSELL, error: null,
     });
   } catch (e) {

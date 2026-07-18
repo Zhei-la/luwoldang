@@ -37,6 +37,11 @@
   var box=document.getElementById('notiBox'), desc=document.getElementById('notiDesc');
   var bOn=document.getElementById('notiOn'), bOff=document.getElementById('notiOff'), bTest=document.getElementById('notiTest');
   var KEY='';
+  var UA = navigator.userAgent || '';
+  var INAPP = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|FB_IAB|Line\/|DaumApps|everytimeApp/i.test(UA);
+  var IOS = /iPhone|iPad|iPod/i.test(UA);
+  var STANDALONE = window.navigator.standalone === true
+    || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 
   function show(state, n){
     box.style.display='';
@@ -46,8 +51,18 @@
     } else if(state==='denied'){
       desc.innerHTML='브라우저에서 알림이 <b>차단</b>되어 있습니다. 주소창 왼쪽 자물쇠 → 알림 → 허용으로 바꿔주세요.';
       bOn.style.display='none'; bOff.style.display='none'; bTest.style.display='none';
+    } else if(state==='inapp'){
+      desc.innerHTML='카카오톡·인스타그램 같은 <b>앱 안의 화면</b>에서는 알림을 켤 수 없습니다.<br>'
+        + '오른쪽 위 <b>⋮ (점 세 개)</b> → <b>다른 브라우저로 열기</b> 를 눌러 '
+        + (IOS ? '<b>사파리</b>' : '<b>크롬</b>') + '으로 연 뒤 다시 시도해주세요.';
+      bOn.style.display='none'; bOff.style.display='none'; bTest.style.display='none';
+    } else if(state==='ios-web'){
+      desc.innerHTML='아이폰은 <b>홈 화면에 추가</b>한 뒤에만 알림을 받을 수 있습니다.<br>'
+        + '사파리 아래 <b>공유 버튼</b> → <b>홈 화면에 추가</b> → 생긴 아이콘으로 들어와 알림을 켜주세요.';
+      bOn.style.display='none'; bOff.style.display='none'; bTest.style.display='none';
     } else if(state==='unsupported'){
-      desc.innerHTML='이 브라우저는 알림을 지원하지 않습니다. <b>아이폰</b>은 사파리에서 <b>공유 → 홈 화면에 추가</b> 후 열면 알림을 받을 수 있습니다.';
+      desc.innerHTML='이 브라우저는 알림을 지원하지 않습니다. '
+        + (IOS ? '<b>사파리</b>' : '<b>크롬</b>') + '으로 열어 다시 시도해주세요.';
       bOn.style.display='none'; bOff.style.display='none'; bTest.style.display='none';
     } else {
       desc.textContent='손님이 사주를 신청하면 이 기기로 알림을 보내드립니다.';
@@ -62,7 +77,11 @@
   }
 
   async function init(){
-    if(!('serviceWorker' in navigator) || !('PushManager' in window)){ show('unsupported'); return; }
+    // 카카오톡·인스타 등 앱 안의 브라우저는 알림을 지원하지 않는다
+    if(INAPP){ box.style.display=''; show('inapp'); return; }
+    // 아이폰은 홈 화면에 추가해서 열었을 때만 알림이 된다
+    if(IOS && !STANDALONE){ box.style.display=''; show('ios-web'); return; }
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)){ box.style.display=''; show('unsupported'); return; }
     var r;
     try { r = await (await fetch('/push/key')).json(); } catch(e){ return; }
     if(!r.ok || !r.ready || !r.key) return;   // 서버에 알림 설정이 없으면 숨김
@@ -84,7 +103,14 @@
                  body:JSON.stringify({sub:s})})).json();
         if(!d.ok) throw new Error(d.error||'실패');
         show('on', d.devices);
-        new Notification('루월당', { body:'이제 신청 알림을 받습니다 🎉', icon:'/img/push-icon.png' });
+        // 안드로이드에서는 new Notification() 이 막혀 있으므로 서비스워커로 띄운다
+        try {
+          await reg2.showNotification('루월당', {
+            body: '이제 신청 알림을 받습니다 🎉',
+            icon: '/img/push-icon.png',
+            badge: '/img/push-icon.png',
+          });
+        } catch(e) { /* 알림 표시 실패는 무시 — 구독은 이미 완료됨 */ }
       }catch(e){ alert('알림을 켜지 못했습니다: ' + e.message); }
       bOn.disabled=false; bOn.textContent='알림 켜기';
     };
