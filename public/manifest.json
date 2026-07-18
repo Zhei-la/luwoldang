@@ -1,0 +1,12 @@
+{
+  "name": "루월당",
+  "short_name": "루월당",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#B59A62",
+  "icons": [
+    { "src": "/img/push-icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/img/push-icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

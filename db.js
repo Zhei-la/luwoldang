@@ -89,6 +89,19 @@ async function initDb() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_visits_teacher ON page_visits(teacher_id, visited_at);`);
 
+  // 브라우저 알림 구독 정보 (기기마다 한 줄)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS push_subs (
+      id          BIGSERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      endpoint    TEXT UNIQUE NOT NULL,
+      p256dh      TEXT NOT NULL,
+      auth        TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_push_teacher ON push_subs(teacher_id);`);
+
   // 개인정보 자동 폐기 (발송 완료 후 3일 → 연락처·이메일 마스킹)
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS masked_at TIMESTAMPTZ;`);
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;`);

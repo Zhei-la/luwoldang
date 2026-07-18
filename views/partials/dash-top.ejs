@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= typeof title !== 'undefined' ? title : '홈' %> · 루월당</title>
+  <!-- 홈 화면에 추가하면 앱처럼 쓸 수 있고, 아이폰에서도 알림을 받을 수 있다 -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#B59A62">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="루월당">
+  <link rel="apple-touch-icon" href="/img/push-icon.png">
   <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>

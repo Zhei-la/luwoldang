@@ -17,6 +17,7 @@ const coversRouter = require('./routes/covers');
 const leadsRouter = require('./routes/leads');
 const chatRoutes = require('./routes/chat');
 const { router: shareRoutes } = require('./routes/share');
+const pushRouter = require('./routes/push');
 const { router: reviewRoutes } = require('./routes/reviews');
 const { requireAuth } = require('./middleware/auth');
 const app = express();
@@ -75,7 +76,9 @@ app.post('/logout', (req, res) => {
 // ⚠️ 공개 라우트는 로그인 검사가 걸린 라우터들보다 먼저 붙여야 한다.
 // (leads/chat 라우터는 접두사 없이 마운트돼서 requireAuth 가 모든 요청을 가로챈다)
 app.use(shareRoutes);   // /r/:token — 내담자가 로그인 없이 리포트 열람
-app.use(reviewRoutes);  // 후기 (/r/:token/review 는 공개, /reviews 는 교육생)
+app.use(reviewRoutes);
+  // 후기 (/r/:token/review 는 공개, /reviews 는 교육생)
+app.use(pushRouter);      // 브라우저 알림
 app.use('/', freeRouter);
 // 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
 app.use('/admin', adminRouter);

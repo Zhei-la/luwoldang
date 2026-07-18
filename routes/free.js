@@ -6,6 +6,7 @@ const { calcSaju } = require('../services/manseryeok');
 const { generateFreeSaju, UPSELL } = require('../services/ai');
 const { renderLanding, defaultLanding } = require('../services/landing');
 const { sendFreeSaju } = require('../services/mail');
+const { notify } = require('../services/push');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 
@@ -112,6 +113,14 @@ router.post('/s/:slug/apply', async (req, res, next) => {
       [teacher.id, b.name, b.gender || null, birth || null, b.cal || null, b.hour || null,
        b.region || null, b.phone, b.email || null, b.product || null, b.memo || null]
     );
+
+    // 교육생에게 알림 (실패해도 신청은 정상 처리)
+    notify(teacher.id, {
+      title: '새 사주 신청이 들어왔어요',
+      body: `${b.name || '손님'}님${b.product ? ' · ' + b.product : ''}`,
+      url: '/leads',
+    }).catch(() => {});
+
     res.json({ ok: true });
   } catch (e) {
     next(e);
@@ -137,9 +146,9 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     const { name, gender, birthDate, birthTime, calendar, region, timeUnknown, email, phone, agree } = req.body;
 
-    if (!name || !birthDate || !agree) {
+    if (!name || !birthDate || !email || !phone || !agree) {
       return res.status(400).render('free/input', {
-        teacher, error: '이름, 생년월일, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
+        teacher, error: '이름, 생년월일, 이메일, 연락처, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
       });
     }
 
@@ -151,7 +160,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     }
 
     const client = {
-      name, gender, birthDate,
+      name, gender, birthDate, email, phone,
       birthTime: timeUnknown ? null : (birthTime || null),
       calendar: calendar || '양력',
       region: region || '서울특별시',
@@ -186,12 +195,19 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     // 무료사주 본 사람도 신청자 목록에 기록 (source = 무료사주)
     const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'무료사주 조회','무료사주') RETURNING id`,
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, status, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'무료사주 발송','무료사주') RETURNING id`,
       [teacher.id, client.name, client.gender, client.birthDate, client.calendar,
-       client.birthTime || null, client.region]
+       client.birthTime || null, client.region, client.email, client.phone]
     );
     const leadId = lead.rows[0].id;
+
+    // 교육생에게 알림 (실패해도 결과 화면은 정상)
+    notify(teacher.id, {
+      title: '무료사주를 본 손님이 있어요',
+      body: `${client.name || '손님'}님이 무료사주를 조회했습니다`,
+      url: '/leads',
+    }).catch(() => {});
 
     const token = crypto.randomBytes(16).toString('hex');
     const log = await pool.query(
@@ -200,11 +216,23 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
       [teacher.id, leadId, JSON.stringify(client), JSON.stringify(result), token]
     );
 
-    // 웹에서 바로 결과를 보여주는 방식이라 이메일은 보내지 않는다.
-    //   (교육생이 직접 만드는 무료사주 PDF 발송 기능은 그대로 유지된다)
+    // 이메일 발송 (실패해도 화면은 정상 표시)
+    const base = process.env.BASE_URL || '';
+    let mailSent = false;
+    try {
+      await sendFreeSaju({
+        to: email, teacher, saju, result, input: client,
+        upsell: UPSELL, baseUrl: base,
+        shareUrl: `${base}/fr/${token}`,
+      });
+      mailSent = true;
+      await pool.query('UPDATE free_logs SET mail_sent = TRUE WHERE id = $1', [log.rows[0].id]);
+    } catch (e) {
+      console.error('[MAIL] 무료사주 발송 실패:', e.message);
+    }
 
     res.render('free/result', {
-      teacher, saju, result, input: client, mailSent: false,
+      teacher, saju, result, input: client, mailSent,
       logId: log.rows[0].id, upsell: UPSELL, error: null,
     });
   } catch (e) {
