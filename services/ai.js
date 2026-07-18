@@ -508,6 +508,9 @@ ${STYLE_RULES}
 아래에 리포트 전체 목차를 드립니다. **당신이 맡은 챕터의 소제목에만 집중하세요.**
 다른 챕터가 다룰 내용을 미리 요약하거나 앞질러 말하지 마세요. 그게 "반복된다"는 느낌의 원인입니다.
 
+## 언어
+- **한국어로만 쓰세요.** 사람 이름을 영어로 바꿔 쓰지 마세요. (예: 김경태 → kim경태 금지)
+
 ## 분량
 - **각 소제목마다 700~900자.** 짧게 끝내지 마세요.
 - 소제목당 3~4문단. 문단 구분은 \n\n 입니다.
@@ -519,7 +522,7 @@ ${STYLE_RULES}
 { "blocks": [ { "sub": "소제목", "body": "본문 (700~900자)" }, ... ] }`;
 
 /** 사주 정보 블록 (프롬프트용) */
-function sajuBlock(client, saju, partner, partnerSaju) {
+function sajuBlock(client, saju, partner, partnerSaju, type) {
   const d = saju.detail;
   const year = new Date().getFullYear();
 
@@ -600,7 +603,20 @@ ${(() => {
 강한 기운: ${partnerSaju.strong.join(', ')} / 부족한 기운: ${partnerSaju.weak.join(', ')}
 
 → 이 리포트는 두 사람의 '궁합'입니다. 각자의 사주를 길게 풀지 말고,
-  두 사람이 만났을 때 나타나는 상호작용·차이·조화에 집중해서 작성하세요.` : ''}`;
+  두 사람이 만났을 때 나타나는 상호작용·차이·조화에 집중해서 작성하세요.` : (
+  type === '연인궁합' || type === '재회운' ? `
+
+════════════════════════════════════
+[상대방 정보 없음]
+상대방의 생년월일이 입력되지 않았습니다.
+
+⚠️ 상대방의 사주를 아는 것처럼 쓰지 마세요.
+   "상대방의 일간은", "상대방 사주를 보면", "상대의 오행이" 같은 표현 금지.
+⚠️ 상대의 현재 마음을 사실처럼 단정하지 마세요.
+→ 신청자 본인 사주에 나타나는 인연운·관계운을 중심으로 쓰세요.
+→ 상대에 대해서는 "이런 성향의 상대와 잘 맞습니다" 처럼 가능성으로 표현하세요.
+→ 첫 장에서 "상대방 정보가 없어 본인 사주를 중심으로 살펴본다"고
+   한 번만 자연스럽게 알려주세요.` : '')}`;
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -957,7 +973,7 @@ function checkStyle(body, name, opts) {
  * 챕터 하나 생성
  */
 async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters }) {
-  const info = sajuBlock(client, saju, partner, partnerSaju);
+  const info = sajuBlock(client, saju, partner, partnerSaju, type);
   const subs = chapter.sub || [];
 
   /* ── 종합사주 vs 전문 리포트 — 역할을 분명히 나눈다 ──
@@ -1075,7 +1091,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     user,
     openaiKey,
     model,
-    maxTokens: 4500,
+    maxTokens: 6000,
   });
 
   let blocks = Array.isArray(out.blocks) ? out.blocks : [];
@@ -1090,7 +1106,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
       user: user + '\n\n⚠️ 반드시 blocks 배열의 각 항목에 sub(소제목)와 body(본문 700~900자)를 모두 채워 JSON으로만 답하세요. body를 비우지 마세요.',
       openaiKey,
       model,
-      maxTokens: 4500,
+      maxTokens: 6000,
     });
     const retry = Array.isArray(out.blocks) ? out.blocks : [];
     if (retry.length && hasBody(retry)) blocks = retry;
@@ -1180,15 +1196,18 @@ ${probs.join('\n')}
 - 연결어미(~라 / ~는데 / ~어서 / ~기 때문에 / ~되니)로 물리세요.
 - 같은 어미를 두 번 연속 쓰지 마세요.
 - 짧은 구 뒤에는 쉼표를 찍지 마세요.
-- 이름("${client.name}")은 소제목당 2번 이하.
+- 이름("${client.name}")은 소제목당 2번 이하. **한글 그대로** 쓰고 영어 표기 금지.
 - "또한 / 따라서 / 즉 / 이러한" 으로 문장을 시작하지 마세요.
 - 분량은 줄이지 마세요.
+
+⚠️ 이름은 반드시 한글 "${client.name}" 그대로 쓰세요. 영어 표기 금지.
+⚠️ 한국어로만 쓰고 영어 단어를 섞지 마세요.
 
 [방금 쓴 글]
 ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}`,
         openaiKey,
         model,
-        maxTokens: 4500,
+        maxTokens: 6000,
       });
       const fixed = Array.isArray(fix.blocks) ? fix.blocks : [];
       if (fixed.length === blocks.length) {

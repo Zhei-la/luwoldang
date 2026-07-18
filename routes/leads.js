@@ -198,6 +198,15 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
   });
   const send = (ev, data) => res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
 
+  // 생성에 시간이 걸리면 중간 서버가 연결을 끊는다.
+  //   15초마다 신호를 보내 연결을 살려 둔다.
+  const keepAlive = setInterval(() => {
+    try { res.write(': keep-alive\n\n'); } catch (e) {}
+  }, 15000);
+  const stop = () => clearInterval(keepAlive);
+  res.on('close', stop);
+  res.on('finish', stop);
+
   try {
     const { rows } = await pool.query(
       'SELECT * FROM leads WHERE id = $1 AND teacher_id = $2',
@@ -258,7 +267,7 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
         [req.user.id, lead.id, FREE, JSON.stringify(free)]
       );
       send('done', { pdfId: insF.rows[0].id, chapters: 1 });
-      return res.end();
+      stop(); return res.end();
     }
 
     const result = await generatePdfReport({
