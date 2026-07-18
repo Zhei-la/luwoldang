@@ -361,13 +361,14 @@ function sajuPages({ client, saju, type }) {
  * 예전에는 여백을 전부 '1줄'로 올려 세서 페이지가 25%씩 비었다. 소수점으로 정확히 센다. */
 /* 본문 18.5px × 1.95 = 36.1px = 9.54mm.
  * 241mm ÷ 9.54mm = 25.3줄. 각주 자리 3.5줄 빼면 21.8줄. */
-const LINES_PER_PAGE = 21.8;
+const LINES_PER_PAGE = 24.6;    // 실측 26.3줄 - 각주 여유 1.7줄 (각주는 용어가 나온 페이지에만 생긴다)
 const CHARS_PER_LINE = 33;      // 170mm ÷ (18.5px = 4.90mm) = 34.7자. 여유 두고 33.
 const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
 const LINES_SUB = 1.4;          // 소제목(21px) + margin 14px
 const LINES_PARA_GAP = 0.45;    // 문단 margin-bottom 12px = 3.17mm
 const LINES_BLOCK_GAP = 1.05;   // .ch-block margin-bottom 30px = 7.94mm
-const OVERFLOW_TOLERANCE = 0.6; // 0.6줄까지는 넘쳐도 한 장에 붙인다 (한 줄만 넘어가는 꼴 방지)
+const OVERFLOW_TOLERANCE = 1.4; // 이만큼은 넘쳐도 한 장에 붙인다 (빈 공간을 남기지 않는다)
+const MIN_START_LINES = 3;      // 소제목 + 최소 이만큼 들어가면 이 페이지에서 시작한다
 
 /** 문단이 차지하는 줄 수 */
 function paraLines(text) {
@@ -406,9 +407,13 @@ function paginateChapter(ch) {
     let block = { sub: b.sub || '', paras: [] };
     let need = b.sub ? LINES_SUB : 0;
 
-    // 소제목 + 첫 문단이 이 페이지에 안 들어가면 → 새 페이지에서 시작
+    // 소제목과 본문 앞부분이라도 들어가면 이 페이지에서 시작한다.
+    //   예전에는 '첫 문단 전체'가 들어가야 시작해서, 문단이 길면 페이지가 통째로 비었다.
     if (used > 0) used += LINES_BLOCK_GAP;   // 블록 사이 여백
-    const firstNeed = need + (paras[0] ? paraLinesBr(paras[0]) : 0);
+    const firstNeed = need + Math.min(
+      paras[0] ? paraLinesBr(paras[0]) : 0,
+      MIN_START_LINES
+    );
     if (used > 0 && used + firstNeed > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
       pushPage();
     }
