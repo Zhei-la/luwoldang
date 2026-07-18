@@ -397,8 +397,15 @@ function paginateChapter(ch) {
   let used = LINES_CH_TITLE;     // 첫 장은 챕터 제목이 자리를 먹는다
 
   const pushPage = () => {
-    if (cur.blocks.length) pages.push(cur);
-    cur = { isFirst: false, blocks: [] };
+    if (cur.blocks.length) {
+      pages.push(cur);
+      cur = { isFirst: false, blocks: [] };
+    } else {
+      // 아직 아무것도 담기지 않았다면 페이지를 만들지 않는다.
+      //   이때 isFirst 를 false 로 바꿔버리면 그 챕터의 제목이 영영 나오지 않는다.
+      //   (첫 소제목이 길어 시작부터 넘길 때 이런 일이 생겼다)
+      cur = { isFirst: cur.isFirst, blocks: [] };
+    }
     used = 0;
   };
 
@@ -407,13 +414,12 @@ function paginateChapter(ch) {
     let block = { sub: b.sub || '', paras: [] };
     let need = b.sub ? LINES_SUB : 0;
 
-    // 소제목과 본문 앞부분이라도 들어가면 이 페이지에서 시작한다.
-    //   예전에는 '첫 문단 전체'가 들어가야 시작해서, 문단이 길면 페이지가 통째로 비었다.
+    // 소제목과 첫 문단은 반드시 같은 페이지에 함께 있어야 한다.
+    //   소제목만 페이지 끝에 남고 본문이 다음 장으로 넘어가면 보기 나쁘다.
+    //   다만 첫 문단이 한 페이지보다 크면 어차피 나뉘므로 그때는 시작한다.
     if (used > 0) used += LINES_BLOCK_GAP;   // 블록 사이 여백
-    const firstNeed = need + Math.min(
-      paras[0] ? paraLinesBr(paras[0]) : 0,
-      MIN_START_LINES
-    );
+    const firstPara = paras[0] ? paraLinesBr(paras[0]) : 0;
+    const firstNeed = need + Math.min(firstPara, LINES_PER_PAGE - need);
     if (used > 0 && used + firstNeed > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
       pushPage();
     }
@@ -424,11 +430,16 @@ function paginateChapter(ch) {
 
       // 이 문단이 안 들어가면 페이지를 넘긴다 (아슬아슬하면 그냥 붙인다)
       if (used + n > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
-        if (block.paras.length || block.sub) {
+        if (block.paras.length) {
+          // 본문이 이미 담긴 블록만 이 페이지에 남긴다
           cur.blocks.push(block);
           block = { sub: '', paras: [] };   // 이어지는 페이지엔 소제목 반복 안 함
+          pushPage();
+        } else {
+          // 소제목만 있고 본문이 아직 없다면, 소제목도 함께 다음 장으로 옮긴다
+          pushPage();
+          used += need;                     // 새 페이지에서 소제목 자리를 다시 잡는다
         }
-        pushPage();
       }
 
       block.paras.push(p);
