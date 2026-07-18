@@ -43,12 +43,19 @@ router.post('/push/unsubscribe', AUTH, async (req, res) => {
 });
 
 router.post('/push/test', AUTH, async (req, res) => {
+  const devices = await push.subCount(req.user.id);
+  if (!devices) {
+    console.log('[알림] 테스트 실패 — 등록된 기기가 없습니다. (교육생 %s)', req.user.id);
+    return res.json({ ok: false, sent: 0, devices: 0, reason: 'no-device' });
+  }
+
   const n = await push.notify(req.user.id, {
     title: '루월당 알림 테스트',
     body: '알림이 정상적으로 오고 있습니다 🎉',
     url: '/leads',
   });
-  res.json({ ok: n > 0, sent: n });
+  if (!n) console.log('[알림] 테스트 발송 실패 — 기기 %d대 모두 실패 (교육생 %s)', devices, req.user.id);
+  res.json({ ok: n > 0, sent: n, devices, reason: n ? 'ok' : 'send-failed' });
 });
 
 module.exports = router;

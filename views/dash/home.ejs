@@ -40,6 +40,7 @@
   var UA = navigator.userAgent || '';
   var INAPP = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|FB_IAB|Line\/|DaumApps|everytimeApp/i.test(UA);
   var IOS = /iPhone|iPad|iPod/i.test(UA);
+  var ANDROID = /Android/i.test(UA);
   var STANDALONE = window.navigator.standalone === true
     || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 
@@ -90,7 +91,20 @@
     if(Notification.permission==='denied'){ show('denied'); return; }
     var reg = await navigator.serviceWorker.register('/sw.js');
     var sub = await reg.pushManager.getSubscription();
-    show(sub ? 'on' : 'off', r.devices);
+
+    // 브라우저에는 남아 있는데 서버에 기록이 없으면 조용히 다시 등록한다.
+    //   (이 상태에서는 화면에만 '등록됨'으로 보이고 실제로는 알림이 가지 않는다)
+    if (sub && r.devices === 0) {
+      try {
+        var re = await (await fetch('/push/subscribe', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ sub: sub })
+        })).json();
+        if (re && re.ok) r.devices = re.devices;
+      } catch(e) { /* 실패하면 아래에서 다시 켜도록 안내된다 */ }
+    }
+
+    show(sub && r.devices > 0 ? 'on' : 'off', r.devices);
 
     bOn.onclick = async function(){
       bOn.disabled=true; bOn.textContent='켜는 중...';
@@ -131,7 +145,40 @@
       bTest.disabled=true; bTest.textContent='보내는 중...';
       try{
         var d = await (await fetch('/push/test',{method:'POST'})).json();
-        if(!d.ok) alert('알림을 보내지 못했습니다. 알림을 다시 켜보세요.');
+        if(!d.ok){
+          // 등록이 끊긴 경우가 대부분이라, 한 번 자동으로 다시 등록해 본다
+          var fixed = false;
+          try {
+            var reg3 = await navigator.serviceWorker.ready;
+            var s3 = await reg3.pushManager.getSubscription();
+            if (!s3) {
+              s3 = await reg3.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:b64(KEY) });
+            }
+            var rr = await (await fetch('/push/subscribe', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ sub: s3 })
+            })).json();
+            if (rr && rr.ok) {
+              var d2 = await (await fetch('/push/test',{method:'POST'})).json();
+              fixed = !!(d2 && d2.ok);
+              if (fixed) show('on', rr.devices);
+            }
+          } catch(e) { /* 아래 안내로 넘어간다 */ }
+
+          if (!fixed) {
+            alert('알림을 보내지 못했습니다.\n[끄기] 를 눌렀다가 [알림 켜기] 를 다시 눌러주세요.');
+          }
+        } else if(ANDROID){
+          // 서버는 보냈지만 기기가 절전 상태면 도착하지 않을 수 있다
+          setTimeout(function(){
+            if(confirm('알림이 도착했나요?\n\n[취소]를 누르면 갤럭시·안드로이드 설정 방법을 알려드립니다.')) return;
+            desc.innerHTML = '<b>안드로이드에서 알림이 안 올 때</b><br>'
+              + '1. 설정 → 앱 → <b>Chrome</b> → 배터리 → <b>제한 없음</b><br>'
+              + '2. 설정 → 배터리 → <b>백그라운드 사용 제한</b> 끄기<br>'
+              + '3. 설정 → 앱 → Chrome → 알림 → <b>허용</b><br>'
+              + '<span style="color:#a08a5e">특히 1번을 하지 않으면 크롬이 잠들어 알림이 오지 않습니다.</span>';
+          }, 3000);
+        }
       }catch(e){ alert('실패: ' + e.message); }
       bTest.disabled=false; bTest.textContent='테스트';
     };
