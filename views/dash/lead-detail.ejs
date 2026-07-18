@@ -9,7 +9,11 @@
 
 <!-- 신청자 정보 -->
 <div class="settings-block">
-  <h2 class="section-h">신청자 정보</h2>
+  <h2 class="section-h">신청자 정보
+    <button type="button" class="edit-btn" id="btnEditLead">정보 수정</button>
+  </h2>
+
+  <div id="leadView">
   <div class="acc-row"><span>이름</span><b><%= lead.name %> <%= lead.gender || '' %></b></div>
   <div class="acc-row"><span>생년월일</span><b><%= lead.birth || '-' %> <%= lead.calendar || '' %></b></div>
   <div class="acc-row"><span>태어난 시간</span><b><%= (lead.hour && !/모름/.test(lead.hour)) ? lead.hour : '모름' %></b></div>
@@ -19,6 +23,46 @@
   <% if (lead.product) { %><div class="acc-row"><span>신청 상품</span><b><%= lead.product %></b></div><% } %>
   <div class="acc-row"><span>신청 경로</span><b><%= lead.source === '무료사주' ? '무료사주' : '상담 신청' %></b></div>
   <div class="acc-row"><span>신청 시각</span><b><%= fmt(lead.created_at) %></b></div>
+  </div>
+
+  <!-- 정보 수정 폼 -->
+  <div id="leadEdit" style="display:none">
+    <div class="ed-warn">생년월일·시간·지역을 바꾸면 사주가 달라집니다.
+      이미 만든 리포트는 그대로 남으니, 바꾼 뒤 <b>리포트를 다시 만들어</b>주세요.</div>
+
+    <div class="ed-grid">
+      <label class="ed-f"><span>이름</span>
+        <input type="text" id="edName" value="<%= lead.name || '' %>"></label>
+      <label class="ed-f"><span>성별</span>
+        <select id="edGender">
+          <option value="" <%= !lead.gender ? 'selected' : '' %>>선택 안 함</option>
+          <option value="남" <%= lead.gender === '남' ? 'selected' : '' %>>남</option>
+          <option value="여" <%= lead.gender === '여' ? 'selected' : '' %>>여</option>
+        </select></label>
+      <label class="ed-f"><span>생년월일</span>
+        <input type="text" id="edBirth" value="<%= lead.birth || '' %>" placeholder="1990-01-29"></label>
+      <label class="ed-f"><span>달력</span>
+        <select id="edCal">
+          <% ['양력','음력','윤달'].forEach(function(c){ %>
+            <option value="<%= c %>" <%= (lead.calendar || '양력') === c ? 'selected' : '' %>><%= c %></option>
+          <% }); %>
+        </select></label>
+      <label class="ed-f"><span>태어난 시간</span>
+        <input type="text" id="edHour" value="<%= lead.hour || '' %>" placeholder="모르면 비워두세요"></label>
+      <label class="ed-f"><span>지역</span>
+        <input type="text" id="edRegion" value="<%= lead.region || '' %>" placeholder="서울특별시"></label>
+      <label class="ed-f wide"><span>이메일</span>
+        <input type="email" id="edEmail" value="<%= lead.email || '' %>" placeholder="report@example.com"></label>
+      <label class="ed-f wide"><span>연락처</span>
+        <input type="text" id="edPhone" value="<%= lead.phone || '' %>" placeholder="010-0000-0000"></label>
+    </div>
+
+    <div class="ed-actions">
+      <button type="button" class="ed-save" id="btnSaveLead">저장하기</button>
+      <button type="button" class="ed-cancel" id="btnCancelLead">취소</button>
+    </div>
+  </div>
+
   <% if (lead.memo && String(lead.memo).trim()) { %>
     <div class="acc-row col"><span>묻고 싶은 것</span>
       <div class="memo-box"><%= lead.memo %></div>
@@ -346,6 +390,72 @@
 
   sync();
 })();
+</script>
+
+
+<style>
+  .section-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .edit-btn{padding:7px 14px;background:#fff;border:1px solid #ddd2b8;border-radius:8px;
+    font-size:13px;font-weight:700;color:#8a6f3c;cursor:pointer}
+  .edit-btn:hover{border-color:#B59A62;background:#fbf6ec}
+  .ed-warn{font-size:13px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;
+    border-radius:9px;padding:11px 13px;margin-bottom:14px;line-height:1.6}
+  .ed-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .ed-f{display:flex;flex-direction:column;gap:5px}
+  .ed-f.wide{grid-column:1/-1}
+  .ed-f span{font-size:12.5px;color:#8a8372;font-weight:600}
+  .ed-f input,.ed-f select{border:1px solid #ddd2b8;border-radius:8px;padding:9px 11px;
+    font-size:14px;font-family:inherit;background:#fff;color:#3a3527}
+  .ed-f input:focus,.ed-f select:focus{outline:none;border-color:#B59A62}
+  .ed-actions{display:flex;gap:8px;margin-top:15px}
+  .ed-save{padding:11px 20px;background:#B59A62;color:#fff;border:0;border-radius:9px;
+    font-weight:800;font-size:14px;cursor:pointer}
+  .ed-cancel{padding:11px 18px;background:#fff;border:1px solid #ddd2b8;border-radius:9px;
+    font-weight:700;font-size:14px;color:#8a8372;cursor:pointer}
+  @media(max-width:600px){ .ed-grid{grid-template-columns:1fr} }
+</style>
+<script>
+  (function(){
+    var btn = document.getElementById('btnEditLead');
+    var view = document.getElementById('leadView');
+    var edit = document.getElementById('leadEdit');
+    if (!btn || !view || !edit) return;
+
+    function show(editing){
+      view.style.display = editing ? 'none' : '';
+      edit.style.display = editing ? '' : 'none';
+      btn.textContent = editing ? '수정 닫기' : '정보 수정';
+    }
+    btn.onclick = function(){ show(edit.style.display === 'none'); };
+    document.getElementById('btnCancelLead').onclick = function(){ show(false); };
+
+    document.getElementById('btnSaveLead').onclick = async function(){
+      var v = function(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; };
+      var name = v('edName');
+      if (!name) { alert('이름을 입력해주세요.'); return; }
+      var email = v('edEmail');
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        alert('이메일 형식을 확인해주세요.'); return;
+      }
+      var b = this;
+      b.disabled = true; b.textContent = '저장중...';
+      try {
+        var r = await fetch('/leads/<%= lead.id %>/edit', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name, gender: v('edGender'), birth: v('edBirth'), calendar: v('edCal'),
+            hour: v('edHour'), region: v('edRegion'), email: email, phone: v('edPhone')
+          })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        location.reload();
+      } catch(e) {
+        alert('저장 실패: ' + e.message);
+        b.disabled = false; b.textContent = '저장하기';
+      }
+    };
+  })();
 </script>
 
 <%- include('../partials/dash-bottom') %>

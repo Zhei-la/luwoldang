@@ -97,6 +97,39 @@ router.get('/leads/:id', async (req, res, next) => {
 
 // '1999-2-21' → '1999-02-21'
 
+/* ===== 신청자 정보 수정 =====
+   이메일을 잘못 적었거나 생년월일이 틀린 경우 여기서 고친다.
+   생년월일·시간·지역을 바꾸면 사주가 달라지므로 리포트는 다시 만들어야 한다. */
+router.post('/leads/:id/edit', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const name = String(b.name || '').trim();
+    if (!name) return res.status(400).json({ ok: false, error: '이름을 입력해주세요.' });
+
+    const email = String(b.email || '').trim();
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ ok: false, error: '이메일 형식을 확인해주세요.' });
+    }
+
+    const t = (v) => { const s = String(v == null ? '' : v).trim(); return s || null; };
+    const { rowCount } = await pool.query(
+      `UPDATE leads
+          SET name = $1, gender = $2, birth = $3, calendar = $4,
+              hour = $5, region = $6, email = $7, phone = $8
+        WHERE id = $9 AND teacher_id = $10`,
+      [name, t(b.gender), t(b.birth), t(b.calendar), t(b.hour), t(b.region),
+       email || null, t(b.phone), req.params.id, req.user.id]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+
+    console.log('[신청자] 정보 수정:', req.params.id, name);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[신청자] 수정 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /* ===== 내담자 질문 저장 =====
    웹 신청 때 질문을 안 남겼거나, 나중에 카카오톡 등으로 질문을 받은 경우
    여기에 적어두면 리포트에 '남겨주신 질문에 답합니다' 장이 들어간다. */
