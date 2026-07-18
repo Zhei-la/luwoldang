@@ -8,13 +8,15 @@
   </p>
 
   <div class="set-grid">
-    <% var kindEn = {'종합사주':'jonghap','신년운세':'sinnyeon','무료사주':'free','연인궁합':'gunghap','연애운':'yeonae','결혼운':'gyeolhon','재물운':'jaemul','건강운':'geongang'}; %>
+    <%# 종류별 이미지 이름은 서버(coverSets.js)의 것을 그대로 쓴다.
+        여기에 따로 적어두면 새 리포트를 추가할 때 빠뜨려 미리보기가 깨진다. %>
+    <% var enMap = (typeof kindEn !== 'undefined' && kindEn) ? kindEn : {}; %>
     <% sets.forEach(function (s) { var on = (chosen === s.key); %>
       <div class="set-card <%= on ? 'on' : '' %>">
         <div class="set-preview">
           <% var previewKinds = (s.kinds || ['종합사주','신년운세','연애운','건강운']).slice(0,4); %>
           <% previewKinds.forEach(function (k) { %>
-            <% var src; if (s.key === 'original') { src = '/img/pdf/cover-' + kindEn[k] + '.jpg'; } else if (s.custom) { src = '/covers/set-img/' + s.key + '/' + encodeURIComponent(k); } else { src = '/img/covers/' + s.key + '/' + kindEn[k] + '.jpg'; } %>
+            <% var src; if (s.key === 'original') { src = '/img/pdf/cover-' + enMap[k] + '.jpg'; } else if (s.custom) { src = '/covers/set-img/' + s.key + '/' + encodeURIComponent(k); } else { src = '/img/covers/' + s.key + '/' + enMap[k] + '.jpg'; } %>
             <div class="set-thumb" style="background-image:url('<%= src %>')"></div>
           <% }); %>
         </div>

@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const store = require('../services/coverStore');
-const { builtinSets } = require('../services/coverSets');
+const { builtinSets, KIND_EN } = require('../services/coverSets');
 const { builtinPapers } = require('../services/bgPapers');
 
 // 표지를 지정할 수 있는 리포트 종류
@@ -36,6 +36,7 @@ router.get('/covers', async (req, res, next) => {
       chosen,
       papers,
       chosenPaper,
+      kindEn: KIND_EN,   // 세트 미리보기에서 종류별 이미지 이름을 찾는 데 쓴다
     });
   } catch (e) {
     next(e);
