@@ -603,30 +603,80 @@ ${(() => {
   두 사람이 만났을 때 나타나는 상호작용·차이·조화에 집중해서 작성하세요.` : ''}`;
 }
 
-/** OpenAI 호출 (JSON) */
-async function callAI({ system, user, openaiKey, model, maxTokens }) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
-    body: JSON.stringify({
-      model: model || MODEL,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.85,
-      max_tokens: maxTokens || 4000,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || 'OpenAI 호출 실패');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  if (data.choices?.[0]?.finish_reason === 'length') {
-    console.error('[AI] 응답이 토큰 한도에서 잘렸습니다. 내용이 빠질 수 있습니다.');
+/** OpenAI 호출 (JSON) — 실패하면 몇 번 다시 시도한다.
+ *
+ *  예전에는 한 번 실패하면 그대로 빈 챕터({})가 되어
+ *  "소제목만 있고 내용이 없는" 리포트가 나갔다.
+ *  레이트리밋(429)·일시적 서버 오류·JSON 깨짐은 다시 부르면 대부분 성공한다. */
+async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 3 }) {
+  let lastErr = null;
+
+  for (let attempt = 1; attempt <= _tries; attempt++) {
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model: model || MODEL,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.85,
+          max_tokens: maxTokens || 4000,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data.error?.message || 'OpenAI 호출 실패';
+        // 429(요청 과다) · 5xx(서버 문제)는 잠시 쉬었다가 다시 시도
+        if ((res.status === 429 || res.status >= 500) && attempt < _tries) {
+          const wait = 2000 * attempt;   // 2초 → 4초 → …
+          console.error(`[AI] ${res.status} — ${wait / 1000}초 후 재시도 (${attempt}/${_tries})`);
+          await sleep(wait);
+          lastErr = new Error(msg);
+          continue;
+        }
+        throw new Error(msg);
+      }
+
+      if (data.choices?.[0]?.finish_reason === 'length') {
+        console.error('[AI] 응답이 토큰 한도에서 잘렸습니다.');
+      }
+
+      const text = data.choices?.[0]?.message?.content || '';
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed === 'object') return parsed;
+        throw new Error('빈 응답');
+      } catch (e) {
+        // JSON 이 깨졌으면 다시 시도 (토큰 한도로 잘린 경우가 대부분)
+        if (attempt < _tries) {
+          console.error(`[AI] 응답 형식 오류 — 재시도 (${attempt}/${_tries})`);
+          await sleep(1500 * attempt);
+          lastErr = e;
+          continue;
+        }
+        return {};
+      }
+    } catch (e) {
+      lastErr = e;
+      // 네트워크 오류 등도 재시도
+      if (attempt < _tries) {
+        console.error(`[AI] ${e.message} — 재시도 (${attempt}/${_tries})`);
+        await sleep(2000 * attempt);
+        continue;
+      }
+      throw e;
+    }
   }
-  const text = data.choices?.[0]?.message?.content || '{}';
-  try { return JSON.parse(text); } catch (e) { return {}; }
+
+  throw lastErr || new Error('OpenAI 호출 실패');
 }
 
 /* ============================================================
@@ -1021,6 +1071,20 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
 
   let blocks = Array.isArray(out.blocks) ? out.blocks : [];
 
+  // 내용이 통째로 비어 오면(모델이 형식을 놓친 경우) 한 번 더 부른다.
+  //   이걸 안 하면 "소제목만 있고 내용이 없는 장"이 그대로 리포트에 실린다.
+  if (!blocks.length) {
+    console.error(`[PDF] "${chapter.title}" 내용이 비어 다시 생성합니다.`);
+    out = await callAI({
+      system: PDF_SYSTEM,
+      user: user + '\n\n⚠️ 반드시 blocks 배열에 소제목별 내용을 모두 담아 JSON으로만 답하세요.',
+      openaiKey,
+      model,
+      maxTokens: 6000,
+    });
+    blocks = Array.isArray(out.blocks) ? out.blocks : [];
+  }
+
   // 문체 검사 → 문제 있으면 1회 재작성
   const problems = [];
   blocks.forEach((b, i) => {
@@ -1154,7 +1218,7 @@ function tidyName(body, name) {
  * PDF 리포트 전체 생성 (챕터별 순차 호출)
  * @param onProgress (done, total, title) => void
  */
-const CONCURRENCY = 3;   // 동시에 굴릴 챕터 수 (올릴수록 빠르지만 OpenAI 레이트리밋에 걸린다)
+const CONCURRENCY = 2;   // 동시에 굴릴 챕터 수 (올릴수록 빠르지만 OpenAI 레이트리밋에 걸린다)
 
 async function generatePdfReport({ type, client, saju, partner, partnerSaju, openaiKey, model, onProgress }) {
   // 내담자가 질문을 남겼으면 '질문 답변' 챕터를 마지막 조언 앞에 끼워 넣는다
@@ -1171,15 +1235,25 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
       if (i >= chapters.length) return;
       const ch = chapters[i];
 
+      const args = {
+        type, chapter: ch, index: i, total: chapters.length,
+        client, saju, partner, partnerSaju, openaiKey, model,
+        allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
+      };
+
       try {
-        out[i] = await generateChapter({
-          type, chapter: ch, index: i, total: chapters.length,
-          client, saju, partner, partnerSaju, openaiKey, model,
-          allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
-        });
+        out[i] = await generateChapter(args);
       } catch (e) {
-        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패:`, e.message);
-        out[i] = { title: ch.title, blocks: [], error: e.message };
+        // 한 챕터가 실패해도 포기하지 않고 한 번 더 시도한다.
+        //   (실패한 채로 두면 "소제목만 있고 내용 없는 장"이 리포트에 남는다)
+        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패 — 다시 시도합니다:`, e.message);
+        await sleep(3000);
+        try {
+          out[i] = await generateChapter(args);
+        } catch (e2) {
+          console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 최종 실패:`, e2.message);
+          out[i] = { title: ch.title, blocks: [], error: e2.message };
+        }
       }
 
       done++;
