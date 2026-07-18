@@ -167,3 +167,22 @@ button{cursor:pointer;background:none;border:none}
 @media(max-width:480px){
   .addgrid{grid-template-columns:1fr 1fr}
 }
+
+/* ── 상품·항목 순서 바꾸기 (가격 블록 / 신청폼 상품) ── */
+.lhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lgrip{cursor:grab;user-select:none;color:var(--fog)}
+.lmove{display:flex;gap:4px;align-items:center}
+.lmove .btn.sm{min-width:28px;padding:0 7px}
+.sitem{display:flex;gap:5px;margin-bottom:5px;align-items:center}
+.sitem .btn.sm{min-width:28px;padding:0 7px}
+.sgrip{cursor:grab;user-select:none;color:var(--fog);font-size:14px;padding:0 2px;flex-shrink:0}
+.litem[draggable],.sitem[draggable]{transition:opacity .15s,box-shadow .15s}
+.litem.drag,.sitem.drag{opacity:.45}
+.litem.over,.sitem.over{box-shadow:0 0 0 2px var(--moon) inset;border-radius:8px}
+.btn.sm:disabled{opacity:.3;cursor:default}
+
+/* 휴대폰에서는 손가락으로 누르기 쉽게 */
+@media(max-width:900px){
+  .lmove .btn.sm,.sitem .btn.sm{min-width:34px;height:32px;font-size:14px}
+  .lgrip,.sgrip{display:none}   /* 터치에서는 끌기 대신 위/아래 버튼 사용 */
+}

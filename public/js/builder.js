@@ -544,8 +544,13 @@ function calcWas(item){
 function listEditor(b, fields, blank){
   const items = b.items||[];
   return `<div class="fld"><label>항목 ${items.length}개</label><div class="listbox">
-    ${items.map((it,i)=>`<div class="litem">
-      <div class="lhead"><b>#${i+1}</b><button class="btn sm danger" data-li-del="${i}">삭제</button></div>
+    ${items.map((it,i)=>`<div class="litem" draggable="true" data-li-row="${i}">
+      <div class="lhead"><b class="lgrip" title="끌어서 순서 변경">⠿ #${i+1}</b>
+        <span class="lmove">
+          <button class="btn sm" data-li-up="${i}" ${i===0?'disabled':''} title="위로">↑</button>
+          <button class="btn sm" data-li-down="${i}" ${i===items.length-1?'disabled':''} title="아래로">↓</button>
+          <button class="btn sm danger" data-li-del="${i}">삭제</button>
+        </span></div>
       ${fields.map(([k,l,ty,sg])=> ty==='area'
         ? `<textarea data-li="${i}" data-lk="${k}" placeholder="${l}">${esc(it[k])}</textarea>`
         : ty==='check'
@@ -560,8 +565,11 @@ function listEditor(b, fields, blank){
 function strListEditor(b, key, ph){
   const items = b[key]||[];
   return `<div class="fld"><label>${ph} ${items.length}개</label><div class="listbox">
-    ${items.map((it,i)=>`<div style="display:flex;gap:5px;margin-bottom:5px">
+    ${items.map((it,i)=>`<div class="sitem" draggable="true" data-si-row="${i}">
+      <span class="sgrip" title="끌어서 순서 변경">⠿</span>
       <input type="text" data-si="${i}" value="${esc(it)}" placeholder="${ph}" style="flex:1">
+      <button class="btn sm" data-si-up="${i}" ${i===0?'disabled':''} title="위로">↑</button>
+      <button class="btn sm" data-si-down="${i}" ${i===items.length-1?'disabled':''} title="아래로">↓</button>
       <button class="btn sm danger" data-si-del="${i}">×</button></div>`).join('')}
     <button class="btn sm" data-si-add style="width:100%">＋ 추가</button></div></div>`;
 }
@@ -653,6 +661,51 @@ function bindFields(b){
   inspector.querySelectorAll('[data-si-del]').forEach(el=> el.onclick = ()=>{ b[skey].splice(+el.dataset.siDel,1); paint(); });
   const sadd = inspector.querySelector('[data-si-add]');
   if(sadd) sadd.onclick = ()=>{ b[skey].push(''); paint(); };
+
+  /* ── 상품·항목 순서 바꾸기 ──
+     위/아래 버튼은 어디서나 되고, 끌어서 옮기기는 데스크탑에서 편하다. */
+  function move(arr, from, to){
+    if(to < 0 || to >= arr.length || from === to) return false;
+    arr.splice(to, 0, arr.splice(from, 1)[0]);
+    return true;
+  }
+
+  // 가격 항목(items) 위/아래
+  inspector.querySelectorAll('[data-li-up]').forEach(el=> el.onclick = ()=>{
+    if(move(b.items, +el.dataset.liUp, +el.dataset.liUp - 1)) paint();
+  });
+  inspector.querySelectorAll('[data-li-down]').forEach(el=> el.onclick = ()=>{
+    if(move(b.items, +el.dataset.liDown, +el.dataset.liDown + 1)) paint();
+  });
+
+  // 신청폼 상품(products) 위/아래
+  inspector.querySelectorAll('[data-si-up]').forEach(el=> el.onclick = ()=>{
+    if(move(b[skey], +el.dataset.siUp, +el.dataset.siUp - 1)) paint();
+  });
+  inspector.querySelectorAll('[data-si-down]').forEach(el=> el.onclick = ()=>{
+    if(move(b[skey], +el.dataset.siDown, +el.dataset.siDown + 1)) paint();
+  });
+
+  // 끌어서 옮기기
+  function makeDraggable(sel, attr, arr){
+    let from = null;
+    inspector.querySelectorAll(sel).forEach(row=>{
+      row.ondragstart = e=>{ from = +row.dataset[attr]; row.classList.add('drag');
+        try{ e.dataTransfer.setData('text/plain', String(from)); }catch(_){ } };
+      row.ondragend   = ()=> inspector.querySelectorAll(sel).forEach(x=>x.classList.remove('drag','over'));
+      row.ondragover  = e=>{ e.preventDefault(); row.classList.add('over'); };
+      row.ondragleave = ()=> row.classList.remove('over');
+      row.ondrop = e=>{
+        e.preventDefault(); row.classList.remove('over');
+        const to = +row.dataset[attr];
+        if(from === null || isNaN(to)) return;
+        if(move(arr, from, to)) paint();
+        from = null;
+      };
+    });
+  }
+  if(b.items) makeDraggable('[data-li-row]', 'liRow', b.items);
+  if(b[skey]) makeDraggable('[data-si-row]', 'siRow', b[skey]);
 }
 function pickImage(cb){
   const fp = $('#filePick'); fp.value='';
