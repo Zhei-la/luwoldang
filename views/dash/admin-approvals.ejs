@@ -66,9 +66,45 @@
           <% } %>
         </div>
       </div>
+      <div class="note-row">
+        <span class="note-ic">📝</span>
+        <input type="text" class="note-input" data-id="<%= u.id %>" value="<%= u.admin_note || '' %>" placeholder="이 수강생 메모 (예: 실제 이름 / 연락처 / 특이사항)" onkeydown="if(event.key==='Enter')saveNote(<%= u.id %>, this)">
+        <button class="note-save" onclick="saveNote(<%= u.id %>, this)">저장</button>
+      </div>
     <% }); %>
   </div>
 <% } %>
+
+<style>
+  .note-row { display:flex; align-items:center; gap:8px; background:#faf8f2; border:1px solid #ece6d8; border-radius:10px; padding:8px 12px; margin:-6px 0 14px; }
+  .note-ic { font-size:15px; flex-shrink:0; }
+  .note-input { flex:1; border:1px solid #ddd2b8; border-radius:7px; padding:8px 11px; font-size:13.5px; background:#fff; color:#4a3d28; }
+  .note-input:focus { outline:none; border-color:#B59A62; }
+  .note-save { padding:8px 15px; background:#B59A62; color:#fff; border:0; border-radius:7px; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .note-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px); opacity:0; background:#333; color:#fff; padding:11px 20px; border-radius:24px; font-size:14px; z-index:99; transition:.25s; pointer-events:none; }
+  .note-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+<div class="note-toast" id="noteToast"></div>
+<script>
+  async function saveNote(id, el){
+    var row = el.closest('.note-row');
+    var val = row.querySelector('.note-input').value.trim();
+    var btn = row.querySelector('.note-save');
+    btn.disabled = true; btn.textContent = '저장중';
+    try {
+      var r = await fetch('/admin/note/' + id, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ note: val })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      var t = document.getElementById('noteToast');
+      t.textContent = '메모를 저장했습니다'; t.classList.add('show');
+      setTimeout(function(){ t.classList.remove('show'); }, 1500);
+    } catch(e){ alert('저장 실패: ' + e.message); }
+    btn.textContent = '저장'; btn.disabled = false;
+  }
+</script>
 
 <!-- 거절됨 -->
 <% if (rejected.length > 0) { %>

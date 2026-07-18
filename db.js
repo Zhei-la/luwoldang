@@ -35,6 +35,8 @@ async function initDb() {
 
   // 교육생 OpenAI 키 (무료사주·PDF 생성에 사용)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_key TEXT;`);
+  // 관리자 메모 (수강생이 누구인지 관리자가 적어두는 메모)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_note TEXT;`);
 
   // 랜딩 페이지 (빌더로 꾸민 내용 JSON)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing JSONB;`);

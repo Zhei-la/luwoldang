@@ -101,6 +101,17 @@ router.post('/role/:id', async (req, res, next) => {
   }
 });
 
+/* 수강생 메모 저장 (관리자가 누구인지 적어두는 용도) */
+router.post('/note/:id', async (req, res) => {
+  try {
+    const note = String((req.body || {}).note || '').trim();
+    await pool.query('UPDATE users SET admin_note = $1 WHERE id = $2', [note || null, req.params.id]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /* ══════════════ 기본 표지 관리 (전 교육생 공용) ══════════════ */
 
 router.get('/covers', async (req, res, next) => {
