@@ -61,11 +61,11 @@
     <label class="fl">묻고 싶은 것</label>
     <textarea class="fi" name="memo" rows="3" placeholder="내담자가 궁금해하는 내용 (선택) — 리포트에 반영됩니다"><%= form.memo || '' %></textarea>
 
-    <!-- 연인궁합용 상대방 정보 -->
+    <!-- 연인궁합·재회운용 상대방 정보 -->
     <div class="partner-sec">
       <label class="partner-head">
         <input type="checkbox" id="usePartner" onchange="togglePartner()" <%= form.partnerBirth ? 'checked' : '' %>>
-        <span>💑 연인궁합 리포트인가요? 상대방 정보도 입력하세요</span>
+        <span>💑 연인궁합 · 재회운 리포트인가요? 상대방 정보도 입력하세요</span>
       </label>
       <div id="partnerBox" class="partner-box" style="<%= form.partnerBirth ? '' : 'display:none' %>">
         <label class="fl">상대방 이름</label>

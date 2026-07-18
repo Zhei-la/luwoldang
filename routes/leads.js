@@ -186,9 +186,9 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       question: lead.memo,
     };
 
-    // 연인궁합: 상대방 사주도 계산
+    // 연인궁합·재회운: 상대방 사주도 계산 (있으면 더 정확해진다)
     let partner = null, partnerSaju = null;
-    if (type === '연인궁합' && lead.partner_birth) {
+    if ((type === '연인궁합' || type === '재회운') && lead.partner_birth) {
       try {
         partnerSaju = calcSaju({
           birthDate: normalizeBirth(lead.partner_birth),

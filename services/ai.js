@@ -424,7 +424,7 @@ module.exports = { generateFreeSaju, UPSELL };
 
 const { OUTLINES, titles, outlineWithQuestion, QUESTION_CHAPTER, isSpecialist } = require('./outlines');
 
-const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '무료사주'];
+const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '재회운', '무료사주'];
 
 // 하위 호환 (기존 코드가 PDF_OUTLINES를 참조)
 const PDF_OUTLINES = {};
