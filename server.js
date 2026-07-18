@@ -53,13 +53,21 @@ app.get('/', (req, res) => {
 app.use('/auth', authRoutes);
 
 // 테스트 로그인 상태면 계정 전환 바 정보를 모든 화면에 넘긴다
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   try {
     res.locals.testSwitch = authRoutes.testSwitchInfo
       ? authRoutes.testSwitchInfo(req)
       : null;
   } catch (e) {
     res.locals.testSwitch = null;
+  }
+  // 관리자가 다른 계정으로 보는 중이면 상단에 알려준다
+  try {
+    res.locals.adminAs = authRoutes.adminAsInfo
+      ? await authRoutes.adminAsInfo(req)
+      : null;
+  } catch (e) {
+    res.locals.adminAs = null;
   }
   next();
 });

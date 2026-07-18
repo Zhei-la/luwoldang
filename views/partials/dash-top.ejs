@@ -13,6 +13,20 @@
   <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
+<% if (typeof adminAs !== 'undefined' && adminAs) { %>
+  <div class="as-bar">
+    <span class="as-txt">👤 <b><%= adminAs.viewing %></b> 님 계정으로 보는 중입니다</span>
+    <a class="as-back" href="/auth/back">관리자로 돌아가기</a>
+  </div>
+  <style>
+    .as-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+      background:#5b4a8a;color:#fff;padding:9px 14px;font-size:13.5px}
+    .as-txt b{color:#ffe9a8}
+    .as-back{background:#fff;color:#4a3d6b;padding:5px 13px;border-radius:20px;
+      font-size:12.5px;font-weight:800;text-decoration:none;white-space:nowrap}
+    .as-back:hover{background:#ffe9a8}
+  </style>
+<% } %>
 <% if (typeof testSwitch !== 'undefined' && testSwitch) { %>
   <div class="test-switch-bar">
     <span class="tsb-label">🧪 테스트</span>

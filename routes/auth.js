@@ -292,7 +292,62 @@ function testSwitchInfo(req) {
   };
 }
 
+/* ══════════════ 관리자 계정 전환 ══════════════
+ *
+ *   관리자가 다른 회원 계정으로 바꿔서 화면을 확인할 수 있다.
+ *   원래 관리자 계정으로 언제든 돌아올 수 있다.
+ *
+ *     /auth/as/:id   그 회원 계정으로 전환
+ *     /auth/back     원래 관리자 계정으로 복귀
+ */
+router.get('/as/:id', async (req, res, next) => {
+  try {
+    if (!req.session.userId) return res.redirect('/auth/kakao');
+
+    // 지금 관리자인지 확인 (전환 중이라면 원래 계정이 관리자였는지 확인)
+    const meId = req.session.adminBack || req.session.userId;
+    const me = await pool.query("SELECT id, role FROM users WHERE id = $1", [meId]);
+    if (!me.rows[0] || me.rows[0].role !== 'admin') return res.status(403).send('접근 권한이 없습니다.');
+
+    const target = await pool.query(
+      "SELECT id, name, status FROM users WHERE id = $1", [req.params.id]
+    );
+    const t = target.rows[0];
+    if (!t) return res.redirect('/admin/approvals');
+    if (t.status !== 'approved') return res.status(400).send('승인된 회원만 전환할 수 있습니다.');
+
+    // 처음 전환할 때만 원래 계정을 기억해 둔다
+    if (!req.session.adminBack) req.session.adminBack = meId;
+    req.session.userId = t.id;
+
+    console.log('[관리자] 계정 전환:', meId, '→', t.id, t.name);
+    res.redirect('/home');
+  } catch (e) { next(e); }
+});
+
+router.get('/back', async (req, res, next) => {
+  try {
+    const back = req.session.adminBack;
+    if (!back) return res.redirect('/home');
+    req.session.userId = back;
+    delete req.session.adminBack;
+    console.log('[관리자] 원래 계정으로 복귀:', back);
+    res.redirect('/home');
+  } catch (e) { next(e); }
+});
+
+/* 전환 중인지 알려준다 (상단 배너용) */
+async function adminAsInfo(req) {
+  if (!req || !req.session || !req.session.adminBack) return null;
+  try {
+    const r = await pool.query("SELECT name, site_name FROM users WHERE id = $1", [req.session.userId]);
+    const u = r.rows[0];
+    return { viewing: (u && (u.site_name || u.name)) || '다른 계정' };
+  } catch (e) { return { viewing: '다른 계정' }; }
+}
+
 module.exports = router;
 module.exports.testSwitchInfo = testSwitchInfo;
+module.exports.adminAsInfo = adminAsInfo;
 
 
