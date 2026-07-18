@@ -11,14 +11,19 @@
 <body>
 <div class="shell">
   <div class="topbar">
-    <a class="back" href="/home">← 대시보드</a>
-    <div class="brand"><span class="moon"></span>랜딩 빌더</div>
+    <a class="back" href="/home"><span class="lb-full">← 대시보드</span><span class="lb-mini">←</span></a>
+    <div class="brand"><span class="moon"></span><span class="lb-full">랜딩 빌더</span><span class="lb-mini">빌더</span></div>
     <div class="spacer"></div>
     <button class="tgl" id="tglLeft" title="블록 목록 접기/펼치기">◧ 블록</button>
     <button class="tgl" id="tglRight" title="설정 패널 접기/펼치기">◨ 설정</button>
-    <a class="btn sm" href="/s/<%= user.slug %>" target="_blank">내 페이지 열기 ↗</a>
-    <button class="btn sm" id="btnCopy">링크 복사</button>
-    <button class="btn gold" id="btnSave">저장하기</button>
+    <a class="btn sm" href="/s/<%= user.slug %>" target="_blank" title="내 페이지 열기"><span class="lb-full">내 페이지 열기 ↗</span><span class="lb-mini">↗</span></a>
+    <button class="btn sm" id="btnCopy" title="링크 복사"><span class="lb-full">링크 복사</span><span class="lb-mini">링크</span></button>
+    <button class="btn gold" id="btnSave">저장<span class="lb-full">하기</span></button>
+  </div>
+  <div class="mtabs" id="mtabs">
+    <button data-tab="blocks">블록</button>
+    <button data-tab="preview" class="on">미리보기</button>
+    <button data-tab="settings">설정</button>
   </div>
   <div class="panel left">
     <div class="ptitle">블록 · 드래그로 순서 변경</div>
@@ -58,6 +63,40 @@
     apply(side, saved === '1');
     var btn = document.getElementById(side === 'left' ? 'tglLeft' : 'tglRight');
     if (btn) btn.onclick = function(){ apply(side, !shell.classList.contains('hide-' + side)); };
+  });
+})();
+
+/* 모바일 · 태블릿 — 좁은 화면에서는 3열이 들어가지 않으므로
+   [블록] [미리보기] [설정] 탭으로 하나씩 전체화면으로 본다. */
+(function(){
+  var shell = document.querySelector('.shell');
+  var tabs = document.getElementById('mtabs');
+  if (!shell || !tabs) return;
+
+  function go(name){
+    shell.setAttribute('data-tab', name);
+    tabs.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('on', b.dataset.tab === name);
+    });
+    window.scrollTo(0, 0);
+  }
+  go('preview');
+
+  tabs.querySelectorAll('button').forEach(function(b){
+    b.onclick = function(){ go(b.dataset.tab); };
+  });
+
+  // 블록을 고르면 바로 설정 탭으로 넘어간다 (모바일에서 자연스러운 흐름)
+  document.addEventListener('click', function(e){
+    if (window.innerWidth > 900) return;
+    var item = e.target.closest && e.target.closest('.bitem');
+    if (item && !e.target.dataset.del) setTimeout(function(){ go('settings'); }, 60);
+  });
+
+  // 저장하면 결과를 볼 수 있게 미리보기로
+  var save = document.getElementById('btnSave');
+  if (save) save.addEventListener('click', function(){
+    if (window.innerWidth <= 900) setTimeout(function(){ go('preview'); }, 400);
   });
 })();
 </script>
