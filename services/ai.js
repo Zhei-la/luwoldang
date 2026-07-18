@@ -610,7 +610,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *  예전에는 한 번 실패하면 그대로 빈 챕터({})가 되어
  *  "소제목만 있고 내용이 없는" 리포트가 나갔다.
  *  레이트리밋(429)·일시적 서버 오류·JSON 깨짐은 다시 부르면 대부분 성공한다. */
-async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 3 }) {
+async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 4 }) {
   let lastErr = null;
 
   for (let attempt = 1; attempt <= _tries; attempt++) {
@@ -636,8 +636,17 @@ async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 3 })
         const msg = data.error?.message || 'OpenAI 호출 실패';
         // 429(요청 과다) · 5xx(서버 문제)는 잠시 쉬었다가 다시 시도
         if ((res.status === 429 || res.status >= 500) && attempt < _tries) {
-          const wait = 2000 * attempt;   // 2초 → 4초 → …
-          console.error(`[AI] ${res.status} — ${wait / 1000}초 후 재시도 (${attempt}/${_tries})`);
+          // 429(사용량 초과)는 '분당 한도'라서 몇 초 기다려서는 다시 걸린다.
+          //   OpenAI가 알려주는 대기 시간이 있으면 그걸 쓰고, 없으면 넉넉히 기다린다.
+          //   새로 만든 API 키는 분당 한도가 낮아 이 경우가 자주 생긴다.
+          let wait;
+          if (res.status === 429) {
+            const hdr = Number(res.headers?.get?.('retry-after')) || 0;
+            wait = hdr > 0 ? (hdr + 2) * 1000 : [20000, 35000, 50000][attempt - 1] || 50000;
+          } else {
+            wait = 3000 * attempt;
+          }
+          console.error(`[AI] ${res.status} 사용량 초과 — ${Math.round(wait / 1000)}초 후 재시도 (${attempt}/${_tries})`);
           await sleep(wait);
           lastErr = new Error(msg);
           continue;
@@ -1066,23 +1075,25 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     user,
     openaiKey,
     model,
-    maxTokens: 6000,
+    maxTokens: 4500,
   });
 
   let blocks = Array.isArray(out.blocks) ? out.blocks : [];
 
   // 내용이 통째로 비어 오면(모델이 형식을 놓친 경우) 한 번 더 부른다.
   //   이걸 안 하면 "소제목만 있고 내용이 없는 장"이 그대로 리포트에 실린다.
-  if (!blocks.length) {
+  const hasBody = (arr) => arr.some((b) => String(b && b.body || '').trim().length > 30);
+  if (!blocks.length || !hasBody(blocks)) {
     console.error(`[PDF] "${chapter.title}" 내용이 비어 다시 생성합니다.`);
     out = await callAI({
       system: PDF_SYSTEM,
-      user: user + '\n\n⚠️ 반드시 blocks 배열에 소제목별 내용을 모두 담아 JSON으로만 답하세요.',
+      user: user + '\n\n⚠️ 반드시 blocks 배열의 각 항목에 sub(소제목)와 body(본문 700~900자)를 모두 채워 JSON으로만 답하세요. body를 비우지 마세요.',
       openaiKey,
       model,
-      maxTokens: 6000,
+      maxTokens: 4500,
     });
-    blocks = Array.isArray(out.blocks) ? out.blocks : [];
+    const retry = Array.isArray(out.blocks) ? out.blocks : [];
+    if (retry.length && hasBody(retry)) blocks = retry;
   }
 
   // 문체 검사 → 문제 있으면 1회 재작성
@@ -1177,10 +1188,24 @@ ${probs.join('\n')}
 ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}`,
         openaiKey,
         model,
-        maxTokens: 6000,
+        maxTokens: 4500,
       });
       const fixed = Array.isArray(fix.blocks) ? fix.blocks : [];
-      if (fixed.length === blocks.length) blocks = fixed;
+      if (fixed.length === blocks.length) {
+        // 재작성 결과를 그대로 덮어쓰면 안 된다.
+        //   응답이 잘리거나 본문이 빈 채로 오는 경우가 있는데, 그대로 교체하면
+        //   멀쩡하던 내용까지 사라져 "소제목만 남는" 리포트가 된다.
+        let replaced = 0;
+        blocks = blocks.map((orig, bi) => {
+          const nb = fixed[bi] || {};
+          const nbody = String(nb.body || '').trim();
+          const obody = String(orig.body || '').trim();
+          if (!nbody || (obody && nbody.length < obody.length * 0.5)) return orig;
+          replaced++;
+          return { sub: nb.sub || orig.sub, body: nb.body };
+        });
+        if (!replaced) break;
+      }
       else break;
     } catch (e) {
       console.error('[검사] 재작성 실패:', e.message);
