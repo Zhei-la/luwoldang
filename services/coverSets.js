@@ -15,7 +15,7 @@ const KIND_EN = {
   '무료사주': 'free',
   '연인궁합': 'gunghap',
   '연애운': 'yeonae',
-  '재회운': 'yeonae',   // 별도 표지가 없어 연애운 표지를 함께 쓴다
+  '재회운': 'jaehoe',
   '결혼운': 'gyeolhon',
   '재물운': 'jaemul',
   '건강운': 'geongang',
@@ -65,7 +65,7 @@ const ORIGINAL = {
   '종합사주':  { img: '/img/pdf/cover-jonghap.jpg',  style: 'ink',    brandTop: 12.4 },
   '신년운세':  { img: '/img/pdf/cover-sinnyeon.jpg', style: 'ink',    brandTop: 12.4 },
   '연애운':    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
-  '재회운':    { img: '/img/pdf/cover-yeonae.jpg',   style: 'circle', brandTop: 18.2 },
+  '재회운':    { img: '/img/pdf/cover-jaehoe.jpg',   style: 'circle', brandTop: 18.2 },
   '결혼운':    { img: '/img/pdf/cover-gyeolhon.jpg', style: 'circle', brandTop: 18.2 },
   '연인궁합':  { img: '/img/pdf/cover-gunghap.jpg',  style: 'circle', brandTop: 18.2 },
   '재물운':    { img: '/img/pdf/cover-jaemul.jpg',   style: 'circle', brandTop: 18.2 },
