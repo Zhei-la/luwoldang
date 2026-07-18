@@ -97,6 +97,23 @@ router.get('/leads/:id', async (req, res, next) => {
 
 // '1999-2-21' → '1999-02-21'
 
+/* ===== 내담자 질문 저장 =====
+   웹 신청 때 질문을 안 남겼거나, 나중에 카카오톡 등으로 질문을 받은 경우
+   여기에 적어두면 리포트에 '남겨주신 질문에 답합니다' 장이 들어간다. */
+router.post('/leads/:id/question', async (req, res) => {
+  try {
+    const q = String((req.body || {}).question || '').trim();
+    const { rowCount } = await pool.query(
+      'UPDATE leads SET memo = $1 WHERE id = $2 AND teacher_id = $3',
+      [q || null, req.params.id, req.user.id]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /* ===== PDF 내용 생성 (AI) — 챕터별 진행상황 스트리밍 ===== */
 router.get('/leads/:id/pdf/stream', async (req, res) => {
   const type = req.query.type;

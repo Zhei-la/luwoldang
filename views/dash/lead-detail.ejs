@@ -19,10 +19,56 @@
   <% if (lead.product) { %><div class="acc-row"><span>신청 상품</span><b><%= lead.product %></b></div><% } %>
   <div class="acc-row"><span>신청 경로</span><b><%= lead.source === '무료사주' ? '무료사주' : '상담 신청' %></b></div>
   <div class="acc-row"><span>신청 시각</span><b><%= fmt(lead.created_at) %></b></div>
-  <% if (lead.memo) { %>
-    <div class="acc-row col"><span>묻고 싶은 것</span><div class="memo-box"><%= lead.memo %></div></div>
+  <% if (lead.memo && String(lead.memo).trim()) { %>
+    <div class="acc-row col"><span>묻고 싶은 것</span>
+      <div class="memo-box"><%= lead.memo %></div>
+      <div class="q-on">✓ 리포트에 <b>‘남겨주신 질문에 답합니다’</b> 장이 추가됩니다</div>
+    </div>
+  <% } else { %>
+    <div class="acc-row col"><span>묻고 싶은 것</span>
+      <div class="q-off">남긴 질문이 없어 <b>질문 답변 장은 들어가지 않습니다.</b><br>
+      카카오톡 등으로 질문을 받으셨다면, 아래 <b>‘질문 추가’</b>에 적고 리포트를 만들어주세요.</div>
+      <div class="q-add">
+        <textarea id="qAdd" rows="2" placeholder="내담자가 궁금해하는 것을 적어주세요"></textarea>
+        <button type="button" id="qSave">질문 저장</button>
+      </div>
+    </div>
   <% } %>
 </div>
+
+<style>
+  .q-on{margin-top:8px;font-size:13px;color:#2f7a4f;background:#eef7f0;border-radius:8px;padding:9px 12px}
+  .q-on b{color:#256b42}
+  .q-off{margin-top:2px;font-size:13.5px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;border-radius:8px;padding:11px 13px;line-height:1.65}
+  .q-off b{color:#8a6f3c}
+  .q-add{display:flex;gap:8px;margin-top:9px;align-items:flex-start}
+  .q-add textarea{flex:1;border:1px solid #ddd2b8;border-radius:8px;padding:9px 11px;font-size:13.5px;font-family:inherit;resize:vertical}
+  .q-add textarea:focus{outline:none;border-color:#B59A62}
+  .q-add button{padding:10px 16px;background:#B59A62;color:#fff;border:0;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+</style>
+<script>
+  (function(){
+    var btn = document.getElementById('qSave');
+    if (!btn) return;
+    btn.onclick = async function(){
+      var v = document.getElementById('qAdd').value.trim();
+      if (!v) { alert('질문을 입력해주세요.'); return; }
+      btn.disabled = true; btn.textContent = '저장중';
+      try {
+        var r = await fetch('/leads/<%= lead.id %>/question', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ question: v })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '실패');
+        location.reload();
+      } catch(e){
+        alert('저장 실패: ' + e.message);
+        btn.disabled = false; btn.textContent = '질문 저장';
+      }
+    };
+  })();
+</script>
 
 <!-- 사주 원국 -->
 <% if (saju) { %>
