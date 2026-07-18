@@ -78,6 +78,97 @@
       </div>
     </div>
   <% } %>
+
+  <!-- 연인궁합 · 재회운용 상대방 정보 -->
+  <div class="acc-row col"><span>상대방 정보</span>
+    <% if (lead.partner_birth) { %>
+      <div class="pt-on">💑 <b><%= lead.partner_name || '상대방' %></b>
+        · <%= lead.partner_birth %> <%= lead.partner_calendar || '양력' %>
+        · <%= lead.partner_hour || '시간 모름' %>
+        <%= lead.partner_gender ? '· ' + lead.partner_gender : '' %><br>
+        <span class="pt-note">연인궁합 · 재회운 리포트에 이 정보가 함께 반영됩니다</span>
+      </div>
+    <% } else { %>
+      <div class="pt-off">연인궁합 · 재회운은 <b>상대방 생년월일</b>이 있으면 훨씬 정확합니다.<br>
+      아래에 입력하면 새로 신청받지 않아도 바로 반영됩니다.</div>
+    <% } %>
+    <button type="button" class="pt-toggle" id="btnPartner">
+      <%= lead.partner_birth ? '상대방 정보 수정' : '＋ 상대방 정보 입력' %>
+    </button>
+
+    <div id="partnerBox" style="display:none">
+      <div class="pt-grid">
+        <label class="pt-f"><span>상대방 이름</span>
+          <input type="text" id="ptName" value="<%= lead.partner_name || '' %>" placeholder="선택"></label>
+        <label class="pt-f"><span>성별</span>
+          <select id="ptGender">
+            <option value="" <%= !lead.partner_gender ? 'selected' : '' %>>선택 안 함</option>
+            <option value="남" <%= lead.partner_gender === '남' ? 'selected' : '' %>>남</option>
+            <option value="여" <%= lead.partner_gender === '여' ? 'selected' : '' %>>여</option>
+          </select></label>
+        <label class="pt-f"><span>생년월일</span>
+          <input type="text" id="ptBirth" value="<%= lead.partner_birth || '' %>" placeholder="1990-01-29"></label>
+        <label class="pt-f"><span>달력</span>
+          <select id="ptCal">
+            <% ['양력','음력','윤달'].forEach(function(c){ %>
+              <option value="<%= c %>" <%= (lead.partner_calendar || '양력') === c ? 'selected' : '' %>><%= c %></option>
+            <% }); %>
+          </select></label>
+        <label class="pt-f wide"><span>태어난 시간</span>
+          <input type="text" id="ptHour" value="<%= lead.partner_hour || '' %>" placeholder="모르면 비워두세요"></label>
+      </div>
+      <div class="pt-actions">
+        <button type="button" class="pt-save" id="btnPartnerSave">저장하기</button>
+        <% if (lead.partner_birth) { %>
+          <button type="button" class="pt-del" id="btnPartnerDel">삭제</button>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+<style>
+  .pt-on{font-size:14px;color:#2f7a4f;background:#eef7f0;border-radius:9px;padding:11px 13px;line-height:1.7}
+  .pt-on b{color:#256b42}
+  .pt-note{font-size:12.5px;color:#5d8a6f}
+  .pt-off{font-size:13.5px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;border-radius:9px;padding:11px 13px;line-height:1.65}
+  .pt-toggle{margin-top:9px;padding:9px 15px;background:#fff;border:1px solid #ddd2b8;border-radius:8px;
+    font-size:13.5px;font-weight:700;color:#8a6f3c;cursor:pointer}
+  .pt-toggle:hover{border-color:#B59A62;background:#fbf6ec}
+  .pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .pt-f{display:flex;flex-direction:column;gap:5px}
+  .pt-f.wide{grid-column:1/-1}
+  .pt-f span{font-size:12.5px;color:#8a8372;font-weight:600}
+  .pt-f input,.pt-f select{border:1px solid #ddd2b8;border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;color:#3a3527}
+  .pt-f input:focus,.pt-f select:focus{outline:none;border-color:#B59A62}
+  .pt-actions{display:flex;gap:8px;margin-top:12px}
+  .pt-save{padding:10px 19px;background:#B59A62;color:#fff;border:0;border-radius:9px;font-weight:800;font-size:14px;cursor:pointer}
+  .pt-del{padding:10px 16px;background:#fff;border:1px solid #e0c4c4;border-radius:9px;font-weight:700;font-size:13.5px;color:#b1544a;cursor:pointer}
+  @media(max-width:600px){ .pt-grid{grid-template-columns:1fr} }
+</style>
+<script>
+  (function(){
+    var btn=document.getElementById('btnPartner'), box=document.getElementById('partnerBox');
+    if(!btn||!box) return;
+    btn.onclick=function(){ box.style.display=(box.style.display==='none')?'':'none'; };
+    async function send(body){
+      var r=await fetch('/leads/<%= lead.id %>/partner',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      var d=await r.json(); if(!d.ok) throw new Error(d.error||'실패'); location.reload();
+    }
+    document.getElementById('btnPartnerSave').onclick=async function(){
+      var v=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+      if(!v('ptBirth')){ alert('상대방 생년월일을 입력해주세요.'); return; }
+      var b=this; b.disabled=true; b.textContent='저장중...';
+      try{ await send({name:v('ptName'),gender:v('ptGender'),birth:v('ptBirth'),calendar:v('ptCal'),hour:v('ptHour')}); }
+      catch(e){ alert('저장 실패: '+e.message); b.disabled=false; b.textContent='저장하기'; }
+    };
+    var del=document.getElementById('btnPartnerDel');
+    if(del) del.onclick=async function(){
+      if(!confirm('상대방 정보를 지울까요?')) return;
+      try{ await send({clear:true}); }catch(e){ alert('삭제 실패: '+e.message); }
+    };
+  })();
+</script>
+
 </div>
 
 <style>

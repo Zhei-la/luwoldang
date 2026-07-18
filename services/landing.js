@@ -190,6 +190,13 @@ img{max-width:100%;display:block}
 .fm select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--sb) 50%),linear-gradient(135deg,var(--sb) 50%,transparent 50%);background-position:calc(100% - 16px) 18px,calc(100% - 11px) 18px;background-size:5px 5px;background-repeat:no-repeat}
 .fm input:focus,.fm select:focus,.fm textarea:focus{border-color:var(--ac)}
 .fm textarea{min-height:76px;resize:vertical}
+.fm .pt-wrap{border:1px dashed var(--ln);border-radius:var(--rd);padding:14px}
+.fm .pt-open{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.5;cursor:pointer;color:var(--tx)}
+.fm .pt-open input{width:17px;height:17px;flex-shrink:0;margin-top:1px}
+.fm .pt-fields{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+.fm .pt-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fm .pt-sex{border:1px solid var(--ln);border-radius:var(--rd);padding:10px;text-align:center;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.fm .pt-sex input{width:auto}
 .fm .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fm .seg.c3{grid-template-columns:repeat(3,1fr)}
 .fm .seg label{border:1px solid var(--ln);border-radius:var(--rd);padding:12px;text-align:center;font-size:13.5px;cursor:pointer}
@@ -430,6 +437,23 @@ function renderBlock(b, ctx) {
         <div class="tip">완성된 <b>PDF 사주 리포트</b>를 이 메일로 보내드립니다.</div></div>`;
       if (u.product) f += `<div class="g"><span class="lb">상품<i>*</i></span><select name="product" required><option value="">선택해주세요</option>${(b.products || []).map((p) => `<option>${esc(p)}</option>`).join('')}</select></div>`;
       if (u.memo) f += `<div class="g"><span class="lb">묻고 싶은 것</span><textarea name="memo" placeholder="가장 궁금한 한 가지를 적어주세요"></textarea></div>`;
+      // 연인궁합·재회운은 상대방 사주가 있어야 제대로 볼 수 있다 → 접었다 펴는 입력칸
+      f += `<div class="g pt-wrap">
+        <label class="pt-open"><input type="checkbox" data-partner-toggle>
+          <span>💑 <b>연인궁합 · 재회운</b>인가요? 상대방 정보도 입력해주세요</span></label>
+        <div class="pt-fields" data-partner-fields hidden>
+          <input name="partner_name" placeholder="상대방 이름 (선택)">
+          <div class="pt-row">
+            <label class="pt-sex"><input type="radio" name="partner_gender" value="남"> 남</label>
+            <label class="pt-sex"><input type="radio" name="partner_gender" value="여"> 여</label>
+          </div>
+          <input name="partner_birth" placeholder="상대방 생년월일 (예: 1992-05-05)" inputmode="numeric">
+          <select name="partner_calendar">
+            <option value="양력">양력</option><option value="음력">음력</option><option value="윤달">윤달</option>
+          </select>
+          <input name="partner_hour" placeholder="상대방 태어난 시각 (모르면 비워두세요)">
+          <div class="tip">상대방 정보가 있으면 두 사람의 궁합을 훨씬 정확하게 볼 수 있습니다.</div>
+        </div></div>`;
       f += `<div class="g"><label class="ag"><input type="checkbox" required><span><b>개인정보 수집 및 이용 동의</b><br>${esc(b.agree)}</span></label></div>`;
       return `<div id="lp-form" class="wrap mt"><div class="card fm">
         <h3>${esc(b.title)}</h3>
@@ -442,6 +466,19 @@ function renderBlock(b, ctx) {
 }
 
 const RUNTIME = `(function(){
+  // 연인궁합·재회운 상대방 정보 — 체크하면 입력칸이 펼쳐진다
+  document.querySelectorAll('[data-partner-toggle]').forEach(function(cb){
+    var box = cb.closest('.pt-wrap').querySelector('[data-partner-fields]');
+    cb.addEventListener('change', function(){
+      box.hidden = !cb.checked;
+      if(!cb.checked){
+        box.querySelectorAll('input, select').forEach(function(el){
+          if(el.type === 'radio') el.checked = false; else if(el.tagName !== 'SELECT') el.value = '';
+        });
+      }
+    });
+  });
+
   // 태어난 시각 — '모름' 체크하면 시각 입력을 끄고 '모름'으로 보낸다
   document.querySelectorAll('[data-hour-unknown]').forEach(function(cb){
     var wrap = cb.closest('.g');

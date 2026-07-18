@@ -108,10 +108,16 @@ router.post('/s/:slug/apply', async (req, res, next) => {
 
     const birth = [b.year, b.month, b.day].filter(Boolean).join('-');
     await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, phone, email, product, memo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, phone, email, product, memo,
+                          partner_name, partner_gender, partner_birth, partner_hour, partner_calendar)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [teacher.id, b.name, b.gender || null, birth || null, b.cal || null, b.hour || null,
-       b.region || null, b.phone, b.email || null, b.product || null, b.memo || null]
+       b.region || null, b.phone, b.email || null, b.product || null, b.memo || null,
+       (b.partner_name || '').trim() || null,
+       b.partner_gender || null,
+       (b.partner_birth || '').trim() || null,
+       (b.partner_hour || '').trim() || null,
+       (b.partner_birth || '').trim() ? (b.partner_calendar || '양력') : null]
     );
 
     // 교육생에게 알림 (실패해도 신청은 정상 처리)

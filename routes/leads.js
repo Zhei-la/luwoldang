@@ -130,6 +130,45 @@ router.post('/leads/:id/edit', async (req, res) => {
   }
 });
 
+/* ===== 상대방 정보 저장 (연인궁합 · 재회운) =====
+   이미 신청된 건에도 나중에 상대방 생년월일을 넣을 수 있다. */
+router.post('/leads/:id/partner', async (req, res) => {
+  try {
+    const b = req.body || {};
+
+    if (b.clear) {
+      const { rowCount } = await pool.query(
+        `UPDATE leads SET partner_name = NULL, partner_gender = NULL, partner_birth = NULL,
+                          partner_hour = NULL, partner_calendar = NULL
+          WHERE id = $1 AND teacher_id = $2`,
+        [req.params.id, req.user.id]
+      );
+      if (!rowCount) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+      return res.json({ ok: true });
+    }
+
+    const birth = String(b.birth || '').trim();
+    if (!birth) return res.status(400).json({ ok: false, error: '상대방 생년월일을 입력해주세요.' });
+
+    const t = (v) => { const s = String(v == null ? '' : v).trim(); return s || null; };
+    const { rowCount } = await pool.query(
+      `UPDATE leads
+          SET partner_name = $1, partner_gender = $2, partner_birth = $3,
+              partner_hour = $4, partner_calendar = $5
+        WHERE id = $6 AND teacher_id = $7`,
+      [t(b.name), t(b.gender), birth, t(b.hour), t(b.calendar) || '양력',
+       req.params.id, req.user.id]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+
+    console.log('[신청자] 상대방 정보 저장:', req.params.id);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[신청자] 상대방 정보 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /* ===== 내담자 질문 저장 =====
    웹 신청 때 질문을 안 남겼거나, 나중에 카카오톡 등으로 질문을 받은 경우
    여기에 적어두면 리포트에 '남겨주신 질문에 답합니다' 장이 들어간다. */
