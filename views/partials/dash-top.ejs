@@ -79,6 +79,7 @@
         <div class="nav-sep">관리자</div>
         <a href="/admin/approvals" class="nav-item <%= active === 'admin' ? 'active' : '' %>">회원 승인 · 관리</a>
         <a href="/admin/covers" class="nav-item <%= active === 'admin-covers' ? 'active' : '' %>">기본 표지 관리</a>
+        <a href="/admin/accounts" class="nav-item <%= active === 'admin-accounts' ? 'active' : '' %>">계정 전환</a>
       <% } %>
     </nav>
     <form method="post" action="/logout" class="logout-form">

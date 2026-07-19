@@ -33,6 +33,29 @@ router.get('/approvals', async (req, res, next) => {
   }
 });
 
+/* ── 계정 전환 — 승인된 회원 목록에서 골라 그 사람 화면으로 들어간다 ──
+   실제 전환은 /auth/as/:id 가 하고, 복귀는 상단 배너의 [관리자로 돌아가기] 이다. */
+router.get('/accounts', async (req, res, next) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const { rows } = await pool.query(
+      `SELECT id, name, email, role, site_name, admin_note, approved_at
+       FROM users
+       WHERE status = 'approved' AND id <> $1
+         AND ($2 = '' OR name ILIKE '%'||$2||'%' OR email ILIKE '%'||$2||'%'
+              OR COALESCE(site_name,'') ILIKE '%'||$2||'%'
+              OR COALESCE(admin_note,'') ILIKE '%'||$2||'%')
+       ORDER BY role DESC, approved_at DESC NULLS LAST, name`,
+      [req.user.id, q]
+    );
+    res.render('dash/admin-accounts', {
+      user: req.user, active: 'admin-accounts', accounts: rows, q,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // 본인 계정은 변경 못 하게 (관리자가 스스로 잠그는 사고 방지)
 function guardSelf(req, res) {
   if (String(req.params.id) === String(req.user.id)) {
