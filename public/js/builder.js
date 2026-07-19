@@ -441,7 +441,7 @@ function paintInspector(){
              <div class="hint"><a href="/reviews" target="_blank" style="color:var(--moon)">후기 메뉴</a>에서
                <b>홈페이지에 넣기</b>를 켠 것만 들어옵니다. 끄면 여기서도 빠집니다.</div>
            </div>`
-        + listEditor(b,[['n','작성자'],['r','별점 1~5'],['t','내용','area']],{n:'',r:5,t:''});
+        + listEditor(b,[['n','작성자'],['r','별점 1~5'],['d','날짜 (예: 07.15)'],['t','내용','area']],{n:'',r:5,d:'',t:''});
       break;
     case 'bullets': h += T('title','제목') + strListEditor(b,'items','항목'); break;
     case 'faq':     h += T('title','제목') + listEditor(b,[['q','질문'],['a','답변','area']],{q:'',a:''}); break;
@@ -599,7 +599,14 @@ function bindFields(b){
       if(!d.reviews.length){
         alert('홈페이지에 넣을 후기가 없습니다.\n\n후기 메뉴에서 "홈페이지에 넣기"를 켜주세요.');
       } else {
-        b.items = d.reviews.map(x=>({ n:x.name, r:x.rating, t:x.body, photo:x.photo || '' }));
+        b.items = d.reviews.map(x=>{
+          let d2 = '';
+          if(x.created_at){
+            const t = new Date(x.created_at);
+            if(!isNaN(t)) d2 = String(t.getMonth()+1).padStart(2,'0') + '.' + String(t.getDate()).padStart(2,'0');
+          }
+          return { n:x.name, r:x.rating, t:x.body, d:d2, photo:x.photo || '' };
+        });
         paint();
         toast(d.reviews.length + '개 불러왔어요');
       }

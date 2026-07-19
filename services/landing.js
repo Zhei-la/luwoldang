@@ -116,19 +116,36 @@ img{max-width:100%;display:block}
 @keyframes cdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
 @keyframes cdblink{50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){.cd.urgent .u,.cd.urgent .u:last-of-type b{animation:none}}
-.gg{padding:22px 20px;display:flex;align-items:center;gap:18px}
+.gg{padding:20px;display:flex;align-items:center;gap:16px}
 .gg .moon{flex:none;width:62px;height:62px}
-.gg .body{flex:1}
-.gg .top{display:flex;align-items:baseline;justify-content:space-between}
+.gg .body{flex:1;min-width:0}
+.gg .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gg .top span{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb)}
-.gg .top em{font-family:${v.disp};font-style:normal;font-size:24px;font-weight:700;color:var(--ac)}
-.gg .top em i{font-style:normal;font-size:13px;color:var(--sb)}
-.gg .note{margin-top:8px;font-size:12px;color:var(--sb);line-height:1.5}
-.gg .seg{display:flex;gap:3px;margin-top:10px}
-.gg .seg i{flex:1;height:6px;background:var(--ln)}
+.gg .now{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;font-size:10.5px;font-weight:700;background:rgba(127,127,127,.12);color:var(--sb);white-space:nowrap}
+.gg .now i{width:5px;height:5px;border-radius:99px;background:currentColor;animation:gpulse 1.6s infinite}
+@keyframes gpulse{0%,100%{opacity:1}50%{opacity:.25}}
+.gg .big{margin-top:6px}
+.gg em{font-family:${v.disp};font-style:normal;font-size:30px;font-weight:800;line-height:1.1;color:var(--ac);letter-spacing:-.02em}
+.gg em i{font-style:normal;font-size:13px;font-weight:700;color:var(--sb);letter-spacing:0}
+.gg em.zero{font-size:22px;color:var(--sb)}
+.gg .note{margin-top:9px;font-size:12px;color:var(--sb);line-height:1.55}
+.gg .note b{font-weight:700}
+.gg .seg{display:flex;gap:3px;margin-top:11px}
+.gg .seg i{flex:1;height:7px;background:var(--ln)}
 .gg .seg i.on{background:var(--ac)}
-.gg .bar{height:3px;background:var(--ln);margin-top:12px}
-.gg .bar i{display:block;height:100%;background:var(--ac)}
+.gg .bar{height:9px;border-radius:99px;background:rgba(127,127,127,.16);margin-top:11px;overflow:hidden}
+.gg .bar i{display:block;height:100%;border-radius:99px;background:var(--ac);transition:width .5s ease}
+/* 남은 자리가 실제로 적을 때만 색이 올라간다 */
+.gg.warm{border-color:rgba(224,140,26,.4)}
+.gg.warm em,.gg.warm .note b{color:#d18310}
+.gg.warm .bar i,.gg.warm .seg i.on{background:#e59a22}
+.gg.warm .now{background:rgba(224,140,26,.16);color:#b8730c}
+.gg.hot{border-color:rgba(214,55,45,.42);background:rgba(214,55,45,.05)}
+.gg.hot em,.gg.hot .note b{color:#d6372d}
+.gg.hot .bar i,.gg.hot .seg i.on{background:#d6372d}
+.gg.hot .now{background:rgba(214,55,45,.14);color:#c02f26}
+.gg.done{opacity:.72}
+.gg.done .bar i,.gg.done .seg i.on{background:var(--sb)}
 .lv .h{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--ln);font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--sb)}
 .lv .dot{width:6px;height:6px;border-radius:50%;background:var(--ac);animation:bl 1.4s infinite}
 @keyframes bl{50%{opacity:.2}}
@@ -148,13 +165,19 @@ img{max-width:100%;display:block}
 .rv .vp{overflow:hidden}
 .rv .track{display:flex;transition:transform .38s cubic-bezier(.4,0,.2,1)}
 .rv .it{min-width:100%;padding:0 20px;flex:none}
-.rv .bx{padding:20px;border:1px solid var(--ln);border-radius:var(--rd);background:var(--cd);height:100%}
-.rv .qt{font-family:${v.disp};font-size:15px;line-height:1.85;letter-spacing:-.01em;min-height:84px}
-.rv .qt:before{content:"\\201C";color:var(--ac);margin-right:2px}
-.rv .qt:after{content:"\\201D";color:var(--ac)}
-.rv .hd{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--ln);font-size:11.5px;color:var(--sb)}
-.rv .hd b{font-weight:700;color:var(--tx)}
-.rv .star{margin-left:auto;letter-spacing:2px;color:var(--ac);font-size:9px}
+.rv .bx{padding:17px 18px 15px;border:1px solid var(--ln);border-radius:var(--rd);background:var(--cd);height:100%}
+.rv .rtop{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.rv .rav{width:32px;height:32px;border-radius:99px;flex:none;object-fit:cover;background:var(--ln)}
+.rv .rav.ini{display:flex;align-items:center;justify-content:center;font-family:${v.disp};font-size:14px;font-weight:700;color:var(--ac);background:rgba(127,127,127,.13)}
+.rv .rnm{font-size:13.5px;font-weight:700;color:var(--tx)}
+.rv .rdt{margin-left:auto;font-size:11.5px;color:var(--sb)}
+.rv .rst{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.rv .st{font-size:14px;letter-spacing:1px;color:var(--ln)}
+.rv .st b{color:#f5a623}
+.rv .sn{font-size:12.5px;font-weight:700;color:var(--tx)}
+.rv .qt{font-size:13.5px;line-height:1.78;letter-spacing:-.01em;color:var(--tx)}
+.rv .qt.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.rv .rmore{margin-top:9px;padding:0;border:0;background:none;color:var(--ac);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:1px solid currentColor}
 .rv .dots{display:flex;justify-content:center;gap:5px;margin-top:14px}
 .rv .dots i{width:5px;height:5px;border-radius:99px;background:var(--ln);cursor:pointer;transition:.2s}
 .rphoto{width:100%;border-radius:8px;margin-bottom:11px;display:block;border:1px solid var(--ln)}
@@ -164,8 +187,13 @@ img{max-width:100%;display:block}
 /* 카드 2열 */
 .rv-grid .gwrap{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 20px}
 .rv-grid .bx{border:1px solid var(--ln);border-radius:var(--rd);padding:13px;background:var(--cd);height:100%}
-.rv-grid .qt{font-size:12.8px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
-.rv-grid .hd{font-size:11px;margin-top:8px}
+.rv-grid .qt{font-size:12.5px;line-height:1.7}
+.rv-grid .rav{width:26px;height:26px}
+.rv-grid .rav.ini{font-size:12px}
+.rv-grid .rnm{font-size:12.5px}
+.rv-grid .rdt{font-size:10.5px}
+.rv-grid .st{font-size:12px}
+.rv-grid .sn{font-size:11.5px}
 .rv .dots i.on{background:var(--ac);width:16px}
 .bl{padding:24px 20px}
 .bl h3,.fq h3{font-family:${v.disp};font-size:18px;font-weight:700;margin-bottom:16px;letter-spacing:-.01em}
@@ -194,6 +222,7 @@ img{max-width:100%;display:block}
 .fm .pt-open{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.5;cursor:pointer;color:var(--tx)}
 .fm .pt-open input{width:17px;height:17px;flex-shrink:0;margin-top:1px}
 .fm .pt-fields{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+.fm .pt-fields[hidden]{display:none}
 .fm .pt-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fm .pt-sex{border:1px solid var(--ln);border-radius:var(--rd);padding:10px;text-align:center;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
 .fm .pt-sex input{width:auto}
@@ -331,14 +360,32 @@ function renderBlock(b, ctx) {
       const total = Math.max(1, Number(b.total) || 1);
       const used = ctx.stats ? Number(ctx.stats.leadCount || 0) : 0;
       const left = Math.max(0, total - used);
+      // 막대는 '채워진 정도'를 보여준다 — 찰수록 길어져야 마감이 가까워 보인다
+      const fill = Math.max(2, Math.min(100, Math.round((used / total) * 100)));
       const pct = Math.max(3, Math.min(100, Math.round((left / total) * 100)));
-      const segs = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(pct / 10) ? 'on' : ''}"></i>`).join('');
-      return `<div class="wrap mt"><div class="card gg">
+      const segs = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(fill / 10) ? 'on' : ''}"></i>`).join('');
+
+      // 남은 자리가 실제로 적을 때만 붉게 — 넉넉한데 임박한 척하지 않는다
+      const ratio = left / total;
+      const hot = left === 0 ? 'done' : ratio <= 0.3 ? 'hot' : ratio <= 0.6 ? 'warm' : '';
+
+      // 지금 보고 있는 사람 (최근 30분 실제 방문 기록) — 혼자일 땐 숨긴다
+      const viewing = ctx.stats ? Number(ctx.stats.viewing || 0) : 0;
+      const liveTag = viewing >= 2
+        ? `<span class="now"><i></i>현재 ${viewing}명 보는 중${hot === 'hot' ? ' · 마감 임박' : ''}</span>` : '';
+
+      const headline = left === 0
+        ? `<em class="zero">마감</em>`
+        : `<em>${left}<i> / ${total}명</i></em>`;
+
+      return `<div class="wrap mt"><div class="card gg ${hot}">
         ${sk === 'hanji' ? '' : moonSVG(pct)}
         <div class="body">
-          <div class="top"><span>${esc(b.title)}</span><em>${left}<i> / ${total}명</i></em></div>
-          ${sk === 'hanji' ? `<div class="seg">${segs}</div>` : `<div class="bar"><i style="width:${pct}%"></i></div>`}
-          <div class="note">${esc(b.note)}</div></div></div></div>`;
+          <div class="top"><span>${esc(b.title)}</span>${liveTag}</div>
+          <div class="big">${headline}</div>
+          ${sk === 'hanji' ? `<div class="seg">${segs}</div>` : `<div class="bar"><i style="width:${fill}%"></i></div>`}
+          ${b.note ? `<div class="note">${hot ? '<b>⚠</b> ' : ''}${esc(b.note)}</div>` : ''}
+        </div></div></div>`;
     }
 
     case 'live': {
@@ -363,14 +410,29 @@ function renderBlock(b, ctx) {
       const items = b.items || [];
       if (!items.length) return '';
 
-      const stars = (r) => (sk === 'plain' ? '★'.repeat(Math.round(r || 5)) + '☆'.repeat(5 - Math.round(r || 5))
-                                          : '●'.repeat(Math.round(r || 5)) + '○'.repeat(5 - Math.round(r || 5)));
+      // 별점 — 채운 별과 빈 별을 따로 그린다 (색을 다르게 주기 위해)
+      const stars = (r) => {
+        const n = Math.max(0, Math.min(5, Math.round(Number(r) || 5)));
+        return `<span class="st"><b>${'★'.repeat(n)}</b>${'★'.repeat(5 - n)}</span>`
+             + `<span class="sn">${n.toFixed(1)}</span>`;
+      };
 
-      const card = (x) => `<div class="bx">
-        ${x.photo ? `<img class="rphoto" src="${esc(x.photo)}" alt="">` : ''}
-        <div class="qt">${esc(x.t)}</div>
-        <div class="hd"><b>${esc(x.n)}</b><span class="star">${stars(x.r)}</span></div>
+      // 이름 첫 글자를 딴 동그란 프로필 (사진이 있으면 사진으로)
+      const card = (x) => {
+        const nm = String(x.n || '손님').trim();
+        const ini = nm.slice(0, 1);
+        return `<div class="bx">
+        <div class="rtop">
+          ${x.photo ? `<img class="rav" src="${esc(x.photo)}" alt="">`
+                    : `<span class="rav ini">${esc(ini)}</span>`}
+          <span class="rnm">${esc(nm)}</span>
+          ${x.d ? `<span class="rdt">${esc(x.d)}</span>` : ''}
+        </div>
+        <div class="rst">${stars(x.r)}</div>
+        <div class="qt" data-more>${esc(x.t)}</div>
+        <button type="button" class="rmore" data-more-btn hidden>전체 보기 →</button>
       </div>`;
+      };
 
       const view = b.view || 'slide';   // slide | list | grid
       const head = b.title ? `<h3>${esc(b.title)}</h3>` : '';
@@ -483,9 +545,23 @@ function renderBlock(b, ctx) {
 }
 
 const RUNTIME = `(function(){
+  // 후기 본문 — 길면 4줄로 접고 '전체 보기'를 붙인다
+  document.querySelectorAll('[data-more]').forEach(function(q){
+    q.classList.add('clamp');
+    var btn = q.parentNode.querySelector('[data-more-btn]');
+    if(!btn) return;
+    if(q.scrollHeight - q.clientHeight < 4){ btn.remove(); return; }
+    btn.hidden = false;
+    btn.addEventListener('click', function(){
+      var open = q.classList.toggle('clamp');
+      btn.textContent = open ? '전체 보기 →' : '접기';
+    });
+  });
+
   // 연인궁합·재회운 상대방 정보 — 체크하면 입력칸이 펼쳐진다
   document.querySelectorAll('[data-partner-toggle]').forEach(function(cb){
     var box = cb.closest('.pt-wrap').querySelector('[data-partner-fields]');
+    box.hidden = !cb.checked;
     cb.addEventListener('change', function(){
       box.hidden = !cb.checked;
       if(!cb.checked){

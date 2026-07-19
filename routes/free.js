@@ -80,6 +80,10 @@ router.get('/s/:slug', async (req, res, next) => {
     );
     const cnt = await pool.query('SELECT COUNT(*)::int AS c FROM leads WHERE teacher_id = $1', [teacher.id]);
 
+    // 지금 보고 있는 사람 수 (최근 30분 실제 방문 기록)
+    let viewing = 0;
+    try { viewing = await require('../services/stats').viewingNow(teacher.id); } catch (e) { /* noop */ }
+
     const live = leads.rows.map((r) => ({
       name: maskName(r.name),
       phone: maskPhone(r.phone),
@@ -90,7 +94,7 @@ router.get('/s/:slug', async (req, res, next) => {
     const html = renderLanding(S, {
       slug: teacher.slug,
       live,
-      stats: { leadCount: cnt.rows[0].c },
+      stats: { leadCount: cnt.rows[0].c, viewing },
     });
     res.set('Content-Type', 'text/html; charset=utf-8').send(html);
   } catch (e) {

@@ -77,4 +77,20 @@ async function getStats(teacherId) {
   };
 }
 
-module.exports = { recordVisit, getStats };
+/** 지금 이 페이지를 보고 있는 사람 수 — 최근 30분 방문자(실제 기록) */
+async function viewingNow(teacherId) {
+  if (!teacherId) return 0;
+  try {
+    const { rows } = await pool.query(
+      `SELECT COUNT(DISTINCT visitor_key)::int AS n
+       FROM page_visits
+       WHERE teacher_id = $1 AND visited_at > NOW() - INTERVAL '30 minutes'`,
+      [teacherId]
+    );
+    return rows[0] ? rows[0].n : 0;
+  } catch (e) {
+    return 0;   // 통계 실패가 페이지를 막지 않도록
+  }
+}
+
+module.exports = { recordVisit, getStats, viewingNow };
