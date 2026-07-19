@@ -5,7 +5,7 @@ self.addEventListener('install', (e) => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
 self.addEventListener('push', (event) => {
-  let d = { title: '루월당', body: '새 소식이 있습니다.', url: '/leads' };
+  let d = { title: '루월당', body: '새 소식이 있습니다.', url: '/leads', tag: '' };
   try { if (event.data) d = Object.assign(d, event.data.json()); } catch (e) {}
 
   event.waitUntil(
@@ -14,8 +14,10 @@ self.addEventListener('push', (event) => {
       icon: '/img/push-icon.png',
       badge: '/img/push-icon.png',
       data: { url: d.url },
-      tag: 'luwoldang-lead',
+      // 알림마다 표시가 달라야 여러 건이 따로 쌓인다 (같으면 덮어쓴다)
+      tag: d.tag || ('luwoldang-' + Date.now()),
       renotify: true,
+      requireInteraction: true,   // 볼 때까지 알림창에 남겨둔다
       vibrate: [80, 40, 80],
     })
   );

@@ -400,10 +400,10 @@ function renderBlock(b, ctx) {
     }
 
     case 'live': {
-      // 자동 = 실제 신청 내역 (DB) / 수동 = 사이트 밖에서 받아 직접 적은 것 (최대 5개)
+      // 자동 = 실제 신청 내역 (DB) / 수동 = 교육생이 직접 적은 것 (개수 제한 없음)
       const auto = ctx.live || [];
       const manual = (b.items || [])
-        .filter((x) => x && String(x.n || '').trim()).slice(0, 5)
+        .filter((x) => x && String(x.n || '').trim())
         .map((x) => ({
           name: maskKName(x.n),
           phone: '',

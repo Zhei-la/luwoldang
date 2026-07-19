@@ -407,17 +407,21 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
       </div>
     </td></tr>` : '';
 
-  /* ── 리포트 전체 보기 (로그인 없이 열리는 링크 · PDF 저장 가능) ── */
+  /* ── 리포트 받기 (웹 열람 없이 PDF 로 바로) ── */
   const reportBtn = shareUrl ? `
     <tr><td style="padding:0 24px 26px" align="center">
       <a href="${esc(shareUrl)}/report.pdf" style="display:block;padding:17px;background:#B59A62;color:#fff;
          font-weight:800;font-size:16px;text-decoration:none;border-radius:10px;text-align:center">
-        PDF 다운받기
+        결과 리포트 열람하기
       </a>
-      <a href="${esc(shareUrl)}" style="display:block;margin-top:9px;padding:14px;background:#182234;color:#fff;
-         font-weight:700;font-size:14px;text-decoration:none;border-radius:10px;text-align:center">
-        웹에서 바로 읽기
-      </a>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="margin-top:20px;background:#f4f4f5;border-radius:8px">
+        <tr><td style="padding:16px 18px;text-align:center;font-size:12.5px;line-height:1.85;color:#6b6b70">
+          <b style="color:#3f3f46">[다운로드 안내]</b><br>
+          파일은 개인정보 보호를 위해 7일간 보관 후 자동 삭제됩니다.<br>
+          기간 내에 반드시 다운로드하여 소장해 주십시오.
+        </td></tr>
+      </table>
     </td></tr>` : '';
 
   const body = elBars + summary + reportBtn;
@@ -485,20 +489,15 @@ function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
         <tr>
           <td style="padding:16px 18px">
             <div style="font-size:16px;font-weight:800;color:#182234;margin-bottom:3px">${esc(it.type)}</div>
-            <div style="font-size:12px;color:#8a8574">PDF 파일로 받거나 웹에서 바로 읽을 수 있습니다.</div>
+            <div style="font-size:12px;color:#8a8574">PDF 파일로 받아 소장하실 수 있습니다.</div>
           </td>
         </tr>
         <tr>
           <td style="padding:0 18px 16px">
             <a href="${esc(it.shareUrl)}/report.pdf"
                style="display:inline-block;padding:11px 18px;background:#B59A62;color:#fff;
-                      font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px;margin-right:6px">
-              PDF 다운받기
-            </a>
-            <a href="${esc(it.shareUrl)}"
-               style="display:inline-block;padding:11px 18px;background:#182234;color:#fff;
-                      font-weight:700;font-size:13.5px;text-decoration:none;border-radius:8px">
-              웹에서 읽기
+                      font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px">
+              결과 리포트 열람하기
             </a>
           </td>
         </tr>

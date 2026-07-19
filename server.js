@@ -28,6 +28,12 @@ app.set('views', path.join(__dirname, 'views'));
 // 후기 이미지(data URI)를 폼으로 받기 때문에 기본 100kb 로는 부족하다
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(express.json({ limit: '25mb' }));
+// 알림 수신기는 절대 캐시하지 않는다 — 캐시되면 고친 내용이 폰에 안 내려간다
+app.get('/sw.js', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 if (isProd) app.set('trust proxy', 1); // Railway(https) 프록시 뒤 쿠키 secure 동작
 app.use(

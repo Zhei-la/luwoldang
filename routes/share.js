@@ -83,8 +83,9 @@ async function loadReport(token) {
     review_notice: pdf.review_notice,
   };
   const baseUrl = process.env.BASE_URL || '';
-  // 후기 작성 링크 (리포트 하단 후기 폼으로 스크롤)
-  const reviewUrl = baseUrl + '/r/' + token + '#rvwWrap';
+  // 후기는 교육생이 웹페이지 설정에서 직접 적는 방식으로 바뀌었다.
+  // 내담자용 후기 작성 칸은 더 이상 만들지 않는다.
+  const reviewUrl = '';
   // 리포트 내용: 발송 스냅샷 우선
   const reportSections = Array.isArray(pdf.sent_sections) ? pdf.sent_sections
     : (Array.isArray(pdf.sections) ? pdf.sections : []);
@@ -326,7 +327,8 @@ router.get('/r/:token', async (req, res, next) => {
     res
       .set('Content-Type', 'text/html; charset=utf-8')
       .set('X-Robots-Tag', 'noindex, nofollow')
-      .send(html.replace('<body>', '<body>' + bar).replace('</body>', (pdf.review_on === false ? '' : reviewBox) + '</body>'));
+      // 후기는 교육생이 웹페이지 설정에서 직접 적는다 — 내담자용 작성 칸은 넣지 않는다
+      .send(html.replace('<body>', '<body>' + bar).replace('</body>', '</body>'));
   } catch (e) {
     next(e);
   }

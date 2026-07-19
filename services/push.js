@@ -88,14 +88,22 @@ async function notify(teacherId, msg) {
     title: msg.title || '루월당',
     body: msg.body || '',
     url: msg.url || '/leads',
+    // 알림마다 다른 표시를 달아준다 — 같으면 새 알림이 앞 알림을 덮어써서
+    // 신청이 여러 건 들어와도 하나만 보인다
+    tag: msg.tag || ('luwoldang-' + Date.now()),
   });
+
+  // 안드로이드는 절전(Doze) 상태에서 우선순위가 보통인 알림을 모아뒀다가 나중에 준다.
+  // 폰이 자고 있어도 바로 깨우도록 높음으로 보낸다.
+  const opts = { TTL: 86400, urgency: 'high' };
 
   let sent = 0;
   await Promise.all(rows.map(async (s) => {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        payload
+        payload,
+        opts
       );
       sent++;
     } catch (e) {
@@ -103,7 +111,9 @@ async function notify(teacherId, msg) {
       if (e.statusCode === 404 || e.statusCode === 410) {
         await pool.query('DELETE FROM push_subs WHERE endpoint = $1', [s.endpoint]).catch(() => {});
       } else {
-        console.error('[알림] 발송 실패:', e.statusCode || e.message);
+        let host = '';
+        try { host = new URL(s.endpoint).host; } catch (x) {}
+        console.error('[알림] 발송 실패:', host, e.statusCode || e.message);
       }
     }
   }));

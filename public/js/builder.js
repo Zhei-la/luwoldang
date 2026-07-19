@@ -227,7 +227,7 @@ function renderBlock(b, S){
     }
     case 'live':{
       const mk = n => { const s=String(n||'').trim(); return !s?'':s.length===1?s:s.length===2?s[0]+'*':s[0]+'*'.repeat(s.length-2)+s[s.length-1]; };
-      const manual = (b.items||[]).filter(x=>x&&String(x.n||'').trim()).slice(0,5)
+      const manual = (b.items||[]).filter(x=>x&&String(x.n||'').trim())
         .map(x=>({ name:mk(x.n), phone:'', status:(x.s||'접수완료'), ago:(x.t||'') }));
       const rows = manual.concat(SAMPLE_LIVE).map(x=>`<li style="display:flex;align-items:center;gap:11px;padding:0 18px;height:44px;list-style:none">
         <span style="width:24px;height:24px;border:1px solid var(--ln);color:var(--sb);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none">${x.name[0]}</span>
@@ -481,7 +481,7 @@ function paintInspector(){
             ['n','이름 (예: 김민희)'],
             ['s','상태', null, ['접수완료','풀이중','발송완료']],
             ['t','시간 (예: 10분 전)'],
-          ], {n:'',s:'접수완료',t:''}, 5);
+          ], {n:'',s:'접수완료',t:''});
       break;
     case 'reviews':
       h += T('title','섹션 제목')
