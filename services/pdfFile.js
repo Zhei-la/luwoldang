@@ -139,14 +139,18 @@ function pdfFilename(name, type) {
  * PDF 파일로 내려보낸다.
  * ⚠️ 카톡·삼성인터넷 같은 인앱 브라우저는 Content-Disposition 을 무시하고
  *    URL 끝을 보고 파일명을 정한다. 그래서 라우트 주소가 .pdf 로 끝나야 한다.
+ *
+ * @param {boolean} inline  true 면 브라우저에서 바로 열어 보여준다 (다운로드 X)
+ *                          내담자가 메일에서 누를 때는 이쪽이 자연스럽다.
  */
-function sendPdf(res, buf, name, type) {
+function sendPdf(res, buf, name, type, inline = false) {
   const fn = pdfFilename(name, type);
+  const how = inline ? 'inline' : 'attachment';
   res.set({
     'Content-Type': 'application/pdf',
     'Content-Length': String(buf.length),
     'Content-Transfer-Encoding': 'binary',
-    'Content-Disposition': `attachment; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
+    'Content-Disposition': `${how}; filename="${fn.ascii}"; filename*=UTF-8''${fn.utf8}`,
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
   });

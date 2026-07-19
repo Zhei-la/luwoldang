@@ -141,7 +141,7 @@ router.get('/r/:token', async (req, res, next) => {
 </style>
 <div class="sv-bar no-print">
   <span class="sv-name">${escapeHtml(pdf.name)}님의 사주 리포트</span>
-  <a class="sv-btn" id="svDl" href="/r/${escapeHtml(req.params.token)}/report.pdf">
+  <a class="sv-btn" id="svDl" href="/r/${escapeHtml(req.params.token)}/report.pdf?dl=1">
     <span id="svDlText">PDF 다운받기</span>
   </a>
 </div>
@@ -345,7 +345,9 @@ async function downloadReport(req, res) {
     const { pdf, html } = r;
 
     const buf = await htmlToPdf(html);
-    sendPdf(res, buf, pdf.name, pdf.type);
+    // 기본은 브라우저에서 바로 열어 보여준다 (메일의 [결과 리포트 열람하기])
+    // 주소 뒤에 ?dl=1 을 붙이면 예전처럼 파일로 저장된다
+    sendPdf(res, buf, pdf.name, pdf.type, req.query.dl !== '1');
   } catch (e) {
     console.error('[PDF] 파일 생성 실패:', e.message);
     res.status(302).redirect(`/r/${req.params.token}?pdferr=1`);
