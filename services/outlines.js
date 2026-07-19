@@ -1021,7 +1021,10 @@ function outlineWithQuestion(type, question) {
   if (!q) return base;
 
   const out = base.slice();
-  const at = Math.min(1, out.length);   // 첫 챕터(요약) 바로 다음
+  // 마지막 '종합 정리' 장 바로 앞에 넣는다.
+  //   앞쪽에 두면 본문을 읽기도 전에 답이 나와 흐름이 끊긴다.
+  //   전체 풀이를 다 본 뒤, 마무리 직전에 답하는 것이 자연스럽다.
+  const at = Math.max(1, out.length - 1);
   out.splice(at, 0, QUESTION_CHAPTER);
   return out;
 }
