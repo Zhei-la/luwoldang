@@ -141,15 +141,17 @@
   </div>
 
   <div class="settings-block">
-    <h2 class="section-h">리포트 후기 받기</h2>
-    <label class="fl" style="display:flex;align-items:center;gap:8px">
-      <input type="checkbox" name="review_on" <%= (user.review_on === false ? '' : 'checked') %>>
-      리포트 맨 아래에 후기 작성란 넣기
-    </label>
+    <h2 class="section-h">리포트 후기 받기
+      <% if (user.review_link) { %><span class="key-ok">사용 중 ✓</span><% } %>
+    </h2>
+    <label class="fl">후기 남기는 곳 주소</label>
+    <input class="fi" type="url" name="review_link" value="<%= user.review_link || '' %>"
+           placeholder="https://... (당근·네이버 등 후기를 받을 주소)">
     <p class="hint">
-      켜면, 리포트를 받은 사람이 리포트 맨 아래에서 별점·후기·사진을 남길 수 있습니다.
-      남긴 후기는 <b>후기 메뉴</b>에서 확인하고, 골라서 내 웹사이트에 띄울 수 있습니다.<br>
-      리포트 하나당 한 번만 작성되며, 다시 쓰면 이전 후기가 갱신됩니다.
+      주소를 넣으면 <b>PDF 마지막 장과 발송 메일 아래</b>에 <b>후기 남기러 가기</b> 버튼이 생깁니다.
+      비워두면 버튼이 아예 나오지 않습니다.<br>
+      당근마켓 프로필, 네이버 플레이스, 구글 폼 등 어디든 넣으실 수 있습니다.
+      <b>https:// 부터</b> 전체 주소를 넣어주세요.
     </p>
 
     <label class="fl">후기 유도 문구 <span style="color:#8a8574;font-weight:400">(선택)</span></label>

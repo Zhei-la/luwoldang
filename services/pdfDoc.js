@@ -311,39 +311,134 @@ function sajuPages({ client, saju, type }) {
   ${dw}
 </section>`);
 
-  /* ── 3장: 세운 + 월운 (신년운세만) ── */
+  /* ── 3장: 세운 + 월운 (신년운세만) — 표 대신 풀이 ── */
   const yl = saju.yearLuck;
   if (type === '신년운세' && yl) {
     pages.push(`
 <section class="page sheet">
   <h2 class="pg-title">${yl.year}년 운의 흐름</h2>
   <div class="pg-line"></div>
-
-  <h3 class="ms-h">${yl.year}년 세운</h3>
-  <table class="ms-el-tbl">
-    <tr><th>간지</th><th>천간</th><th>지지</th><th>12운성</th></tr>
-    <tr>
-      <td><b>${esc(yl.sewoon.ko)}</b></td>
-      <td>${esc(yl.sewoon.stem.ko)} · ${esc(yl.sewoon.stem.god)}</td>
-      <td>${esc(yl.sewoon.branch.ko)} · ${esc(yl.sewoon.branch.god)}</td>
-      <td>${esc(yl.sewoon.unseong || '-')}</td>
-    </tr>
-  </table>
-  ${yl.currentDaewoon
-    ? `<p class="ms-sum">현재 대운 <b>${esc(yl.currentDaewoon.ko)}</b> (${yl.currentDaewoon.age}세~, 올해 ${yl.currentDaewoon.currentAge}세)</p>`
-    : ''}
-
-  <h3 class="ms-h">${yl.year}년 월운</h3>
-  <table class="ms-wol">
-    <tr>${yl.wolwoon.map((w) => `<th>${w.month}월</th>`).join('')}</tr>
-    <tr>${yl.wolwoon.map((w) => `<td><b>${esc(w.ko)}</b></td>`).join('')}</tr>
-    <tr>${yl.wolwoon.map((w) => `<td class="wol-god">${esc(w.stem.god)}<br>${esc(w.branch.god)}</td>`).join('')}</tr>
-    <tr>${yl.wolwoon.map((w) => `<td class="wol-us">${esc(w.unseong || '-')}</td>`).join('')}</tr>
-  </table>
+  ${yearFlowProse(saju, yl)}
 </section>`);
   }
 
   return pages.join('');
+}
+
+/* ══════════════════════════════════════════════
+ * 세운·월운 풀이 (표를 대신한다)
+ *
+ *   십신과 12운성이 정해지면 해석의 뼈대도 정해지므로
+ *   AI 를 부르지 않고 여기서 문장을 만든다.
+ *   (호출이 늘면 분당 한도에 걸리고, 실패하면 장이 비어버린다)
+ * ══════════════════════════════════════════════ */
+
+// 운으로 들어오는 십신이 그 해에 만드는 일
+const GOD_FLOW = {
+  비견: { key: '내 몫을 지키는 일', desc: '스스로 밀고 나가려는 힘이 강해지는 대신, 비슷한 위치의 사람과 부딪히기 쉽습니다' },
+  겁재: { key: '경쟁과 지출', desc: '함께 나눠야 할 일이 늘고, 예상 못 한 곳으로 돈이 빠져나가기 쉽습니다' },
+  식신: { key: '표현과 여유', desc: '하고 싶은 말과 만들고 싶은 것이 생기고, 먹고사는 문제가 한결 편해집니다' },
+  상관: { key: '재능의 발산', desc: '드러내고 싶은 마음이 커지는 만큼, 정해진 틀이나 윗사람과 부딪히기도 합니다' },
+  편재: { key: '넓어지는 활동 범위', desc: '움직이는 돈과 사람이 늘어나는데, 손에 쥐고 있는 시간은 짧은 편입니다' },
+  정재: { key: '꾸준한 수입과 관리', desc: '들어오는 것이 일정해지고, 벌이는 것보다 지키는 쪽이 유리해집니다' },
+  편관: { key: '압박과 시험대', desc: '감당해야 할 무게가 늘어납니다. 밀어붙이면 자리가 생기고, 버티지 못하면 몸이 먼저 상합니다' },
+  정관: { key: '자리와 인정', desc: '해야 할 몫이 분명해지고, 규칙 안에서 움직일 때 인정이 따라옵니다' },
+  편인: { key: '생각이 많아지는 시기', desc: '지금 길이 맞나 되묻게 되고, 다른 방향을 기웃거리게 됩니다' },
+  정인: { key: '배움과 도움', desc: '가르쳐 주는 사람이 나타나고, 밀어붙이기보다 채워 넣기 좋은 때입니다' },
+};
+
+// 12운성 — 기세의 강약 (길흉이 아니다)
+const UNSEONG_FLOW = {
+  장생: '기운이 막 올라오기 시작하는 자리라, 크지는 않아도 시작하기에는 좋습니다',
+  목욕: '아직 자리가 잡히지 않아 흔들리기 쉬운 자리입니다. 시행착오를 각오해야 합니다',
+  관대: '모양새가 갖춰지는 자리라, 겉으로 드러나는 일이 늘어납니다',
+  건록: '힘이 제대로 실리는 자리입니다. 벌여둔 일이 있다면 올해 결과가 납니다',
+  제왕: '기세가 가장 높은 자리입니다. 다만 넘치면 부러지니 속도를 스스로 줄여야 합니다',
+  쇠: '정점을 지나 기울기 시작하는 자리라, 벌이기보다 지키는 쪽이 낫습니다',
+  병: '힘이 빠지는 자리입니다. 무리하면 몸이나 관계에서 먼저 신호가 옵니다',
+  사: '움직임이 멈추는 자리라, 새로 벌이는 일은 잘 굴러가지 않습니다',
+  묘: '정리하고 갈무리하는 자리입니다. 벌여둔 것을 접고 다음을 준비하기에 맞습니다',
+  절: '바닥에 닿는 자리입니다. 끊어지는 것이 생기지만, 그래야 다음이 들어옵니다',
+  태: '새로 배는 자리라, 아직 형태는 없어도 시작의 씨앗이 놓입니다',
+  양: '드러나지 않게 자라는 자리입니다. 조용히 준비하는 데 시간을 쓰면 좋습니다',
+};
+
+const QUARTERS = [
+  { label: '입춘 무렵부터 봄까지', m: [2, 3, 4] },
+  { label: '초여름부터 한여름까지', m: [5, 6, 7] },
+  { label: '늦여름에서 가을까지', m: [8, 9, 10] },
+  { label: '늦가을에서 겨울까지', m: [11, 12, 1] },
+];
+
+// 받침에 따라 조사를 고른다 (경 → 경을 / 무 → 무를)
+function josa(word, withBatchim, without) {
+  const c = String(word || '').trim().slice(-1);
+  const code = c.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return withBatchim;
+  return (code - 0xac00) % 28 ? withBatchim : without;
+}
+
+function yearFlowProse(saju, yl) {
+  const dm = saju.dayMasterKo || '';
+  const sw = yl.sewoon;
+  const sg = GOD_FLOW[sw.stem.god] || null;
+  const bg = GOD_FLOW[sw.branch.god] || null;
+  const us = UNSEONG_FLOW[sw.unseong] || '';
+
+  /* ── 세운 ── */
+  const sewoon = `<p class="fl-p">${yl.year}년은 <b>${esc(sw.ko)}년</b>으로, `
+    + `겉으로 드러나는 흐름은 <b>${esc(sw.stem.god)}</b>, 실제로 몸으로 겪는 흐름은 <b>${esc(sw.branch.god)}</b>입니다. `
+    + (sg ? `${sg.desc}. ` : '')
+    + (bg && bg.key !== (sg && sg.key) ? `여기에 ${bg.desc}. ` : '')
+    + `</p>`;
+
+  const usP = us
+    ? `<p class="fl-p">일간 ${esc(dm)}${josa(dm, '을', '를')} 올해 기준으로 보면 <b>${esc(sw.unseong)}</b>에 놓입니다. ${us}. `
+      + `12운성은 좋고 나쁨이 아니라 <b>기운의 세기</b>를 말하는 것이라, 세다고 다 좋은 것도 약하다고 다 나쁜 것도 아닙니다.</p>`
+    : '';
+
+  const dwP = yl.currentDaewoon
+    ? `<p class="fl-p">지금은 <b>${esc(yl.currentDaewoon.ko)}</b> 대운 안에 있습니다 `
+      + `(${yl.currentDaewoon.age}세부터, 올해 ${yl.currentDaewoon.currentAge}세). `
+      + `한 해의 운은 이 10년의 큰 흐름 위에서 움직이므로, 올해 일도 이 대운의 방향과 겹쳐서 봐야 합니다.</p>`
+    : '';
+
+  /* ── 월운 ── */
+  const byMonth = {};
+  yl.wolwoon.forEach((w) => { byMonth[w.month] = w; });
+
+  const quarters = QUARTERS.map((q) => {
+    const ws = q.m.map((m) => byMonth[m]).filter(Boolean);
+    if (!ws.length) return '';
+
+    // 그 구간에서 가장 자주 나오는 십신을 대표로 삼는다
+    const cnt = {};
+    ws.forEach((w) => {
+      cnt[w.stem.god] = (cnt[w.stem.god] || 0) + 1;
+      cnt[w.branch.god] = (cnt[w.branch.god] || 0) + 1;
+    });
+    const main = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+    const g = GOD_FLOW[main];
+
+    const list = ws.map((w) => `${w.month}월 <b>${esc(w.ko)}</b>`).join(' · ');
+
+    // 기운이 크게 꺾이거나 오르는 달은 따로 짚어준다
+    const notable = ws.filter((w) => ['건록', '제왕', '절', '묘', '병'].includes(w.unseong));
+    const note = notable.length
+      ? ` 그중 ${notable.map((w) => `${w.month}월은 ${esc(w.unseong)}`).join(', ')}에 해당해서, `
+        + `${UNSEONG_FLOW[notable[0].unseong] || ''}.`
+      : '';
+
+    return `<p class="fl-p"><b>${q.label}</b> — ${list}<br>`
+      + (g ? `이 구간은 <b>${esc(main)}</b>의 기운이 가장 짙습니다. ${g.desc}.` : '')
+      + note + `</p>`;
+  }).join('');
+
+  return sewoon + usP + dwP
+    + `<h3 class="fl-h">달마다의 흐름</h3>`
+    + `<p class="fl-note">달은 달력 1일이 아니라 <b>절기</b>를 기준으로 바뀝니다. `
+    + `${yl.year}년 역시 1월 1일이 아니라 입춘부터 ${esc(sw.ko)}년으로 넘어갑니다.</p>`
+    + quarters;
 }
 
 /* ── 4. 본문 챕터 ──
@@ -637,16 +732,14 @@ function endPage({ teacher, reviewUrl, reviewMode }) {
       <a class="end-cta-btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(btnText)}</a>
     </div>` : '';
 
-  // 후기 CTA — reviewUrl 이 있고, 교육생이 후기 받기를 켰을 때만
-  //   reviewMode='web'  : 같은 페이지 아래 후기 폼으로 스크롤 (새 창 X)
-  //   reviewMode='pdf'  : 웹 후기 페이지를 새 창으로 열기
-  const reviewCta = (reviewUrl && teacher.review_on !== false) ? `
+  // 후기 CTA — 교육생이 설정에 넣어둔 후기 링크가 있을 때만 (당근·네이버 등)
+  //   링크가 비어 있으면 버튼 자체를 만들지 않는다
+  const rvLink = String((teacher && teacher.review_link) || '').trim();
+  const reviewCta = rvLink ? `
     <div class="end-review">
       ${teacher.review_notice ? `<p class="end-review-notice">${esc(teacher.review_notice)}</p>` : ''}
       <p class="end-review-desc">읽어보신 소감을 남겨주시면 큰 힘이 됩니다.</p>
-      ${reviewMode === 'web'
-        ? `<a class="end-review-btn" href="#rvwWrap">후기 남기러 가기</a>`
-        : `<a class="end-review-btn" href="${esc(reviewUrl)}" target="_blank" rel="noopener">후기 남기러 가기</a>`}
+      <a class="end-review-btn" href="${esc(rvLink)}" target="_blank" rel="noopener">후기 남기러 가기</a>
     </div>` : '';
 
   return `
@@ -930,6 +1023,12 @@ body {
 .ms-wheel { text-align: center; font-size: 12px; margin-top: 10px; }
 .ms-wheel span { font-weight: 600; }
 .ms-sum { text-align: center; font-size: 13px; color: #7c7466; margin-top: 10px; }
+/* 세운·월운 풀이 (표 대신) */
+.fl-p { font-size: 13.5px; line-height: 2.05; margin: 0 0 14px; color: #2b2b28; text-align: justify; }
+.fl-p b { color: #1f2a3d; font-weight: 700; }
+.fl-h { font-family: 'Nanum Myeongjo', serif; font-size: 15px; margin: 26px 0 8px; padding-left: 9px; border-left: 3px solid #b59a62; }
+.fl-note { font-size: 12px; line-height: 1.85; color: #7c7466; margin: 0 0 16px; padding: 10px 13px; background: rgba(181,154,98,.09); border-radius: 4px; }
+.fl-note b { color: #6b5a34; }
 .ms-sum b { color: #1f2a3d; }
 .ms-dw { width: 100%; border-collapse: collapse; }
 .ms-dw th, .ms-dw td { border: 1px solid #e6ddc9; text-align: center; padding: 7px 2px; background: #fff; }

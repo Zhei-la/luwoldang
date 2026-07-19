@@ -202,6 +202,8 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_on BOOLEAN DEFAULT TRUE;`);
   // 후기 유도 문구 (교육생이 직접 작성 — 예: '후기를 남기시면 추가질문이 가능합니다')
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_notice TEXT;`);
+  // 후기 링크 — 교육생이 직접 넣는다 (당근·네이버 등). 비어 있으면 버튼을 안 띄운다
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_link TEXT;`);
 
   // ── PDF 표지 ──
   await pool.query(`

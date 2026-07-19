@@ -50,7 +50,7 @@ router.post('/free-saju-settings', async (req, res, next) => {
   try {
     const { site_name, kakao_consult_link, consult_message, button_text,
             openai_key, mail_local, mail_name, mail_reply,
-            pdf_cta_text, pdf_cta_desc, promo_json, review_notice,
+            pdf_cta_text, pdf_cta_desc, promo_json, review_notice, review_link,
             bank_name, bank_account, bank_holder, bank_notice } = req.body;
 
     // 무료 PDF 업셀 설정 (프리미엄 안내 · Q&A · 후기 이미지 · 할인 문구)
@@ -79,8 +79,9 @@ router.post('/free-saju-settings', async (req, res, next) => {
        SET site_name = $1, kakao_consult_link = $2, consult_message = $3, button_text = $4,
            mail_local = $5, mail_name = $6, mail_reply = $7,
            pdf_cta_text = $8, pdf_cta_desc = $9, review_on = $10, review_notice = $11,
-           bank_name = $12, bank_account = $13, bank_holder = $14, bank_notice = $15
-       WHERE id = $16`,
+           bank_name = $12, bank_account = $13, bank_holder = $14, bank_notice = $15,
+           review_link = $16
+       WHERE id = $17`,
       [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
        local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null,
        (pdf_cta_text || '').trim() || null, (pdf_cta_desc || '').trim() || null, reviewOn,
@@ -89,6 +90,7 @@ router.post('/free-saju-settings', async (req, res, next) => {
        (bank_account || '').trim() || null,
        (bank_holder || '').trim() || null,
        (bank_notice || '').trim() || null,
+       (review_link || '').trim() || null,
        req.user.id]
     );
 

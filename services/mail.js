@@ -422,6 +422,19 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
           기간 내에 반드시 다운로드하여 소장해 주십시오.
         </td></tr>
       </table>
+      ${String((teacher && teacher.review_link) || '').trim() ? `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px">
+        <tr><td style="text-align:center">
+          ${teacher.review_notice
+            ? `<div style="font-size:13px;color:#6b6b70;line-height:1.8;margin-bottom:10px">${esc(teacher.review_notice)}</div>`
+            : ''}
+          <a href="${esc(String(teacher.review_link).trim())}" target="_blank" rel="noopener"
+             style="display:inline-block;padding:13px 24px;border:1px solid #B59A62;color:#8a6a2f;
+                    font-weight:700;font-size:14px;text-decoration:none;border-radius:9px">
+            후기 남기러 가기
+          </a>
+        </td></tr>
+      </table>` : ''}
     </td></tr>` : '';
 
   const body = elBars + summary + reportBtn;
