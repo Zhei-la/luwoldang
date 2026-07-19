@@ -216,6 +216,23 @@ img{max-width:100%;display:block}
 .errfield input,.errfield select,.errfield textarea{border-color:#e08b80!important}
 .errfield .seg label{border-color:#e08b80}
 .fm .ok{font-family:${v.disp};text-align:center;padding:40px 12px;font-size:15px;line-height:1.9}
+/* 입금 계좌 안내 — 접수 완료 후 나타난다 */
+.bk{padding:34px 4px 8px;text-align:center}
+.bk .bk-done{font-family:${v.disp};font-size:15.5px;line-height:1.85;margin-bottom:24px}
+.bk .bk-card{border:1px solid var(--ln);border-radius:var(--rd);overflow:hidden;text-align:left;background:var(--cd)}
+.bk .bk-hd{padding:13px 16px;border-bottom:1px solid var(--ln);font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--ac)}
+.bk .bk-amt{padding:20px 16px;text-align:center;border-bottom:1px dashed var(--ln)}
+.bk .bk-amt .lb{display:block;font-size:11.5px;color:var(--sb);margin-bottom:5px}
+.bk .bk-amt .num{font-family:${v.disp};font-size:27px;font-weight:800;letter-spacing:-.01em}
+.bk .bk-amt .pd{display:block;font-size:11.5px;color:var(--sb);margin-top:6px}
+.bk .bk-row{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13.5px}
+.bk .bk-row+.bk-row{border-top:1px solid var(--ln)}
+.bk .bk-row .k{flex:none;width:52px;font-size:12px;color:var(--sb)}
+.bk .bk-row .v{flex:1;font-weight:700;word-break:break-all}
+.bk .bk-row .v.acc{font-size:16px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.bk .bk-copy{flex:none;padding:8px 13px;border:1px solid var(--ac);border-radius:calc(var(--rd) - 2px);background:transparent;color:var(--ac);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bk .bk-copy.done{background:var(--ac);color:var(--btx)}
+.bk .bk-note{padding:14px 16px;border-top:1px solid var(--ln);font-size:12px;color:var(--sb);line-height:1.75;white-space:pre-line}
 .fs{padding:24px 20px;text-align:center}
 .fs h3{font-family:${v.disp};font-size:19px;font-weight:700;margin-bottom:10px}
 .fs p{font-size:13.5px;color:var(--sb);margin-bottom:18px;line-height:1.7}
@@ -606,7 +623,56 @@ const RUNTIME = `(function(){
       var data={}; new FormData(f).forEach(function(v,k){ data[k]=v; });
       fetch(f.getAttribute('action'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
         .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-        .then(function(){ f.parentNode.innerHTML='<div class="ok">'+f.dataset.done+'</div>'; })
+        .then(function(res){
+          var done = f.dataset.done || '접수되었습니다.';
+          var bk = res && res.bank;
+          if(!bk){ f.parentNode.innerHTML = '<div class="ok">' + done + '</div>'; return; }
+
+          function esc(s){
+            return String(s == null ? '' : s)
+              .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+          }
+          var amt = bk.amount
+            ? '<div class="bk-amt"><span class="lb">입금하실 금액</span>'
+              + '<span class="num">' + bk.amount.toLocaleString('ko-KR') + '원</span>'
+              + (bk.product ? '<span class="pd">' + esc(bk.product) + '</span>' : '')
+              + '</div>'
+            : '';
+          var html = '<div class="bk">'
+            + '<div class="bk-done">' + esc(done) + '</div>'
+            + '<div class="bk-card">'
+            +   '<div class="bk-hd">입금 계좌 안내</div>'
+            +   amt
+            +   (bk.bankName ? '<div class="bk-row"><span class="k">은행</span><span class="v">' + esc(bk.bankName) + '</span></div>' : '')
+            +   '<div class="bk-row"><span class="k">계좌번호</span>'
+            +     '<span class="v acc" data-acc>' + esc(bk.account) + '</span>'
+            +     '<button type="button" class="bk-copy" data-copy>복사</button></div>'
+            +   (bk.holder ? '<div class="bk-row"><span class="k">예금주</span><span class="v">' + esc(bk.holder) + '</span></div>' : '')
+            +   (bk.notice ? '<div class="bk-note">' + esc(bk.notice) + '</div>' : '')
+            + '</div></div>';
+          var box = f.parentNode;
+          box.innerHTML = html;
+
+          // 계좌번호 복사 — 숫자만 남겨서 붙여넣기 바로 되게
+          var btn2 = box.querySelector('[data-copy]');
+          if(btn2) btn2.addEventListener('click', function(){
+            var txt = (box.querySelector('[data-acc]').textContent || '').replace(/[^0-9]/g,'');
+            function ok(){ btn2.textContent = '복사됨'; btn2.classList.add('done');
+                           setTimeout(function(){ btn2.textContent='복사'; btn2.classList.remove('done'); }, 1600); }
+            if(navigator.clipboard && navigator.clipboard.writeText){
+              navigator.clipboard.writeText(txt).then(ok, function(){ fallback(txt, ok); });
+            } else { fallback(txt, ok); }
+          });
+          function fallback(txt, ok){
+            var t = document.createElement('textarea');
+            t.value = txt; t.setAttribute('readonly',''); t.style.position='fixed'; t.style.opacity='0';
+            document.body.appendChild(t); t.select();
+            try { document.execCommand('copy'); ok(); } catch(e){ alert(txt); }
+            document.body.removeChild(t);
+          }
+          box.scrollIntoView({behavior:'smooth', block:'center'});
+        })
         .catch(function(){ btn.disabled=false; btn.textContent='다시 시도하기'; alert('전송에 실패했습니다. 잠시 후 다시 시도해주세요.'); });
     });
 
@@ -683,6 +749,7 @@ function defaultLanding(name) {
       { id: uid(), type: 'faq', title: '묻고 답하기', items: [
         { q: '결과는 언제 받나요?', a: '접수 후 영업일 기준 1~2일 안에 보내드립니다.' },
         { q: '태어난 시간을 모릅니다.', a: "'모름'에 체크하시면 시주 없이 풀이합니다. 다만 시각을 아시면 훨씬 정확합니다." },
+        { q: '재회운·연애운·결혼운도 한 사람 사주만으로 볼 수 있나요?', a: '한 분의 사주만으로도 본인의 연애 성향과 관계 흐름은 확인할 수 있습니다. 다만 상대방과의 관계가 중요하여 고민이 되는 부분이 있다면, 두 사람의 흐름을 함께 볼 때 더 깊이 있는 풀이가 가능합니다. 두 분의 성향과 흐름을 함께 파악하고 싶으시다면 두 사람의 사주를 같이 보시는 것을 추천드립니다.' },
       ] },
       { id: uid(), type: 'form', title: '상담 신청',
         products: ['정밀 풀이 (29,800원)', '기본 풀이 (9,900원)'],

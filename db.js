@@ -41,6 +41,12 @@ async function initDb() {
   // 랜딩 페이지 (빌더로 꾸민 내용 JSON)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing JSONB;`);
 
+  // 입금 계좌 안내 (유료 신청 접수 후 내담자에게 보여줌)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name TEXT;`);    // 은행명
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account TEXT;`); // 계좌번호
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_holder TEXT;`);  // 예금주
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_notice TEXT;`);  // 추가 안내 문구
+
   // 교육생별 메일 발송 설정 (각자 Gmail 사용 → 자기 이름으로 발송, 한도도 각자)
   // 메일 발송 설정 (도메인은 공통, 교육생별로 아이디/이름/답장주소)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_local TEXT;`); // @앞 아이디

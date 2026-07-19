@@ -42,6 +42,16 @@ function maskName(n) {
   return s[0] + '*' + (s.length > 2 ? s.slice(2) : '');
 }
 
+// 상품명에서 금액만 뽑아낸다 — 예: '정밀 풀이 (29,800원)' → 29800
+// 금액이 안 적혀 있으면 null (계좌만 안내하고 금액 줄은 숨긴다)
+function priceOf(product) {
+  if (!product) return null;
+  const m = String(product).match(/([\d,]{3,})\s*원/);
+  if (!m) return null;
+  const n = parseInt(m[1].replace(/,/g, ''), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 /* ===== 공개 랜딩 페이지 (교육생이 꾸민 그대로) ===== */
 router.get('/s/:slug', async (req, res, next) => {
   try {
@@ -127,7 +137,20 @@ router.post('/s/:slug/apply', async (req, res, next) => {
       url: '/leads',
     }).catch(() => {});
 
-    res.json({ ok: true });
+    // 입금 계좌 안내 — 계좌를 등록해둔 교육생만 내려보낸다
+    let bank = null;
+    if (teacher.bank_account) {
+      bank = {
+        bankName: teacher.bank_name || '',
+        account: teacher.bank_account,
+        holder: teacher.bank_holder || '',
+        notice: teacher.bank_notice || '입금자명을 신청하신 분 성함으로 남겨주세요. 확인되는 대로 작업을 시작합니다.',
+        product: b.product || '',
+        amount: priceOf(b.product),   // 상품명에 적힌 금액 (없으면 null)
+      };
+    }
+
+    res.json({ ok: true, bank });
   } catch (e) {
     next(e);
   }
