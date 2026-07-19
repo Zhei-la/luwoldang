@@ -164,7 +164,8 @@ img{max-width:100%;display:block}
 .rv h3{font-family:${v.disp};font-size:11.5px;font-weight:700;letter-spacing:.16em;color:var(--sb);padding:0 20px;margin-bottom:14px}
 .rv .vp{overflow:hidden}
 .rv .track{display:flex;transition:transform .38s cubic-bezier(.4,0,.2,1)}
-.rv .it{min-width:100%;padding:0 20px;flex:none}
+/* 너비를 못 박아둬야 글이 줄바꿈된다. 안 그러면 한 줄로 늘어나 칸이 터진다 */
+.rv .it{width:100%;min-width:100%;max-width:100%;padding:0 20px;flex:0 0 100%;min-height:0}
 .rv .bx{padding:17px 18px 15px;border:1px solid var(--ln);border-radius:var(--rd);background:var(--cd);height:100%}
 .rv .rtop{display:flex;align-items:center;gap:9px;margin-bottom:9px}
 .rv .rav{width:32px;height:32px;border-radius:99px;flex:none;object-fit:cover;background:var(--ln)}
@@ -175,8 +176,8 @@ img{max-width:100%;display:block}
 .rv .st{font-size:14px;letter-spacing:1px;color:var(--ln)}
 .rv .st b{color:#f5a623}
 .rv .sn{font-size:12.5px;font-weight:700;color:var(--tx)}
-.rv .qt{font-size:13.5px;line-height:1.78;letter-spacing:-.01em;color:var(--tx)}
-.rv .qt.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.rv .qt{font-size:13.5px;line-height:1.78;letter-spacing:-.01em;color:var(--tx);overflow-wrap:anywhere;word-break:break-word;min-width:0}
+.rv .qt.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;max-height:calc(1.78em * 4)}
 .rv .rmore{margin-top:9px;padding:0;border:0;background:none;color:var(--ac);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:1px solid currentColor}
 .rv .dots{display:flex;justify-content:center;gap:5px;margin-top:14px}
 .rv .dots i{width:5px;height:5px;border-radius:99px;background:var(--ln);cursor:pointer;transition:.2s}
@@ -188,6 +189,7 @@ img{max-width:100%;display:block}
 .rv-grid .gwrap{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 20px}
 .rv-grid .bx{border:1px solid var(--ln);border-radius:var(--rd);padding:13px;background:var(--cd);height:100%}
 .rv-grid .qt{font-size:12.5px;line-height:1.7}
+.rv-grid .qt.clamp{max-height:calc(1.7em * 4)}
 .rv-grid .rav{width:26px;height:26px}
 .rv-grid .rav.ini{font-size:12px}
 .rv-grid .rnm{font-size:12.5px}

@@ -16,7 +16,7 @@ const DEFS = {
   countdown:{ name:'카운트다운',     ico:'⏱', make:()=>({ title:'이번 회차 접수 마감까지', note:'마감 후에는 다음 회차로 접수됩니다', mode:'cycle', cycle:24, anchor:'', hours:6, target:'',
                 cdStyle:'urgent', numColor:'', boxColor:'', labColor:'', txtColor:'' }) },
   gauge:    { name:'남은 자리',      ico:'◐', make:()=>({ title:'남은 자리', total:30, note:'회차당 인원을 넘기면 풀이가 얕아집니다' }) },
-  live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황' }) },
+  live:     { name:'접수 현황',      ico:'◉', make:()=>({ title:'접수 현황', items:[] }) },
   reviews:  { name:'받아본 이야기',   ico:'❝', make:()=>({ title:'받아본 이야기', view:'slide', items:[] }) },
   bullets:  { name:'이런 분들께',     ico:'✓', make:()=>({ title:'이런 분들이 찾아옵니다', items:['이직·창업 시기를 재고 있는 분','재회와 궁합의 결이 궁금한 분','올해 재물의 흐름을 보고 싶은 분'] }) },
   faq:      { name:'묻고 답하기',     ico:'?', make:()=>({ title:'묻고 답하기', items:[{q:'결과는 언제 받나요?',a:'접수 후 영업일 기준 1~2일 안에 보내드립니다.'}] }) },
@@ -283,7 +283,8 @@ function renderBlock(b, S){
 }
 
 function buildPreview(S){
-  const body = S.blocks.map(b=>renderBlock(b,S)).join('\n');
+  // 블록마다 표시를 달아둔다 — 왼쪽에서 블록을 고르면 그 자리로 미리보기가 움직인다
+  const body = S.blocks.map(b=>`<div data-blk="${esc(b.id)}">${renderBlock(b,S)}</div>`).join('\n');
   const st = S.sticky||{};
   const sticky = st.on ? `<div class="sticky"><a href="#">${esc(st.text)}</a></div>` : '';
   return `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
@@ -297,7 +298,35 @@ function buildPreview(S){
 let S = null;
 let sel = null;
 const pv = $('#pv'), blocklist = $('#blocklist'), inspector = $('#inspector');
-const refresh = () => { pv.srcdoc = buildPreview(S); };
+
+/* ── 미리보기 새로 그리기 ──
+   iframe 이라 다시 그릴 때마다 맨 위로 올라간다.
+   보던 위치를 기억했다가 되돌려주고, 타이핑 중에는 조금 모아서 한 번만 그린다. */
+let pvScroll = 0, pvReady = false, pvTimer = null, jumpTo = null;
+
+pv.addEventListener('load', ()=>{
+  try{
+    // 방금 고른 블록이 있으면 그 자리로, 아니면 보던 위치로
+    let target = null;
+    if(jumpTo){
+      const el = pv.contentDocument.querySelector('[data-blk="'+jumpTo+'"]');
+      if(el) target = Math.max(0, el.offsetTop - 12);
+      jumpTo = null;
+    }
+    pv.contentWindow.scrollTo(0, target == null ? pvScroll : target);
+    pv.contentWindow.addEventListener('scroll', ()=>{
+      pvScroll = pv.contentWindow.scrollY || 0;   // 손으로 스크롤한 위치도 계속 기억
+    }, {passive:true});
+  }catch(e){}
+  pvReady = true;
+});
+
+function drawPreview(){
+  if(pvReady){ try{ pvScroll = pv.contentWindow.scrollY || pvScroll; }catch(e){} }
+  pvReady = false;
+  pv.srcdoc = buildPreview(S);
+}
+const refresh = () => { clearTimeout(pvTimer); pvTimer = setTimeout(drawPreview, 200); };
 const paint = () => { refresh(); paintList(); paintInspector(); };
 
 /* ---------------- 목록 ---------------- */
@@ -311,7 +340,11 @@ function paintList(){
       <span class="ico">⚙</span><span class="nm">스킨 · 페이지 설정</span></div>`;
 
   blocklist.querySelectorAll('.bitem').forEach(el=>{
-    el.onclick = e=>{ if(e.target.dataset.del) return; sel = el.dataset.id; paintList(); paintInspector(); };
+    el.onclick = e=>{
+      if(e.target.dataset.del) return;
+      sel = el.dataset.id; paintList(); paintInspector();
+      if(sel !== '__page'){ jumpTo = sel; refresh(); }   // 고른 블록 자리로 미리보기 이동
+    };
     el.ondragstart = e=>{ e.dataTransfer.setData('text/plain', el.dataset.id); el.classList.add('drag'); };
     el.ondragend = ()=> blocklist.querySelectorAll('.bitem').forEach(x=>x.classList.remove('drag','over'));
     el.ondragover = e=>{ e.preventDefault(); el.classList.add('over'); };
@@ -686,7 +719,10 @@ function bindFields(b){
   });
   inspector.querySelectorAll('[data-li-del]').forEach(el=> el.onclick = ()=>{ b.items.splice(+el.dataset.liDel,1); paint(); });
   const add = inspector.querySelector('[data-li-add]');
-  if(add) add.onclick = ()=>{ b.items.push(JSON.parse(blankEl.dataset.blank)); paint(); };
+  if(add) add.onclick = ()=>{
+    if(!Array.isArray(b.items)) b.items = [];   // 원래 목록이 없던 블록(접수 현황 등)
+    b.items.push(JSON.parse(blankEl.dataset.blank)); paint();
+  };
   const skey = b.type==='form' ? 'products' : 'items';
   inspector.querySelectorAll('[data-si]').forEach(el=> el.oninput = ()=>{ b[skey][+el.dataset.si]=el.value; refresh(); });
   inspector.querySelectorAll('[data-si-del]').forEach(el=> el.onclick = ()=>{ b[skey].splice(+el.dataset.siDel,1); paint(); });
