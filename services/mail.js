@@ -414,6 +414,12 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
          font-weight:800;font-size:16px;text-decoration:none;border-radius:10px;text-align:center">
         결과 리포트 열람하기
       </a>
+      <div style="margin-top:11px;text-align:center;font-size:13px;color:#8a8574;line-height:1.7">
+        화면으로 바로 열립니다. 기기에 파일로 남기시려면
+        <a href="${esc(shareUrl)}/report.pdf?dl=1"
+           style="color:#8a6a2f;font-weight:700;text-decoration:underline">PDF 저장하기</a>
+        를 눌러주세요.
+      </div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
              style="margin-top:20px;background:#f4f4f5;border-radius:8px">
         <tr><td style="padding:16px 18px;text-align:center;font-size:12.5px;line-height:1.85;color:#6b6b70">
@@ -509,8 +515,12 @@ function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
           <td style="padding:0 18px 16px">
             <a href="${esc(it.shareUrl)}/report.pdf"
                style="display:inline-block;padding:11px 18px;background:#B59A62;color:#fff;
-                      font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px">
+                      font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px;margin-right:8px">
               결과 리포트 열람하기
+            </a>
+            <a href="${esc(it.shareUrl)}/report.pdf?dl=1"
+               style="display:inline-block;font-size:12.5px;color:#8a6a2f;font-weight:700;text-decoration:underline">
+              PDF 저장하기
             </a>
           </td>
         </tr>
