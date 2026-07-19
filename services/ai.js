@@ -965,7 +965,7 @@ function checkStyle(body, name, opts) {
   const e = sameEnding(body);
   if (e) issues.push(e);
   const raw = rawName(body, name);
-  if (raw > 0) issues.push(`이름 반말 호칭 ${raw}회 ("${name}은/는") — "${name}님은"으로 바꾸거나 이름을 빼세요`);
+  if (raw > 0) issues.push(`이름 반말 호칭 ${raw}회 ("${name}은/는") — "${name}님은"으로 고치거나, 이름을 뺄 거면 조사까지 같이 빼고 문장을 다시 쓰세요 (조사만 남기면 안 됩니다)`);
   const n = countName(body, name);
   if (n > 1) issues.push(`이름 ${n}회 반복 (챕터당 1번 이하, 나머지는 주어 생략)`);
 
@@ -1257,7 +1257,14 @@ function tidyName(body, name) {
       return /[.!?\n]/.test(prev) || off === 0 ? '' : ' ';
     });
 
-  return t.replace(/\s{2,}/g, ' ').replace(/\n{3,}/g, '\n\n')
+  // 3) 이름만 지워지고 조사가 남은 문장 머리를 정리한다
+  //    ("는 다양한 환경에서…" → "다양한 환경에서…")
+  //    AI 가 재작성할 때 이름 글자만 지우는 일이 있어 뒤처리로 막는다
+  //    ⚠️ '이·도·와·과' 는 뺐다. "이 사람은", "와 정말" 처럼 멀쩡한 말이 잘려나간다
+  t = t.replace(/(^|[.!?]\s+|\n\s*)(?:은|는|를|을|가|에게|한테)\s+/g, '$1');
+
+  return t.replace(/([.!?])([가-힣A-Za-z0-9])/g, '$1 $2')   // 마침표 뒤 띄어쓰기 복구
+          .replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n')
           .replace(/\s+([.,])/g, '$1').trim();
 }
 

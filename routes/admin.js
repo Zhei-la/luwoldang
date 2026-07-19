@@ -39,10 +39,11 @@ router.get('/accounts', async (req, res, next) => {
   try {
     const q = String(req.query.q || '').trim();
     const { rows } = await pool.query(
-      `SELECT id, name, email, role, site_name, admin_note, approved_at
+      `SELECT id, name, account_email, role, site_name, admin_note, approved_at
        FROM users
        WHERE status = 'approved' AND id <> $1
-         AND ($2 = '' OR name ILIKE '%'||$2||'%' OR email ILIKE '%'||$2||'%'
+         AND ($2 = '' OR COALESCE(name,'') ILIKE '%'||$2||'%'
+              OR COALESCE(account_email,'') ILIKE '%'||$2||'%'
               OR COALESCE(site_name,'') ILIKE '%'||$2||'%'
               OR COALESCE(admin_note,'') ILIKE '%'||$2||'%')
        ORDER BY role DESC, approved_at DESC NULLS LAST, name`,

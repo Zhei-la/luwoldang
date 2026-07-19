@@ -39,7 +39,7 @@
             <% if (u.role === 'admin') { %><span class="acc-tag">관리자</span><% } %>
           </span>
           <span class="acc-sub">
-            <%= u.site_name ? u.site_name + ' · ' : '' %><%= u.email || '이메일 없음' %>
+            <%= u.site_name ? u.site_name + ' · ' : '' %><%= u.account_email || '이메일 없음' %>
           </span>
           <% if (u.admin_note) { %>
             <span class="acc-note">📝 <%= u.admin_note %></span>
