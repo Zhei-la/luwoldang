@@ -273,6 +273,15 @@ img{max-width:100%;display:block}
 ${SKIN_EXTRA[theme.skin] || ''}`;
 }
 
+// 직접 적은 접수 내역의 이름 가리기 — 김민희 → 김*희, 이든 → 이*
+function maskKName(n) {
+  const s = String(n == null ? '' : n).trim();
+  if (!s) return '';
+  if (s.length === 1) return s;
+  if (s.length === 2) return s[0] + '*';
+  return s[0] + '*'.repeat(s.length - 2) + s[s.length - 1];
+}
+
 function moonSVG(pct) {
   const cut = 52 * (1 - pct / 100);
   return `<svg class="moon" viewBox="0 0 60 60" aria-hidden="true">
@@ -389,8 +398,18 @@ function renderBlock(b, ctx) {
     }
 
     case 'live': {
-      // 실제 신청 내역 (DB)
-      const items = ctx.live || [];
+      // 자동 = 실제 신청 내역 (DB) / 수동 = 사이트 밖에서 받아 직접 적은 것 (최대 5개)
+      const auto = ctx.live || [];
+      const manual = (b.items || [])
+        .filter((x) => x && String(x.n || '').trim()).slice(0, 5)
+        .map((x) => ({
+          name: maskKName(x.n),
+          phone: '',
+          status: String(x.s || '접수완료').trim() || '접수완료',
+          ago: String(x.t || '').trim(),
+        }));
+      const items = manual.concat(auto);
+
       if (!items.length) {
         return `<div class="wrap mt"><div class="card lv">
           <div class="h"><span class="dot"></span>${esc(b.title)}<span class="tag">LIVE</span></div>
@@ -398,7 +417,7 @@ function renderBlock(b, ctx) {
       }
       const rows = items.concat(items).map((x) => `<li>
         <span class="av">${esc((x.name || '　')[0])}</span>
-        <span class="nm">${esc(x.name)}<span class="ph">${esc(x.phone)}</span></span>
+        <span class="nm">${esc(x.name)}${x.phone ? `<span class="ph">${esc(x.phone)}</span>` : ''}</span>
         <span class="st ${x.status === '풀이중' ? 'w' : ''}">${esc(x.status)}</span>
         <span class="tm">${esc(x.ago)}</span></li>`).join('');
       return `<div class="wrap mt"><div class="card lv">

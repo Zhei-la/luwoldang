@@ -226,23 +226,33 @@ function renderBlock(b, S){
         <div class="note">${esc(b.note)}</div></div></div></div>`;
     }
     case 'live':{
-      const rows = SAMPLE_LIVE.map(x=>`<li style="display:flex;align-items:center;gap:11px;padding:0 18px;height:44px;list-style:none">
+      const mk = n => { const s=String(n||'').trim(); return !s?'':s.length===1?s:s.length===2?s[0]+'*':s[0]+'*'.repeat(s.length-2)+s[s.length-1]; };
+      const manual = (b.items||[]).filter(x=>x&&String(x.n||'').trim()).slice(0,5)
+        .map(x=>({ name:mk(x.n), phone:'', status:(x.s||'접수완료'), ago:(x.t||'') }));
+      const rows = manual.concat(SAMPLE_LIVE).map(x=>`<li style="display:flex;align-items:center;gap:11px;padding:0 18px;height:44px;list-style:none">
         <span style="width:24px;height:24px;border:1px solid var(--ln);color:var(--sb);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none">${x.name[0]}</span>
-        <span style="font-size:12.5px;font-weight:700">${x.name}<span style="font-size:11px;color:var(--sb);margin-left:6px;font-weight:400">${x.phone}</span></span>
+        <span style="font-size:12.5px;font-weight:700">${x.name}${x.phone?`<span style="font-size:11px;color:var(--sb);margin-left:6px;font-weight:400">${x.phone}</span>`:''}</span>
         <span style="margin-left:auto;font-size:10.5px;font-weight:700;color:var(--ac)">${x.status}</span>
         <span style="font-size:10.5px;color:var(--sb);width:52px;text-align:right">${x.ago}</span></li>`).join('');
       return `<div class="wrap mt"><div class="card lv"><div class="h"><span class="dot"></span>${esc(b.title)}<span class="tag">LIVE</span></div>
         <ul style="padding:0;margin:0">${rows}</ul>
-        <div style="padding:9px 18px;border-top:1px solid var(--ln);font-size:11px;color:var(--sb);text-align:center">※ 실제 신청이 들어오면 이 자리에 표시됩니다 (미리보기는 예시)</div></div></div>`;
+        <div style="padding:9px 18px;border-top:1px solid var(--ln);font-size:11px;color:var(--sb);text-align:center">※ 직접 적은 것이 위, 실제 신청이 아래에 붙습니다 (회색 줄은 예시)</div></div></div>`;
     }
     case 'reviews':{
       const items = b.items||[];
       if(!items.length) return `<div class="wrap mt"><div class="card" style="padding:24px;text-align:center;color:var(--sb);font-size:12.5px">후기를 추가하면 여기에 표시됩니다</div></div>`;
-      const stars = r => '●'.repeat(Math.round(r||5)) + '○'.repeat(5-Math.round(r||5));
+      const stars = r => { const n=Math.max(0,Math.min(5,Math.round(Number(r)||5)));
+        return `<span style="font-size:14px;letter-spacing:1px;color:var(--ln)"><b style="color:#f5a623">${'★'.repeat(n)}</b>${'★'.repeat(5-n)}</span><span style="font-size:12.5px;font-weight:700;margin-left:6px">${n.toFixed(1)}</span>`; };
       const VIEW = b.view || 'slide';
       return `<div class="rv mt">${b.title?`<h3>${esc(b.title)}</h3>`:''}
-        ${items.map(x=>`<div class="it"><div class="bx"><div class="qt">“${esc(x.t)}”</div>
-        <div class="hd"><b>${esc(x.n)}</b><span class="star">${stars(x.r)}</span></div></div></div>`).join('')}</div>`;
+        ${items.map(x=>`<div class="it"><div class="bx">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
+          <span style="width:32px;height:32px;border-radius:99px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ac);background:rgba(127,127,127,.13)">${esc(String(x.n||'손')[0])}</span>
+          <span style="font-size:13.5px;font-weight:700">${esc(x.n)}</span>
+          ${x.d?`<span style="margin-left:auto;font-size:11.5px;color:var(--sb)">${esc(x.d)}</span>`:''}
+        </div>
+        <div style="margin-bottom:10px">${stars(x.r)}</div>
+        <div style="font-size:13.5px;line-height:1.78">${esc(x.t)}</div></div></div>`).join('')}</div>`;
     }
     case 'bullets':
       return `<div class="wrap mt"><div class="card bl"><h3>${esc(b.title)}</h3><ul style="padding:0">${(b.items||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>`;
@@ -427,7 +437,18 @@ function paintInspector(){
       break;
     case 'live':
       h += T('title','제목')
-        + `<div class="fld"><div class="hint"><b>실제 신청 내역</b>이 자동으로 표시됩니다. 이름·전화번호는 자동 마스킹(김*희 / 010-****-3421). 신청이 없으면 "접수 내역이 없습니다"로 표시됩니다.</div></div>`;
+        + `<div class="fld"><div class="hint"><b>실제 신청 내역</b>이 자동으로 표시됩니다. 이름·전화번호는 자동 마스킹(김*희 / 010-****-3421). 신청이 없으면 "접수 내역이 없습니다"로 표시됩니다.</div></div>`
+        + `<div class="fld"><div class="hint">
+             카톡·스레드·DM처럼 <b>사이트 밖에서 받은 신청</b>은 자동으로 잡히지 않습니다.
+             아래에 직접 적으면 자동 내역 위에 함께 표시됩니다.<br>
+             이름은 화면에 <b>김*희</b>처럼 가려져 나오니 그대로 적으셔도 됩니다.<br>
+             <b style="color:#c0392b">받지 않은 신청을 지어내면 안 됩니다.</b> 내담자가 보는 화면입니다.
+           </div></div>`
+        + listEditor(b,[
+            ['n','이름 (예: 김민희)'],
+            ['s','상태', null, ['접수완료','풀이중','발송완료']],
+            ['t','시간 (예: 10분 전)'],
+          ], {n:'',s:'접수완료',t:''}, 5);
       break;
     case 'reviews':
       h += T('title','섹션 제목')
@@ -541,9 +562,10 @@ function calcWas(item){
   return v.toLocaleString('ko-KR') + '원';
 }
 
-function listEditor(b, fields, blank){
+function listEditor(b, fields, blank, max){
   const items = b.items||[];
-  return `<div class="fld"><label>항목 ${items.length}개</label><div class="listbox">
+  const full = max && items.length >= max;
+  return `<div class="fld"><label>항목 ${items.length}개${max?` (최대 ${max}개)`:''}</label><div class="listbox">
     ${items.map((it,i)=>`<div class="litem" draggable="true" data-li-row="${i}">
       <div class="lhead"><b class="lgrip" title="끌어서 순서 변경">⠿ #${i+1}</b>
         <span class="lmove">
@@ -559,7 +581,9 @@ function listEditor(b, fields, blank){
             + (sg && sg.length ? `<div class="chips">${sg.map(x=>`<button type="button" class="chip" data-sg="${i}" data-sk="${k}" data-sv="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : '')
         ).join('')}
     </div>`).join('')}
-    <button class="btn sm" data-li-add style="width:100%">＋ 항목 추가</button>
+    ${full
+      ? `<div class="hint" style="text-align:center;padding:8px">최대 ${max}개까지 넣을 수 있습니다. 더 넣으려면 위에서 하나를 지워주세요.</div>`
+      : `<button class="btn sm" data-li-add style="width:100%">＋ 항목 추가</button>`}
   </div><div class="hint" data-blank='${JSON.stringify(blank)}' style="display:none"></div></div>`;
 }
 function strListEditor(b, key, ph){
