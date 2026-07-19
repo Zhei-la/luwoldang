@@ -19,6 +19,8 @@ const KIND_EN = {
   '결혼운': 'gyeolhon',
   '재물운': 'jaemul',
   '건강운': 'geongang',
+  '취업·직장운': 'chwieop',
+  '이직운': 'ijik',
 };
 
 // 기본 제공 세트 (코드 내장, 이미지는 public 에)
@@ -27,7 +29,7 @@ const BUILTIN_SETS = [
     key: 'original',
     name: '기본 (원래 디자인)',
     style: null,                          // 원래 표지는 각자 style(ink/circle) 이 다름 → 특수 처리
-    kinds: ['종합사주','신년운세','연애운','재회운','결혼운','연인궁합','재물운','건강운','무료사주'],
+    kinds: ['종합사주','신년운세','연애운','재회운','결혼운','연인궁합','재물운','건강운','무료사주','취업·직장운','이직운'],
     original: true,                       // 원래 COVERS 를 그대로 쓰라는 표시
   },
   {
@@ -35,28 +37,28 @@ const BUILTIN_SETS = [
     name: '한지 · 원형',
     style: 'plain',                       // 표지에 이미 종류 글자가 있음
     brandPos: 'top',                      // 상호명: 위쪽 가로
-    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','건강운'], // 재물운 없음
+    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','건강운','취업·직장운','이직운'], // 재물운 없음
   },
   {
     key: 'maehwa',
     name: '매화 · 낡은 종이',
     style: 'plain',
     brandPos: 'left',                     // 상호명: 왼쪽 세로
-    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','재물운','건강운'],
+    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','재물운','건강운','취업·직장운','이직운'],
   },
   {
     key: 'sumuk',
     name: '수묵 · 까치',
     style: 'plain',
     brandPos: 'left',                     // 상호명: 왼쪽 세로
-    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','재물운','건강운'],
+    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','재물운','건강운','취업·직장운','이직운'],
   },
   {
     key: 'horang',
     name: '민화 · 호랑이',
     style: 'plain',
     brandPos: 'left-light',               // 상호명: 왼쪽 세로, 밝은 색 (배경 어두움)
-    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','재물운','건강운'],
+    kinds: ['종합사주','신년운세','무료사주','연인궁합','연애운','재회운','결혼운','재물운','건강운','취업·직장운','이직운'],
   },
 ];
 
@@ -71,6 +73,8 @@ const ORIGINAL = {
   '재물운':    { img: '/img/pdf/cover-jaemul.jpg',   style: 'circle', brandTop: 18.2 },
   '건강운':    { img: '/img/pdf/cover-geongang.jpg', style: 'circle', brandTop: 18.2 },
   '무료사주':  { img: '/img/pdf/cover-free.jpg',     style: 'circle', brandTop: 18.2 },
+  '취업·직장운': { img: '/img/pdf/cover-chwieop.jpg', style: 'circle', brandTop: 18.2 },
+  '이직운':    { img: '/img/pdf/cover-ijik.jpg',    style: 'circle', brandTop: 18.2 },
 };
 
 /** 세트+종류 → 이미지 경로 (없으면 null) */

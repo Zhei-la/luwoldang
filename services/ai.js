@@ -424,7 +424,7 @@ module.exports = { generateFreeSaju, UPSELL };
 
 const { OUTLINES, titles, outlineWithQuestion, QUESTION_CHAPTER, isSpecialist } = require('./outlines');
 
-const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '재회운', '무료사주'];
+const PDF_TYPES = ['신년운세', '종합사주', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '재회운', '취업·직장운', '이직운', '무료사주'];
 
 // 하위 호환 (기존 코드가 PDF_OUTLINES를 참조)
 const PDF_OUTLINES = {};
@@ -921,8 +921,11 @@ function choppy(body) {
 
     const avg = sents.reduce((a, x) => a + x.length, 0) / sents.length;
 
-    if (sents.length >= 4) {
-      bad.push(`${i + 1}번째 문단이 ${sents.length}문장 (2~3문장으로 줄이고 이어 쓰세요)`);
+    // 프롬프트가 "한 문단 3~4문장"을 요구하므로 4문장은 정상이다.
+    // 예전에는 4문장부터 걸러서, 시킨 대로 쓴 글도 매번 재작성에 들어갔다.
+    // (그 바람에 장마다 AI 를 3번씩 불러 분당 한도를 넘겼다)
+    if (sents.length >= 6) {
+      bad.push(`${i + 1}번째 문단이 ${sents.length}문장 (3~4문장으로 줄이고 이어 쓰세요)`);
     } else if (avg < 35) {
       bad.push(`${i + 1}번째 문단이 토막글 (평균 ${Math.round(avg)}자, 문장을 물려 이으세요)`);
     }
@@ -1075,7 +1078,7 @@ ${mapBlock}
 리포트 종류: ${type}
 챕터 ${index + 1}/${total}: ${chapter.title}
 ${questionGuide}
-
+${chapter.note ? `\n[이 장에서 특히 지킬 것]\n${chapter.note}\n` : ''}
 아래 소제목 ${subs.length}개를 각각 **700~900자**로 작성해주세요.
 blocks 배열에 소제목 순서대로 담아주세요. sub는 아래 소제목 그대로 쓰세요.
 
