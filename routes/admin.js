@@ -4,7 +4,7 @@ const { pool } = require('../db');
 const { requireAuth, requireApproved, requireAdmin } = require('../middleware/auth');
 const coverStore = require('../services/coverStore');
 
-const COVER_TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '취업·직장운', '이직운', '무료사주'];
+const COVER_TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '취업·직장운', '이직운', '자녀운', '합격운', '이동·이사운', '인간관계운', '무료사주'];
 
 // 관리자 전용
 router.use(requireAuth, requireApproved, requireAdmin);

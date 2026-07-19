@@ -187,11 +187,9 @@ const TOC_ROWS_NORMAL = 14;   // 이보다 많으면 촘촘히
 const TOC_ROWS_MAX = 24;      // 이보다 많으면 두 장
 
 function tocPage(chapters, type) {
-  const fixed = [
-    '만세력 · 사주 원국',
-    '오행 · 대운',
-    '사주 용어 풀이',
-  ];
+  // 만세력·오행·용어 풀이 페이지는 그대로 들어가지만 목차에는 올리지 않는다.
+  // 시각 자료 다음에 바로 01번 본문이 시작되는 것처럼 보이게 하기 위함.
+  const fixed = [];
 
   const rows = [
     ...fixed.map((t) => `<li class="toc-fixed"><span>${esc(t)}</span></li>`),

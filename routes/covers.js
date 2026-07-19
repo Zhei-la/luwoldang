@@ -11,7 +11,7 @@ const { builtinSets, KIND_EN } = require('../services/coverSets');
 const { builtinPapers } = require('../services/bgPapers');
 
 // 표지를 지정할 수 있는 리포트 종류
-const TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '취업·직장운', '이직운', '무료사주'];
+const TYPES = ['종합사주', '신년운세', '연애운', '결혼운', '재물운', '건강운', '연인궁합', '취업·직장운', '이직운', '자녀운', '합격운', '이동·이사운', '인간관계운', '무료사주'];
 
 router.use(requireAuth, requireApproved);
 
