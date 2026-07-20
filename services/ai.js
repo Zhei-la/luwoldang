@@ -975,6 +975,56 @@ function checkStyle(body, name, opts) {
 /**
  * 챕터 하나 생성
  */
+
+/* ══════════════════════════════════════════════
+ * 오늘이 며칠인지 알려주고, 지나간 달을 추천하지 않게 한다.
+ *
+ *   예전에는 연도만 넘겨서 2026년 7월에 "2월이 좋다"는 글이 나왔다.
+ *   달을 말할 때는 반드시 연도를 붙이게 하고,
+ *   앞일을 봐주는 리포트는 이번 달부터만 고르게 한다.
+ * ══════════════════════════════════════════════ */
+
+// 지나간 달을 그대로 권해도 되는 리포트 (그 해 전체나 일생을 다루므로)
+const LOOKS_BACK = ['신년운세', '종합사주'];
+
+function timeBlock(type) {
+  // 한국 시간 기준
+  const now = new Date(Date.now() + 9 * 3600 * 1000);
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth() + 1;
+  const d = now.getUTCDate();
+
+  const head = `[오늘]\n${y}년 ${m}월 ${d}일 (한국 시간)`;
+
+  if (LOOKS_BACK.indexOf(type) >= 0) {
+    return `${head}
+- 시기를 말할 때는 "${y}년 3월" 처럼 **연도와 월을 함께** 쓰세요. 달만 쓰면 언제인지 알 수 없습니다.
+- 이 리포트는 한 해 전체(또는 일생)를 다루므로 지나간 달도 씁니다.
+  다만 ${m}월 이전은 **이미 지난 일이므로 과거형**으로 쓰세요.
+  ("3월에는 ~하기 좋습니다" ❌ → "${y}년 3월에는 ~한 흐름이 있었습니다" ⭕)
+- ${m}월 이후는 앞으로의 일이므로 지금처럼 씁니다.`;
+  }
+
+  // 앞일을 봐주는 리포트 — 지나간 달은 쓸모가 없다
+  const left = 12 - m;
+  const nextHint = left === 0
+    ? `올해는 이번 달이 마지막이니 ${y + 1}년 상반기를 중심으로 보세요.`
+    : left <= 3
+      ? `올해 남은 달이 ${left}개월뿐이니 ${y + 1}년 상반기까지 함께 보세요.`
+      : `필요하면 ${y + 1}년 초까지 넘어가도 됩니다.`;
+
+  const passed = m === 1
+    ? `${y}년은 이제 시작이니 올해 전체를 보되, 이미 지난 날은 권하지 마세요.`
+    : `${y}년 1~${m - 1}월은 이미 지났으니 권하지 마세요.`;
+
+  return `${head}
+⚠️ **지나간 달을 추천하면 안 됩니다.** 이 리포트를 받는 사람은 지금부터 무엇을 할지 알고 싶어 합니다.
+- 시기는 **${y}년 ${m}월부터** 고르세요. ${passed}
+- ${nextHint}
+- 달을 말할 때는 반드시 "${m + 1 > 12 ? (y + 1) + '년 1월' : y + '년 ' + (m + 1) + '월'}" 처럼 **연도를 붙여** 쓰세요.
+- 이번 달(${y}년 ${m}월) 안에 할 수 있는 일이 있으면 그것부터 짚어주세요.`;
+}
+
 async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters }) {
   const info = sajuBlock(client, saju, partner, partnerSaju, type);
   const subs = chapter.sub || [];
@@ -1073,6 +1123,8 @@ async function generateChapter({ type, chapter, index, total, client, saju, part
 ${fieldBlock(type)}
 ${roleBlock}${summaryBlock}
 ${mapBlock}
+
+${timeBlock(type)}
 
 [작성할 챕터]
 리포트 종류: ${type}
@@ -1525,4 +1577,5 @@ JSON 으로 답하세요: { "body": "다시 쓴 글" }`,
 }
 
 module.exports.rewriteBlock = rewriteBlock;
+
 
