@@ -163,6 +163,7 @@ module.exports = {
   addCustomSet, addSetItem, listCustomSets, deleteCustomSet, getSetItemImg,
   // 배경지
   chooseBgPaper, myBgPaper, resolveBgPaper,
+  saveMyBgPaper, deleteMyBgPaper, getMyBgPaperImg, listMyBgPaperTypes,
 };
 
 /* ── 교육생: 본문 배경지 ── */
@@ -177,16 +178,56 @@ async function myBgPaper(teacherId) {
   return rows[0] ? rows[0].bg_paper : null;
 }
 
-// 리포트 만들 때: 교육생이 고른 배경지 이미지 경로 반환
-//   undefined 반환 → 기본 frame (컬럼 없음/기본)
-//   'none' → 배경 없음
-//   경로 → 그 배경지
-async function resolveBgPaper(teacherId) {
+/* ── 운세별 배경지 (직접 올린 것) ── */
+
+// 이 종류에만 쓰는 배경지를 올린다
+async function saveMyBgPaper(teacherId, type, img) {
+  if (!img) throw new Error('이미지가 없습니다.');
+  await pool.query('DELETE FROM teacher_bg_papers WHERE teacher_id = $1 AND type = $2', [teacherId, type]);
+  await pool.query(
+    'INSERT INTO teacher_bg_papers (teacher_id, type, img) VALUES ($1, $2, $3)',
+    [teacherId, type, img]
+  );
+}
+
+async function deleteMyBgPaper(teacherId, type) {
+  await pool.query('DELETE FROM teacher_bg_papers WHERE teacher_id = $1 AND type = $2', [teacherId, type]);
+}
+
+async function getMyBgPaperImg(teacherId, type) {
+  const { rows } = await pool.query(
+    'SELECT img FROM teacher_bg_papers WHERE teacher_id = $1 AND type = $2 ORDER BY id DESC LIMIT 1',
+    [teacherId, type]
+  );
+  return rows[0] ? rows[0].img : null;
+}
+
+// 배경지를 올려둔 종류 목록 (화면에 표시용)
+async function listMyBgPaperTypes(teacherId) {
+  const { rows } = await pool.query(
+    'SELECT DISTINCT type FROM teacher_bg_papers WHERE teacher_id = $1', [teacherId]
+  );
+  return rows.map((r) => r.type);
+}
+
+// 리포트 만들 때: 이 종류에 쓸 배경지 경로 반환
+//   ① 이 종류로 올려둔 배경지가 있으면 그것
+//   ② 없으면 교육생이 고른 기본 배경지
+//   undefined → 기본 frame / 'none' → 배경 없음 / 경로 → 그 배경지
+async function resolveBgPaper(teacherId, type) {
   try {
+    // ① 운세별로 올린 것이 먼저
+    //    주소 대신 이미지 자체를 돌려준다. 내담자 공유 페이지는 로그인이 없어서
+    //    보호된 주소로 주면 배경이 안 나온다.
+    if (type) {
+      const mine = await getMyBgPaperImg(teacherId, type);
+      if (mine) return mine;
+    }
+    // ② 없으면 고른 기본 배경지
     const key = await myBgPaper(teacherId);
     if (!key) return undefined;          // 기본 frame
     if (key === 'none') return 'none';   // 배경 없음
-    return paperImg(key) || undefined;   // 배경지 경로 (없으면 기본)
+    return paperImg(key) || undefined;
   } catch (e) {
     return undefined;
   }

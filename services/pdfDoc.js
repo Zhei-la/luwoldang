@@ -1367,7 +1367,8 @@ function buildCSS(baseUrl, bgPaper) {
   if (bgPaper === null || bgPaper === 'none') {
     paperUrl = '';
   } else if (bgPaper) {
-    paperUrl = (baseUrl || '') + bgPaper;
+    // 직접 올린 배경지는 이미지 자체(data:...)로 들어온다 → 주소를 앞에 붙이면 안 된다
+    paperUrl = /^(data:|https?:)/i.test(bgPaper) ? bgPaper : (baseUrl || '') + bgPaper;
   } else {
     paperUrl = (baseUrl || '') + '/img/pdf/frame.jpg';   // 기본
   }

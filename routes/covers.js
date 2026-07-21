@@ -27,11 +27,13 @@ router.get('/covers', async (req, res, next) => {
     const sets = builtinSets().concat(
       custom.map((c) => ({ key: c.set_key, name: c.name, kinds: null, custom: true }))
     );
+    const myBg = await store.listMyBgPaperTypes(req.user.id);   // 배경지를 따로 올린 종류
     res.render('dash/covers', {
       user: req.user,
       active: 'covers',
       types: TYPES,
       mine,
+      myBg,
       sets,
       chosen,
       papers,
@@ -110,6 +112,42 @@ router.post('/covers/upload', async (req, res) => {
 router.post('/covers/delete', async (req, res) => {
   try {
     await store.deleteMyCover(req.user.id, (req.body || {}).type);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ── 운세별 본문 배경지 ── */
+
+/* 내가 올린 배경지 이미지 */
+router.get('/covers/my-bg-img/:type', async (req, res) => {
+  try {
+    const img = await store.getMyBgPaperImg(req.user.id, req.params.type);
+    if (!img) return res.status(404).end();
+    const m = /^data:(image\/[a-z.+-]+);base64,(.*)$/i.exec(img);
+    if (!m) return res.redirect(img);
+    res.set('Content-Type', m[1]);
+    res.send(Buffer.from(m[2], 'base64'));
+  } catch (e) { res.status(500).end(); }
+});
+
+/* 배경지 올리기 — 이 종류에만 적용된다 */
+router.post('/covers/bg-upload', async (req, res) => {
+  try {
+    const { type, img } = req.body || {};
+    if (TYPES.indexOf(type) < 0) return res.status(400).json({ ok: false, error: '알 수 없는 리포트 종류입니다.' });
+    await store.saveMyBgPaper(req.user.id, type, img);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
+/* 배경지 지우기 — 다시 기본 배경지를 따라간다 */
+router.post('/covers/bg-delete', async (req, res) => {
+  try {
+    await store.deleteMyBgPaper(req.user.id, (req.body || {}).type);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

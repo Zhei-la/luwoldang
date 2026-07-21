@@ -1246,7 +1246,7 @@ async function downloadPdf(req, res) {
 
     const baseUrl = process.env.BASE_URL || '';
     const cover = await resolveCover(req.user.id, pdf.type);
-    const bgPaper = await resolveBgPaper(req.user.id);
+    const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
     const token = await ensureToken(pdf.id);
     const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
     const html = pdf.type === FREE

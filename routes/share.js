@@ -92,7 +92,13 @@ async function loadReport(token) {
   // 본문 배경지 (발송 시점 우선)
   const { paperImg } = require('../services/bgPapers');
   const bgKey = (snap && snap.bg_paper != null) ? snap.bg_paper : pdf.bg_paper;
-  const bgPaper = bgKey ? (bgKey === 'none' ? 'none' : paperImg(bgKey)) : undefined;
+  let bgPaper = bgKey ? (bgKey === 'none' ? 'none' : paperImg(bgKey)) : undefined;
+  // 이 종류로 따로 올려둔 배경지가 있으면 그것이 먼저
+  try {
+    const { getMyBgPaperImg } = require('../services/coverStore');
+    const mine = await getMyBgPaperImg(pdf.teacher_id, pdf.type);
+    if (mine) bgPaper = mine;
+  } catch (e) { /* 실패해도 기본 배경지로 나간다 */ }
   // 표지 (발송 스냅샷의 세트 우선, 없으면 현재 교육생 설정)
   let cover = null;
   try {

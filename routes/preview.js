@@ -157,7 +157,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     }
 
     const cover = await resolveCover(req.user.id, pdf.type);
-    const bgPaper = await resolveBgPaper(req.user.id);
+    const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
     const { ensureToken } = require('./share');
     const token = await ensureToken(pdf.id);
     const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
@@ -339,7 +339,7 @@ async function downloadWithCover(req, res) {
       html = buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl });
     } else {
       const cover = await resolveCover(req.user.id, pdf.type);
-      const bgPaper = await resolveBgPaper(req.user.id);
+      const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
       const { ensureToken } = require('./share');
       const token = await ensureToken(pdf.id);
       const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';

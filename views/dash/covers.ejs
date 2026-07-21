@@ -30,10 +30,12 @@
 </div>
 
 <div class="settings-block">
-  <h2 class="section-h">종류별 내 표지 (선택)</h2>
+  <h2 class="section-h">종류별 내 표지 · 배경지 (선택)</h2>
   <p class="block-desc">
-    특정 종류만 <b>나만의 표지</b>로 바꾸고 싶을 때 사용합니다.
-    올린 표지는 세트보다 우선합니다. A4 세로 비율, JPG·PNG, 3MB 이하.
+    특정 종류만 <b>나만의 표지</b>나 <b>나만의 본문 배경지</b>로 바꾸고 싶을 때 사용합니다.
+    올린 것은 세트나 아래에서 고른 기본 배경지보다 우선합니다.<br>
+    <b>올리지 않은 종류는</b> 세트 표지와 아래에서 고른 기본 배경지를 그대로 씁니다.
+    A4 세로 비율, JPG·PNG, 3MB 이하.
   </p>
 </div>
 
@@ -51,12 +53,31 @@
         <div class="cv-name"><%= t %></div>
         <div class="cv-actions">
           <label class="cv-btn">
-            <%= has ? '바꾸기' : '올리기' %>
+            표지 <%= has ? '바꾸기' : '올리기' %>
             <input type="file" accept="image/*" hidden onchange="uploadCover(this, '<%= t %>')">
           </label>
           <% if (has) { %>
-            <button type="button" class="cv-btn ghost" onclick="deleteCover('<%= t %>')">기본으로</button>
+            <button type="button" class="cv-btn ghost" onclick="deleteCover('<%= t %>')">표지 기본으로</button>
           <% } %>
+        </div>
+
+        <div class="cv-bg <%= (typeof myBg !== 'undefined' && myBg.indexOf(t) >= 0) ? 'on' : '' %>" data-bg-row>
+          <span class="cv-bg-label">
+            <% if (typeof myBg !== 'undefined' && myBg.indexOf(t) >= 0) { %>
+              배경지 <b>따로 씀</b>
+            <% } else { %>
+              배경지 <span class="muted">기본</span>
+            <% } %>
+          </span>
+          <span class="cv-bg-act">
+            <label class="cv-btn sm">
+              <%= (typeof myBg !== 'undefined' && myBg.indexOf(t) >= 0) ? '바꾸기' : '올리기' %>
+              <input type="file" accept="image/*" hidden onchange="uploadBg(this, '<%= t %>')">
+            </label>
+            <% if (typeof myBg !== 'undefined' && myBg.indexOf(t) >= 0) { %>
+              <button type="button" class="cv-btn ghost sm" onclick="deleteBg('<%= t %>')">기본으로</button>
+            <% } %>
+          </span>
         </div>
       </div>
     <% }); %>
@@ -222,6 +243,53 @@
       toast(e.message, true);
     }
   }
+
+  /* ── 운세별 본문 배경지 ── */
+  async function uploadBg(input, type) {
+    var f = input.files && input.files[0];
+    if (!f) return;
+    if (f.size > 3 * 1024 * 1024) { alert('3MB 이하 이미지로 올려주세요.'); input.value = ''; return; }
+    var reader = new FileReader();
+    reader.onload = async function () {
+      try {
+        var r = await fetch('/covers/bg-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: type, img: reader.result })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '올리지 못했습니다.');
+        location.reload();
+      } catch (e) { alert(e.message); }
+    };
+    reader.readAsDataURL(f);
+  }
+
+  async function deleteBg(type) {
+    if (!confirm(type + ' 배경지를 지울까요?\n\n지우면 아래에서 고른 기본 배경지를 따라갑니다.')) return;
+    try {
+      var r = await fetch('/covers/bg-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: type })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '지우지 못했습니다.');
+      location.reload();
+    } catch (e) { alert(e.message); }
+  }
 </script>
+
+<style>
+  .cv-bg {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line, #e4e0d6);
+    font-size: 12px;
+  }
+  .cv-bg-label { flex: 1; color: #8a8574; }
+  .cv-bg.on .cv-bg-label { color: #8a6a2f; }
+  .cv-bg-act { display: flex; gap: 5px; }
+  .cv-btn.sm { padding: 4px 9px; font-size: 11.5px; }
+</style>
 
 <%- include('../partials/dash-bottom') %>

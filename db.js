@@ -259,6 +259,18 @@ async function initDb() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_teacher_covers ON teacher_covers(teacher_id, type);`);
 
+  /* 운세별 본문 배경지 — 올린 종류만 이걸 쓰고, 나머지는 고른 기본 배경지를 쓴다 */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS teacher_bg_papers (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      type        TEXT NOT NULL,
+      img         TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_teacher_bg ON teacher_bg_papers(teacher_id, type);`);
+
   // ── 표지 세트 ──
   // 교육생이 고른 세트 키 (null=세트 안 씀)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_set TEXT;`);
