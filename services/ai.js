@@ -812,29 +812,48 @@ function noSpecifics(body) {
 }
 
 
-/* ── 지어낸 과거 사건 잡기 ──
+
+
+/* ── 과거 추측 잡기 ──
  *
- *   우리가 아는 것은 생년월일과 남긴 질문뿐이다.
- *   그런데 "2026년 3월에 이직 제안을 받았습니다" 처럼 겪은 일을 만들어내는 일이 있었다.
- *   내담자가 말한 적 없는 사실이라 틀리면 신뢰가 통째로 무너진다. */
-function inventedPast(body) {
+ *   우리는 이 사람이 무슨 일을 겪었는지 모른다.
+ *   그런데 "2026년 9월은 조화를 이루는 시기였습니다",
+ *   "고집을 조금만 풀어 주었다면 좋은 결과를 이끌어낼 가능성이 높았습니다" 처럼
+ *   지난 일을 짐작해 쓰는 일이 있었다. 앞으로 올 달까지 과거형으로 쓰기도 했다.
+ *   내담자가 질문에 적어준 것이 아니면 과거 이야기는 아예 쓰지 않는다. */
+function pastGuess(body, opts) {
   const t = String(body);
-  const bad = [];
+  const asked = String((opts && opts.question) || '');
 
-  // 연·월 뒤에 '있었다/했다' 류 단정이 붙으면 지어낸 사건일 확률이 높다
-  const dated = /(\d{4}\s*년\s*\d{1,2}\s*월|\d{1,2}\s*월)[^.!?]{0,60}?(있었습니다|했습니다|였습니다|됐습니다|되었습니다|받았을 때|했을 때|졌습니다|았습니다|겪었습니다)/g;
+  // 질문에 적힌 내용이면 언급해도 된다
+  const inQuestion = (frag) => {
+    const key = frag.replace(/[^가-힣0-9]/g, '').slice(0, 6);
+    return key.length >= 3 && asked.replace(/[^가-힣0-9]/g, '').includes(key);
+  };
+
+  const hits = [];
+
+  // ① 연·월 + 과거형 단정
+  const dated = /(\d{4}\s*년\s*\d{1,2}\s*월|\d{1,2}\s*월)[^.!?]{0,60}?(였습니다|이었습니다|했습니다|있었습니다|높았습니다|좋았습니다|됐습니다|되었습니다)/g;
   let m;
-  while ((m = dated.exec(t))) bad.push(m[0].trim().slice(0, 34));
+  while ((m = dated.exec(t))) hits.push(m[0].trim());
 
-  // 날짜가 없어도 겪은 일을 단정하는 표현
-  const claim = /([^.!?\n]{0,40}(?:한 일이 있었습니다|경험이 있었습니다|적이 있었습니다|일을 겪었습니다))/g;
-  while ((m = claim.exec(t))) bad.push(m[1].trim().slice(0, 34));
+  // ② 가정형 과거 — "~했다면 ~했을 것입니다"
+  const ifPast = /[^.!?\n]{0,45}(했다면|주었다면|였다면|갔다면|했더라면)[^.!?\n]{0,45}(습니다|것입니다|텐데)/g;
+  while ((m = ifPast.exec(t))) hits.push(m[0].trim());
 
-  if (!bad.length) return null;
-  return '겪은 일을 지어냈습니다 — "' + bad[0] + '..." '
-       + '(우리는 이 사람의 직업·회사·가족 상황을 모릅니다. '
-       + '흐름이나 성향으로 바꾸거나, "그런 일이 있었다면" 처럼 조건부로 쓰세요)';
+  // ③ 겪은 일 단정
+  const claim = /[^.!?\n]{0,40}(한 일이 있었습니다|경험이 있었습니다|적이 있었습니다|일을 겪었습니다)/g;
+  while ((m = claim.exec(t))) hits.push(m[0].trim());
+
+  const real = hits.filter((h) => !inQuestion(h));
+  if (!real.length) return null;
+
+  return '지난 일을 짐작해서 썼습니다 — "' + real[0].slice(0, 34) + '..." '
+       + '(내담자가 질문에 적은 것이 아니면 과거 이야기는 쓰지 않습니다. '
+       + '현재형이나 앞으로의 흐름으로 바꾸세요)';
 }
+
 
 /* ── ③ 용어 노출 — 최종 리포트에 전문용어가 그대로 나오는가 ── */
 function jargonExposed(body, opts) {
@@ -974,8 +993,8 @@ function checkStyle(body, name, opts) {
   const s = noSpecifics(body);
   if (s) issues.push(`[내용] ${s}`);
 
-  const inv = inventedPast(body);
-  if (inv) issues.push(`[내용] ${inv}`);
+  const pg = pastGuess(body, opts);
+  if (pg) issues.push(`[내용] ${pg}`);
 
   const j = jargonExposed(body, opts);
   if (j) issues.push(`[내용] ${j}`);
@@ -1012,30 +1031,35 @@ function checkStyle(body, name, opts) {
  *   앞일을 봐주는 리포트는 이번 달부터만 고르게 한다.
  * ══════════════════════════════════════════════ */
 
-// 지나간 달을 그대로 권해도 되는 리포트 (그 해 전체나 일생을 다루므로)
-const LOOKS_BACK = ['신년운세', '종합사주'];
+// 그 해 전체를 다루므로 지나간 달도 짚는 리포트
+const WHOLE_YEAR = ['신년운세'];
+// 일생·대운을 다루므로 달 단위로 말하지 않는 리포트
+const LIFE_LONG  = ['종합사주'];
 
 function timeBlock(type) {
   // 한국 시간 기준
   const now = new Date(Date.now() + 9 * 3600 * 1000);
   const y = now.getUTCFullYear();
   const m = now.getUTCMonth() + 1;
-  const d = now.getUTCDate();
 
-  const head = `[오늘]\n${y}년 ${m}월 ${d}일 (한국 시간)`;
+  const head = `[오늘]\n${y}년 ${m}월 ${d0(now)}일 (한국 시간)`;
 
-  if (LOOKS_BACK.indexOf(type) >= 0) {
+  // 모든 리포트 공통 — 지난 일은 아예 꺼내지 않는다
+  const noPast = `
+⚠️ **지나간 시기는 이야기하지 마세요.** 무슨 일이 있었는지 우리는 모릅니다.
+- 지난 일을 짐작해서 쓰지 마세요. "~였습니다", "~했을 것입니다", "~했다면 좋았을 텐데" 모두 금지입니다.
+- 내담자가 남긴 질문에 지난 일이 적혀 있을 때만, 그 내용에 한해 언급할 수 있습니다.
+- 그 밖의 모든 시기는 **지금부터 앞으로**만 씁니다.`;
+
+  if (LIFE_LONG.indexOf(type) >= 0) {
     return `${head}
-- 시기를 말할 때는 "${y}년 3월" 처럼 **연도와 월을 함께** 쓰세요. 달만 쓰면 언제인지 알 수 없습니다.
-- 이 리포트는 한 해 전체(또는 일생)를 다루므로 지나간 달도 다룹니다.
-- ⚠️ 지나간 달은 **기운의 흐름**만 말하세요. 무슨 일이 있었는지는 우리가 모릅니다.
-  ❌ "${y}년 3월에 이직 제안을 받았지만 놓쳤습니다"   ← 지어낸 사건. 절대 금지
-  ⭕ "${y}년 3월은 기회가 오가기 쉬운 흐름이었습니다"  ← 흐름만
-  ⭕ "${y}년 3월 무렵 비슷한 일이 있었다면 그 때문일 수 있습니다" ← 조건부
-- ${m}월 이후는 앞으로의 일이므로 지금처럼 씁니다.`;
+- 이 리포트는 **일생의 큰 흐름**을 다룹니다. 특정 달을 짚지 마세요.
+  ⭕ "30대 중반으로 넘어가면서 이런 면이 드러납니다"
+  ⭕ "지금 대운이 바뀌는 무렵이라 방향이 달라지는 시기입니다"
+- 시기는 **나이·연도·대운**으로 말하세요. 달이 궁금한 분에게는 신년운세가 따로 있습니다.
+- 성향과 기질은 시기와 무관하니 **현재형**으로 씁니다.${noPast}`;
   }
 
-  // 앞일을 봐주는 리포트 — 지나간 달은 쓸모가 없다
   const left = 12 - m;
   const nextHint = left === 0
     ? `올해는 이번 달이 마지막이니 ${y + 1}년 상반기를 중심으로 보세요.`
@@ -1043,17 +1067,17 @@ function timeBlock(type) {
       ? `올해 남은 달이 ${left}개월뿐이니 ${y + 1}년 상반기까지 함께 보세요.`
       : `필요하면 ${y + 1}년 초까지 넘어가도 됩니다.`;
 
-  const passed = m === 1
-    ? `${y}년은 이제 시작이니 올해 전체를 보되, 이미 지난 날은 권하지 마세요.`
-    : `${y}년 1~${m - 1}월은 이미 지났으니 권하지 마세요.`;
-
   return `${head}
-⚠️ **지나간 달을 추천하면 안 됩니다.** 이 리포트를 받는 사람은 지금부터 무엇을 할지 알고 싶어 합니다.
-- 시기는 **${y}년 ${m}월부터** 고르세요. ${passed}
+- 시기는 **${y}년 ${m}월부터** 고르세요. ${m > 1 ? `${y}년 1~${m - 1}월은 이미 지났습니다.` : ''}
 - ${nextHint}
 - 달을 말할 때는 반드시 "${m + 1 > 12 ? (y + 1) + '년 1월' : y + '년 ' + (m + 1) + '월'}" 처럼 **연도를 붙여** 쓰세요.
-- 이번 달(${y}년 ${m}월) 안에 할 수 있는 일이 있으면 그것부터 짚어주세요.`;
+- 앞으로 올 달은 **앞일 어투**로 씁니다.
+  ❌ "${y}년 ${m + 1 > 12 ? 1 : m + 1}월은 조화를 이루는 시기였습니다"  ← 아직 오지 않은 달입니다
+  ⭕ "${y}년 ${m + 1 > 12 ? 1 : m + 1}월은 조화를 이루기 쉬운 시기입니다"
+- 이번 달(${y}년 ${m}월) 안에 할 수 있는 일이 있으면 그것부터 짚어주세요.${noPast}`;
 }
+
+function d0(dt) { return dt.getUTCDate(); }
 
 async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters }) {
   const info = sajuBlock(client, saju, partner, partnerSaju, type);
@@ -1207,7 +1231,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
   // 문체 검사 → 문제 있으면 1회 재작성
   const problems = [];
   blocks.forEach((b, i) => {
-    const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary });
+    const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '' });
     if (issues.length) problems.push(`- "${b.sub}": ${issues.join(', ')}`);
   });
 
@@ -1216,7 +1240,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
   for (let attempt = 1; attempt <= 2; attempt++) {
     const probs = [];
     blocks.forEach((b) => {
-      const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary });
+      const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '' });
       if (issues.length) probs.push(`- "${b.sub}": ${issues.join(', ')}`);
     });
     if (!probs.length) break;
