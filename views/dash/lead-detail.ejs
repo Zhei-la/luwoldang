@@ -344,50 +344,116 @@
     });
   }
 
+  /* ── 리포트 생성 ──
+     접수만 하고 뒤에서 만든다. 창을 닫거나 다른 앱으로 넘어가도 계속 만들어지고,
+     다시 들어오면 진행 중인 작업을 찾아 이어서 보여준다. */
+  var LEAD_ID = '<%= lead.id %>';
   var btnMake = document.getElementById('btnMake');
-  if (btnMake) {
-    btnMake.onclick = function(){
-      if(!picked) return;
-      var prog = document.getElementById('prog');
-      var bar  = document.getElementById('progBar');
-      btnMake.disabled = true;
-      btnMake.textContent = '작성 중...';
+  var pollTimer = null;
+
+  function progEls() {
+    return {
+      box:  document.getElementById('prog'),
+      msg:  document.getElementById('progMsg'),
+      fill: document.getElementById('progFill'),
+    };
+  }
+
+  function showRunning(job) {
+    var prog = document.getElementById('prog');
+    if (!prog) return;
+    if (!document.getElementById('progMsg')) {
       prog.className = 'prog on';
       prog.innerHTML = '<b>리포트를 작성하고 있습니다.</b><br>' +
         '<span id="progMsg">준비 중...</span>' +
         '<div class="bar"><i id="progFill"></i></div>' +
-        '<small>60~80페이지 분량이라 5~10분 정도 걸립니다. 창을 닫지 마세요.</small>';
+        '<small>이 창을 닫아도 계속 만들어집니다. 다 되면 알림으로 알려드려요.</small>';
+    }
+    var e = progEls();
+    var pct = job.total ? Math.round(job.done / job.total * 100) : 0;
+    if (e.msg)  e.msg.textContent = '(' + job.done + '/' + (job.total || '?') + ') ' + (job.title || '');
+    if (e.fill) e.fill.style.width = pct + '%';
+    if (btnMake) { btnMake.disabled = true; btnMake.textContent = '작성 중...'; }
+  }
 
-      var es = new EventSource('/leads/<%= lead.id %>/pdf/stream?type=' + encodeURIComponent(picked));
+  function showDone(job) {
+    var prog = document.getElementById('prog');
+    if (prog) {
+      prog.className = 'prog ok';
+      prog.innerHTML = '완성됐습니다 (' + job.done + '개 챕터). ' +
+        '<a href="/pdfs/' + job.pdf_id + '/preview" style="text-decoration:underline">미리보기 열기</a>';
+    }
+    if (btnMake) { btnMake.disabled = false; btnMake.textContent = (picked || '') + ' 리포트 만들기'; }
+  }
 
-      es.addEventListener('progress', function(e){
-        var d = JSON.parse(e.data);
-        var pct = Math.round(d.done / d.total * 100);
-        var msg = document.getElementById('progMsg');
-        var fill = document.getElementById('progFill');
-        if (msg) msg.textContent = '(' + d.done + '/' + d.total + ') ' + d.title;
-        if (fill) fill.style.width = pct + '%';
-      });
+  function showError(job) {
+    var prog = document.getElementById('prog');
+    if (prog) {
+      prog.className = 'prog err';
+      prog.textContent = '실패: ' + (job.error || '알 수 없는 오류');
+    }
+    if (btnMake) { btnMake.disabled = false; btnMake.textContent = (picked || '') + ' 리포트 만들기'; }
+  }
 
-      es.addEventListener('done', function(e){
-        var d = JSON.parse(e.data);
-        es.close();
-        prog.className = 'prog ok';
-        prog.textContent = '완성됐습니다 (' + d.chapters + '개 챕터). 미리보기를 엽니다...';
-        setTimeout(function(){ location.href = '/pdfs/' + d.pdfId + '/preview'; }, 800);
-      });
+  var lastSeenJob = null;
 
-      es.addEventListener('error', function(e){
-        es.close();
-        var msg = '연결이 끊어졌습니다.';
-        try { msg = JSON.parse(e.data).error; } catch(x) {}
-        prog.className = 'prog err';
-        prog.textContent = '실패: ' + msg;
-        btnMake.disabled = false;
-        btnMake.textContent = picked + ' 리포트 만들기';
-      });
+  async function pollJob(opts) {
+    try {
+      var r = await fetch('/leads/' + LEAD_ID + '/pdf/job');
+      var d = await r.json();
+      var job = d && d.job;
+      if (!job) return;
+
+      if (job.status === 'running') {
+        showRunning(job);
+        lastSeenJob = job.id;
+        if (!pollTimer) pollTimer = setInterval(function(){ pollJob({}); }, 3000);
+        return;
+      }
+
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+      // 화면을 보고 있던 작업이 끝났을 때만 미리보기로 넘긴다.
+      // (들어오자마자 옛 작업 때문에 튕기지 않도록)
+      if (job.status === 'done') {
+        showDone(job);
+        if (opts && opts.jump && lastSeenJob === job.id) {
+          setTimeout(function(){ location.href = '/pdfs/' + job.pdf_id + '/preview'; }, 900);
+        }
+      } else if (job.status === 'error') {
+        if (lastSeenJob === job.id || (opts && opts.showOld)) showError(job);
+      }
+    } catch (e) { /* 잠시 끊겨도 다음 차례에 다시 물어본다 */ }
+  }
+
+  if (btnMake) {
+    btnMake.onclick = async function(){
+      if (!picked) return;
+      btnMake.disabled = true;
+      btnMake.textContent = '접수 중...';
+      try {
+        var r = await fetch('/leads/' + LEAD_ID + '/pdf/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: picked })
+        });
+        var d = await r.json();
+        if (!d.ok) throw new Error(d.error || '시작하지 못했습니다.');
+        lastSeenJob = d.jobId;
+        showRunning({ done: 0, total: 0, title: '준비 중' });
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(function(){ pollJob({ jump: true }); }, 3000);
+      } catch (e) {
+        showError({ error: e.message });
+      }
     };
   }
+
+  // 화면에 들어오거나 다시 돌아왔을 때 진행 중인 작업이 있으면 이어서 보여준다
+  pollJob({});
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) pollJob({ jump: true });
+  });
 
   document.querySelectorAll('[data-send]').forEach(function(btn){
     btn.onclick = async function(){

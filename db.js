@@ -205,6 +205,31 @@ async function initDb() {
   // 후기 링크 — 교육생이 직접 넣는다 (당근·네이버 등). 비어 있으면 버튼을 안 띄운다
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_link TEXT;`);
 
+  /* 리포트 생성 작업 — 창을 닫아도 뒤에서 계속 만들기 위해 상태를 여기에 둔다 */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pdf_jobs (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER NOT NULL,
+      lead_id     INTEGER NOT NULL,
+      type        TEXT    NOT NULL,
+      status      TEXT    NOT NULL DEFAULT 'running',  -- running | done | error
+      done        INTEGER NOT NULL DEFAULT 0,
+      total       INTEGER NOT NULL DEFAULT 0,
+      title       TEXT,
+      pdf_id      INTEGER,
+      error       TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_pdf_jobs_lead ON pdf_jobs(lead_id, created_at DESC);`);
+
+  // 서버가 재시작되면 돌던 작업은 사라진다. 남아 있는 '진행 중'을 정리한다.
+  await pool.query(
+    `UPDATE pdf_jobs SET status='error', error='서버가 다시 시작되어 중단되었습니다. 다시 만들어주세요.', updated_at=NOW()
+     WHERE status='running'`
+  ).catch(() => {});
+
   // ── PDF 표지 ──
   await pool.query(`
     CREATE TABLE IF NOT EXISTS cover_presets (

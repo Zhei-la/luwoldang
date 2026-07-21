@@ -11,6 +11,7 @@ const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { ensureToken } = require('./share');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
+const { notify } = require('../services/push');   // 다 만들어지면 알림
 
 const FREE = '무료사주';
 
@@ -185,6 +186,175 @@ router.post('/leads/:id/question', async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+
+/* ═══════════════════════════════════════════════════════
+ * 리포트 생성 — 창을 닫아도 뒤에서 계속 만든다
+ *
+ *   예전에는 브라우저와 연결된 채로 만들어서, 휴대폰에서 다른 앱으로
+ *   넘어가면 연결이 끊기고 실패한 것처럼 보였다.
+ *   이제는 접수만 하고 바로 응답한 뒤, 뒤에서 만들며 진행률을 DB 에 적는다.
+ *   화면은 그 값을 물어보기만 하므로 나갔다 들어와도 이어서 보인다.
+ * ═══════════════════════════════════════════════════════ */
+
+/** 지금 이 신청 건으로 돌고 있는 작업 (중복 생성 방지) */
+async function runningJob(leadId) {
+  const { rows } = await pool.query(
+    `SELECT * FROM pdf_jobs WHERE lead_id = $1 AND status = 'running'
+     ORDER BY id DESC LIMIT 1`, [leadId]
+  );
+  return rows[0] || null;
+}
+
+/* ── 생성 시작 — 접수만 하고 바로 돌려준다 ── */
+router.post('/leads/:id/pdf/start', async (req, res) => {
+  try {
+    const type = (req.body && req.body.type) || req.query.type;
+    const { rows } = await pool.query(
+      'SELECT * FROM leads WHERE id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]
+    );
+    const lead = rows[0];
+    if (!lead) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+    if (!req.user.openai_key) return res.status(400).json({ ok: false, error: 'OpenAI 키를 먼저 등록해주세요.' });
+    if (!PDF_TYPES.includes(type)) return res.status(400).json({ ok: false, error: 'PDF 종류를 선택해주세요.' });
+
+    // 이미 만드는 중이면 그 작업을 그대로 돌려준다 (두 번 만들면 요금이 두 번 나간다)
+    const already = await runningJob(lead.id);
+    if (already) return res.json({ ok: true, jobId: already.id, resumed: true });
+
+    const total = chapterCountFor(type, lead);
+    const ins = await pool.query(
+      `INSERT INTO pdf_jobs (teacher_id, lead_id, type, total, title)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [req.user.id, lead.id, type, total, '준비 중']
+    );
+    const jobId = ins.rows[0].id;
+
+    // 여기서 기다리지 않는다. 응답을 먼저 보내고 뒤에서 만든다.
+    res.json({ ok: true, jobId });
+    runPdfJob({ jobId, lead, type, user: req.user }).catch(async (e) => {
+      console.error('[PDF] 작업 실패:', e.message);
+      await pool.query(
+        `UPDATE pdf_jobs SET status='error', error=$1, updated_at=NOW() WHERE id=$2`,
+        [e.message, jobId]
+      ).catch(() => {});
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ── 진행 상황 확인 — 화면이 주기적으로 물어본다 ── */
+router.get('/leads/:id/pdf/job', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, type, status, done, total, title, pdf_id, error
+       FROM pdf_jobs
+       WHERE lead_id = $1 AND teacher_id = $2
+       ORDER BY id DESC LIMIT 1`,
+      [req.params.id, req.user.id]
+    );
+    res.json({ ok: true, job: rows[0] || null });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/** 리포트 종류별 장 수 (진행률 표시에만 쓴다) */
+function chapterCountFor(type, lead) {
+  try {
+    const { chapterCount, QUESTION_CHAPTER } = require('../services/outlines');
+    const n = chapterCount(type);
+    return n + ((lead && lead.memo && QUESTION_CHAPTER) ? 1 : 0);
+  } catch (e) { return 0; }
+}
+
+/** 실제 생성 — 요청과 떨어져서 혼자 돈다 */
+async function runPdfJob({ jobId, lead, type, user }) {
+  const mark = (fields, vals) => pool.query(
+    `UPDATE pdf_jobs SET ${fields}, updated_at=NOW() WHERE id=$${vals.length + 1}`,
+    [...vals, jobId]
+  ).catch(() => {});
+
+  const saju = calcSaju({
+    birthDate: normalizeBirth(lead.birth),
+    birthTime: parseHour(lead.hour),
+    calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
+    isLeapMonth: lead.calendar === '윤달',
+    region: lead.region || '서울특별시',
+    gender: lead.gender,
+  });
+
+  const client = {
+    name: lead.name, gender: lead.gender,
+    birthDate: normalizeBirth(lead.birth),
+    birthTime: parseHour(lead.hour),
+    calendar: lead.calendar, region: lead.region,
+    question: lead.memo,
+  };
+
+  let partner = null, partnerSaju = null;
+  if ((type === '연인궁합' || type === '재회운') && lead.partner_birth) {
+    try {
+      partnerSaju = calcSaju({
+        birthDate: normalizeBirth(lead.partner_birth),
+        birthTime: parseHour(lead.partner_hour),
+        calendar: lead.partner_calendar === '윤달' ? '음력' : (lead.partner_calendar || '양력'),
+        isLeapMonth: lead.partner_calendar === '윤달',
+        region: '서울특별시',
+        gender: lead.partner_gender,
+      });
+      partner = {
+        name: lead.partner_name || '상대방',
+        gender: lead.partner_gender,
+        birthDate: normalizeBirth(lead.partner_birth),
+        birthTime: parseHour(lead.partner_hour),
+        calendar: lead.partner_calendar || '양력',
+      };
+    } catch (e) { /* 상대방 실패해도 본인 기준으로 나간다 */ }
+  }
+
+  let pdfId, count;
+
+  if (type === FREE) {
+    await mark('title=$1, total=$2', ['무료 사주 풀이 생성 중', 1]);
+    const free = await generateFreeSaju({ client, saju, openaiKey: user.openai_key });
+    const insF = await pool.query(
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,NULL) RETURNING id',
+      [user.id, lead.id, FREE, JSON.stringify(free)]
+    );
+    pdfId = insF.rows[0].id; count = 1;
+  } else {
+    const result = await generatePdfReport({
+      type, client, saju, partner, partnerSaju, openaiKey: user.openai_key,
+      onProgress: (done, total, title) =>
+        mark('done=$1, total=$2, title=$3', [done, total, title || '']),
+    });
+    const chapters = Array.isArray(result) ? result : (result.chapters || []);
+    const extra = (!Array.isArray(result) && (result.checklist || result.loveCard))
+      ? { checklist: result.checklist || null, loveCard: result.loveCard || null }
+      : null;
+
+    if (!chapters.length) throw new Error('리포트 생성에 실패했습니다. OpenAI 키와 사용량을 확인해주세요.');
+
+    const ins = await pool.query(
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+      [user.id, lead.id, type, JSON.stringify(chapters), extra ? JSON.stringify(extra) : null]
+    );
+    pdfId = ins.rows[0].id; count = chapters.length;
+  }
+
+  await mark("status='done', pdf_id=$1, done=$2, title=$3", [pdfId, count, '완료']);
+
+  // 다 만들어졌다고 알려준다 (창을 닫아둔 동안 끝났을 수 있다)
+  notify(user.id, {
+    title: '리포트가 완성됐어요',
+    body: `${lead.name || '손님'}님 · ${type}`,
+    url: `/pdfs/${pdfId}/preview`,
+    tag: 'pdf-done-' + pdfId,
+  }).catch(() => {});
+}
 
 /* ===== PDF 내용 생성 (AI) — 챕터별 진행상황 스트리밍 ===== */
 router.get('/leads/:id/pdf/stream', async (req, res) => {
