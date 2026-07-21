@@ -1640,5 +1640,3 @@ JSON 으로 답하세요: { "body": "다시 쓴 글" }`,
 }
 
 module.exports.rewriteBlock = rewriteBlock;
-
-
