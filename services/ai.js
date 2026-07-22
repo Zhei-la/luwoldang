@@ -1551,10 +1551,16 @@ ${STYLE_RULES}`;
   if (issues.length) {
     console.log('[문체] 추가질문 재작성:', issues.join(', '));
     try {
+      // 문체만 다듬는 일이라 사주·리포트 전문을 다시 보낼 필요가 없다.
+      //   예전에는 여기서도 시스템 프롬프트를 통째로 보내 요금이 두 배로 나갔다.
+      const fixSystem = `당신은 사주 상담가입니다. 아래 글의 **문체만** 다듬습니다.
+내용·해석·분량은 그대로 두고 문장만 고칩니다. 새로운 해석을 넣지 마세요.
+${client.name}님이라고 부르되 매 문단 반복하지 않습니다.
+마크다운 기호(#, *, -)를 쓰지 말고 문단으로 씁니다.`;
+
       const fixed = await callAIText({
-        system,
+        system: fixSystem,
         messages: [
-          ...messages,
           { role: 'assistant', content: answer },
           {
             role: 'user',
