@@ -1240,10 +1240,16 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
   /* 통과할 때까지 다시 쓴다 (최대 2회).
      예전에는 한 번 고치고 끝이라, 고친 글이 또 끊겨도 그대로 저장됐다. */
   for (let attempt = 1; attempt <= 2; attempt++) {
+    // 문제가 있는 블록만 추려낸다.
+    //   예전에는 5개 중 1개만 걸려도 5개를 통째로 다시 만들어 요금이 크게 나갔다.
+    const badIdx = [];
     const probs = [];
-    blocks.forEach((b) => {
+    blocks.forEach((b, bi) => {
       const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '' });
-      if (issues.length) probs.push(`- "${b.sub}": ${issues.join(', ')}`);
+      if (issues.length) {
+        badIdx.push(bi);
+        probs.push(`- "${b.sub}": ${issues.join(', ')}`);
+      }
     });
     if (!probs.length) break;
 
@@ -1297,6 +1303,10 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
       const fix = await callAI({
         system: PDF_SYSTEM,
         user: `${user}
+
+[다시 쓸 소제목] — **아래 ${badIdx.length}개만** 쓰세요. 나머지는 이미 통과했습니다.
+${badIdx.map((bi, k) => `${k + 1}. ${blocks[bi].sub}`).join('\n')}
+blocks 배열에 이 ${badIdx.length}개만 순서대로 담아주세요.
 ${contentFix}
 
 [발견된 문제]
@@ -1330,22 +1340,23 @@ ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}
         maxTokens: 6000,
       });
       const fixed = Array.isArray(fix.blocks) ? fix.blocks : [];
-      if (fixed.length === blocks.length) {
-        // 재작성 결과를 그대로 덮어쓰면 안 된다.
-        //   응답이 잘리거나 본문이 빈 채로 오는 경우가 있는데, 그대로 교체하면
-        //   멀쩡하던 내용까지 사라져 "소제목만 남는" 리포트가 된다.
-        let replaced = 0;
-        blocks = blocks.map((orig, bi) => {
-          const nb = fixed[bi] || {};
-          const nbody = String(nb.body || '').trim();
-          const obody = String(orig.body || '').trim();
-          if (!nbody || (obody && nbody.length < obody.length * 0.5)) return orig;
-          replaced++;
-          return { sub: nb.sub || orig.sub, body: nb.body };
-        });
-        if (!replaced) break;
-      }
-      else break;
+      if (!fixed.length) break;
+
+      // 걸린 자리에만 끼워 넣는다.
+      //   빈 응답이나 반토막 응답은 버린다. 그대로 덮으면 멀쩡하던 내용까지 사라져
+      //   "소제목만 남는" 리포트가 된다.
+      //   개수가 안 맞게 오면(전체를 다시 보내오면) 순서대로 맞춰본다.
+      const useIdx = (fixed.length === blocks.length) ? blocks.map((_, i) => i) : badIdx;
+      let replaced = 0;
+      useIdx.forEach((bi, k) => {
+        const nb = fixed[fixed.length === blocks.length ? bi : k] || {};
+        const nbody = String(nb.body || '').trim();
+        const obody = String(blocks[bi].body || '').trim();
+        if (!nbody || (obody && nbody.length < obody.length * 0.5)) return;
+        blocks[bi] = { sub: blocks[bi].sub, body: nb.body };
+        replaced++;
+      });
+      if (!replaced) break;
     } catch (e) {
       console.error('[검사] 재작성 실패:', e.message);
       break;
