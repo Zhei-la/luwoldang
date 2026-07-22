@@ -1437,8 +1437,95 @@ const QUESTION_CHAPTER = {
  * @param {string} type 리포트 종류
  * @param {string|null} question 내담자 질문
  */
+
+/* ══════════════════════════════════════════════
+ * 신년운세 — 남은 기간에 맞춰 목차를 스스로 바꾼다
+ *
+ *   목차에 "1월부터 3월까지", "상반기와 하반기" 가 박혀 있으면
+ *   7월에 만들어도 AI 는 1월 이야기를 할 수밖에 없다.
+ *   지나간 달은 팔 수 없으므로 남은 달만 다루게 한다.
+ * ══════════════════════════════════════════════ */
+
+const SEASON = {
+  1: '한겨울', 2: '입춘 무렵', 3: '초봄', 4: '봄', 5: '늦봄', 6: '초여름',
+  7: '한여름', 8: '늦여름', 9: '초가을', 10: '가을', 11: '늦가을', 12: '연말',
+};
+
+/** 남은 달 목록 — 올해 남은 달이 적으면 내년 상반기까지 이어 붙인다 */
+function remainingMonths(y, m) {
+  const list = [];
+  for (let i = m; i <= 12; i++) list.push({ y, m: i });
+  if (list.length <= 4) {
+    for (let i = 1; i <= 6; i++) list.push({ y: y + 1, m: i });
+  }
+  return list;
+}
+
+/** 남은 달을 3~4개월씩 묶어 소제목으로 */
+function monthGroups(months) {
+  const out = [];
+  for (let i = 0; i < months.length; i += 3) {
+    const g = months.slice(i, i + 3);
+    const a = g[0], b = g[g.length - 1];
+    out.push(a.y === b.y
+      ? (g.length === 1 ? `${a.y}년 ${a.m}월` : `${a.y}년 ${a.m}월부터 ${b.m}월까지`)
+      : `${a.y}년 ${a.m}월부터 ${b.y}년 ${b.m}월까지`);
+  }
+  return out;
+}
+
+function tuneNewYear(chapters) {
+  const now = new Date(Date.now() + 9 * 3600 * 1000);
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth() + 1;
+
+  // 1월이면 원래 목차 그대로 (한 해 전체가 남아 있다)
+  if (m === 1) return chapters;
+
+  const months = remainingMonths(y, m);
+  const groups = monthGroups(months);
+  const last = months[months.length - 1];
+  const span = `${y}년 ${m}월부터 ${last.y === y ? '연말' : `${last.y}년 ${last.m}월`}까지`;
+
+  return chapters.map((c) => {
+    if (c.title === '상반기와 하반기의 흐름') {
+      const half = Math.ceil(months.length / 2);
+      const mid = months[half - 1];
+      return {
+        title: '남은 기간의 큰 흐름',
+        note: `지금은 ${y}년 ${m}월입니다. ${span}만 다룹니다. 지나간 달은 언급하지 마세요.`,
+        sub: [
+          `${SEASON[m]}부터 ${SEASON[mid.m]}까지 — 지금 당장의 흐름`,
+          `${SEASON[mid.m]} 이후 — 후반의 흐름`,
+          '흐름이 바뀌는 지점',
+          '어느 쪽에 힘을 실어야 하는가',
+        ],
+      };
+    }
+    if (c.title === '월별 운세 흐름') {
+      return {
+        title: '남은 달의 흐름',
+        note: `${span} 만 씁니다. ${m > 1 ? `${y}년 1~${m - 1}월은 이미 지났으니 쓰지 마세요.` : ''}`,
+        sub: groups,
+      };
+    }
+    if (c.title === '기회가 큰 시기와 조심할 시기') {
+      return Object.assign({}, c, {
+        note: `${span} 안에서만 고르세요. 지나간 달은 후보가 아닙니다.`,
+        sub: [
+          '남은 기간 중 가장 좋은 시기와 그 이유',
+          '가장 조심할 시기와 그 이유',
+          '각 시기에 무엇을 해야 하는가',
+        ],
+      });
+    }
+    return c;
+  });
+}
+
 function outlineWithQuestion(type, question) {
-  const base = OUTLINES[type] || OUTLINES['종합사주'];
+  let base = OUTLINES[type] || OUTLINES['종합사주'];
+  if (type === '신년운세') base = tuneNewYear(base);   // 남은 달에 맞춰 목차를 바꾼다
   const q = (question || '').trim();
   if (!q) return base;
 
@@ -1453,3 +1540,4 @@ function outlineWithQuestion(type, question) {
 
 module.exports.QUESTION_CHAPTER = QUESTION_CHAPTER;
 module.exports.outlineWithQuestion = outlineWithQuestion;
+module.exports.tuneNewYear = tuneNewYear;
