@@ -627,6 +627,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *  "소제목만 있고 내용이 없는" 리포트가 나갔다.
  *  레이트리밋(429)·일시적 서버 오류·JSON 깨짐은 다시 부르면 대부분 성공한다. */
 async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 4 }) {
+  let budget = maxTokens || 4000;   // 잘리면 재시도에서 늘린다
   let lastErr = null;
 
   for (let attempt = 1; attempt <= _tries; attempt++) {
@@ -642,7 +643,7 @@ async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 4 })
           ],
           response_format: { type: 'json_object' },
           temperature: 0.85,
-          max_tokens: maxTokens || 4000,
+          max_tokens: budget,
         }),
       });
 
@@ -662,6 +663,7 @@ async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 4 })
           } else {
             wait = 3000 * attempt;
           }
+          if (res.status === 429) rateLimited = true;   // 이후로는 하나씩 만든다
           console.error(`[AI] ${res.status} 사용량 초과 — ${Math.round(wait / 1000)}초 후 재시도 (${attempt}/${_tries})`);
           await sleep(wait);
           lastErr = new Error(msg);
@@ -671,7 +673,10 @@ async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 4 })
       }
 
       if (data.choices?.[0]?.finish_reason === 'length') {
-        console.error('[AI] 응답이 토큰 한도에서 잘렸습니다.');
+        // 잘린 JSON 은 아래에서 파싱에 실패해 재시도로 넘어간다.
+        //   그때 예약량을 늘려주지 않으면 또 잘린다.
+        console.error('[AI] 응답이 토큰 한도에서 잘렸습니다 — 다음 시도에서 늘립니다.');
+        budget = Math.min(8000, Math.round(budget * 1.6));
       }
 
       const text = data.choices?.[0]?.message?.content || '';
@@ -1081,6 +1086,14 @@ function timeBlock(type) {
 
 function d0(dt) { return dt.getUTCDate(); }
 
+/* 출력 예약량 — 소제목 1개에 700~900자를 요구하므로 넉넉히 잡아도 1,100토큰이면 된다.
+   OpenAI 는 max_tokens 도 분당 한도에 포함해 계산하기 때문에,
+   크게 잡아두면 교육생 키(분당 30,000토큰)가 바로 한도에 걸린다. */
+function outBudget(blockCount) {
+  const n = Math.max(1, Number(blockCount) || 1);
+  return Math.min(6000, Math.max(1500, n * 900));
+}
+
 async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters }) {
   const info = sajuBlock(client, saju, partner, partnerSaju, type);
   const subs = chapter.sub || [];
@@ -1209,7 +1222,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     user,
     openaiKey,
     model,
-    maxTokens: 6000,
+    maxTokens: outBudget(subs.length),
   });
 
   let blocks = Array.isArray(out.blocks) ? out.blocks : [];
@@ -1224,7 +1237,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
       user: user + '\n\n⚠️ 반드시 blocks 배열의 각 항목에 sub(소제목)와 body(본문 700~900자)를 모두 채워 JSON으로만 답하세요. body를 비우지 마세요.',
       openaiKey,
       model,
-      maxTokens: 6000,
+      maxTokens: outBudget(subs.length),
     });
     const retry = Array.isArray(out.blocks) ? out.blocks : [];
     if (retry.length && hasBody(retry)) blocks = retry;
@@ -1337,7 +1350,7 @@ ${probs.join('\n')}
 ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}`,
         openaiKey,
         model,
-        maxTokens: 6000,
+        maxTokens: outBudget(badIdx.length),
       });
       const fixed = Array.isArray(fix.blocks) ? fix.blocks : [];
       if (!fixed.length) break;
@@ -1402,6 +1415,10 @@ function tidyName(body, name) {
  */
 const CONCURRENCY = 2;   // 동시에 굴릴 챕터 수 (올릴수록 빠르지만 OpenAI 레이트리밋에 걸린다)
 
+/* 교육생 키는 분당 한도가 낮다(보통 30,000토큰).
+   한 번이라도 429 를 만나면 이 리포트는 한 번에 하나씩 만든다. */
+let rateLimited = false;
+
 async function generatePdfReport({ type, client, saju, partner, partnerSaju, openaiKey, model, onProgress }) {
   // 내담자가 질문을 남겼으면 '질문 답변' 챕터를 마지막 조언 앞에 끼워 넣는다
   const chapters = outlineWithQuestion(type, client.question);
@@ -1432,8 +1449,10 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
       } catch (e) {
         // 한 챕터가 실패해도 포기하지 않고 한 번 더 시도한다.
         //   (실패한 채로 두면 "소제목만 있고 내용 없는 장"이 리포트에 남는다)
-        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패 — 다시 시도합니다:`, e.message);
-        await sleep(3000);
+        // 분당 한도에 걸린 것이면 3초로는 안 풀린다. 한도는 1분 단위로 회복된다.
+        const isRate = /429|rate limit|사용량/i.test(e.message || '');
+        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패 — ${isRate ? 65 : 3}초 후 다시 시도합니다:`, e.message);
+        await sleep(isRate ? 65000 : 3000);
         try {
           out[i] = await generateChapter(args);
         } catch (e2) {
@@ -1448,7 +1467,7 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
   }
 
   await Promise.all(
-    Array.from({ length: Math.min(CONCURRENCY, chapters.length) }, worker)
+    Array.from({ length: Math.min(rateLimited ? 1 : CONCURRENCY, chapters.length) }, worker)
   );
 
   if (onProgress) onProgress(chapters.length, chapters.length, '완료');
