@@ -74,6 +74,7 @@ function sajuOf(pdf) {
       calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
       isLeapMonth: pdf.calendar === '윤달',
       region: pdf.region || '서울특별시',
+      useLocalSolarTime: pdf.use_local_time !== false,
       gender: pdf.gender,
     });
   } catch (e) {
@@ -87,7 +88,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     await ensureOrigColumn();
 
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.memo
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -315,7 +316,7 @@ async function downloadWithCover(req, res) {
 
     const { rows } = await pool.query(
       `SELECT p.id, p.type, p.sections, p.extra,
-              l.name, l.birth, l.hour, l.calendar, l.region, l.gender
+              l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]

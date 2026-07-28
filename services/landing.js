@@ -524,6 +524,7 @@ function renderBlock(b, ctx) {
         <div class="tip">가족관계증명서·아기수첩의 <b>출생 시각 그대로</b> 넣어주세요.<br>
         밤 11시 30분 이후 출생은 사주에서 <b>다음 날</b>로 넘어갑니다. 분 단위까지 정확해야 풀이가 맞습니다.</div></div>`;
       if (u.region) f += `<div class="g"><span class="lb">태어난 지역</span><select name="region">${REGIONS.map((r) => `<option${r === '서울특별시' ? ' selected' : ''}>${r}</option>`).join('')}</select></div>`;
+      f += `<div class="g"><label class="ag"><input type="checkbox" name="useLocalSolarTime" value="on" checked><span>지역시(진태양시) 보정 적용<br><small>잘 모르시면 그대로 두세요. 체크를 풀면 시계 시각 그대로 봅니다.</small></span></label><input type="hidden" name="localTimeSent" value="1"></div>`;
       if (u.phone) f += `<div class="g"><span class="lb">연락처<i>*</i></span>
         <input name="phone" type="tel" inputmode="numeric" placeholder="010-0000-0000"
                pattern="01[016789][-.]?[0-9]{3,4}[-.]?[0-9]{4}" required>

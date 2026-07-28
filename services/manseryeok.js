@@ -145,6 +145,8 @@ function calcSaju(o) {
   const birthTime = o.birthTime;
   const calendar = o.calendar || '양력';
   const region = o.region || '서울';
+  // 지역을 실제로 입력했는지. 미입력이면 서울(-32분)로 계산되므로 화면에서 경고를 띄운다.
+  const regionProvided = !!(o.region && String(o.region).trim());
   const isLeapMonth = !!o.isLeapMonth;
   const dayChangeMode = o.dayChangeMode || 'lateZiNextDay';
   const gender = o.gender || null;
@@ -284,6 +286,27 @@ function calcSaju(o) {
     } catch (e) { /* 실패해도 나머지는 정상 반환 */ }
   }
 
+  /* 지역시를 켜고 끌 때 사주가 실제로 갈리는 경계 케이스인지 확인한다.
+   * 예) 서울 09:31 → 지역시 적용 시 08:59(진시), 미적용 시 09:31(사시)
+   * 반대 설정으로 한 번 더 계산해서 비교만 하고, 기존 반환값은 건드리지 않는다.
+   * _skipAlt 로 무한 재귀를 막는다. */
+  let toggleEffect = null;
+  if (timeKnown && !o._skipAlt) {
+    try {
+      const alt = calcSaju(Object.assign({}, o, {
+        useLocalSolarTime: !useLocalSolarTime,
+        gender: null,       // 대운 계산 생략 (비교에 불필요)
+        _skipAlt: true,
+      }));
+      toggleEffect = {
+        changed: alt.pillars.hour !== hourP || alt.pillars.day !== dayP,
+        altHourKo: toKo(alt.pillars.hour),
+        altDayKo: toKo(alt.pillars.day),
+        altTime: alt.timeCorrection.correctedTime,
+      };
+    } catch (e) { toggleEffect = null; }
+  }
+
   return {
     pillars: { year: yearP, month: monthP, day: dayP, hour: hourP },
     pillarsKo: { year: toKo(yearP), month: toKo(monthP), day: toKo(dayP), hour: toKo(hourP) },
@@ -322,6 +345,9 @@ function calcSaju(o) {
       correctionMinutes: correction,
       notes: notes,
       region: region,
+      useLocalSolarTime: useLocalSolarTime,  // 이번 계산에 지역시를 썼는지
+      regionProvided: regionProvided,        // false면 서울 기준으로 자동 계산된 것
+      toggleEffect: toggleEffect,            // 켜고 끌 때 사주가 갈리는지
     },
     solarDate: dateStr,
   };

@@ -15,7 +15,7 @@ const AUTH = [requireAuth, requireApproved];
 async function roomList(teacherId) {
   const { rows } = await pool.query(
     `SELECT p.id, p.type, p.created_at, p.mail_sent,
-            l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.gender,
+            l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender,
             (SELECT COUNT(*)::int FROM chat_qa c WHERE c.pdf_id = p.id) AS qa_count,
             (SELECT MAX(created_at) FROM chat_qa c WHERE c.pdf_id = p.id) AS last_at
      FROM pdfs p
@@ -75,7 +75,7 @@ router.post('/api/chat/:pdfId/ask', AUTH, async (req, res) => {
 
     // 내 리포트인지 확인 (다른 교육생 것 접근 차단)
     const { rows } = await pool.query(
-      `SELECT p.id, p.sections, l.name, l.birth, l.hour, l.calendar, l.region, l.gender
+      `SELECT p.id, p.sections, l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.pdfId, req.user.id]
@@ -98,6 +98,7 @@ router.post('/api/chat/:pdfId/ask', AUTH, async (req, res) => {
       calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
       isLeapMonth: pdf.calendar === '윤달',
       region: pdf.region || '서울특별시',
+      useLocalSolarTime: pdf.use_local_time !== false,
       gender: pdf.gender,
     });
 

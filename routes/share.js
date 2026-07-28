@@ -35,7 +35,7 @@ async function loadReport(token) {
   const { rows } = await pool.query(
     `SELECT p.id, p.type, p.sections, p.extra, p.teacher_id,
             p.sent_sections, p.sent_meta,
-            l.name, l.birth, l.hour, l.calendar, l.region, l.gender,
+            l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
             u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice,
             u.cover_set, u.bg_paper
@@ -65,6 +65,7 @@ async function loadReport(token) {
       calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
       isLeapMonth: pdf.calendar === '윤달',
       region: pdf.region || '서울특별시',
+      useLocalSolarTime: pdf.use_local_time !== false,
       gender: pdf.gender,
     });
   } catch (e) { /* 만세력 실패해도 본문은 보여준다 */ }

@@ -120,6 +120,12 @@ async function initDb() {
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_birth TEXT;`);
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_hour TEXT;`);
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_calendar TEXT;`);
+  // 궁합 상대방 출생지 (비어 있으면 종전대로 서울 기준으로 계산)
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS partner_region TEXT;`);
+
+  // 지역시(진태양시) 보정 사용 여부.
+  // 기본 TRUE = 종전 동작 그대로. 체크를 풀면 표준시(시계 시각) 그대로 계산한다.
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS use_local_time BOOLEAN DEFAULT TRUE;`);
 
   // 제작한 PDF (내담자별)
   await pool.query(`

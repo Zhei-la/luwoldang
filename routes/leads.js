@@ -3,6 +3,18 @@ const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
+
+/* 지역시(진태양시) 보정 사용 여부를 폼 본문에서 읽는다.
+ * 체크박스는 체크됐을 때만 값이 오므로, 체크박스가 달린 폼은 hidden 으로
+ * localTimeSent=1 을 함께 보낸다. 그 표식이 없으면 구버전 폼이나 외부 요청이므로
+ * 종전 동작(지역시 적용)을 그대로 유지한다. */
+function localTimeFlag(b) {
+  b = b || {};
+  if (b.use_local_time === false || b.use_local_time === true) return b.use_local_time;
+  if (!b.localTimeSent) return true;
+  return b.useLocalSolarTime === 'on' || b.useLocalSolarTime === true;
+}
+
 const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL, rewriteBlock } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
@@ -81,6 +93,7 @@ router.get('/leads/:id', async (req, res, next) => {
         calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
         isLeapMonth: lead.calendar === '윤달',
         region: lead.region || '서울특별시',
+        useLocalSolarTime: lead.use_local_time !== false,
         gender: lead.gender,
       });
     } catch (e) { /* 생년월일 형식 문제 시 무시 */ }
@@ -116,10 +129,11 @@ router.post('/leads/:id/edit', async (req, res) => {
     const { rowCount } = await pool.query(
       `UPDATE leads
           SET name = $1, gender = $2, birth = $3, calendar = $4,
-              hour = $5, region = $6, email = $7, phone = $8
+              hour = $5, region = $6, email = $7, phone = $8,
+              partner_region = COALESCE($11, partner_region)
         WHERE id = $9 AND teacher_id = $10`,
       [name, t(b.gender), t(b.birth), t(b.calendar), t(b.hour), t(b.region),
-       email || null, t(b.phone), req.params.id, req.user.id]
+       email || null, t(b.phone), req.params.id, req.user.id, t(b.partnerRegion)]
     );
     if (!rowCount) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
 
@@ -127,6 +141,24 @@ router.post('/leads/:id/edit', async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('[신청자] 수정 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ===== 지역시(진태양시) 보정 On/Off =====
+   이미 접수된 건도 나중에 바꿀 수 있다. 바꾸면 이후 생성되는 리포트·
+   공유링크·미리보기가 모두 같은 기준으로 계산된다. */
+router.post('/leads/:id/localtime', async (req, res) => {
+  try {
+    const on = req.body && (req.body.on === true || req.body.on === 'true' || req.body.on === 'on');
+    const { rowCount } = await pool.query(
+      'UPDATE leads SET use_local_time = $1 WHERE id = $2 AND teacher_id = $3',
+      [on, req.params.id, req.user.id]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+    console.log('[신청자] 지역시 보정:', req.params.id, on ? 'ON' : 'OFF');
+    res.json({ ok: true, on: on });
+  } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
@@ -283,6 +315,7 @@ async function runPdfJob({ jobId, lead, type, user }) {
     calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
     isLeapMonth: lead.calendar === '윤달',
     region: lead.region || '서울특별시',
+    useLocalSolarTime: lead.use_local_time !== false,
     gender: lead.gender,
   });
 
@@ -302,7 +335,8 @@ async function runPdfJob({ jobId, lead, type, user }) {
         birthTime: parseHour(lead.partner_hour),
         calendar: lead.partner_calendar === '윤달' ? '음력' : (lead.partner_calendar || '양력'),
         isLeapMonth: lead.partner_calendar === '윤달',
-        region: '서울특별시',
+        region: lead.partner_region || '서울특별시',
+        useLocalSolarTime: lead.use_local_time !== false,
         gender: lead.partner_gender,
       });
       partner = {
@@ -393,6 +427,7 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
       isLeapMonth: lead.calendar === '윤달',
       region: lead.region || '서울특별시',
+      useLocalSolarTime: lead.use_local_time !== false,
       gender: lead.gender,
     });
 
@@ -413,7 +448,8 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
           birthTime: parseHour(lead.partner_hour),
           calendar: lead.partner_calendar === '윤달' ? '음력' : (lead.partner_calendar || '양력'),
           isLeapMonth: lead.partner_calendar === '윤달',
-          region: '서울특별시',
+          region: lead.partner_region || '서울특별시',
+          useLocalSolarTime: lead.use_local_time !== false,
           gender: lead.partner_gender,
         });
         partner = {
@@ -475,7 +511,7 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
 router.post('/pdfs/:id/send', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -494,6 +530,7 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
         calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
         isLeapMonth: pdf.calendar === '윤달',
         region: pdf.region || '서울특별시',
+        useLocalSolarTime: pdf.use_local_time !== false,
         gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
@@ -624,7 +661,7 @@ router.post('/pdfs/:id/apply-to-sent', async (req, res) => {
 router.get('/pdfs/:id/preview', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.memo
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -650,6 +687,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
         calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
         isLeapMonth: pdf.calendar === '윤달',
         region: pdf.region || '서울특별시',
+        useLocalSolarTime: pdf.use_local_time !== false,
         gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
@@ -1092,15 +1130,18 @@ router.post('/pdf/create', async (req, res, next) => {
 
     const lead = await pool.query(
       `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source,
-                          partner_name, partner_gender, partner_birth, partner_hour, partner_calendar)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력',$11,$12,$13,$14,$15) RETURNING id`,
+                          partner_name, partner_gender, partner_birth, partner_hour, partner_calendar,
+                          partner_region, use_local_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'제작 대기','직접 입력',$11,$12,$13,$14,$15,$16,$17) RETURNING id`,
       [req.user.id, b.name, b.gender || null, b.birthDate, b.calendar || '양력',
        b.timeUnknown ? null : (b.birthTime || null), b.region || '서울특별시',
        (b.email || '').trim() || null, (b.phone || '').trim() || null, (b.memo || '').trim() || null,
        (b.partnerName || '').trim() || null, b.partnerGender || null,
        (b.partnerBirth || '').trim() || null,
        b.partnerTimeUnknown ? null : ((b.partnerTime || '').trim() || null),
-       b.partnerCalendar || null]
+       b.partnerCalendar || null,
+       (b.partnerRegion || '').trim() || null,
+       localTimeFlag(b)]
     );
 
     res.redirect('/leads/' + lead.rows[0].id);
@@ -1156,7 +1197,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
 
     // 내 리포트인지 + 같은 신청자 것인지 확인
     const { rows } = await pool.query(
-      `SELECT p.id, p.type, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.gender
+      `SELECT p.id, p.type, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = ANY($1) AND p.teacher_id = $2 AND p.lead_id = $3
        ORDER BY p.created_at ASC`,
@@ -1176,6 +1217,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
         calendar: lead.calendar === '윤달' ? '음력' : (lead.calendar || '양력'),
         isLeapMonth: lead.calendar === '윤달',
         region: lead.region || '서울특별시',
+        useLocalSolarTime: lead.use_local_time !== false,
         gender: lead.gender,
       });
     } catch (e) { /* 만세력 실패해도 메일은 나간다 */ }
@@ -1215,7 +1257,7 @@ async function downloadPdf(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT p.id, p.type, p.sections, p.extra,
-              l.name, l.birth, l.hour, l.calendar, l.region, l.gender
+              l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -1240,6 +1282,7 @@ async function downloadPdf(req, res) {
         calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
         isLeapMonth: pdf.calendar === '윤달',
         region: pdf.region || '서울특별시',
+        useLocalSolarTime: pdf.use_local_time !== false,
         gender: pdf.gender,
       });
     } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
@@ -1282,7 +1325,7 @@ router.post('/pdfs/:id/rewrite', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT p.type, l.name, l.birth, l.hour, l.calendar, l.region, l.gender, l.memo
+      `SELECT p.type, l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -1306,6 +1349,7 @@ router.post('/pdfs/:id/rewrite', async (req, res) => {
       calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
       isLeapMonth: pdf.calendar === '윤달',
       region: pdf.region || '서울특별시',
+      useLocalSolarTime: pdf.use_local_time !== false,
       gender: pdf.gender,
     });
 

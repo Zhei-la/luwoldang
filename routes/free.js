@@ -3,6 +3,18 @@ const crypto = require('crypto');
 const router = express.Router();
 const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
+
+/* 지역시(진태양시) 보정 사용 여부를 폼 본문에서 읽는다.
+ * 체크박스는 체크됐을 때만 값이 오므로, 체크박스가 달린 폼은 hidden 으로
+ * localTimeSent=1 을 함께 보낸다. 그 표식이 없으면 구버전 폼이나 외부 요청이므로
+ * 종전 동작(지역시 적용)을 그대로 유지한다. */
+function localTimeFlag(b) {
+  b = b || {};
+  if (b.use_local_time === false || b.use_local_time === true) return b.use_local_time;
+  if (!b.localTimeSent) return true;
+  return b.useLocalSolarTime === 'on' || b.useLocalSolarTime === true;
+}
+
 const { generateFreeSaju, UPSELL } = require('../services/ai');
 const { renderLanding, defaultLanding } = require('../services/landing');
 const { sendFreeSaju } = require('../services/mail');
@@ -123,15 +135,18 @@ router.post('/s/:slug/apply', async (req, res, next) => {
     const birth = [b.year, b.month, b.day].filter(Boolean).join('-');
     await pool.query(
       `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, phone, email, product, memo,
-                          partner_name, partner_gender, partner_birth, partner_hour, partner_calendar)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+                          partner_name, partner_gender, partner_birth, partner_hour, partner_calendar,
+                          partner_region, use_local_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
       [teacher.id, b.name, b.gender || null, birth || null, b.cal || null, b.hour || null,
        b.region || null, b.phone, b.email || null, b.product || null, b.memo || null,
        (b.partner_name || '').trim() || null,
        b.partner_gender || null,
        (b.partner_birth || '').trim() || null,
        (b.partner_hour || '').trim() || null,
-       (b.partner_birth || '').trim() ? (b.partner_calendar || '양력') : null]
+       (b.partner_birth || '').trim() ? (b.partner_calendar || '양력') : null,
+       (b.partner_region || '').trim() || null,
+       localTimeFlag(b)]
     );
 
     // 교육생에게 알림 (실패해도 신청은 정상 처리)
@@ -197,6 +212,8 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
       birthTime: timeUnknown ? null : (birthTime || null),
       calendar: calendar || '양력',
       region: region || '서울특별시',
+      // 지역시(진태양시) 보정 사용 여부
+      useLocalSolarTime: localTimeFlag(req.body),
     };
 
     let saju;
@@ -207,6 +224,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
         calendar: client.calendar === '윤달' ? '음력' : client.calendar,
         isLeapMonth: client.calendar === '윤달',
         region: client.region,
+        useLocalSolarTime: client.useLocalSolarTime !== false,
         gender: client.gender,
       });
     } catch (e) {
@@ -228,10 +246,10 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     // 무료사주 본 사람도 신청자 목록에 기록 (source = 무료사주)
     const lead = await pool.query(
-      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, status, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'무료사주 조회','무료사주') RETURNING id`,
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, status, source, use_local_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'무료사주 조회','무료사주',$8) RETURNING id`,
       [teacher.id, client.name, client.gender, client.birthDate, client.calendar,
-       client.birthTime || null, client.region]
+       client.birthTime || null, client.region, client.useLocalSolarTime !== false]
     );
     const leadId = lead.rows[0].id;
 
@@ -308,6 +326,7 @@ router.get('/free/:logId/pdf', async (req, res, next) => {
         calendar: client.calendar === '윤달' ? '음력' : (client.calendar || '양력'),
         isLeapMonth: client.calendar === '윤달',
         region: client.region || '서울특별시',
+        useLocalSolarTime: client.useLocalSolarTime !== false,
         gender: client.gender,
       });
     } catch (e) { /* 만세력 실패해도 본문은 나가게 */ }
@@ -357,6 +376,7 @@ async function loadFree(token) {
       calendar: client.calendar === '윤달' ? '음력' : (client.calendar || '양력'),
       isLeapMonth: client.calendar === '윤달',
       region: client.region || '서울특별시',
+      useLocalSolarTime: client.useLocalSolarTime !== false,
       gender: client.gender,
     });
   } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }

@@ -48,6 +48,13 @@
           <% }); %>
         </select>
         <p class="hint-sm">지역에 따라 실제 태어난 시각(진태양시)이 보정됩니다.</p>
+        <label class="chk" style="margin-top:6px">
+          <input type="checkbox" name="useLocalSolarTime" value="on" <%= (typeof form.useLocalSolarTime === 'undefined' || form.useLocalSolarTime) ? 'checked' : '' %>>
+          지역시(진태양시) 보정 적용
+        </label>
+        <input type="hidden" name="localTimeSent" value="1">
+        <p class="hint-sm">체크를 풀면 시계 시각 그대로 계산합니다. 태어난 시각이 정시 근처면 시주가 달라질 수 있습니다.</p>
+
 
         <label class="chk agree"><input type="checkbox" name="agree" value="1" required> 개인정보 수집 및 이용에 동의합니다.</label>
 
