@@ -142,17 +142,111 @@
 #manse-app .saved-side { max-width: none; }
 }
 
-/* 대시보드 안에 들어왔으니 바깥 여백은 줄인다 */
 #manse-app { margin: 0 auto; background: transparent; }
+
+/* ══════════════════════════════════════════════════════
+ * 루월당 대시보드용 레이아웃 조정
+ *   PC   : 왼쪽 입력폼(고정폭) | 오른쪽 결과(남는 폭 전부)
+ *   모바일: 위 입력폼 → 아래 결과 (세로로 쌓임)
+ *   저장된 사주는 오른쪽 위 버튼을 누르면 열리는 서랍으로
+ * ══════════════════════════════════════════════════════ */
+
+#manse-app { max-width: 100%; padding: 0; }
+
+/* ── 상단 바 ── */
+#manse-app .top-bar { flex-wrap: wrap; gap: 8px; margin-bottom: 2px; }
+#manse-app .top-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+#manse-app .top-bar h1 { font-size: 20px; }
+#manse-app .desc { margin-bottom: 10px; }
+
+/* ── 저장된 사주 서랍 ── */
+#manse-app .saved-wrap { position: relative; }
+#manse-app .saved-pop {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
+  width: 300px; max-height: 60vh; background: #fff; border: 1px solid #ddd;
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  padding: 12px; flex-direction: column;
+}
+#manse-app .saved-pop.open { display: flex; }
+#manse-app .saved-pop .saved-search-input { width: 100%; margin-bottom: 8px; }
+#manse-app .saved-pop .saved-list { flex: 1 1 auto; overflow-y: auto; min-height: 60px; max-height: 40vh; }
+
+/* ── 2단 배치 ── */
+#manse-app .layout { display: flex; gap: 18px; align-items: flex-start; flex-wrap: nowrap; }
+#manse-app .form-panel { flex: 0 0 430px; min-width: 0; width: 430px; }
+#manse-app .result-col { flex: 1 1 auto; min-width: 0; }
+
+/* 왼쪽 폼을 세로로 — 한 줄에 하나씩 쌓아 좁은 폭에서도 안 깨지게 */
+#manse-app .form-panel .row { gap: 8px; }
+#manse-app .form-panel .field { flex: 1 1 120px; min-width: 0; }
+#manse-app .form-panel input,
+#manse-app .form-panel select,
+#manse-app .form-panel textarea { width: 100%; min-width: 0; }
+/* 원본이 픽셀로 못박아둔 폭을 푼다 (좁은 칸에서 삐져나감) */
+#manse-app .form-panel #name, #manse-app .form-panel #gender, #manse-app .form-panel #birth,
+#manse-app .form-panel #calendar, #manse-app .form-panel #leap, #manse-app .form-panel #time,
+#manse-app .form-panel #seyunRange, #manse-app .form-panel #wolunRange,
+#manse-app .form-panel #loveStatus, #manse-app .form-panel #ganjiSelect,
+#manse-app .form-panel .region-search-input,
+#manse-app .form-panel .region-manual-input { width: 100%; }
+#manse-app .form-panel .actions button { flex: 1 1 auto; }
+
+/* ── 결과 칸 ── */
+#manse-app .result-toolbar { margin-top: 0; flex-wrap: wrap; }
+#manse-app #result { margin-top: 0; }
+#manse-app .result-box, #manse-app .pdf-view { max-height: none; }
+/* 표가 넘칠 때 세로 스크롤 대신 가로 스크롤 */
+#manse-app .pdf-view, #manse-app .result-box { overflow-x: auto; }
+
+/* ══════════ 모바일 ══════════ */
+@media (max-width: 900px) {
+  #manse-app .layout { flex-wrap: wrap; gap: 14px; }
+  #manse-app .form-panel { flex: 1 1 100%; width: 100%; }
+  #manse-app .result-col { flex: 1 1 100%; }
+
+  /* 손가락으로 누르기 편하게 */
+  #manse-app input, #manse-app select, #manse-app textarea {
+    font-size: 16px;      /* 16px 미만이면 아이폰이 화면을 확대해버린다 */
+    padding: 10px;
+  }
+  #manse-app .actions { gap: 8px; }
+  #manse-app .actions button { flex: 1 1 calc(50% - 4px); padding: 12px 10px; font-size: 14px; }
+  #manse-app .result-toolbar button { flex: 1 1 calc(50% - 5px); padding: 11px 8px; }
+  #manse-app .hangul-toggle { flex: 1 1 100%; margin-left: 0; justify-content: flex-start; }
+
+  #manse-app .top-bar h1 { font-size: 18px; }
+  #manse-app .saved-pop { width: min(320px, calc(100vw - 40px)); }
+
+  /* 명식 표는 폭이 좁으면 가로로 밀어서 본다 */
+  #manse-app .pdf-table { font-size: 12px; }
+  #manse-app .pdf-big { font-size: 22px; }
+  #manse-app .color-tile { width: 42px; height: 42px; font-size: 24px; }
+}
+
+@media (max-width: 520px) {
+  #manse-app .form-panel .field { flex: 1 1 100%; }
+  #manse-app .actions button { flex: 1 1 100%; }
+}
+
 </style>
 
 <div id="manse-app">
 
   <div class="top-bar">
     <h1>사주 명식 엔진</h1>
-    <button type="button" id="refreshBtn">새로고침</button>
+    <div class="top-actions">
+      <div class="saved-wrap">
+        <button type="button" id="savedToggle" class="secondary">저장된 사주</button>
+        <div class="saved-pop" id="savedPop">
+          <input type="text" id="savedSearch" class="saved-search-input" placeholder="이름 검색">
+          <div class="saved-list" id="savedList"></div>
+          <div class="saved-pagination" id="savedPagination"></div>
+        </div>
+      </div>
+      <button type="button" id="refreshBtn">새로고침</button>
+    </div>
   </div>
-  <p class="desc">이름·성별·생일·달력·윤달·생시를 입력하고 버튼을 눌러 명식표를 생성합니다.</p>
+  <p class="desc">왼쪽에 입력하고 버튼을 누르면 오른쪽에 명식이 나옵니다.</p>
 
   <div class="mode-tabs">
     <button type="button" class="mode-tab-btn active" id="modeIndividual">개인 사주</button>
@@ -453,14 +547,7 @@
   </form>
   </div>
 
-  <aside class="saved-side">
-    <h2 class="saved-side-title">저장된 사주</h2>
-    <input type="text" id="savedSearch" class="saved-search-input" placeholder="이름 검색">
-    <div class="saved-list" id="savedList"></div>
-    <div class="saved-pagination" id="savedPagination"></div>
-  </aside>
-  </div>
-
+  <div class="result-col">
   <div class="result-toolbar">
     <button type="button" class="secondary" id="copyBtnTop" disabled>복사하기</button>
     <button type="button" class="secondary" id="downloadBtn" disabled>텍스트 파일 저장</button>
@@ -473,7 +560,65 @@
   </div>
 
   <div id="result"></div>
+  </div><!-- /result-col -->
+  </div><!-- /layout -->
 
+<script>
+/* ── 저장 기능 대체 ──
+ * 원본 프로그램은 서버 폴더에 json 파일로 저장했다.
+ * Railway는 배포할 때마다 파일이 초기화되므로 그대로 쓰면 저장한 게 사라진다.
+ * 그래서 이 브라우저에만 저장한다(localStorage). 서버·DB를 건드리지 않는다.
+ *   · 이 컴퓨터/이 브라우저에서만 보인다
+ *   · 교육생별로 키를 나눠 계정이 섞이지 않게 한다
+ * 나중에 여러 기기에서 공유하려면 DB로 옮기면 된다. */
+const MS_STORE = (function () {
+  const KEY = 'luwol_manse_saved_<%= user.id %>';
+
+  const all = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+  const put = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
+  const today = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0');
+    return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };
+
+  function nameOf(d) {
+    if (d.kind === 'gunghap') {
+      return ((d.person1 && d.person1.name) || '본인') + '_' + ((d.person2 && d.person2.name) || '상대') + '_궁합';
+    }
+    return d.name || '이름없음';
+  }
+
+  return {
+    list() { return { ok: true, profiles: all() }; },
+
+    save(data) {
+      const overwrite = !!data.overwrite;
+      const filename = nameOf(data) + '_' + today() + '.json';
+      const arr = all();
+      const at = arr.findIndex((x) => x.filename === filename);
+      if (at >= 0 && !overwrite) return { ok: true, needsConfirm: true, filename };
+      const row = Object.assign({}, data, { filename, savedAt: new Date().toISOString() });
+      delete row.overwrite;
+      if (at >= 0) arr[at] = row; else arr.unshift(row);
+      put(arr);
+      return { ok: true, filename };
+    },
+
+    del(filename) { put(all().filter((x) => x.filename !== filename)); return { ok: true }; },
+  };
+})();
+
+/* 저장된 사주 서랍 열고 닫기 (바깥 누르면 닫힘) */
+(function () {
+  const btn = document.getElementById('savedToggle');
+  const pop = document.getElementById('savedPop');
+  if (!btn || !pop) return;
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    pop.classList.toggle('open');
+  });
+  pop.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('click', function () { pop.classList.remove('open'); });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -1226,49 +1371,6 @@ loadSavedList();
 </div>
 
 
-<script>
-/* ── 저장 기능 대체 ──
- * 원본 프로그램은 서버 폴더에 json 파일로 저장했다.
- * Railway는 배포할 때마다 파일이 초기화되므로 그대로 쓰면 저장한 게 사라진다.
- * 그래서 이 브라우저에만 저장한다(localStorage). 서버·DB를 건드리지 않는다.
- *   · 이 컴퓨터/이 브라우저에서만 보인다
- *   · 교육생별로 키를 나눠 계정이 섞이지 않게 한다
- * 나중에 여러 기기에서 공유하려면 DB로 옮기면 된다. */
-const MS_STORE = (function () {
-  const KEY = 'luwol_manse_saved_<%= user.id %>';
-
-  const all = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
-  const put = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
-  const today = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0');
-    return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };
-
-  function nameOf(d) {
-    if (d.kind === 'gunghap') {
-      return ((d.person1 && d.person1.name) || '본인') + '_' + ((d.person2 && d.person2.name) || '상대') + '_궁합';
-    }
-    return d.name || '이름없음';
-  }
-
-  return {
-    list() { return { ok: true, profiles: all() }; },
-
-    save(data) {
-      const overwrite = !!data.overwrite;
-      const filename = nameOf(data) + '_' + today() + '.json';
-      const arr = all();
-      const at = arr.findIndex((x) => x.filename === filename);
-      if (at >= 0 && !overwrite) return { ok: true, needsConfirm: true, filename };
-      const row = Object.assign({}, data, { filename, savedAt: new Date().toISOString() });
-      delete row.overwrite;
-      if (at >= 0) arr[at] = row; else arr.unshift(row);
-      put(arr);
-      return { ok: true, filename };
-    },
-
-    del(filename) { put(all().filter((x) => x.filename !== filename)); return { ok: true }; },
-  };
-})();
-</script>
 
 
 <%- include('../partials/dash-bottom') %>
