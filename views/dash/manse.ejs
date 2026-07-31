@@ -1,0 +1,1274 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '만세력 계산기' }) %>
+
+<style>
+/* ── 만세력 계산기 전용 스타일 ──
+ * 원본 프로그램(cb_saju)의 CSS를 그대로 가져오되,
+ * 전부 #manse-app 안으로 가둬서 대시보드 디자인과 섞이지 않게 했다.
+ * (원본에 body·h1·form·input 같은 전역 선택자가 있어서 그대로 두면 대시보드가 깨진다) */
+#manse-app * { box-sizing: border-box; }
+#manse-app { font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; max-width: 1180px; margin: 40px auto; padding: 0 16px; background: #f5f5f7; color: #1d1d1f; }
+#manse-app h1 { font-size: 22px; margin-bottom: 4px; }
+#manse-app p.desc { color: #666; margin-top: 0; font-size: 14px; }
+#manse-app form { background: #fff; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+#manse-app .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+#manse-app .field { display: flex; flex-direction: column; gap: 4px; }
+#manse-app label { font-size: 12px; color: #444; font-weight: 600; white-space: nowrap; }
+#manse-app input, #manse-app select, #manse-app textarea { padding: 7px 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; font-family: inherit; }
+#manse-app #name { width: 100px; }
+#manse-app #gender { width: 72px; }
+#manse-app #birth { width: 100px; }
+#manse-app #calendar { width: 72px; }
+#manse-app #leap { width: 72px; }
+#manse-app #seyunRange { width: 80px; }
+#manse-app #wolunRange { width: 88px; }
+#manse-app #loveStatus { width: 128px; }
+#manse-app #time { width: 76px; }
+#manse-app #time:disabled { background: #eee; color: #999; }
+#manse-app #ganjiSelect { width: 220px; }
+#manse-app #ganjiSelect:disabled { background: #eee; color: #999; }
+#manse-app .field { position: relative; }
+#manse-app .region-search-input { width: 170px; }
+#manse-app .region-manual-input { width: 110px; }
+#manse-app .region-search-input.warn { border-color: #d9a300; background: #fffbe8; }
+#manse-app .region-warning { display: none; font-size: 11px; color: #a66a00; }
+#manse-app .region-warning.show { display: block; }
+#manse-app .region-suggest { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 200px; max-height: 220px; overflow-y: auto; z-index: 20; }
+#manse-app .region-suggest.open { display: block; }
+#manse-app .region-suggest-row { padding: 7px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+#manse-app .region-suggest-row:last-child { border-bottom: none; }
+#manse-app .region-suggest-row:hover { background: #f5f5f7; }
+#manse-app .or-field { flex-direction: row; align-items: center; padding-bottom: 8px; }
+#manse-app .or-field .or-text { font-size: 13px; color: #888; white-space: nowrap; }
+#manse-app .checkbox-field { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 8px; }
+#manse-app .checkbox-field label { white-space: nowrap; }
+#manse-app textarea { resize: vertical; min-height: 70px; width: 100%; }
+#manse-app .concern-field { margin-top: 12px; }
+#manse-app .actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+#manse-app button { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: #fff; }
+#manse-app button.btn-jeong { background: #0071e3; }
+#manse-app button.btn-jeong:hover { background: #0060c0; }
+#manse-app button.btn-ya { background: #d92d20; }
+#manse-app button.btn-ya:hover { background: #b7241a; }
+#manse-app button.secondary { background: #6e6e73; }
+#manse-app button.secondary:hover { background: #57575c; }
+#manse-app button:disabled { background: #c7c7cc; cursor: not-allowed; }
+#manse-app button:disabled:hover { background: #c7c7cc; }
+#manse-app .result-toolbar { display: flex; gap: 10px; margin-top: 24px; }
+#manse-app .result-bottom-actions { margin-top: 18px; padding-top: 14px; border-top: 1px solid #333; display: flex; }
+#manse-app .form-error { color: #c00; font-weight: 600; font-size: 13px; margin-top: 8px; }
+#manse-app .layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+#manse-app .form-panel { flex: 1 1 620px; min-width: 480px; }
+#manse-app .form-panel form:last-child { margin-bottom: 0; }
+#manse-app .saved-side { flex: 1 1 280px; min-width: 260px; max-width: 340px; background: #fff; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; flex-direction: column; max-height: 720px; }
+#manse-app .saved-side-title { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
+#manse-app .saved-search-input { width: 100%; margin-bottom: 10px; }
+#manse-app .saved-list { flex: 1 1 auto; overflow-y: auto; min-height: 80px; }
+#manse-app .saved-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 6px; border-bottom: 1px solid #f0f0f0; border-radius: 6px; cursor: pointer; }
+#manse-app .saved-item:last-child { border-bottom: none; }
+#manse-app .saved-item:hover { background: #f5f5f7; }
+#manse-app .saved-item-label { font-size: 13px; line-height: 1.4; }
+#manse-app .saved-item-delete { background: none; border: none; color: #999; font-size: 15px; padding: 4px 7px; cursor: pointer; border-radius: 6px; flex-shrink: 0; }
+#manse-app .saved-item-delete:hover { color: #c00; background: #fdeceb; }
+#manse-app .saved-empty { padding: 16px 4px; font-size: 13px; color: #888; text-align: center; }
+#manse-app .saved-pagination { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+#manse-app .saved-page-btn { padding: 5px 10px; border: 1px solid #ccc; background: #fff; color: #444; border-radius: 6px; font-size: 12px; cursor: pointer; }
+#manse-app .saved-page-btn.active { background: #0071e3; color: #fff; border-color: #0071e3; }
+#manse-app .saved-page-btn:disabled { opacity: .4; cursor: not-allowed; }
+#manse-app .result-box { background: #111; color: #eee; padding: 20px; border-radius: 12px; font-size: 13.5px; line-height: 1.6; margin-top: 12px; }
+#manse-app pre { white-space: pre-wrap; word-break: break-word; margin: 0; color: #eee; font-size: 13.5px; line-height: 1.6; font-family: inherit; }
+#manse-app .error { color: #c00; font-weight: 600; }
+#manse-app .result-tabs { display: flex; gap: 6px; margin-top: 24px; }
+#manse-app .tab-btn { padding: 8px 16px; border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0; background: #e4e4e7; color: #444; font-size: 13px; cursor: pointer; }
+#manse-app .tab-btn.active { background: #fff; color: #111; font-weight: 700; }
+#manse-app .result-box, #manse-app .pdf-view { margin-top: 0; border-radius: 0 12px 12px 12px; }
+#manse-app .pdf-view { display: none; }
+#manse-app .pdf-card { background: #fff; color: #000; padding: 20px; border-radius: 0 12px 12px 12px; border: 1px solid #ccc; font-family: 'Malgun Gothic', sans-serif; margin-bottom: 16px; }
+#manse-app .pdf-card:last-child { margin-bottom: 0; }
+#manse-app .pdf-header { padding: 0 2px 12px; margin-bottom: 14px; border-bottom: 1px solid #e4e4e7; }
+#manse-app .pdf-header-name { font-size: 19px; font-weight: 700; color: #000; }
+#manse-app .pdf-header-info { font-size: 12px; color: #666; margin-top: 3px; }
+#manse-app .pdf-card-a { background: #f0f6ff; }
+#manse-app .pdf-card-a .pdf-header-name { color: #1d4ed8; }
+#manse-app .pdf-card-a .pdf-header { border-bottom-color: #c9dcfb; }
+#manse-app .pdf-card-b { background: #fff4f0; }
+#manse-app .pdf-card-b .pdf-header-name { color: #c2410c; }
+#manse-app .pdf-card-b .pdf-header { border-bottom-color: #f7d9cc; }
+#manse-app .pdf-table { border-collapse: collapse; width: 100%; margin-bottom: 22px; font-size: 13px; border: 1.5px solid #333; font-family: 'Malgun Gothic', sans-serif; }
+#manse-app .pdf-table caption { caption-side: top; text-align: left; font-weight: 700; font-size: 14px; margin-bottom: 6px; color: #000; }
+#manse-app .pdf-table th, #manse-app .pdf-table td { border: 0.5px solid #ccc; padding: 8px 10px; text-align: center; color: #000; background: #fff; }
+#manse-app .pdf-table thead th { background: #f2f2f2; font-weight: 700; }
+#manse-app .pdf-wonguk-label { background: #f2f2f2; font-weight: 700; text-align: left; white-space: nowrap; width: 1%; }
+#manse-app .pdf-wonguk thead th:nth-child(3), #manse-app .pdf-wonguk tbody td:nth-child(3) { background: #fffbe8; }
+#manse-app .pdf-big { font-size: 27px; font-weight: 700; }
+#manse-app .pdf-hanja-main { line-height: 1.2; }
+#manse-app .pdf-hanja-sub { font-size: 13px; font-weight: 400; color: #888; line-height: 1.3; margin-top: 2px; }
+#manse-app .hide-hangul-sub .pdf-hanja-sub { display: none; }
+#manse-app .hangul-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #444; margin-left: auto; cursor: pointer; user-select: none; }
+#manse-app .color-tile { width: 52px; height: 52px; margin: 0 auto; border-radius: 4px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; }
+#manse-app .tile-mok { background: #2e9e4f; color: #fff; }
+#manse-app .tile-hwa { background: #d23c3c; color: #fff; }
+#manse-app .tile-to { background: #e0a92e; color: #fff; }
+#manse-app .tile-geum { background: #fff; color: #333; border-width: 2px; }
+#manse-app .tile-su { background: #3a3a3a; color: #fff; }
+#manse-app .pdf-jijanggan-cell div { line-height: 1.5; }
+#manse-app .pdf-jijanggan-cell div:not(:last-child) { border-bottom: 1px dashed #ccc; padding-bottom: 2px; margin-bottom: 2px; }
+#manse-app tr.pdf-current td { background: #fff2b8; font-weight: 700; }
+#manse-app .pdf-sgy td { text-align: left; }
+#manse-app .pdf-gunghap td { text-align: left; }
+#manse-app .pdf-gunghap td div:not(:last-child) { margin-bottom: 3px; }
+#manse-app .gunghap-relation-label { font-weight: 700; font-size: 16px; margin-bottom: 10px; color: #000; }
+#manse-app .gunghap-person-label { font-weight: 700; font-size: 15px; margin: 18px 0 6px; color: #000; }
+#manse-app .el-mok { color: #2e7d32; }
+#manse-app .el-hwa { color: #c62828; }
+#manse-app .el-to { color: #a06a00; }
+#manse-app .el-geum { color: #757575; }
+#manse-app .el-su { color: #1a237e; }
+#manse-app .pdf-gwiin { color: #1565c0; }
+#manse-app .pdf-sal { color: #b71c1c; }
+#manse-app .pdf-gongmang { color: #000; font-weight: 700; }
+#manse-app .top-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#manse-app #refreshBtn { background: #fff; color: #333; border: 1px solid #ccc; padding: 7px 14px; font-size: 13px; }
+#manse-app #refreshBtn:hover { background: #f2f2f2; }
+#manse-app .mode-tabs { display: flex; gap: 8px; margin: 14px 0; }
+#manse-app .mode-tab-btn { padding: 8px 18px; border: 1px solid #ccc; border-radius: 8px; background: #fff; color: #444; font-size: 14px; font-weight: 600; cursor: pointer; }
+#manse-app .mode-tab-btn.active { background: #0071e3; color: #fff; border-color: #0071e3; }
+#manse-app .gunghap-person-block { border: 1px solid #e4e4e7; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+#manse-app .gunghap-person-title { font-weight: 700; font-size: 13px; color: #333; margin-bottom: 8px; }
+#manse-app .gunghap-block-a { background: #f0f6ff; border-color: #d6e6ff; }
+#manse-app .gunghap-block-a .gunghap-person-title { color: #1d4ed8; }
+#manse-app .gunghap-block-b { background: #fff4f0; border-color: #ffe0d3; }
+#manse-app .gunghap-block-b .gunghap-person-title { color: #c2410c; }
+@media (max-width: 860px) {
+#manse-app .saved-side { max-width: none; }
+}
+
+/* 대시보드 안에 들어왔으니 바깥 여백은 줄인다 */
+#manse-app { margin: 0 auto; background: transparent; }
+</style>
+
+<div id="manse-app">
+
+  <div class="top-bar">
+    <h1>사주 명식 엔진</h1>
+    <button type="button" id="refreshBtn">새로고침</button>
+  </div>
+  <p class="desc">이름·성별·생일·달력·윤달·생시를 입력하고 버튼을 눌러 명식표를 생성합니다.</p>
+
+  <div class="mode-tabs">
+    <button type="button" class="mode-tab-btn active" id="modeIndividual">개인 사주</button>
+    <button type="button" class="mode-tab-btn" id="modeGunghap">궁합</button>
+  </div>
+
+  <div class="layout">
+  <div class="form-panel">
+  <form id="form">
+    <div class="row">
+      <div class="field">
+        <label for="name">이름</label>
+        <input type="text" id="name" placeholder="이름">
+      </div>
+      <div class="field">
+        <label for="gender">성별</label>
+        <select id="gender">
+          <option value="male">남자</option>
+          <option value="female">여자</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="birth">생일</label>
+        <input type="text" id="birth" inputmode="numeric" maxlength="8" placeholder="YYYYMMDD">
+      </div>
+      <div class="field">
+        <label for="calendar">달력</label>
+        <select id="calendar">
+          <option value="solar">양력</option>
+          <option value="lunar">음력</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="leap">윤달</label>
+        <select id="leap">
+          <option value="false">평달</option>
+          <option value="true">윤달</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="time">생시</label>
+        <input type="text" id="time" inputmode="numeric" maxlength="4" placeholder="HHMM">
+      </div>
+      <div class="field or-field">
+        <span class="or-text">또는</span>
+      </div>
+      <div class="field">
+        <label for="ganjiSelect">간지선택</label>
+        <select id="ganjiSelect">
+          <option value="선택안함">선택안함</option>
+          <option value="자시(子時) 23:30~01:30">자시(子時) 23:30~01:30</option>
+          <option value="축시(丑時) 01:30~03:30">축시(丑時) 01:30~03:30</option>
+          <option value="인시(寅時) 03:30~05:30">인시(寅時) 03:30~05:30</option>
+          <option value="묘시(卯時) 05:30~07:30">묘시(卯時) 05:30~07:30</option>
+          <option value="진시(辰時) 07:30~09:30">진시(辰時) 07:30~09:30</option>
+          <option value="사시(巳時) 09:30~11:30">사시(巳時) 09:30~11:30</option>
+          <option value="오시(午時) 11:30~13:30">오시(午時) 11:30~13:30</option>
+          <option value="미시(未時) 13:30~15:30">미시(未時) 13:30~15:30</option>
+          <option value="신시(申時) 15:30~17:30">신시(申時) 15:30~17:30</option>
+          <option value="유시(酉時) 17:30~19:30">유시(酉時) 17:30~19:30</option>
+          <option value="술시(戌時) 19:30~21:30">술시(戌時) 19:30~21:30</option>
+          <option value="해시(亥時) 21:30~23:30">해시(亥時) 21:30~23:30</option>
+        </select>
+      </div>
+      <div class="field checkbox-field">
+        <input type="checkbox" id="hourUnknown">
+        <label for="hourUnknown">생시모름</label>
+      </div>
+      <div class="field">
+        <label for="birthRegionSearch">출생지역</label>
+        <input type="text" id="birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
+        <div class="region-suggest" id="birthRegionSuggest"></div>
+        <div class="region-warning" id="birthRegionWarning">목록에서 지역을 선택하세요</div>
+      </div>
+      <div class="field">
+        <label for="birthCorrectionManual">보정(분)</label>
+        <input type="number" id="birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+      </div>
+      <div class="field">
+        <label for="seyunRange">세운</label>
+        <select id="seyunRange">
+          <option value="5">5년</option>
+          <option value="10">10년</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="wolunRange">월운</label>
+        <select id="wolunRange">
+          <option value="12">12개월</option>
+          <option value="24">24개월</option>
+          <option value="36">36개월</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="loveStatus">연애상태</label>
+        <select id="loveStatus">
+          <option value="선택안함">선택안함</option>
+          <option value="싱글">싱글</option>
+          <option value="연애중">연애중</option>
+          <option value="기혼">기혼</option>
+          <option value="이별·재회고민">이별·재회고민</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field concern-field">
+      <label for="concern">고민</label>
+      <textarea id="concern" rows="3" placeholder="고민 내용을 입력하세요 (선택)"></textarea>
+    </div>
+
+    <div id="formError" class="form-error" style="display:none;"></div>
+
+    <div class="actions">
+      <button type="button" class="btn-jeong" id="btnJeong">사주분석 (정)</button>
+      <button type="button" class="btn-ya" id="btnYa">사주분석 (야)</button>
+      <button type="button" class="secondary" id="saveBtn">저장하기</button>
+    </div>
+  </form>
+
+  <form id="gunghapForm" style="display:none;">
+    <div class="gunghap-person-block gunghap-block-a">
+      <div class="gunghap-person-title">본인(의뢰인)</div>
+      <div class="row">
+        <div class="field">
+          <label for="p1_name">이름</label>
+          <input type="text" id="p1_name" placeholder="이름">
+        </div>
+        <div class="field">
+          <label for="p1_gender">성별</label>
+          <select id="p1_gender">
+            <option value="male">남자</option>
+            <option value="female">여자</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p1_birth">생일</label>
+          <input type="text" id="p1_birth" inputmode="numeric" maxlength="8" placeholder="YYYYMMDD">
+        </div>
+        <div class="field">
+          <label for="p1_calendar">달력</label>
+          <select id="p1_calendar">
+            <option value="solar">양력</option>
+            <option value="lunar">음력</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p1_leap">윤달</label>
+          <select id="p1_leap">
+            <option value="false">평달</option>
+            <option value="true">윤달</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p1_time">생시</label>
+          <input type="text" id="p1_time" inputmode="numeric" maxlength="4" placeholder="HHMM">
+        </div>
+        <div class="field or-field">
+          <span class="or-text">또는</span>
+        </div>
+        <div class="field">
+          <label for="p1_ganjiSelect">간지선택</label>
+          <select id="p1_ganjiSelect">
+            <option value="선택안함">선택안함</option>
+            <option value="자시(子時) 23:30~01:30">자시(子時) 23:30~01:30</option>
+            <option value="축시(丑時) 01:30~03:30">축시(丑時) 01:30~03:30</option>
+            <option value="인시(寅時) 03:30~05:30">인시(寅時) 03:30~05:30</option>
+            <option value="묘시(卯時) 05:30~07:30">묘시(卯時) 05:30~07:30</option>
+            <option value="진시(辰時) 07:30~09:30">진시(辰時) 07:30~09:30</option>
+            <option value="사시(巳時) 09:30~11:30">사시(巳時) 09:30~11:30</option>
+            <option value="오시(午時) 11:30~13:30">오시(午時) 11:30~13:30</option>
+            <option value="미시(未時) 13:30~15:30">미시(未時) 13:30~15:30</option>
+            <option value="신시(申時) 15:30~17:30">신시(申時) 15:30~17:30</option>
+            <option value="유시(酉時) 17:30~19:30">유시(酉時) 17:30~19:30</option>
+            <option value="술시(戌時) 19:30~21:30">술시(戌時) 19:30~21:30</option>
+            <option value="해시(亥時) 21:30~23:30">해시(亥時) 21:30~23:30</option>
+          </select>
+        </div>
+        <div class="field checkbox-field">
+          <input type="checkbox" id="p1_hourUnknown">
+          <label for="p1_hourUnknown">생시모름</label>
+        </div>
+        <div class="field">
+          <label for="p1_birthRegionSearch">출생지역</label>
+          <input type="text" id="p1_birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
+          <div class="region-suggest" id="p1_birthRegionSuggest"></div>
+          <div class="region-warning" id="p1_birthRegionWarning">목록에서 지역을 선택하세요</div>
+        </div>
+        <div class="field">
+          <label for="p1_birthCorrectionManual">보정(분)</label>
+          <input type="number" id="p1_birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="gunghap-person-block gunghap-block-b">
+      <div class="gunghap-person-title">상대방</div>
+      <div class="row">
+        <div class="field">
+          <label for="p2_name">이름</label>
+          <input type="text" id="p2_name" placeholder="이름">
+        </div>
+        <div class="field">
+          <label for="p2_gender">성별</label>
+          <select id="p2_gender">
+            <option value="male">남자</option>
+            <option value="female">여자</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p2_birth">생일</label>
+          <input type="text" id="p2_birth" inputmode="numeric" maxlength="8" placeholder="YYYYMMDD">
+        </div>
+        <div class="field">
+          <label for="p2_calendar">달력</label>
+          <select id="p2_calendar">
+            <option value="solar">양력</option>
+            <option value="lunar">음력</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p2_leap">윤달</label>
+          <select id="p2_leap">
+            <option value="false">평달</option>
+            <option value="true">윤달</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p2_time">생시</label>
+          <input type="text" id="p2_time" inputmode="numeric" maxlength="4" placeholder="HHMM">
+        </div>
+        <div class="field or-field">
+          <span class="or-text">또는</span>
+        </div>
+        <div class="field">
+          <label for="p2_ganjiSelect">간지선택</label>
+          <select id="p2_ganjiSelect">
+            <option value="선택안함">선택안함</option>
+            <option value="자시(子時) 23:30~01:30">자시(子時) 23:30~01:30</option>
+            <option value="축시(丑時) 01:30~03:30">축시(丑時) 01:30~03:30</option>
+            <option value="인시(寅時) 03:30~05:30">인시(寅時) 03:30~05:30</option>
+            <option value="묘시(卯時) 05:30~07:30">묘시(卯時) 05:30~07:30</option>
+            <option value="진시(辰時) 07:30~09:30">진시(辰時) 07:30~09:30</option>
+            <option value="사시(巳時) 09:30~11:30">사시(巳時) 09:30~11:30</option>
+            <option value="오시(午時) 11:30~13:30">오시(午時) 11:30~13:30</option>
+            <option value="미시(未時) 13:30~15:30">미시(未時) 13:30~15:30</option>
+            <option value="신시(申時) 15:30~17:30">신시(申時) 15:30~17:30</option>
+            <option value="유시(酉時) 17:30~19:30">유시(酉時) 17:30~19:30</option>
+            <option value="술시(戌時) 19:30~21:30">술시(戌時) 19:30~21:30</option>
+            <option value="해시(亥時) 21:30~23:30">해시(亥時) 21:30~23:30</option>
+          </select>
+        </div>
+        <div class="field checkbox-field">
+          <input type="checkbox" id="p2_hourUnknown">
+          <label for="p2_hourUnknown">생시모름</label>
+        </div>
+        <div class="field">
+          <label for="p2_birthRegionSearch">출생지역</label>
+          <input type="text" id="p2_birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
+          <div class="region-suggest" id="p2_birthRegionSuggest"></div>
+          <div class="region-warning" id="p2_birthRegionWarning">목록에서 지역을 선택하세요</div>
+        </div>
+        <div class="field">
+          <label for="p2_birthCorrectionManual">보정(분)</label>
+          <input type="number" id="p2_birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="relationType">관계 유형</label>
+        <select id="relationType">
+          <option value="모자">모자</option>
+          <option value="모녀">모녀</option>
+          <option value="부자">부자</option>
+          <option value="부녀">부녀</option>
+          <option value="연인">연인</option>
+          <option value="부부">부부</option>
+          <option value="재회상대">재회상대</option>
+          <option value="동업·동료">동업·동료</option>
+          <option value="친구">친구</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field concern-field">
+      <label for="gConcern">고민</label>
+      <textarea id="gConcern" rows="3" placeholder="고민 내용을 입력하세요 (선택)"></textarea>
+    </div>
+
+    <div id="gFormError" class="form-error" style="display:none;"></div>
+
+    <div class="actions">
+      <button type="button" class="btn-jeong" id="gBtnJeong">궁합분석 (정)</button>
+      <button type="button" class="btn-ya" id="gBtnYa">궁합분석 (야)</button>
+      <button type="button" class="secondary" id="gSaveBtn">저장하기</button>
+    </div>
+  </form>
+  </div>
+
+  <aside class="saved-side">
+    <h2 class="saved-side-title">저장된 사주</h2>
+    <input type="text" id="savedSearch" class="saved-search-input" placeholder="이름 검색">
+    <div class="saved-list" id="savedList"></div>
+    <div class="saved-pagination" id="savedPagination"></div>
+  </aside>
+  </div>
+
+  <div class="result-toolbar">
+    <button type="button" class="secondary" id="copyBtnTop" disabled>복사하기</button>
+    <button type="button" class="secondary" id="downloadBtn" disabled>텍스트 파일 저장</button>
+    <button type="button" class="secondary" id="pdfCopyImgBtn" disabled>이미지 복사</button>
+    <button type="button" class="secondary" id="pdfSaveImgBtn" disabled>이미지 저장</button>
+    <label class="hangul-toggle">
+      <input type="checkbox" id="showHangulSub" checked>
+      한글 발음 표시
+    </label>
+  </div>
+
+  <div id="result"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  window.location.replace(window.location.pathname + '?_=' + Date.now());
+});
+
+const resultDiv = document.getElementById('result');
+const downloadBtn = document.getElementById('downloadBtn');
+const copyBtnTop = document.getElementById('copyBtnTop');
+const pdfCopyImgBtn = document.getElementById('pdfCopyImgBtn');
+const pdfSaveImgBtn = document.getElementById('pdfSaveImgBtn');
+const formErrorDiv = document.getElementById('formError');
+const timeInput = document.getElementById('time');
+const hourUnknownCheckbox = document.getElementById('hourUnknown');
+const ganjiSelect = document.getElementById('ganjiSelect');
+let lastText = '';
+let lastName = '';
+let lastBirth = '';
+let resultReady = false;
+
+// 각 시진(2시간 구간)의 중간 시각 (엔진에 전달할 hour/minute)
+const GANJI_TIME_MAP = {
+  '자시(子時) 23:30~01:30': [0, 30],
+  '축시(丑時) 01:30~03:30': [2, 30],
+  '인시(寅時) 03:30~05:30': [4, 30],
+  '묘시(卯時) 05:30~07:30': [6, 30],
+  '진시(辰時) 07:30~09:30': [8, 30],
+  '사시(巳時) 09:30~11:30': [10, 30],
+  '오시(午時) 11:30~13:30': [12, 30],
+  '미시(未時) 13:30~15:30': [14, 30],
+  '신시(申時) 15:30~17:30': [16, 30],
+  '유시(酉時) 17:30~19:30': [18, 30],
+  '술시(戌時) 19:30~21:30': [20, 30],
+  '해시(亥時) 21:30~23:30': [22, 30],
+};
+
+hourUnknownCheckbox.addEventListener('change', () => {
+  const checked = hourUnknownCheckbox.checked;
+  timeInput.disabled = checked;
+  ganjiSelect.disabled = checked;
+  if (checked) {
+    timeInput.value = '';
+    ganjiSelect.value = '선택안함';
+  }
+});
+
+ganjiSelect.addEventListener('change', () => {
+  const active = ganjiSelect.value !== '선택안함';
+  timeInput.disabled = active;
+  if (active) timeInput.value = '';
+});
+
+timeInput.addEventListener('input', () => {
+  if (timeInput.value.trim() && ganjiSelect.value !== '선택안함') {
+    ganjiSelect.value = '선택안함';
+  }
+});
+
+// ── 출생지역 검색 자동완성 (외부 지도 API 없이 서버가 내려주는 내장 regions.ts 데이터만 사용) ──
+let REGIONS = [];
+async function loadRegions() {
+  try {
+    const res = await fetch('/api/manse/regions');
+    const data = await res.json();
+    REGIONS = data.regions || [];
+  } catch (err) {
+    REGIONS = [];
+  }
+}
+function formatCorrection(n) {
+  return (n > 0 ? '+' : '') + n + '분';
+}
+
+// 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 출생지역 검색/보정(분) 위젯.
+// 계산에 쓰이는 값은 오직 보정(분) 칸뿐이다. 출생지역 칸은 표시·기록용이며, 목록에서 항목을
+// 클릭하면 보정(분) 칸에 그 값을 자동으로 채워줄 뿐이다(그 뒤에도 보정(분) 칸은 자유롭게 고칠 수 있고,
+// 그렇게 고친 값이 그대로 우선 적용된다). 지역 칸에 글자만 있고 보정(분)이 비어 있으면(=선택을 안 한 것으로
+// 간주) 보정이 적용되지 않으므로, 착각을 막기 위해 노란 테두리와 안내 문구로 표시한다.
+function wireBirthRegion(prefix) {
+  const searchEl = document.getElementById(prefix + 'birthRegionSearch');
+  const suggestEl = document.getElementById(prefix + 'birthRegionSuggest');
+  const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
+  const warnEl = document.getElementById(prefix + 'birthRegionWarning');
+
+  const closeSuggest = () => { suggestEl.innerHTML = ''; suggestEl.classList.remove('open'); };
+
+  const updateWarning = () => {
+    const needsSelection = searchEl.value.trim() !== '' && manualEl.value.trim() === '';
+    searchEl.classList.toggle('warn', needsSelection);
+    if (warnEl) warnEl.classList.toggle('show', needsSelection);
+  };
+
+  const selectRegion = (region) => {
+    searchEl.value = region.name;
+    manualEl.value = String(region.correctionMinutes);
+    closeSuggest();
+    updateWarning();
+  };
+
+  const renderSuggestions = (query) => {
+    const q = query.trim();
+    if (!q) { closeSuggest(); return; }
+    const matches = REGIONS.filter(r => r.name.includes(q)).slice(0, 20);
+    if (!matches.length) { closeSuggest(); return; }
+    suggestEl.innerHTML = '';
+    matches.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'region-suggest-row';
+      row.textContent = `${r.name} (${formatCorrection(r.correctionMinutes)})`;
+      row.addEventListener('mousedown', (e) => { e.preventDefault(); selectRegion(r); });
+      suggestEl.appendChild(row);
+    });
+    suggestEl.classList.add('open');
+  };
+
+  searchEl.addEventListener('input', () => {
+    renderSuggestions(searchEl.value);
+    updateWarning();
+  });
+  searchEl.addEventListener('focus', () => { if (searchEl.value.trim()) renderSuggestions(searchEl.value); });
+  searchEl.addEventListener('blur', () => setTimeout(closeSuggest, 150));
+
+  manualEl.addEventListener('input', updateWarning);
+}
+
+// 저장/전송용: 계산에는 보정(분) 칸의 값만 쓰고, 지역명은 그 값과 함께 표시·기록용으로만 실어 보낸다.
+// 보정(분)이 비어있거나 0이면(기본값) undefined를 돌려줘 보정 없음으로 처리된다.
+function getBirthRegionData(prefix) {
+  const searchEl = document.getElementById(prefix + 'birthRegionSearch');
+  const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
+  const manualVal = manualEl.value.trim();
+  if (manualVal === '' || Number.isNaN(Number(manualVal)) || Number(manualVal) === 0) {
+    return { correctionMinutes: undefined, birthRegionLabel: undefined };
+  }
+  return { correctionMinutes: Math.round(Number(manualVal)), birthRegionLabel: searchEl.value.trim() || undefined };
+}
+
+// 저장된 사주 불러오기용: p.correctionMinutes/birthRegionLabel로 두 칸을 그대로 복원한다.
+function setBirthRegionFields(prefix, p) {
+  const searchEl = document.getElementById(prefix + 'birthRegionSearch');
+  const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
+  const warnEl = document.getElementById(prefix + 'birthRegionWarning');
+  searchEl.value = p.birthRegionLabel || '';
+  manualEl.value = (typeof p.correctionMinutes === 'number' && p.correctionMinutes !== 0) ? String(p.correctionMinutes) : '';
+  searchEl.classList.remove('warn');
+  if (warnEl) warnEl.classList.remove('show');
+}
+
+loadRegions();
+wireBirthRegion('');
+wireBirthRegion('p1_');
+wireBirthRegion('p2_');
+
+function showFormError(msg) {
+  formErrorDiv.textContent = msg;
+  formErrorDiv.style.display = 'block';
+}
+function clearFormError() {
+  formErrorDiv.style.display = 'none';
+  formErrorDiv.textContent = '';
+}
+
+// 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 생일·생시 파싱.
+function parseBirthAndTime(prefix, showErrorFn) {
+  const birthEl = document.getElementById(prefix + 'birth');
+  const timeEl = document.getElementById(prefix + 'time');
+  const hourUnknownEl = document.getElementById(prefix + 'hourUnknown');
+  const ganjiEl = document.getElementById(prefix + 'ganjiSelect');
+
+  const birth = birthEl.value.trim();
+  if (!/^\d{8}$/.test(birth)) {
+    showErrorFn('생일은 8자리 숫자로 입력해주세요 (예: 19740426)');
+    return null;
+  }
+  const year = parseInt(birth.slice(0, 4), 10);
+  const month = parseInt(birth.slice(4, 6), 10);
+  const day = parseInt(birth.slice(6, 8), 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    showErrorFn('생일 숫자가 올바르지 않습니다 (예: 19740426)');
+    return null;
+  }
+
+  const hourUnknown = hourUnknownEl.checked;
+  let hour = 0, minute = 0;
+  const ganji = ganjiEl.value !== '선택안함' ? ganjiEl.value : '';
+  if (!hourUnknown && ganji) {
+    [hour, minute] = GANJI_TIME_MAP[ganji];
+  } else if (!hourUnknown) {
+    const time = timeEl.value.trim();
+    if (!/^\d{4}$/.test(time)) {
+      showErrorFn('생시는 4자리 숫자로 입력해주세요 (예: 1000), 모르면 "생시모름"을 체크하거나 간지선택을 이용하세요');
+      return null;
+    }
+    hour = parseInt(time.slice(0, 2), 10);
+    minute = parseInt(time.slice(2, 4), 10);
+    if (hour > 23 || minute > 59) {
+      showErrorFn('생시 숫자가 올바르지 않습니다 (00:00~23:59, 예: 1000)');
+      return null;
+    }
+  }
+
+  return { year, month, day, hour, minute, hourUnknown, ganjiSelect: hourUnknown ? '' : ganji };
+}
+
+function collectFormData() {
+  clearFormError();
+  const bt = parseBirthAndTime('', showFormError);
+  if (!bt) return null;
+
+  return {
+    name: document.getElementById('name').value,
+    ...bt,
+    isLunar: document.getElementById('calendar').value === 'lunar',
+    isLeapMonth: document.getElementById('leap').value === 'true',
+    gender: document.getElementById('gender').value,
+    concern: document.getElementById('concern').value,
+    ...getBirthRegionData(''),
+    세운년수: parseInt(document.getElementById('seyunRange').value, 10),
+    월운개월수: parseInt(document.getElementById('wolunRange').value, 10),
+    연애상태: document.getElementById('loveStatus').value,
+  };
+}
+
+function buildPayload(jasi) {
+  const data = collectFormData();
+  if (!data) return null;
+  return { ...data, jasi };
+}
+
+// 궁합 모드: 본인(p1_)/상대(p2_) 필드셋 공용 수집. 세운/월운/연애상태는 궁합 모드에 없다.
+function collectPersonFields(prefix, showErrorFn) {
+  const bt = parseBirthAndTime(prefix, showErrorFn);
+  if (!bt) return null;
+  return {
+    name: document.getElementById(prefix + 'name').value,
+    ...bt,
+    isLunar: document.getElementById(prefix + 'calendar').value === 'lunar',
+    isLeapMonth: document.getElementById(prefix + 'leap').value === 'true',
+    gender: document.getElementById(prefix + 'gender').value,
+    ...getBirthRegionData(prefix),
+  };
+}
+
+function wireTimeControls(prefix) {
+  const timeEl = document.getElementById(prefix + 'time');
+  const hourUnknownEl = document.getElementById(prefix + 'hourUnknown');
+  const ganjiEl = document.getElementById(prefix + 'ganjiSelect');
+  hourUnknownEl.addEventListener('change', () => {
+    const checked = hourUnknownEl.checked;
+    timeEl.disabled = checked;
+    ganjiEl.disabled = checked;
+    if (checked) { timeEl.value = ''; ganjiEl.value = '선택안함'; }
+  });
+  ganjiEl.addEventListener('change', () => {
+    const active = ganjiEl.value !== '선택안함';
+    timeEl.disabled = active;
+    if (active) timeEl.value = '';
+  });
+  timeEl.addEventListener('input', () => {
+    if (timeEl.value.trim() && ganjiEl.value !== '선택안함') ganjiEl.value = '선택안함';
+  });
+}
+wireTimeControls('p1_');
+wireTimeControls('p2_');
+
+const gFormErrorDiv = document.getElementById('gFormError');
+function showGFormError(msg) {
+  gFormErrorDiv.textContent = msg;
+  gFormErrorDiv.style.display = 'block';
+}
+function clearGFormError() {
+  gFormErrorDiv.style.display = 'none';
+  gFormErrorDiv.textContent = '';
+}
+
+function updatePdfImgButtonsEnabled() {
+  const enabled = resultReady && (activeResultTab === 'pdf' || activeResultTab === 'color');
+  pdfCopyImgBtn.disabled = !enabled;
+  pdfSaveImgBtn.disabled = !enabled;
+}
+
+function setResultButtonsEnabled(enabled) {
+  copyBtnTop.disabled = !enabled;
+  downloadBtn.disabled = !enabled;
+  resultReady = enabled;
+  updatePdfImgButtonsEnabled();
+}
+
+// 결과 보기 탭: "LLM용 텍스트"(복사하기/텍스트 파일 저장 대상) / "PDF용 표"·"컬러 표"(캡처용, 이미지 버튼은 이 두 탭에서만 활성)
+let activeResultTab = 'llm';
+function setActiveResultTab(tab) {
+  activeResultTab = tab;
+  updatePdfImgButtonsEnabled();
+  const tabLlm = document.getElementById('tabLlm');
+  const tabPdf = document.getElementById('tabPdf');
+  const tabColor = document.getElementById('tabColor');
+  const viewLlm = document.getElementById('viewLlm');
+  const viewPdf = document.getElementById('viewPdf');
+  const viewColor = document.getElementById('viewColor');
+  if (!tabLlm) return;
+  tabLlm.classList.toggle('active', tab === 'llm');
+  tabPdf.classList.toggle('active', tab === 'pdf');
+  tabColor.classList.toggle('active', tab === 'color');
+  viewLlm.style.display = tab === 'llm' ? 'block' : 'none';
+  viewPdf.style.display = tab === 'pdf' ? 'block' : 'none';
+  viewColor.style.display = tab === 'color' ? 'block' : 'none';
+}
+
+// 개인 모드/궁합 모드 공용: 계산 결과(text/pdfHtml/colorHtml)를 결과 탭 3개로 렌더링한다.
+function renderResultTabs(data) {
+  resultDiv.innerHTML =
+    '<div class="result-tabs">' +
+      '<button type="button" class="tab-btn" id="tabLlm">LLM용 텍스트</button>' +
+      '<button type="button" class="tab-btn" id="tabPdf">PDF용 표</button>' +
+      '<button type="button" class="tab-btn" id="tabColor">컬러 표</button>' +
+    '</div>' +
+    '<div class="result-box" id="viewLlm">' +
+      '<pre></pre>' +
+      '<div class="result-bottom-actions">' +
+        '<button type="button" class="secondary" id="copyBtnBottom">복사하기</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="pdf-view" id="viewPdf">' +
+      '<div id="pdfCaptureArea">' + data.pdfHtml + '</div>' +
+    '</div>' +
+    '<div class="pdf-view" id="viewColor">' +
+      '<div id="colorCaptureArea">' + data.colorHtml + '</div>' +
+    '</div>';
+  resultDiv.querySelector('pre').textContent = data.text;
+  document.getElementById('copyBtnBottom').addEventListener('click', (e) => copyToButton(e.currentTarget));
+  document.getElementById('tabLlm').addEventListener('click', () => setActiveResultTab('llm'));
+  document.getElementById('tabPdf').addEventListener('click', () => setActiveResultTab('pdf'));
+  document.getElementById('tabColor').addEventListener('click', () => setActiveResultTab('color'));
+  setActiveResultTab(activeResultTab);
+  setResultButtonsEnabled(true);
+  applyHangulVisibility();
+}
+
+// PDF용 표·컬러 표 천간·지지 칸의 한자 아래 한글 발음(pdf-hanja-sub) 표시 토글.
+// 결과가 새로 렌더링될 때마다 캡처 영역이 통째로 다시 만들어지므로 그때마다 다시 적용해야 하고,
+// 화면 토글일 뿐 저장 대상은 아니므로 서버로는 전송하지 않는다.
+const hangulToggle = document.getElementById('showHangulSub');
+function applyHangulVisibility() {
+  const hide = !hangulToggle.checked;
+  ['pdfCaptureArea', 'colorCaptureArea'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hide-hangul-sub', hide);
+  });
+}
+hangulToggle.addEventListener('change', applyHangulVisibility);
+
+// ── 모드 전환: 개인 사주 / 궁합 ──
+let currentMode = 'individual';
+function setMode(mode) {
+  if (mode === currentMode) return;
+  currentMode = mode;
+  document.getElementById('modeIndividual').classList.toggle('active', mode === 'individual');
+  document.getElementById('modeGunghap').classList.toggle('active', mode === 'gunghap');
+  document.getElementById('form').style.display = mode === 'individual' ? 'block' : 'none';
+  document.getElementById('gunghapForm').style.display = mode === 'gunghap' ? 'block' : 'none';
+  resultDiv.innerHTML = '';
+  lastText = ''; lastName = ''; lastBirth = '';
+  setResultButtonsEnabled(false);
+  savedSearchQuery = ''; savedSearchEl.value = ''; savedCurrentPage = 1;
+  renderSavedSide();
+}
+document.getElementById('modeIndividual').addEventListener('click', () => setMode('individual'));
+document.getElementById('modeGunghap').addEventListener('click', () => setMode('gunghap'));
+
+async function runAnalysis(jasi) {
+  const payload = buildPayload(jasi);
+  if (!payload) return;
+
+  resultDiv.innerHTML = '<p>계산 중...</p>';
+  setResultButtonsEnabled(false);
+  try {
+    const res = await fetch('/api/manse/myeongsik', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '알 수 없는 오류');
+    lastText = data.text;
+    lastName = data.name || '';
+    lastBirth = String(payload.year) + String(payload.month).padStart(2, '0') + String(payload.day).padStart(2, '0');
+    renderResultTabs(data);
+  } catch (err) {
+    resultDiv.innerHTML = '<p class="error">오류: ' + err.message + '</p>';
+    setResultButtonsEnabled(false);
+  }
+}
+
+document.getElementById('btnJeong').addEventListener('click', () => runAnalysis('normal'));
+document.getElementById('btnYa').addEventListener('click', () => runAnalysis('split'));
+
+// ── 궁합 모드 ──
+function collectGunghapFormData() {
+  clearGFormError();
+
+  const person1 = collectPersonFields('p1_', showGFormError);
+  if (!person1) return null;
+  const person2 = collectPersonFields('p2_', showGFormError);
+  if (!person2) return null;
+
+  return {
+    relationType: document.getElementById('relationType').value,
+    concern: document.getElementById('gConcern').value,
+    person1, person2,
+  };
+}
+
+function buildGunghapPayload(jasi) {
+  const data = collectGunghapFormData();
+  if (!data) return null;
+  return { ...data, jasi };
+}
+
+async function runGunghapAnalysis(jasi) {
+  const payload = buildGunghapPayload(jasi);
+  if (!payload) return;
+
+  resultDiv.innerHTML = '<p>계산 중...</p>';
+  setResultButtonsEnabled(false);
+  try {
+    const res = await fetch('/api/manse/gunghap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '알 수 없는 오류');
+    lastText = data.text;
+    lastName = [...[data.person1Name, data.person2Name].filter(Boolean), '궁합'].join('_');
+    lastBirth = '';
+    renderResultTabs(data);
+  } catch (err) {
+    resultDiv.innerHTML = '<p class="error">오류: ' + err.message + '</p>';
+    setResultButtonsEnabled(false);
+  }
+}
+
+document.getElementById('gBtnJeong').addEventListener('click', () => runGunghapAnalysis('normal'));
+document.getElementById('gBtnYa').addEventListener('click', () => runGunghapAnalysis('split'));
+
+function flashBtnMessage(btn, msg, ms) {
+  const original = btn.dataset.label || btn.textContent;
+  btn.dataset.label = original;
+  btn.textContent = msg;
+  clearTimeout(btn._resetTimer);
+  btn._resetTimer = setTimeout(() => { btn.textContent = original; }, ms || 1500);
+}
+
+async function copyToButton(btn) {
+  if (!lastText || btn.disabled) return;
+  try {
+    await navigator.clipboard.writeText(lastText);
+  } catch (err) {
+    const ta = document.createElement('textarea');
+    ta.value = lastText;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  flashBtnMessage(btn, '복사됐습니다');
+}
+
+copyBtnTop.addEventListener('click', () => copyToButton(copyBtnTop));
+
+downloadBtn.addEventListener('click', () => {
+  if (!lastText || downloadBtn.disabled) return;
+  const blob = new Blob([lastText], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = lastName ? ('명식표_' + lastName + '.txt') : '명식표.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ── PDF용 표 / 컬러 표 이미지 내보내기 (현재 활성 탭 기준) ──
+function buildImageFilename() {
+  const parts = [];
+  if (lastName) parts.push(lastName);
+  if (lastBirth) parts.push(lastBirth);
+  parts.push(activeResultTab === 'color' ? '컬러명식표' : '명식표');
+  return parts.join('_') + '.png';
+}
+
+function renderPdfCanvas() {
+  const targetId = activeResultTab === 'color' ? 'colorCaptureArea' : 'pdfCaptureArea';
+  const target = document.getElementById(targetId);
+  return html2canvas(target, { backgroundColor: '#ffffff', scale: 2 });
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+async function copyPdfImage(btn) {
+  if (btn.disabled) return;
+  if (!(navigator.clipboard && window.ClipboardItem)) {
+    flashBtnMessage(btn, '복사가 지원되지 않아요. 이미지 저장을 이용해주세요', 2500);
+    return;
+  }
+  try {
+    const canvas = await renderPdfCanvas();
+    const blob = await canvasToPngBlob(canvas);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    flashBtnMessage(btn, '이미지가 복사됐습니다');
+  } catch (err) {
+    flashBtnMessage(btn, '복사가 지원되지 않아요. 이미지 저장을 이용해주세요', 2500);
+  }
+}
+
+async function savePdfImage(btn) {
+  if (btn.disabled) return;
+  try {
+    const canvas = await renderPdfCanvas();
+    const blob = await canvasToPngBlob(canvas);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = buildImageFilename();
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('이미지 저장 중 오류: ' + err.message);
+  }
+}
+
+pdfCopyImgBtn.addEventListener('click', () => copyPdfImage(pdfCopyImgBtn));
+pdfSaveImgBtn.addEventListener('click', () => savePdfImage(pdfSaveImgBtn));
+
+// ── 저장된 사주: 사이드 목록 패널 (모드별 분리 + 검색 + 페이지네이션) ──
+const savedListEl = document.getElementById('savedList');
+const savedPaginationEl = document.getElementById('savedPagination');
+const savedSearchEl = document.getElementById('savedSearch');
+const SAVED_PAGE_SIZE = 10;
+
+let allSavedProfiles = [];
+let savedSearchQuery = '';
+let savedCurrentPage = 1;
+
+function formatBirth(p) {
+  return String(p.year) + String(p.month).padStart(2, '0') + String(p.day).padStart(2, '0');
+}
+function formatSavedAt(savedAt) {
+  return savedAt.slice(0, 2) + '.' + savedAt.slice(2, 4) + '.' + savedAt.slice(4, 6);
+}
+
+// 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 필드 채우기.
+function loadPersonIntoFields(prefix, p) {
+  document.getElementById(prefix + 'name').value = p.name || '';
+  document.getElementById(prefix + 'gender').value = p.gender || 'male';
+  document.getElementById(prefix + 'birth').value = formatBirth(p);
+  document.getElementById(prefix + 'calendar').value = p.isLunar ? 'lunar' : 'solar';
+  document.getElementById(prefix + 'leap').value = p.isLeapMonth ? 'true' : 'false';
+  const hourUnknownEl = document.getElementById(prefix + 'hourUnknown');
+  const ganjiEl = document.getElementById(prefix + 'ganjiSelect');
+  const timeEl = document.getElementById(prefix + 'time');
+  hourUnknownEl.checked = !!p.hourUnknown;
+  const ganji = !p.hourUnknown && p.ganjiSelect ? p.ganjiSelect : '선택안함';
+  ganjiEl.value = ganji;
+  ganjiEl.disabled = !!p.hourUnknown;
+  timeEl.disabled = !!p.hourUnknown || ganji !== '선택안함';
+  timeEl.value = (p.hourUnknown || ganji !== '선택안함')
+    ? ''
+    : (String(p.hour).padStart(2, '0') + String(p.minute).padStart(2, '0'));
+  setBirthRegionFields(prefix, p);
+}
+
+function loadProfileIntoForm(p) {
+  loadPersonIntoFields('', p);
+  document.getElementById('concern').value = p.concern || '';
+  document.getElementById('seyunRange').value = String(p.세운년수 || 5);
+  document.getElementById('wolunRange').value = String(p.월운개월수 || 12);
+  document.getElementById('loveStatus').value = p.연애상태 || '선택안함';
+  clearFormError();
+}
+
+function loadGunghapProfileIntoForm(p) {
+  loadPersonIntoFields('p1_', p.person1 || {});
+  loadPersonIntoFields('p2_', p.person2 || {});
+  document.getElementById('relationType').value = p.relationType || '모자';
+  document.getElementById('gConcern').value = p.concern || '';
+  clearGFormError();
+}
+
+// 개인 모드에서는 type==='개인' 항목만, 궁합 모드에서는 type==='궁합' 항목만 보이도록 완전히 분리한다.
+function currentSavedType() {
+  return currentMode === 'gunghap' ? '궁합' : '개인';
+}
+
+function savedItemLabel(p) {
+  if (p.type === '궁합') {
+    const n1 = (p.person1 && p.person1.name) || '이름없음';
+    const n2 = (p.person2 && p.person2.name) || '이름없음';
+    return n1 + ' × ' + n2 + ' [' + (p.relationType || '') + '] · ' + formatSavedAt(p.savedAt);
+  }
+  return (p.name || '이름없음') + ' (' + formatBirth(p) + ') · ' + formatSavedAt(p.savedAt);
+}
+
+function filteredSavedProfiles() {
+  const type = currentSavedType();
+  const q = savedSearchQuery.trim();
+  return allSavedProfiles.filter(p => {
+    if (p.type !== type) return false;
+    if (!q) return true;
+    if (type === '궁합') {
+      const n1 = (p.person1 && p.person1.name) || '';
+      const n2 = (p.person2 && p.person2.name) || '';
+      return n1.includes(q) || n2.includes(q);
+    }
+    return (p.name || '').includes(q);
+  });
+}
+
+function renderSavedSide() {
+  const list = filteredSavedProfiles();
+  const totalPages = Math.max(1, Math.ceil(list.length / SAVED_PAGE_SIZE));
+  if (savedCurrentPage > totalPages) savedCurrentPage = totalPages;
+  const startIdx = (savedCurrentPage - 1) * SAVED_PAGE_SIZE;
+  const pageItems = list.slice(startIdx, startIdx + SAVED_PAGE_SIZE);
+
+  savedListEl.innerHTML = '';
+  if (!pageItems.length) {
+    const msg = allSavedProfiles.length === 0 ? '저장된 사주가 없습니다' : (list.length === 0 ? '검색 결과가 없습니다' : '해당 페이지에 항목이 없습니다');
+    savedListEl.innerHTML = '<div class="saved-empty">' + msg + '</div>';
+    renderSavedPagination(0);
+    return;
+  }
+
+  pageItems.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'saved-item';
+
+    const label = document.createElement('span');
+    label.className = 'saved-item-label';
+    label.textContent = savedItemLabel(p);
+    label.addEventListener('click', () => {
+      if (p.type === '궁합') loadGunghapProfileIntoForm(p);
+      else loadProfileIntoForm(p);
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'saved-item-delete';
+    delBtn.title = '삭제';
+    delBtn.textContent = '🗑';
+    delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm(savedItemLabel(p) + ' 항목을 삭제할까요?')) return;
+      MS_STORE.del(p.filename);
+      await loadSavedList();
+    });
+
+    row.appendChild(label);
+    row.appendChild(delBtn);
+    savedListEl.appendChild(row);
+  });
+
+  renderSavedPagination(totalPages);
+}
+
+function renderSavedPagination(totalPages) {
+  savedPaginationEl.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const mkBtn = (label, page, opts) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'saved-page-btn' + ((opts && opts.active) ? ' active' : '');
+    btn.textContent = label;
+    btn.disabled = !!(opts && opts.disabled);
+    btn.addEventListener('click', () => { savedCurrentPage = page; renderSavedSide(); });
+    return btn;
+  };
+
+  savedPaginationEl.appendChild(mkBtn('이전', savedCurrentPage - 1, { disabled: savedCurrentPage <= 1 }));
+  for (let i = 1; i <= totalPages; i++) savedPaginationEl.appendChild(mkBtn(String(i), i, { active: i === savedCurrentPage }));
+  savedPaginationEl.appendChild(mkBtn('다음', savedCurrentPage + 1, { disabled: savedCurrentPage >= totalPages }));
+}
+
+savedSearchEl.addEventListener('input', () => {
+  savedSearchQuery = savedSearchEl.value;
+  savedCurrentPage = 1;
+  renderSavedSide();
+});
+
+async function loadSavedList() {
+  try {
+    const data = MS_STORE.list();
+    allSavedProfiles = data.profiles || [];
+    renderSavedSide();
+  } catch (err) {
+    savedListEl.innerHTML = '<div class="saved-empty">목록을 불러오지 못했습니다</div>';
+  }
+}
+
+async function postSaveRequest(data, overwrite) {
+  return MS_STORE.save({ ...data, overwrite });
+}
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const data = collectFormData();
+  if (!data) return;
+  try {
+    const result = await postSaveRequest(data, false);
+    if (!result.ok) { alert('저장 실패: ' + (result.error || '알 수 없는 오류')); return; }
+    if (result.needsConfirm) {
+      if (!confirm('오늘 이미 저장된 파일이 있습니다. 덮어쓸까요?\n' + result.filename)) return;
+      const overwritten = await postSaveRequest(data, true);
+      if (!overwritten.ok) { alert('저장 실패: ' + (overwritten.error || '알 수 없는 오류')); return; }
+      alert('덮어썼습니다: ' + overwritten.filename);
+    } else {
+      alert('저장했습니다: ' + result.filename);
+    }
+    loadSavedList();
+  } catch (err) {
+    alert('저장 중 오류: ' + err.message);
+  }
+});
+
+document.getElementById('gSaveBtn').addEventListener('click', async () => {
+  const data = collectGunghapFormData();
+  if (!data) return;
+  const payload = { kind: 'gunghap', ...data };
+  try {
+    const result = await postSaveRequest(payload, false);
+    if (!result.ok) { alert('저장 실패: ' + (result.error || '알 수 없는 오류')); return; }
+    if (result.needsConfirm) {
+      if (!confirm('오늘 이미 저장된 파일이 있습니다. 덮어쓸까요?\n' + result.filename)) return;
+      const overwritten = await postSaveRequest(payload, true);
+      if (!overwritten.ok) { alert('저장 실패: ' + (overwritten.error || '알 수 없는 오류')); return; }
+      alert('덮어썼습니다: ' + overwritten.filename);
+    } else {
+      alert('저장했습니다: ' + result.filename);
+    }
+    loadSavedList();
+  } catch (err) {
+    alert('저장 중 오류: ' + err.message);
+  }
+});
+
+loadSavedList();
+</script>
+
+</div>
+
+
+<script>
+/* ── 저장 기능 대체 ──
+ * 원본 프로그램은 서버 폴더에 json 파일로 저장했다.
+ * Railway는 배포할 때마다 파일이 초기화되므로 그대로 쓰면 저장한 게 사라진다.
+ * 그래서 이 브라우저에만 저장한다(localStorage). 서버·DB를 건드리지 않는다.
+ *   · 이 컴퓨터/이 브라우저에서만 보인다
+ *   · 교육생별로 키를 나눠 계정이 섞이지 않게 한다
+ * 나중에 여러 기기에서 공유하려면 DB로 옮기면 된다. */
+const MS_STORE = (function () {
+  const KEY = 'luwol_manse_saved_<%= user.id %>';
+
+  const all = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+  const put = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
+  const today = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0');
+    return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };
+
+  function nameOf(d) {
+    if (d.kind === 'gunghap') {
+      return ((d.person1 && d.person1.name) || '본인') + '_' + ((d.person2 && d.person2.name) || '상대') + '_궁합';
+    }
+    return d.name || '이름없음';
+  }
+
+  return {
+    list() { return { ok: true, profiles: all() }; },
+
+    save(data) {
+      const overwrite = !!data.overwrite;
+      const filename = nameOf(data) + '_' + today() + '.json';
+      const arr = all();
+      const at = arr.findIndex((x) => x.filename === filename);
+      if (at >= 0 && !overwrite) return { ok: true, needsConfirm: true, filename };
+      const row = Object.assign({}, data, { filename, savedAt: new Date().toISOString() });
+      delete row.overwrite;
+      if (at >= 0) arr[at] = row; else arr.unshift(row);
+      put(arr);
+      return { ok: true, filename };
+    },
+
+    del(filename) { put(all().filter((x) => x.filename !== filename)); return { ok: true }; },
+  };
+})();
+</script>
+
+
+<%- include('../partials/dash-bottom') %>

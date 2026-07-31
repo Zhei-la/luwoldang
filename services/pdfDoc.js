@@ -225,6 +225,58 @@ function tocPage(chapters, type) {
 </section>`;
 }
 
+/* ── 3-B. 만세력 (새 엔진판) ──
+ *
+ * cb_saju 엔진이 만들어주는 표를 쓴다. 기존 표보다 정보가 훨씬 많다:
+ *   원국 + 격국 · 신강약 · 억부용신 · 조후용신 · 신살 · 귀인 · 공망 · 형충회합
+ *   + 대운(현재 대운 표시) + 세운 + 월운
+ *
+ * 엔진은 표 5개를 카드 하나에 몰아서 준다. 그대로 넣으면 A4 한 장을 넘겨
+ * 잘리므로, 표 단위로 잘라서 여러 장에 나눠 담는다.
+ *
+ * ⚠️ 엔진이 어떤 이유로든 실패하면 기존 표(sajuPages)로 되돌아간다.
+ *    만세력 장이 통째로 비는 것보다 낫다.
+ * ── */
+function enginePages({ client, saju, type }) {
+  let html;
+  try {
+    const { buildMyeongsik } = require('./manseCalc');
+    html = buildMyeongsik(client, {}).pdfHtml;
+  } catch (e) {
+    console.error('[PDF] 새 만세력 엔진 실패 — 기존 표로 대체합니다:', e.message);
+    return sajuPages({ client, saju, type });
+  }
+  if (!html) return sajuPages({ client, saju, type });
+
+  const grab = (cls) => {
+    const m = html.match(new RegExp('<table class="pdf-table ' + cls + '"[\\s\\S]*?</table>'));
+    return m ? m[0] : '';
+  };
+  const headM = html.match(/<div class="pdf-header">[\s\S]*?<\/div>\s*<\/div>/);
+  const head = headM ? headM[0] : '';
+
+  const sheet = (title, inner) => (inner ? `
+<section class="page sheet">
+  <h2 class="pg-title">${esc(title)}</h2>
+  <div class="pg-line"></div>
+  <div class="cb-card">${inner}</div>
+</section>` : '');
+
+  /* 시간 보정을 썼으면 어떤 시각으로 계산했는지 밝혀준다 (기존 표와 동일한 안내) */
+  const corr = saju && saju.timeCorrection && saju.timeCorrection.correctedTime
+    ? `<p class="ms-corr">적용시각 ${esc(saju.timeCorrection.correctedTime)} (${esc((saju.timeCorrection.notes || []).join(', '))})</p>`
+    : '';
+
+  const pages = [
+    sheet('만세력 · 사주 원국', head + corr + grab('pdf-wonguk')),
+    sheet('격국 · 용신 · 신살', grab('pdf-sgy')),
+    sheet('대운', grab('pdf-daeun')),
+    sheet('세운 · 월운', grab('pdf-seyun') + grab('pdf-wolun')),
+  ];
+
+  return pages.filter(Boolean).join('');
+}
+
 /* ── 3. 만세력 (여러 장으로 나눔) ──
  *
  * 한 장에 다 넣으면 넘쳐서 잘린다.
@@ -865,6 +917,40 @@ body {
 .toc-no { font-family: 'Nanum Myeongjo', serif; font-weight: 700; color: #b59a62; min-width: 26px; }
 .toc-name { flex: 1; }
 
+
+/* ── 새 만세력 엔진 표 (cb_saju) ──
+ * 원본 프로그램의 표 스타일. wkhtmltopdf 가 pt 를 px 처럼 읽으니 전부 px 로 둔다.
+ * 기존 .ms-* 표와 클래스가 겹치지 않아 그대로 얹어도 안전하다. */
+.cb-card { font-family: 'Noto Sans CJK KR','Malgun Gothic',sans-serif; color:#1f1e1a; }
+.cb-card .pdf-header { padding:0 2px 10px; margin-bottom:12px; border-bottom:1px solid #e0dcd0; }
+.cb-card .pdf-header-name { font-size:17px; font-weight:700; color:#2b2a26; }
+.cb-card .pdf-header-info { font-size:12px; color:#6b6656; margin-top:3px; }
+.cb-card .pdf-table { border-collapse:collapse; width:100%; margin-bottom:16px;
+  font-size:12px; border:1.2px solid #6b6656; }
+.cb-card .pdf-table caption { caption-side:top; text-align:left; font-weight:700;
+  font-size:13px; margin-bottom:5px; color:#2b2a26; }
+.cb-card .pdf-table th, .cb-card .pdf-table td { border:0.5px solid #cfc9ba;
+  padding:6px 7px; text-align:center; color:#1f1e1a; }
+.cb-card .pdf-table thead th { background:#f3efe4; font-weight:700; }
+.cb-card .pdf-wonguk-label { background:#f3efe4; font-weight:700; text-align:left; white-space:nowrap; width:1%; }
+.cb-card .pdf-wonguk thead th:nth-child(3), .cb-card .pdf-wonguk tbody td:nth-child(3) { background:#fffbe8; }
+.cb-card .pdf-big { font-size:23px; font-weight:700; }
+.cb-card .pdf-hanja-main { line-height:1.2; }
+.cb-card .pdf-hanja-sub { font-size:11px; font-weight:400; color:#8c8677; line-height:1.3; margin-top:2px; }
+.cb-card .pdf-jijanggan-cell div { line-height:1.5; }
+.cb-card .pdf-jijanggan-cell div:not(:last-child) { border-bottom:1px dashed #cfc9ba; padding-bottom:2px; margin-bottom:2px; }
+.cb-card tr.pdf-current td { background:#fff2b8; font-weight:700; }
+.cb-card .pdf-sgy td, .cb-card .pdf-gunghap td { text-align:left; }
+/* 오행 글자색 */
+.cb-card .el-mok { color:#2e7d32; }
+.cb-card .el-hwa { color:#c62828; }
+.cb-card .el-to  { color:#a06a00; }
+.cb-card .el-geum{ color:#6b6656; }
+.cb-card .el-su  { color:#1a237e; }
+.cb-card .pdf-gwiin { color:#1565c0; }
+.cb-card .pdf-sal { color:#b71c1c; }
+.cb-card .pdf-gongmang { font-weight:700; }
+
 /* 만세력 */
 .ms-meta { margin-bottom: 18px; font-size: 13px; color: #6b6656; }
 .ms-meta p { margin: 2px 0; }
@@ -1167,7 +1253,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover
 <body>
 ${coverPage({ type, client, teacher, baseUrl, cover })}
 ${tocPage(chapters, type)}
-${sajuPages({ client, saju, type })}
+${enginePages({ client, saju, type })}
 ${glossaryPage()}
 ${chapterPages(chapters, client.question)}
 ${endPage({ teacher, reviewUrl, reviewMode })}
@@ -1380,7 +1466,7 @@ function buildCSS(baseUrl, bgPaper) {
 module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
-  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
+  coverPage, tocPage, sajuPages, enginePages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
   sentenceBreaks,
 };
 

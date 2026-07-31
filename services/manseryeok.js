@@ -625,3 +625,7 @@ function findCurrentDaewoon(daewoon, birthYear, year) {
 
 module.exports.calcYearLuck = calcYearLuck;
 module.exports.findCurrentDaewoon = findCurrentDaewoon;
+
+/* 진태양시 보정을 새 엔진 래퍼에서 재사용하기 위해 내보낸다 (계산 로직 변경 없음) */
+module.exports.localTimeCorrection = localTimeCorrection;
+module.exports.standardMeridian = standardMeridian;
