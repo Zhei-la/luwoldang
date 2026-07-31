@@ -264,9 +264,32 @@
   #manse-app .saved-pop .saved-search-input { font-size: 15px; padding: 10px; }
 }
 
-/* 아주 넓은 화면에선 폼을 더 넓혀 두 칸씩 나란히 보이게 */
-@media (min-width: 1500px) {
-  #manse-app .form-panel { flex: 0 0 580px; width: 580px; }
+/* ── PC에서도 한 줄에 한 칸씩 (모바일과 같은 방식) ──
+ * 원본은 한 줄에 여러 칸을 욱여넣어 줄바꿈이 들쭉날쭉했다.
+ * 세로로 하나씩 쌓으면 눈이 한 줄만 따라가면 되니 훨씬 편하다. */
+@media (min-width: 901px) {
+  #manse-app .form-panel .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  #manse-app .form-panel .field { flex: 1 1 auto; width: 100%; }
+
+  /* "또는" · "생시모름" 같은 곁다리는 위아래 여백만 정리 */
+  #manse-app .form-panel .or-field,
+  #manse-app .form-panel .checkbox-field { padding-bottom: 0; align-items: center; }
+  #manse-app .form-panel .or-field .or-text { padding: 2px 0; }
+  #manse-app .form-panel .checkbox-field input { width: 18px; height: 18px; flex: 0 0 auto; }
+
+  /* 라벨을 조금 키워 어느 칸인지 바로 보이게 */
+  #manse-app .form-panel label { font-size: 14px; color: #3a3a3c; margin-bottom: 2px; }
+
+  /* 궁합 탭: 사람별 묶음도 같은 방식 */
+  #manse-app .gunghap-person-block .row { flex-direction: column; align-items: stretch; gap: 12px; }
+  #manse-app .gunghap-person-block .field { width: 100%; }
+
+  /* 만들기 버튼만 가로로 나란히 */
+  #manse-app .form-panel .actions { flex-direction: row; }
 }
 
 @media (max-width: 520px) {
