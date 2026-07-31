@@ -224,6 +224,15 @@
 }
 
 
+
+/* 지역시 보정 체크박스 */
+#manse-app .corr-chk { display:flex; align-items:center; gap:6px; margin-top:6px;
+  font-size:13px; color:#444; font-weight:500; cursor:pointer; white-space:normal; }
+#manse-app .corr-chk input { width:17px; height:17px; flex:0 0 auto; cursor:pointer; }
+#manse-app .field.corr-off input[type="number"],
+#manse-app .field.corr-off input[type="text"] { background:#eee; color:#999; }
+#manse-app .field.corr-off > label:first-child { color:#999; }
+
 /* ══════════ PC 화면 크게 쓰기 ══════════
  * 대시보드 본문이 max-width:1000px 로 묶여 있어 계산기가 좁은 칸에 갇힌다.
  * 이 <style> 은 만세력 페이지에서만 나가므로 여기서 풀어도 다른 화면엔 영향 없다. */
@@ -393,6 +402,7 @@
       <div class="field">
         <label for="birthCorrectionManual">보정(분)</label>
         <input type="number" id="birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+        <label class="corr-chk"><input type="checkbox" id="birthUseCorrection" checked> 지역시(진태양시) 보정 사용</label>
       </div>
       <div class="field">
         <label for="seyunRange">세운</label>
@@ -506,6 +516,7 @@
         <div class="field">
           <label for="p1_birthCorrectionManual">보정(분)</label>
           <input type="number" id="p1_birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+        <label class="corr-chk"><input type="checkbox" id="p1_birthUseCorrection" checked> 지역시(진태양시) 보정 사용</label>
         </div>
       </div>
     </div>
@@ -580,6 +591,7 @@
         <div class="field">
           <label for="p2_birthCorrectionManual">보정(분)</label>
           <input type="number" id="p2_birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+        <label class="corr-chk"><input type="checkbox" id="p2_birthUseCorrection" checked> 지역시(진태양시) 보정 사용</label>
         </div>
       </div>
     </div>
@@ -673,6 +685,25 @@ const MS_STORE = (function () {
 
     del(filename) { put(all().filter((x) => x.filename !== filename)); return { ok: true }; },
   };
+})();
+
+/* 지역시 보정 켜기/끄기 — 끄면 보정(분) 칸을 흐리게 해서 지금 상태가 바로 보이게 한다.
+ * 값은 지우지 않는다. 다시 켜면 그대로 돌아온다. */
+(function () {
+  ['', 'p1_', 'p2_'].forEach(function (pre) {
+    const useEl = document.getElementById(pre + 'birthUseCorrection');
+    const manualEl = document.getElementById(pre + 'birthCorrectionManual');
+    const searchEl = document.getElementById(pre + 'birthRegionSearch');
+    if (!useEl || !manualEl) return;
+    function apply() {
+      const on = useEl.checked;
+      manualEl.disabled = !on;
+      if (searchEl) searchEl.disabled = !on;
+      manualEl.closest('.field').classList.toggle('corr-off', !on);
+    }
+    useEl.addEventListener('change', apply);
+    apply();
+  });
 })();
 
 /* 저장된 사주 서랍 열고 닫기 (바깥 누르면 닫힘) */
@@ -818,6 +849,11 @@ function wireBirthRegion(prefix) {
 function getBirthRegionData(prefix) {
   const searchEl = document.getElementById(prefix + 'birthRegionSearch');
   const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
+  const useEl = document.getElementById(prefix + 'birthUseCorrection');
+  // 체크를 끄면 보정을 아예 적용하지 않는다 (칸에 값이 남아 있어도 무시)
+  if (useEl && !useEl.checked) {
+    return { correctionMinutes: undefined, birthRegionLabel: searchEl.value.trim() || undefined };
+  }
   const manualVal = manualEl.value.trim();
   if (manualVal === '' || Number.isNaN(Number(manualVal)) || Number(manualVal) === 0) {
     return { correctionMinutes: undefined, birthRegionLabel: undefined };
@@ -832,6 +868,11 @@ function setBirthRegionFields(prefix, p) {
   const warnEl = document.getElementById(prefix + 'birthRegionWarning');
   searchEl.value = p.birthRegionLabel || '';
   manualEl.value = (typeof p.correctionMinutes === 'number' && p.correctionMinutes !== 0) ? String(p.correctionMinutes) : '';
+  const useEl = document.getElementById(prefix + 'birthUseCorrection');
+  if (useEl) {
+    useEl.checked = (typeof p.correctionMinutes === 'number' && p.correctionMinutes !== 0);
+    useEl.dispatchEvent(new Event('change'));
+  }
   searchEl.classList.remove('warn');
   if (warnEl) warnEl.classList.remove('show');
 }
