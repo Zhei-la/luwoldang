@@ -183,7 +183,41 @@ AI는 모든 문장을 비슷한 길이로, 전부 "~입니다"로 끝냅니다.
 좋은 뜻으로 곁을 내주다가 자리를 내주는 일이 생깁니다. 거기서 갈립니다."
 
 두 글의 차이를 보세요. 아래 글은 짧은 문장이 섞여 있고, 명식의 글자(비견·겁재)를 직접
-가리키고, 좋은 말만 하지 않습니다. 이렇게 쓰세요.`;
+가리키고, 좋은 말만 하지 않습니다. 이렇게 쓰세요.
+
+### 설명하는 방식 — 이게 좋은 풀이와 그냥 정보 나열을 가릅니다
+
+**용어를 던지지 말고, 하나씩 이해시키세요.** 읽는 사람은 사주를 모릅니다.
+"재성이 있어서 이렇습니다" 는 설명이 아니라 통보입니다.
+
+나쁜 예 (통보):
+"재성이 없어 재물운이 약하고, 상관생재로 돈을 법니다."
+→ 재성이 뭔지, 상관생재가 뭔지 모르는 사람에겐 아무 뜻이 없습니다.
+
+좋은 예 (하나씩 풀어줌):
+"사주에서 돈을 직접 상징하는 자리를 재성이라고 부르는데, ○○님 사주에는 이게 비어 있어요.
+ 걱정스럽게 들리실 수 있는데, 돈을 못 번다는 뜻이 아니라 돈이 저절로 굴러들어오는
+ 타입이 아니라는 뜻이에요. 대신 다른 무기가 있습니다. ..."
+→ ①용어가 뭔지 → ②오해부터 풀고 → ③이 사람 경우엔 → ④그래서 어떻다, 순서로 풉니다.
+
+**설명의 4단계를 지키세요:**
+1. 이게 뭔지 쉬운 말로 (재성 = 돈을 직접 상징하는 자리)
+2. 그게 왜 중요한지 / 흔한 오해 풀기 (없다고 나쁜 게 아니라 ~)
+3. 그래서 이 사람 경우엔 어떤지 (○○님은 대신 표현하는 힘이 강해서)
+4. 그래서 일상에서 어떻게 나타나는지 / 뭘 하면 되는지
+
+**비유를 쓰세요.** 어려운 개념일수록 일상의 그림으로 바꿔주세요.
+"재료는 없지만 엔진은 갖고 태어났다", "밭은 없는데 힘 좋은 트랙터를 가진 셈",
+"이미 세공을 마친 보석" — 이렇게 한 번 그려주면 오래 남습니다.
+
+**앞 장에서 한 말을 뒤에서 받으세요.** 각 장이 따로 놀면 안 됩니다.
+2장에서 "재성이 비었다" 고 했으면, 3장은 "그 빈자리를 어떻게 채우나" 로 이어지고,
+6장은 "지금 그 자리가 처음 열리는 시기" 로 받습니다.
+한 사람의 명식을 하나의 이야기로 꿰세요. 장마다 새 주제를 던지지 마세요.
+
+**단정하지 말고 열어두세요.** 겪었는지 모르는 일은 묻는 형태로.
+"~하셨을 겁니다" (단정) 대신 "~한 경험, 혹시 있으신가요" / "~하셨을 수도 있어요".
+읽는 사람이 '어 맞아' 하고 스스로 떠올리게 만드는 게 더 강합니다.`;
 
 const SYSTEM_PROMPT = `당신은 오랜 경력의 사주 명리학 상담가입니다.
 계산된 사주팔자(원국)와 십성·오행을 근거로 "무료 사주 리포트"를 작성합니다.
@@ -573,6 +607,48 @@ ${godLine('hour', '시주')}
 [오행 분포]
 목 ${saju.elements.목} · 화 ${saju.elements.화} · 토 ${saju.elements.토} · 금 ${saju.elements.금} · 수 ${saju.elements.수}
 강한 기운: ${saju.strong.join(', ')} / 부족한 기운: ${saju.weak.join(', ')}
+${(function () {
+  // 없는 기운 — saju.elements는 천간·지지만 센다. 지장간은 따로 확인해서 구분해줘야
+  // AI가 "지장간에도 없다"고 잘못 단정하지 않는다.
+  const zero = Object.entries(saju.elements).filter(([, v]) => v === 0).map(([k]) => k);
+  if (!zero.length) return '';
+  const hidden = new Set();
+  ['year', 'month', 'day', 'hour'].forEach(function (pos) {
+    const p = saju.detail && saju.detail[pos];
+    if (p && Array.isArray(p.jijanggan)) {
+      p.jijanggan.forEach(function (g) { if (g && g.el) hidden.add(g.el); });
+    }
+  });
+  const truly = zero.filter(function (k) { return !hidden.has(k); });
+  const onlyHidden = zero.filter(function (k) { return hidden.has(k); });
+  const lines = [];
+  if (truly.length) {
+    lines.push(`→ 아예 없는 기운: ${truly.join(', ')} (여덟 글자에도, 지지 속 지장간에도 없음. 그 기운이 상징하는 영역을 스스로 만들어야 하는 구조)`);
+  }
+  if (onlyHidden.length) {
+    lines.push(`→ 겉으로는 안 보이고 지장간에만 있는 기운: ${onlyHidden.join(', ')} (드러난 여덟 글자엔 없지만 지지 안에 숨어 있음. "아예 없다"고 쓰지 말고 "겉으로 드러나지 않는다 / 안에 숨어 있다"로 표현하세요)`);
+  }
+  return lines.join('\n');
+})()}
+${(function () {
+  // 조후 — 태어난 계절 대비 부족한 기운
+  const mb = saju.detail.month && saju.detail.month.branch ? saju.detail.month.branch.ko : '';
+  const winter = ['해', '자', '축'], summer = ['사', '오', '미'];
+  const dEl = saju.dayMasterElement;
+  let note = '';
+  if (winter.includes(mb)) note = `겨울(${mb}월)생 — 차가운 계절이라 따뜻한 화(火) 기운이 있어야 숨통이 트입니다. 화가 없으면 "얼어붙어 굳어 있는" 상태로 봅니다.`;
+  else if (summer.includes(mb)) note = `여름(${mb}월)생 — 더운 계절이라 시원한 수(水) 기운이 있어야 균형이 잡힙니다.`;
+  return note ? `\n[조후 — 계절 균형]\n${note}` : '';
+})()}
+${saju.gongmang && saju.gongmang.hits && saju.gongmang.hits.length ? `\n[공망]\n공망 지지: ${saju.gongmang.ko.join('·')}\n원국에서 걸린 자리: ${saju.gongmang.hits.map((h) => ({ year: '년지', month: '월지', day: '일지', hour: '시지' }[h])).join(', ')}\n→ 공망 자리의 글자는 "있어도 붕 떠서 힘을 제대로 못 쓰는" 상태로 봅니다. 그 자리가 상징하는 영역에서 헛헛함이나 "재주는 있는데 쓸 곳을 못 찾는" 느낌이 있을 수 있습니다.` : ''}
+${(function () {
+  // 간여지동 — 일간과 일지가 같은 오행
+  const dd = saju.detail.day;
+  if (dd && dd.stem && dd.branch && dd.stem.el === dd.branch.el) {
+    return `\n[간여지동]\n일주 ${saju.pillarsKo.day} — 천간과 지지가 같은 ${dd.stem.el} 기운. 뿌리가 단단하고 자기 기준이 뚜렷합니다. 남이 이래라저래라 하는 걸 싫어하고, 본인 판단으로 움직일 때 힘을 냅니다.`;
+  }
+  return '';
+})()}
 ${dw}
 ${yearBlock}${partner && partnerSaju ? `
 

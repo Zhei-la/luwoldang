@@ -333,6 +333,13 @@ function calcSaju(o) {
     dayMaster: dayGan,
     dayMasterKo: GAN_KO[dayGan] || dayGan,
     dayMasterElement: GAN_EL[dayGan] || null,
+    gongmang: (function () {
+      try {
+        const g = calcGongmang(dayP[0], dayP[1]);
+        const hits = gongmangHits({ year: yearP, month: monthP, day: dayP, hour: hourP }, g);
+        return { branches: g.branches, ko: g.ko, hits: hits };
+      } catch (e) { return { branches: [], ko: [], hits: [] }; }
+    })(),
     elements: elements,
     elementWheel: elementWheel(GAN_EL[dayGan], elements),
     strong: strong,
@@ -510,6 +517,34 @@ function elementWheel(dayMasterElement, elements) {
       pct: total ? Math.round((count / total) * 1000) / 10 : 0,
     };
   });
+}
+
+
+/* ============================================================
+ * 공망(空亡) — 일주 기준으로 비어 있는 두 지지
+ * ============================================================ */
+function calcGongmang(dayGan, dayJi) {
+  const gi = GAN.indexOf(dayGan);
+  const ji = JI.indexOf(dayJi);
+  if (gi < 0 || ji < 0) return { branches: [], ko: [] };
+  let idx = -1;
+  for (let n = 0; n < 60; n++) {
+    if (n % 10 === gi && n % 12 === ji) { idx = n; break; }
+  }
+  if (idx < 0) return { branches: [], ko: [] };
+  const xunStart = idx - (idx % 10);
+  const b1 = (xunStart + 10) % 12;
+  const b2 = (xunStart + 11) % 12;
+  return { branches: [JI[b1], JI[b2]], ko: [JI_KO[JI[b1]], JI_KO[JI[b2]]] };
+}
+function gongmangHits(pillars, gong) {
+  const set = new Set(gong.branches);
+  const hits = [];
+  for (const pos of ['year', 'month', 'day', 'hour']) {
+    const gz = pillars[pos];
+    if (gz && set.has(gz[1])) hits.push(pos);
+  }
+  return hits;
 }
 
 module.exports.elementWheel = elementWheel;
