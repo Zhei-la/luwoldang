@@ -318,7 +318,39 @@
   <% } else if (!saju) { %>
     <div class="warn-box">사주 계산이 안 되어 리포트를 만들 수 없습니다.</div>
   <% } else { %>
-    <p class="block-desc">종류를 선택하면 AI가 이 분의 사주를 근거로 <b>60~80페이지</b> 리포트를 작성합니다.<br>표지 · 목차 · 만세력 · 본문 순서로 구성되며, 작성 후 <b>미리보기</b>에서 확인하고 PDF 저장 또는 이메일 발송할 수 있습니다.</p>
+    <div class="mk-mode">
+      <label class="mk-mode-item on" id="mmAi">
+        <input type="radio" name="mkMode" value="ai" checked>
+        <b>AI로 만들기</b>
+        <span>버튼만 누르면 알아서 작성 · 편당 약 900원</span>
+      </label>
+      <label class="mk-mode-item" id="mmManual">
+        <input type="radio" name="mkMode" value="manual">
+        <b>직접 작성</b>
+        <span>내가 쓴 글을 붙여넣기 · <b>요금 0원</b></span>
+      </label>
+    </div>
+
+    <p class="block-desc" id="descAi">종류를 선택하면 AI가 이 분의 사주를 근거로 <b>60~80페이지</b> 리포트를 작성합니다.<br>표지 · 목차 · 만세력 · 본문 순서로 구성되며, 작성 후 <b>미리보기</b>에서 확인하고 PDF 저장 또는 이메일 발송할 수 있습니다.</p>
+
+    <div id="manualBox" style="display:none">
+      <p class="block-desc">
+        만세력 계산기에서 <b>명식 복사</b> → ChatGPT에 붙여넣고 글을 받아온 뒤, 아래에 <b>통째로</b> 붙여넣으세요.<br>
+        표지 · 목차 · 만세력 · 각주는 <b>지금처럼 그대로</b> 들어갑니다. AI를 부르지 않으므로 <b>요금이 나가지 않습니다.</b>
+      </p>
+      <div class="mk-fmt">
+        붙여넣는 글 형식 — 장은 <code>##</code>, 소제목은 <code>###</code> 로 시작하면 알아서 나뉩니다.
+        <pre>## 01 나의 재물 성향 한눈에 보기
+### 돈에 대한 나를 한 문장으로
+본문 내용...
+
+### 돈이 들어오는 주된 방식
+본문 내용...</pre>
+        비워두고 만들면 <b>빈 리포트</b>가 생기고, 나중에 <b>수정하기</b>로 채워도 됩니다.
+      </div>
+      <textarea id="manualText" class="mk-text" rows="14" placeholder="여기에 ChatGPT에서 받은 글을 통째로 붙여넣으세요 (비워두면 빈 리포트가 만들어집니다)"></textarea>
+    </div>
+
     <div class="type-grid" id="typeGrid">
       <% types.forEach(function(t){ %>
         <button type="button" class="type-btn" data-type="<%= t %>"><%= t %></button>
@@ -476,9 +508,55 @@
     } catch (e) { /* 잠시 끊겨도 다음 차례에 다시 물어본다 */ }
   }
 
+  /* ── 만들기 방식 고르기 (AI / 직접 작성) ── */
+  var mkMode = 'ai';
+  (function () {
+    var ai = document.getElementById('mmAi');
+    var man = document.getElementById('mmManual');
+    var box = document.getElementById('manualBox');
+    var desc = document.getElementById('descAi');
+    if (!ai || !man) return;
+    function apply(mode) {
+      mkMode = mode;
+      ai.classList.toggle('on', mode === 'ai');
+      man.classList.toggle('on', mode === 'manual');
+      if (box) box.style.display = mode === 'manual' ? '' : 'none';
+      if (desc) desc.style.display = mode === 'manual' ? 'none' : '';
+      var mk = document.getElementById('btnMake');
+      if (mk && picked) mk.textContent = picked + (mode === 'manual' ? ' 리포트 만들기 (요금 0원)' : ' 리포트 만들기');
+    }
+    ai.addEventListener('click', function () { apply('ai'); });
+    man.addEventListener('click', function () { apply('manual'); });
+  })();
+
   if (btnMake) {
     btnMake.onclick = async function(){
       if (!picked) return;
+
+      /* 직접 작성 — AI를 부르지 않는다 */
+      if (mkMode === 'manual') {
+        var ta = document.getElementById('manualText');
+        var txt = ta ? ta.value : '';
+        if (!txt.trim() && !confirm('붙여넣은 글이 없습니다.\n빈 리포트를 만들고 나중에 \'수정하기\'로 채울까요?')) return;
+        btnMake.disabled = true;
+        btnMake.textContent = '만드는 중...';
+        try {
+          var mr = await fetch('/leads/' + LEAD_ID + '/pdf/blank', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: picked, text: txt })
+          });
+          var md = await mr.json();
+          if (!md.ok) throw new Error(md.error || '만들지 못했습니다.');
+          location.href = '/pdfs/' + md.pdfId + '/preview';
+        } catch (e) {
+          btnMake.disabled = false;
+          btnMake.textContent = picked + ' 리포트 만들기 (요금 0원)';
+          alert('실패: ' + e.message);
+        }
+        return;
+      }
+
       btnMake.disabled = true;
       btnMake.textContent = '접수 중...';
       try {
@@ -666,3 +744,21 @@
 </script>
 
 <%- include('../partials/dash-bottom') %>
+
+<style>
+  .mk-mode { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .mk-mode-item { flex:1 1 220px; display:flex; flex-direction:column; gap:3px;
+    border:2px solid #ece6d8; border-radius:12px; padding:14px 16px; cursor:pointer; background:#fff; }
+  .mk-mode-item.on { border-color:#8a6f3c; background:#fbf6ec; }
+  .mk-mode-item input { display:none; }
+  .mk-mode-item b { font-size:15px; color:#4a4438; }
+  .mk-mode-item span { font-size:12.5px; color:#8a8574; }
+  .mk-fmt { background:#faf8f2; border:1px solid #ece6d8; border-radius:10px;
+    padding:12px 14px; font-size:13px; color:#6b6656; margin-bottom:12px; }
+  .mk-fmt code { background:#efe9dc; padding:1px 5px; border-radius:4px; font-size:12.5px; }
+  .mk-fmt pre { background:#fff; border:1px solid #ece6d8; border-radius:8px;
+    padding:10px 12px; margin:8px 0; font-size:12.5px; line-height:1.6; overflow-x:auto; white-space:pre; }
+  .mk-text { width:100%; border:1px solid #ddd6c6; border-radius:10px; padding:12px;
+    font-size:14px; line-height:1.65; font-family:inherit; resize:vertical; margin-bottom:14px; }
+  .mk-text:focus { outline:none; border-color:#8a6f3c; }
+</style>

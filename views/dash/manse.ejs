@@ -223,6 +223,52 @@
   #manse-app .color-tile { width: 42px; height: 42px; font-size: 24px; }
 }
 
+
+/* ══════════ PC 화면 크게 쓰기 ══════════
+ * 대시보드 본문이 max-width:1000px 로 묶여 있어 계산기가 좁은 칸에 갇힌다.
+ * 이 <style> 은 만세력 페이지에서만 나가므로 여기서 풀어도 다른 화면엔 영향 없다. */
+@media (min-width: 901px) {
+  .main { max-width: 1700px; }
+
+  #manse-app .top-bar h1 { font-size: 24px; }
+  #manse-app .desc { font-size: 15px; }
+
+  /* 왼쪽 입력폼 — 넓히고 글자·칸 키움 */
+  #manse-app .form-panel { flex: 0 0 520px; width: 520px; }
+  #manse-app .form-panel form { padding: 20px 22px; }
+  #manse-app .form-panel label { font-size: 13.5px; }
+  #manse-app .form-panel input,
+  #manse-app .form-panel select,
+  #manse-app .form-panel textarea { font-size: 15px; padding: 10px 11px; }
+  #manse-app .form-panel textarea { min-height: 90px; }
+  #manse-app .form-panel .row { gap: 12px; }
+  #manse-app .form-panel .actions { margin-top: 18px; gap: 10px; }
+  #manse-app .form-panel .actions button { padding: 13px 18px; font-size: 15px; font-weight: 600; }
+
+  /* 오른쪽 결과 — 남는 폭 전부 쓰고 글자 키움 */
+  #manse-app .result-col { flex: 1 1 auto; }
+  #manse-app .result-toolbar { gap: 10px; margin-bottom: 12px; }
+  #manse-app .result-toolbar button { padding: 11px 18px; font-size: 14px; }
+  #manse-app .hangul-toggle { font-size: 14px; }
+  #manse-app .tab-btn { padding: 10px 22px; font-size: 14.5px; }
+  #manse-app .result-box { padding: 24px; font-size: 15px; line-height: 1.75; }
+  #manse-app pre { font-size: 15px; line-height: 1.75; }
+  #manse-app .pdf-card { padding: 24px; }
+  #manse-app .pdf-table { font-size: 14px; }
+  #manse-app .pdf-table th, #manse-app .pdf-table td { padding: 10px 12px; }
+  #manse-app .pdf-big { font-size: 30px; }
+  #manse-app .pdf-hanja-sub { font-size: 14px; }
+
+  /* 저장된 사주 서랍도 조금 크게 */
+  #manse-app .saved-pop { width: 340px; padding: 14px; }
+  #manse-app .saved-pop .saved-search-input { font-size: 15px; padding: 10px; }
+}
+
+/* 아주 넓은 화면에선 폼을 더 넓혀 두 칸씩 나란히 보이게 */
+@media (min-width: 1500px) {
+  #manse-app .form-panel { flex: 0 0 580px; width: 580px; }
+}
+
 @media (max-width: 520px) {
   #manse-app .form-panel .field { flex: 1 1 100%; }
   #manse-app .actions button { flex: 1 1 100%; }

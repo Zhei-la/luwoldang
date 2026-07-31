@@ -239,6 +239,53 @@ async function runningJob(leadId) {
 }
 
 /* ── 생성 시작 — 접수만 하고 바로 돌려준다 ── */
+/* ===== 직접 작성 리포트 만들기 (AI 안 씀 · 요금 0원) =====
+ *
+ * ChatGPT 등에서 받아온 글을 통째로 받아 목차에 맞춰 잘라 넣는다.
+ * 글을 안 보내면 빈 껍데기만 만들어지고, 나중에 "수정하기"로 채우면 된다.
+ *
+ * 만들어진 리포트는 AI가 만든 것과 형식이 같아서
+ * 표지·만세력·배경지·각주·PDF 저장·메일 발송이 전부 그대로 동작한다. */
+router.post('/leads/:id/pdf/blank', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const type = b.type;
+    if (!PDF_TYPES.includes(type)) {
+      return res.status(400).json({ ok: false, error: 'PDF 종류를 선택해주세요.' });
+    }
+
+    const { rows } = await pool.query(
+      'SELECT * FROM leads WHERE id = $1 AND teacher_id = $2',
+      [req.params.id, req.user.id]
+    );
+    const lead = rows[0];
+    if (!lead) return res.status(404).json({ ok: false, error: '신청 내역을 찾을 수 없습니다.' });
+
+    const { buildFromPaste, blankSections } = require('../services/manualReport');
+    const question = (lead.question || lead.memo || '').trim();
+    const text = typeof b.text === 'string' ? b.text : '';
+
+    let sections, matched = 0;
+    if (text.trim()) {
+      const r = buildFromPaste(type, question, text);
+      sections = r.sections; matched = r.matched;
+    } else {
+      sections = blankSections(type, question);
+    }
+
+    const ins = await pool.query(
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,NULL) RETURNING id',
+      [req.user.id, lead.id, type, JSON.stringify(sections)]
+    );
+
+    console.log('[PDF] 직접 작성 리포트 생성 — lead', lead.id, type, '채운 장', matched, '/', sections.length);
+    res.json({ ok: true, pdfId: ins.rows[0].id, chapters: sections.length, matched });
+  } catch (e) {
+    console.error('[PDF] 직접 작성 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 router.post('/leads/:id/pdf/start', async (req, res) => {
   try {
     const type = (req.body && req.body.type) || req.query.type;
