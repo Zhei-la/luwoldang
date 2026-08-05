@@ -187,14 +187,9 @@ const TOC_ROWS_NORMAL = 14;   // 이보다 많으면 촘촘히
 const TOC_ROWS_MAX = 24;      // 이보다 많으면 두 장
 
 function tocPage(chapters, type) {
-  const isNewYear = type === '신년운세';
-
-  const fixed = [
-    '만세력 · 사주 원국',
-    '오행 · 대운',
-    ...(isNewYear ? ['올해 운의 흐름 (세운 · 월운)'] : []),
-    '사주 용어 풀이',
-  ];
+  // 만세력·오행·용어 풀이 페이지는 그대로 들어가지만 목차에는 올리지 않는다.
+  // 시각 자료 다음에 바로 01번 본문이 시작되는 것처럼 보이게 하기 위함.
+  const fixed = [];
 
   const rows = [
     ...fixed.map((t) => `<li class="toc-fixed"><span>${esc(t)}</span></li>`),
@@ -228,6 +223,68 @@ function tocPage(chapters, type) {
   <div class="pg-line"></div>
   <ol class="toc-list">${rows.join('')}</ol>
 </section>`;
+}
+
+/* ── 3-B. 만세력 (새 엔진판) ──
+ *
+ * cb_saju 엔진이 만들어주는 표를 쓴다. 기존 표보다 정보가 훨씬 많다:
+ *   원국 + 격국 · 신강약 · 억부용신 · 조후용신 · 신살 · 귀인 · 공망 · 형충회합
+ *   + 대운(현재 대운 표시) + 세운 + 월운
+ *
+ * 엔진은 표 5개를 카드 하나에 몰아서 준다. 그대로 넣으면 A4 한 장을 넘겨
+ * 잘리므로, 표 단위로 잘라서 여러 장에 나눠 담는다.
+ *
+ * ⚠️ 엔진이 어떤 이유로든 실패하면 기존 표(sajuPages)로 되돌아간다.
+ *    만세력 장이 통째로 비는 것보다 낫다.
+ * ── */
+function enginePages({ client, saju, type }) {
+  let html;
+  try {
+    const { buildMyeongsik } = require('./manseCalc');
+
+    /* ⚠️ 지역시 보정 On/Off 를 반드시 넘겨야 한다.
+     * client 객체에는 이 값이 없다. calcSaju 를 부를 때만 쓰이고 끝나기 때문에
+     * 그냥 client 를 넘기면 새 엔진이 기본값(보정 켬)으로 계산해버린다.
+     * saju.timeCorrection 에 실제로 적용된 설정이 남아 있으므로 그걸 그대로 따라간다. */
+    const tc = (saju && saju.timeCorrection) || {};
+    const c2 = Object.assign({}, client, {
+      useLocalSolarTime: tc.useLocalSolarTime !== false,
+      region: client.region || tc.region || '',
+    });
+    html = buildMyeongsik(c2, {}).pdfHtml;
+  } catch (e) {
+    console.error('[PDF] 새 만세력 엔진 실패 — 기존 표로 대체합니다:', e.message);
+    return sajuPages({ client, saju, type });
+  }
+  if (!html) return sajuPages({ client, saju, type });
+
+  const grab = (cls) => {
+    const m = html.match(new RegExp('<table class="pdf-table ' + cls + '"[\\s\\S]*?</table>'));
+    return m ? m[0] : '';
+  };
+  const headM = html.match(/<div class="pdf-header">[\s\S]*?<\/div>\s*<\/div>/);
+  const head = headM ? headM[0] : '';
+
+  const sheet = (title, inner) => (inner ? `
+<section class="page sheet">
+  <h2 class="pg-title">${esc(title)}</h2>
+  <div class="pg-line"></div>
+  <div class="cb-card">${inner}</div>
+</section>` : '');
+
+  /* 시간 보정을 썼으면 어떤 시각으로 계산했는지 밝혀준다 (기존 표와 동일한 안내) */
+  const corr = saju && saju.timeCorrection && saju.timeCorrection.correctedTime
+    ? `<p class="ms-corr">적용시각 ${esc(saju.timeCorrection.correctedTime)} (${esc((saju.timeCorrection.notes || []).join(', '))})</p>`
+    : '';
+
+  const pages = [
+    sheet('만세력 · 사주 원국', head + corr + grab('pdf-wonguk')),
+    sheet('격국 · 용신 · 신살', grab('pdf-sgy')),
+    sheet('대운', grab('pdf-daeun')),
+    sheet('세운 · 월운', grab('pdf-seyun') + grab('pdf-wolun')),
+  ];
+
+  return pages.filter(Boolean).join('');
 }
 
 /* ── 3. 만세력 (여러 장으로 나눔) ──
@@ -311,38 +368,6 @@ function sajuPages({ client, saju, type }) {
   ${dw}
 </section>`);
 
-  /* ── 3장: 세운 + 월운 (신년운세만) ── */
-  const yl = saju.yearLuck;
-  if (type === '신년운세' && yl) {
-    pages.push(`
-<section class="page sheet">
-  <h2 class="pg-title">${yl.year}년 운의 흐름</h2>
-  <div class="pg-line"></div>
-
-  <h3 class="ms-h">${yl.year}년 세운</h3>
-  <table class="ms-el-tbl">
-    <tr><th>간지</th><th>천간</th><th>지지</th><th>12운성</th></tr>
-    <tr>
-      <td><b>${esc(yl.sewoon.ko)}</b></td>
-      <td>${esc(yl.sewoon.stem.ko)} · ${esc(yl.sewoon.stem.god)}</td>
-      <td>${esc(yl.sewoon.branch.ko)} · ${esc(yl.sewoon.branch.god)}</td>
-      <td>${esc(yl.sewoon.unseong || '-')}</td>
-    </tr>
-  </table>
-  ${yl.currentDaewoon
-    ? `<p class="ms-sum">현재 대운 <b>${esc(yl.currentDaewoon.ko)}</b> (${yl.currentDaewoon.age}세~, 올해 ${yl.currentDaewoon.currentAge}세)</p>`
-    : ''}
-
-  <h3 class="ms-h">${yl.year}년 월운</h3>
-  <table class="ms-wol">
-    <tr>${yl.wolwoon.map((w) => `<th>${w.month}월</th>`).join('')}</tr>
-    <tr>${yl.wolwoon.map((w) => `<td><b>${esc(w.ko)}</b></td>`).join('')}</tr>
-    <tr>${yl.wolwoon.map((w) => `<td class="wol-god">${esc(w.stem.god)}<br>${esc(w.branch.god)}</td>`).join('')}</tr>
-    <tr>${yl.wolwoon.map((w) => `<td class="wol-us">${esc(w.unseong || '-')}</td>`).join('')}</tr>
-  </table>
-</section>`);
-  }
-
   return pages.join('');
 }
 
@@ -397,8 +422,15 @@ function paginateChapter(ch) {
   let used = LINES_CH_TITLE;     // 첫 장은 챕터 제목이 자리를 먹는다
 
   const pushPage = () => {
-    if (cur.blocks.length) pages.push(cur);
-    cur = { isFirst: false, blocks: [] };
+    if (cur.blocks.length) {
+      pages.push(cur);
+      cur = { isFirst: false, blocks: [] };
+    } else {
+      // 아직 아무것도 담기지 않았다면 페이지를 만들지 않는다.
+      //   이때 isFirst 를 false 로 바꿔버리면 그 챕터의 제목이 영영 나오지 않는다.
+      //   (첫 소제목이 길어 시작부터 넘길 때 이런 일이 생겼다)
+      cur = { isFirst: cur.isFirst, blocks: [] };
+    }
     used = 0;
   };
 
@@ -407,13 +439,12 @@ function paginateChapter(ch) {
     let block = { sub: b.sub || '', paras: [] };
     let need = b.sub ? LINES_SUB : 0;
 
-    // 소제목과 본문 앞부분이라도 들어가면 이 페이지에서 시작한다.
-    //   예전에는 '첫 문단 전체'가 들어가야 시작해서, 문단이 길면 페이지가 통째로 비었다.
+    // 소제목과 첫 문단은 반드시 같은 페이지에 함께 있어야 한다.
+    //   소제목만 페이지 끝에 남고 본문이 다음 장으로 넘어가면 보기 나쁘다.
+    //   다만 첫 문단이 한 페이지보다 크면 어차피 나뉘므로 그때는 시작한다.
     if (used > 0) used += LINES_BLOCK_GAP;   // 블록 사이 여백
-    const firstNeed = need + Math.min(
-      paras[0] ? paraLinesBr(paras[0]) : 0,
-      MIN_START_LINES
-    );
+    const firstPara = paras[0] ? paraLinesBr(paras[0]) : 0;
+    const firstNeed = need + Math.min(firstPara, LINES_PER_PAGE - need);
     if (used > 0 && used + firstNeed > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
       pushPage();
     }
@@ -424,11 +455,16 @@ function paginateChapter(ch) {
 
       // 이 문단이 안 들어가면 페이지를 넘긴다 (아슬아슬하면 그냥 붙인다)
       if (used + n > LINES_PER_PAGE + OVERFLOW_TOLERANCE) {
-        if (block.paras.length || block.sub) {
+        if (block.paras.length) {
+          // 본문이 이미 담긴 블록만 이 페이지에 남긴다
           cur.blocks.push(block);
           block = { sub: '', paras: [] };   // 이어지는 페이지엔 소제목 반복 안 함
+          pushPage();
+        } else {
+          // 소제목만 있고 본문이 아직 없다면, 소제목도 함께 다음 장으로 옮긴다
+          pushPage();
+          used += need;                     // 새 페이지에서 소제목 자리를 다시 잡는다
         }
-        pushPage();
       }
 
       block.paras.push(p);
@@ -626,16 +662,14 @@ function endPage({ teacher, reviewUrl, reviewMode }) {
       <a class="end-cta-btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(btnText)}</a>
     </div>` : '';
 
-  // 후기 CTA — reviewUrl 이 있고, 교육생이 후기 받기를 켰을 때만
-  //   reviewMode='web'  : 같은 페이지 아래 후기 폼으로 스크롤 (새 창 X)
-  //   reviewMode='pdf'  : 웹 후기 페이지를 새 창으로 열기
-  const reviewCta = (reviewUrl && teacher.review_on !== false) ? `
+  // 후기 CTA — 교육생이 설정에 넣어둔 후기 링크가 있을 때만 (당근·네이버 등)
+  //   링크가 비어 있으면 버튼 자체를 만들지 않는다
+  const rvLink = String((teacher && teacher.review_link) || '').trim();
+  const reviewCta = rvLink ? `
     <div class="end-review">
       ${teacher.review_notice ? `<p class="end-review-notice">${esc(teacher.review_notice)}</p>` : ''}
       <p class="end-review-desc">읽어보신 소감을 남겨주시면 큰 힘이 됩니다.</p>
-      ${reviewMode === 'web'
-        ? `<a class="end-review-btn" href="#rvwWrap">후기 남기러 가기</a>`
-        : `<a class="end-review-btn" href="${esc(reviewUrl)}" target="_blank" rel="noopener">후기 남기러 가기</a>`}
+      <a class="end-review-btn" href="${esc(rvLink)}" target="_blank" rel="noopener">후기 남기러 가기</a>
     </div>` : '';
 
   return `
@@ -892,6 +926,40 @@ body {
 .toc-fixed { color: #a08a5c; font-weight: 700; font-family: 'Nanum Myeongjo', serif; }
 .toc-no { font-family: 'Nanum Myeongjo', serif; font-weight: 700; color: #b59a62; min-width: 26px; }
 .toc-name { flex: 1; }
+
+
+/* ── 새 만세력 엔진 표 (cb_saju) ──
+ * 원본 프로그램의 표 스타일. wkhtmltopdf 가 pt 를 px 처럼 읽으니 전부 px 로 둔다.
+ * 기존 .ms-* 표와 클래스가 겹치지 않아 그대로 얹어도 안전하다. */
+.cb-card { font-family: 'Noto Sans CJK KR','Malgun Gothic',sans-serif; color:#1f1e1a; }
+.cb-card .pdf-header { padding:0 2px 10px; margin-bottom:12px; border-bottom:1px solid #e0dcd0; }
+.cb-card .pdf-header-name { font-size:17px; font-weight:700; color:#2b2a26; }
+.cb-card .pdf-header-info { font-size:12px; color:#6b6656; margin-top:3px; }
+.cb-card .pdf-table { border-collapse:collapse; width:100%; margin-bottom:16px;
+  font-size:12px; border:1.2px solid #6b6656; }
+.cb-card .pdf-table caption { caption-side:top; text-align:left; font-weight:700;
+  font-size:13px; margin-bottom:5px; color:#2b2a26; }
+.cb-card .pdf-table th, .cb-card .pdf-table td { border:0.5px solid #cfc9ba;
+  padding:6px 7px; text-align:center; color:#1f1e1a; }
+.cb-card .pdf-table thead th { background:#f3efe4; font-weight:700; }
+.cb-card .pdf-wonguk-label { background:#f3efe4; font-weight:700; text-align:left; white-space:nowrap; width:1%; }
+.cb-card .pdf-wonguk thead th:nth-child(3), .cb-card .pdf-wonguk tbody td:nth-child(3) { background:#fffbe8; }
+.cb-card .pdf-big { font-size:23px; font-weight:700; }
+.cb-card .pdf-hanja-main { line-height:1.2; }
+.cb-card .pdf-hanja-sub { font-size:11px; font-weight:400; color:#8c8677; line-height:1.3; margin-top:2px; }
+.cb-card .pdf-jijanggan-cell div { line-height:1.5; }
+.cb-card .pdf-jijanggan-cell div:not(:last-child) { border-bottom:1px dashed #cfc9ba; padding-bottom:2px; margin-bottom:2px; }
+.cb-card tr.pdf-current td { background:#fff2b8; font-weight:700; }
+.cb-card .pdf-sgy td, .cb-card .pdf-gunghap td { text-align:left; }
+/* 오행 글자색 */
+.cb-card .el-mok { color:#2e7d32; }
+.cb-card .el-hwa { color:#c62828; }
+.cb-card .el-to  { color:#a06a00; }
+.cb-card .el-geum{ color:#6b6656; }
+.cb-card .el-su  { color:#1a237e; }
+.cb-card .pdf-gwiin { color:#1565c0; }
+.cb-card .pdf-sal { color:#b71c1c; }
+.cb-card .pdf-gongmang { font-weight:700; }
 
 /* 만세력 */
 .ms-meta { margin-bottom: 18px; font-size: 13px; color: #6b6656; }
@@ -1195,7 +1263,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover
 <body>
 ${coverPage({ type, client, teacher, baseUrl, cover })}
 ${tocPage(chapters, type)}
-${sajuPages({ client, saju, type })}
+${enginePages({ client, saju, type })}
 ${glossaryPage()}
 ${chapterPages(chapters, client.question)}
 ${endPage({ teacher, reviewUrl, reviewMode })}
@@ -1395,7 +1463,8 @@ function buildCSS(baseUrl, bgPaper) {
   if (bgPaper === null || bgPaper === 'none') {
     paperUrl = '';
   } else if (bgPaper) {
-    paperUrl = (baseUrl || '') + bgPaper;
+    // 직접 올린 배경지는 이미지 자체(data:...)로 들어온다 → 주소를 앞에 붙이면 안 된다
+    paperUrl = /^(data:|https?:)/i.test(bgPaper) ? bgPaper : (baseUrl || '') + bgPaper;
   } else {
     paperUrl = (baseUrl || '') + '/img/pdf/frame.jpg';   // 기본
   }
@@ -1407,7 +1476,7 @@ function buildCSS(baseUrl, bgPaper) {
 module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
-  coverPage, tocPage, sajuPages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
+  coverPage, tocPage, sajuPages, enginePages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
   sentenceBreaks,
 };
 
