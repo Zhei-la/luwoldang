@@ -279,8 +279,8 @@ function enginePages({ client, saju, type }) {
 
   const pages = [
     sheet('만세력 · 사주 원국', head + corr + grab('pdf-wonguk')),
-    sheet('격국 · 용신 · 신살', grab('pdf-sgy')),
-    sheet('대운', grab('pdf-daeun')),
+    /* 격국·용신·신살 표와 대운 표는 둘 다 짧아 각각 한 장을 쓰면 여백만 남는다. 한 장에 담는다. */
+    sheet('격국 · 용신 · 신살 · 대운', grab('pdf-sgy') + grab('pdf-daeun')),
     sheet('세운 · 월운', grab('pdf-seyun') + grab('pdf-wolun')),
   ];
 
@@ -435,7 +435,10 @@ function paginateChapter(ch) {
   };
 
   (ch.blocks || []).forEach((b) => {
-    const paras = String(b.body || '').split(/\n{2,}|\n/).filter(Boolean);
+    const paras = String(b.body || '')
+      .split(/\n{2,}/)                              // 빈 줄에서만 문단을 나눈다
+      .map((t) => t.replace(/\n+/g, ' ').trim())     // 문단 안 줄바꿈은 한 줄로 이어 붙인다
+      .filter(Boolean);
     let block = { sub: b.sub || '', paras: [] };
     let need = b.sub ? LINES_SUB : 0;
 
@@ -635,15 +638,15 @@ function chapterPages(chapters, question) {
         ${b.paras.map((p) => `<p>${sentenceBreaks(p)}</p>`).join('')}
       </div>`).join('');
 
-      // 이 페이지에 나온 용어만 맨 아래 각주로
-      const pageText = pg.blocks.map((b) => (b.sub || '') + ' ' + b.paras.join(' ')).join(' ');
-      const fn = footnote(pageText);
+      /* 페이지 하단 용어 각주는 쓰지 않는다. 용어는 본문 안에서 풀어 설명하는 방식으로 바꿨다.
+         되살리려면 아래 두 줄의 주석을 풀고 ${fn} 을 다시 넣으면 된다. */
+      // const pageText = pg.blocks.map((b) => (b.sub || '') + ' ' + b.paras.join(' ')).join(' ');
+      // const fn = footnote(pageText);
 
       return `
 <section class="page sheet chapter${pg.isFirst ? ' chapter-start' : ''}" data-ch="${i}" data-pg="${pi}">
   ${head}
   ${body || (pg.isFirst ? '<p class="ch-empty">내용을 생성하지 못했습니다.</p>' : '')}
-  ${fn}
 </section>`;
     }).join('');
   }).join('');

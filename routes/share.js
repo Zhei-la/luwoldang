@@ -18,6 +18,25 @@ const { buildFreePdfHtml } = require('../services/freePdf');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 const { maskName } = require('./reviews');
 
+/* 리포트를 만든 시점의 사주 설정을 그대로 쓴다.
+ * 저장된 게 없으면(예전 리포트) 신청자 값으로 넘어간다. */
+function sajuSettings(row) {
+  const m = row && row.saju_meta;
+  if (m && typeof m === 'object') {
+    return {
+      useLocalSolarTime: m.useLocalSolarTime !== false,
+      region: m.region || row.region || '서울특별시',
+      calendar: m.calendar || row.calendar || '양력',
+    };
+  }
+  return {
+    useLocalSolarTime: row.use_local_time !== false,
+    region: row.region || '서울특별시',
+    calendar: row.calendar || '양력',
+  };
+}
+
+
 const FREE = '무료사주';
 
 /** 링크가 없으면 만들어준다 (메일 보낼 때 호출) */
@@ -33,7 +52,7 @@ async function ensureToken(pdfId) {
 /** 토큰 → 리포트 HTML (열람용 · 다운로드용 공통) */
 async function loadReport(token) {
   const { rows } = await pool.query(
-    `SELECT p.id, p.type, p.sections, p.extra, p.teacher_id,
+    `SELECT p.id, p.type, p.sections, p.extra, p.teacher_id, p.saju_meta,
             p.sent_sections, p.sent_meta,
             l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
@@ -62,10 +81,10 @@ async function loadReport(token) {
     saju = calcSaju({
       birthDate: client.birthDate,
       birthTime: client.birthTime,
-      calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-      isLeapMonth: pdf.calendar === '윤달',
-      region: pdf.region || '서울특별시',
-      useLocalSolarTime: pdf.use_local_time !== false,
+      calendar: sajuSettings(pdf).calendar === '윤달' ? '음력' : (sajuSettings(pdf).calendar || '양력'),
+      isLeapMonth: sajuSettings(pdf).calendar === '윤달',
+      region: sajuSettings(pdf).region,
+      useLocalSolarTime: sajuSettings(pdf).useLocalSolarTime,
       gender: pdf.gender,
     });
   } catch (e) { /* 만세력 실패해도 본문은 보여준다 */ }

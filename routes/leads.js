@@ -15,6 +15,40 @@ function localTimeFlag(b) {
   return b.useLocalSolarTime === 'on' || b.useLocalSolarTime === true;
 }
 
+/* 리포트를 만든 시점의 사주 설정을 그대로 찍어둔다.
+ * 나중에 신청자 화면에서 지역시 보정을 껐다 켜도 이미 만든 리포트는
+ * 만들 때 값 그대로 보여야 한다. (본문은 이미 글로 저장돼 있어 안 바뀌므로
+ * 만세력만 바뀌면 둘이 서로 어긋난다) */
+function sajuMetaOf(lead) {
+  return {
+    useLocalSolarTime: lead.use_local_time !== false,
+    region: lead.region || '서울특별시',
+    calendar: lead.calendar || '양력',
+    gender: lead.gender,
+    birth: lead.birth,
+    hour: lead.hour,
+    partner_region: lead.partner_region || null,
+    at: new Date().toISOString(),
+  };
+}
+
+/* 저장된 설정이 있으면 그걸 쓰고, 없으면(예전에 만든 리포트) 신청자 값을 쓴다. */
+function sajuSettings(row) {
+  const m = row && row.saju_meta;
+  if (m && typeof m === 'object') {
+    return {
+      useLocalSolarTime: m.useLocalSolarTime !== false,
+      region: m.region || row.region || '서울특별시',
+      calendar: m.calendar || row.calendar || '양력',
+    };
+  }
+  return {
+    useLocalSolarTime: row.use_local_time !== false,
+    region: row.region || '서울특별시',
+    calendar: row.calendar || '양력',
+  };
+}
+
 const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL, rewriteBlock } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
@@ -274,8 +308,8 @@ router.post('/leads/:id/pdf/blank', async (req, res) => {
     }
 
     const ins = await pool.query(
-      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,NULL) RETURNING id',
-      [req.user.id, lead.id, type, JSON.stringify(sections)]
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra, saju_meta) VALUES ($1,$2,$3,$4,NULL,$5) RETURNING id',
+      [req.user.id, lead.id, type, JSON.stringify(sections), JSON.stringify(sajuMetaOf(lead))]
     );
 
     console.log('[PDF] 직접 작성 리포트 생성 — lead', lead.id, type, '채운 장', matched, '/', sections.length);
@@ -313,9 +347,14 @@ router.post('/leads/:id/pdf/start', async (req, res) => {
     // 여기서 기다리지 않는다. 응답을 먼저 보내고 뒤에서 만든다.
     res.json({ ok: true, jobId });
     runPdfJob({ jobId, lead, type, user: req.user }).catch(async (e) => {
+      /* 사용자가 취소한 경우는 실패가 아니다. 상태를 덮어쓰지 않는다. */
+      if (e && e.canceled) {
+        console.log('[PDF] 취소로 중단 — job', jobId);
+        return;
+      }
       console.error('[PDF] 작업 실패:', e.message);
       await pool.query(
-        `UPDATE pdf_jobs SET status='error', error=$1, updated_at=NOW() WHERE id=$2`,
+        `UPDATE pdf_jobs SET status='error', error=$1, updated_at=NOW() WHERE id=$2 AND status <> 'canceled'`,
         [e.message, jobId]
       ).catch(() => {});
     });
@@ -325,6 +364,26 @@ router.post('/leads/:id/pdf/start', async (req, res) => {
 });
 
 /* ── 진행 상황 확인 — 화면이 주기적으로 물어본다 ── */
+/* 리포트 만들기 취소 — 진행 중인 작업을 멈춘다.
+ * 이미 만들어진 챕터는 버린다. (중간까지만 있는 리포트는 쓸모가 없다)
+ * AI 호출이 한 챕터 진행 중이면 그 챕터가 끝난 뒤 멈춘다. 최대 1분쯤 걸릴 수 있다. */
+router.post('/leads/:id/pdf/cancel', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE pdf_jobs SET status='canceled', error='사용자가 취소했습니다.', updated_at=NOW()
+       WHERE lead_id=$1 AND teacher_id=$2 AND status='running'
+       RETURNING id`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.json({ ok: true, none: true });
+    console.log('[PDF] 사용자 취소 — job', rows[0].id);
+    res.json({ ok: true, jobId: rows[0].id });
+  } catch (e) {
+    console.error('[PDF] 취소 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 router.get('/leads/:id/pdf/job', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -402,15 +461,25 @@ async function runPdfJob({ jobId, lead, type, user }) {
     await mark('title=$1, total=$2', ['무료 사주 풀이 생성 중', 1]);
     const free = await generateFreeSaju({ client, saju, openaiKey: user.openai_key });
     const insF = await pool.query(
-      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,NULL) RETURNING id',
-      [user.id, lead.id, FREE, JSON.stringify(free)]
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra, saju_meta) VALUES ($1,$2,$3,$4,NULL,$5) RETURNING id',
+      [user.id, lead.id, FREE, JSON.stringify(free), JSON.stringify(sajuMetaOf(lead))]
     );
     pdfId = insF.rows[0].id; count = 1;
   } else {
+    /* 챕터가 하나 끝날 때마다 취소됐는지 확인한다.
+       취소됐으면 CanceledError 를 던져 그 자리에서 멈춘다. */
     const result = await generatePdfReport({
       type, client, saju, partner, partnerSaju, openaiKey: user.openai_key,
-      onProgress: (done, total, title) =>
-        mark('done=$1, total=$2, title=$3', [done, total, title || '']),
+      onProgress: async (done, total, title) => {
+        await mark('done=$1, total=$2, title=$3', [done, total, title || '']);
+        const { rows } = await pool.query('SELECT status FROM pdf_jobs WHERE id=$1', [jobId])
+          .catch(() => ({ rows: [] }));
+        if (rows[0] && rows[0].status === 'canceled') {
+          const err = new Error('CANCELED');
+          err.canceled = true;
+          throw err;
+        }
+      },
     });
     const chapters = Array.isArray(result) ? result : (result.chapters || []);
     const extra = (!Array.isArray(result) && (result.checklist || result.loveCard))
@@ -420,8 +489,8 @@ async function runPdfJob({ jobId, lead, type, user }) {
     if (!chapters.length) throw new Error('리포트 생성에 실패했습니다. OpenAI 키와 사용량을 확인해주세요.');
 
     const ins = await pool.query(
-      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-      [user.id, lead.id, type, JSON.stringify(chapters), extra ? JSON.stringify(extra) : null]
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra, saju_meta) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+      [user.id, lead.id, type, JSON.stringify(chapters), extra ? JSON.stringify(extra) : null, JSON.stringify(sajuMetaOf(lead))]
     );
     pdfId = ins.rows[0].id; count = chapters.length;
   }
@@ -516,8 +585,8 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
       send('progress', { done: 1, total: 1, title: '완료' });
 
       const insF = await pool.query(
-        'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,NULL) RETURNING id',
-        [req.user.id, lead.id, FREE, JSON.stringify(free)]
+        'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra, saju_meta) VALUES ($1,$2,$3,$4,NULL,$5) RETURNING id',
+        [req.user.id, lead.id, FREE, JSON.stringify(free), JSON.stringify(sajuMetaOf(lead))]
       );
       send('done', { pdfId: insF.rows[0].id, chapters: 1 });
       stop(); return res.end();
@@ -541,8 +610,8 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
     }
 
     const ins = await pool.query(
-      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-      [req.user.id, lead.id, type, JSON.stringify(chapters), extra ? JSON.stringify(extra) : null]
+      'INSERT INTO pdfs (teacher_id, lead_id, type, sections, extra, saju_meta) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+      [req.user.id, lead.id, type, JSON.stringify(chapters), extra ? JSON.stringify(extra) : null, JSON.stringify(sajuMetaOf(lead))]
     );
 
     send('done', { pdfId: ins.rows[0].id, chapters: chapters.length });
@@ -574,10 +643,10 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
       saju = calcSaju({
         birthDate: normalizeBirth(pdf.birth),
         birthTime: parseHour(pdf.hour),
-        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-        isLeapMonth: pdf.calendar === '윤달',
-        region: pdf.region || '서울특별시',
-        useLocalSolarTime: pdf.use_local_time !== false,
+        calendar: sajuSettings(pdf).calendar === '윤달' ? '음력' : (sajuSettings(pdf).calendar || '양력'),
+        isLeapMonth: sajuSettings(pdf).calendar === '윤달',
+        region: sajuSettings(pdf).region,
+        useLocalSolarTime: sajuSettings(pdf).useLocalSolarTime,
         gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
@@ -731,10 +800,10 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       saju = calcSaju({
         birthDate: client.birthDate,
         birthTime: client.birthTime,
-        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-        isLeapMonth: pdf.calendar === '윤달',
-        region: pdf.region || '서울특별시',
-        useLocalSolarTime: pdf.use_local_time !== false,
+        calendar: sajuSettings(pdf).calendar === '윤달' ? '음력' : (sajuSettings(pdf).calendar || '양력'),
+        isLeapMonth: sajuSettings(pdf).calendar === '윤달',
+        region: sajuSettings(pdf).region,
+        useLocalSolarTime: sajuSettings(pdf).useLocalSolarTime,
         gender: pdf.gender,
       });
     } catch (e) { /* noop */ }
@@ -1244,7 +1313,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
 
     // 내 리포트인지 + 같은 신청자 것인지 확인
     const { rows } = await pool.query(
-      `SELECT p.id, p.type, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
+      `SELECT p.id, p.type, p.saju_meta, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = ANY($1) AND p.teacher_id = $2 AND p.lead_id = $3
        ORDER BY p.created_at ASC`,
@@ -1303,7 +1372,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
 async function downloadPdf(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT p.id, p.type, p.sections, p.extra,
+      `SELECT p.id, p.type, p.sections, p.extra, p.saju_meta,
               l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
@@ -1326,10 +1395,10 @@ async function downloadPdf(req, res) {
       saju = calcSaju({
         birthDate: client.birthDate,
         birthTime: client.birthTime,
-        calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-        isLeapMonth: pdf.calendar === '윤달',
-        region: pdf.region || '서울특별시',
-        useLocalSolarTime: pdf.use_local_time !== false,
+        calendar: sajuSettings(pdf).calendar === '윤달' ? '음력' : (sajuSettings(pdf).calendar || '양력'),
+        isLeapMonth: sajuSettings(pdf).calendar === '윤달',
+        region: sajuSettings(pdf).region,
+        useLocalSolarTime: sajuSettings(pdf).useLocalSolarTime,
         gender: pdf.gender,
       });
     } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
@@ -1393,10 +1462,10 @@ router.post('/pdfs/:id/rewrite', async (req, res) => {
     const saju = calcSaju({
       birthDate: client.birthDate,
       birthTime: client.birthTime,
-      calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-      isLeapMonth: pdf.calendar === '윤달',
-      region: pdf.region || '서울특별시',
-      useLocalSolarTime: pdf.use_local_time !== false,
+      calendar: sajuSettings(pdf).calendar === '윤달' ? '음력' : (sajuSettings(pdf).calendar || '양력'),
+      isLeapMonth: sajuSettings(pdf).calendar === '윤달',
+      region: sajuSettings(pdf).region,
+      useLocalSolarTime: sajuSettings(pdf).useLocalSolarTime,
       gender: pdf.gender,
     });
 

@@ -150,6 +150,11 @@ async function initDb() {
   // 편집본이 발송본과 달라졌는지 (수정했지만 발송본에 미적용) 표시
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS edits_pending BOOLEAN DEFAULT FALSE;`);
 
+  /* 만들 때 쓴 사주 설정을 그대로 찍어둔다 (지역시 보정 On/Off · 지역 등).
+     이게 없으면 나중에 신청자 설정을 바꿨을 때 만세력만 다시 계산되어
+     본문(이미 써서 저장된 글)과 서로 안 맞게 된다. */
+  await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS saju_meta JSONB;`);
+
   // 내담자 공개 열람 링크 (/r/:token) — 로그인 없이 리포트를 보고 PDF로 저장
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS share_token TEXT;`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_pdfs_share ON pdfs(share_token) WHERE share_token IS NOT NULL;`);

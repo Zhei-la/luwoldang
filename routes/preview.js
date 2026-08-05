@@ -25,6 +25,25 @@ const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 
+/* 리포트를 만든 시점의 사주 설정을 그대로 쓴다.
+ * 저장된 게 없으면(예전 리포트) 신청자 값으로 넘어간다. */
+function sajuSettings(row) {
+  const m = row && row.saju_meta;
+  if (m && typeof m === 'object') {
+    return {
+      useLocalSolarTime: m.useLocalSolarTime !== false,
+      region: m.region || row.region || '서울특별시',
+      calendar: m.calendar || row.calendar || '양력',
+    };
+  }
+  return {
+    useLocalSolarTime: row.use_local_time !== false,
+    region: row.region || '서울특별시',
+    calendar: row.calendar || '양력',
+  };
+}
+
+
 const FREE = '무료사주';
 
 /* 최초 생성 원문 보관 컬럼 (되돌리기용) — 첫 요청 때 한 번만 확인 */
@@ -71,10 +90,10 @@ function sajuOf(pdf) {
     return calcSaju({
       birthDate: normalizeBirth(pdf.birth),
       birthTime: parseHour(pdf.hour),
-      calendar: pdf.calendar === '윤달' ? '음력' : (pdf.calendar || '양력'),
-      isLeapMonth: pdf.calendar === '윤달',
-      region: pdf.region || '서울특별시',
-      useLocalSolarTime: pdf.use_local_time !== false,
+      calendar: sajuSettings(pdf).calendar === '윤달' ? '음력' : (sajuSettings(pdf).calendar || '양력'),
+      isLeapMonth: sajuSettings(pdf).calendar === '윤달',
+      region: sajuSettings(pdf).region,
+      useLocalSolarTime: sajuSettings(pdf).useLocalSolarTime,
       gender: pdf.gender,
     });
   } catch (e) {
@@ -315,7 +334,7 @@ async function downloadWithCover(req, res) {
     const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 
     const { rows } = await pool.query(
-      `SELECT p.id, p.type, p.sections, p.extra,
+      `SELECT p.id, p.type, p.sections, p.extra, p.saju_meta,
               l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,

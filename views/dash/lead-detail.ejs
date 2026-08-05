@@ -449,7 +449,10 @@
       prog.innerHTML = '<b>리포트를 작성하고 있습니다.</b><br>' +
         '<span id="progMsg">준비 중...</span>' +
         '<div class="bar"><i id="progFill"></i></div>' +
-        '<small>이 창을 닫아도 계속 만들어집니다. 다 되면 알림으로 알려드려요.</small>';
+        '<small>이 창을 닫아도 계속 만들어집니다. 다 되면 알림으로 알려드려요.</small>' +
+        '<div><button type="button" id="btnCancelJob" class="prog-cancel">만들기 취소</button></div>';
+      var cb0 = document.getElementById('btnCancelJob');
+      if (cb0) cb0.onclick = cancelJob;
     }
     var e = progEls();
     var pct = job.total ? Math.round(job.done / job.total * 100) : 0;
@@ -464,6 +467,33 @@
       prog.className = 'prog ok';
       prog.innerHTML = '완성됐습니다 (' + job.done + '개 챕터). ' +
         '<a href="/pdfs/' + job.pdf_id + '/preview" style="text-decoration:underline">미리보기 열기</a>';
+    }
+    if (btnMake) { btnMake.disabled = false; btnMake.textContent = (picked || '') + ' 리포트 만들기'; }
+  }
+
+  /* 만들기 취소 — 잘못 눌렀을 때 되돌린다.
+     지금까지 만들어진 챕터는 버린다. 중간까지만 있는 리포트는 쓸 수 없기 때문이다. */
+  async function cancelJob() {
+    if (!confirm('리포트 만들기를 취소할까요?\n지금까지 작성된 내용은 저장되지 않습니다.')) return;
+    var cb = document.getElementById('btnCancelJob');
+    if (cb) { cb.disabled = true; cb.textContent = '취소하는 중...'; }
+    try {
+      var r = await fetch('/leads/' + LEAD_ID + '/pdf/cancel', { method: 'POST' });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '취소하지 못했습니다.');
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      showCanceled();
+    } catch (e) {
+      if (cb) { cb.disabled = false; cb.textContent = '만들기 취소'; }
+      alert('취소 실패: ' + e.message);
+    }
+  }
+
+  function showCanceled() {
+    var prog = document.getElementById('prog');
+    if (prog) {
+      prog.className = 'prog err';
+      prog.innerHTML = '취소했습니다.<br><small>이미 시작된 부분이 끝나는 데 최대 1분쯤 걸릴 수 있습니다.</small>';
     }
     if (btnMake) { btnMake.disabled = false; btnMake.textContent = (picked || '') + ' 리포트 만들기'; }
   }
@@ -494,6 +524,8 @@
       }
 
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+      if (job.status === 'canceled') { showCanceled(); return; }
 
       // 화면을 보고 있던 작업이 끝났을 때만 미리보기로 넘긴다.
       // (들어오자마자 옛 작업 때문에 튕기지 않도록)
@@ -761,4 +793,9 @@
   .mk-text { width:100%; border:1px solid #ddd6c6; border-radius:10px; padding:12px;
     font-size:14px; line-height:1.65; font-family:inherit; resize:vertical; margin-bottom:14px; }
   .mk-text:focus { outline:none; border-color:#8a6f3c; }
+  /* 리포트 만들기 취소 버튼 */
+  .prog-cancel { margin-top:10px; padding:7px 16px; font-size:13px; border:1px solid #d9d2c2;
+    border-radius:8px; background:#fff; color:#6b6656; cursor:pointer; }
+  .prog-cancel:hover { background:#f5f1e8; }
+  .prog-cancel:disabled { opacity:.5; cursor:default; }
 </style>
