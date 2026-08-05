@@ -127,7 +127,11 @@ async function htmlToPdf(html) {
 
 /** 파일명 (한글 그대로 쓰면 헤더에서 깨진다) */
 function pdfFilename(name, type) {
-  const safe = `${name || '사주'}_${type || '리포트'}.pdf`;
+  /* 내담자 이름 뒤에 '님'을 붙인다. 이미 '님'으로 끝나면 그대로 둔다.
+     예) 김가영 → 김가영님_종합사주.pdf */
+  const raw = String(name || '').trim();
+  const who = raw ? (/님$/.test(raw) ? raw : raw + '님') : '사주';
+  const safe = `${who}_${type || '리포트'}.pdf`;
   return {
     ascii: 'saju-report.pdf',
     utf8: encodeURIComponent(safe),
