@@ -662,14 +662,26 @@ const MS_STORE = (function () {
     return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };
 
   function nameOf(d) {
-    if (d.kind === 'gunghap') {
+    if (isGunghap(d)) {
       return ((d.person1 && d.person1.name) || '본인') + '_' + ((d.person2 && d.person2.name) || '상대') + '_궁합';
     }
     return d.name || '이름없음';
   }
 
+  /* 개인 사주인지 궁합인지 판정.
+     원래는 서버가 저장분을 읽을 때 붙여주던 값인데, 브라우저 저장으로 바꾸면서
+     빠져 있었다. 이게 없으면 목록에서 type 으로 거르는 단계에서 전부 걸러져
+     "저장은 되는데 목록에 안 뜨는" 현상이 생긴다. */
+  function isGunghap(d) {
+    return d.kind === 'gunghap' || !!(d && d.person1 && d.person2);
+  }
+
   return {
-    list() { return { ok: true, profiles: all() }; },
+    list() {
+      /* type 이 없던 시절에 저장된 항목도 살려낸다 */
+      const rows = all().map((r) => (r.type ? r : Object.assign({}, r, { type: isGunghap(r) ? '궁합' : '개인' })));
+      return { ok: true, profiles: rows };
+    },
 
     save(data) {
       const overwrite = !!data.overwrite;
@@ -677,7 +689,11 @@ const MS_STORE = (function () {
       const arr = all();
       const at = arr.findIndex((x) => x.filename === filename);
       if (at >= 0 && !overwrite) return { ok: true, needsConfirm: true, filename };
-      const row = Object.assign({}, data, { filename, savedAt: new Date().toISOString() });
+      const row = Object.assign({}, data, {
+        filename,
+        type: isGunghap(data) ? '궁합' : '개인',   // ← 목록에서 이 값으로 거른다
+        savedAt: new Date().toISOString(),
+      });
       delete row.overwrite;
       if (at >= 0) arr[at] = row; else arr.unshift(row);
       put(arr);
