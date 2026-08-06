@@ -277,11 +277,19 @@ function enginePages({ client, saju, type }) {
     ? `<p class="ms-corr">적용시각 ${esc(saju.timeCorrection.correctedTime)} (${esc((saju.timeCorrection.notes || []).join(', '))})</p>`
     : '';
 
+  /* 오행 오각형 그림 — 새 엔진 표에는 없으므로 기존 그림을 그대로 얹는다.
+     대시보드 미리보기(element-wheel.ejs)와 같은 그림이다. */
+  const wheelSvg = elementWheelSvg(saju.elementWheel || [], saju.dayMasterKo, saju.dayMasterElement);
+  const wheelSum = (saju.strong && saju.weak)
+    ? `<p class="ms-sum">강한 기운 <b>${esc((saju.strong || []).join(', '))}</b> · 부족한 기운 <b>${esc((saju.weak || []).join(', '))}</b></p>`
+    : '';
+
+  /* 오행 그림(높이 약 390px)과 격국·대운 표는 각각 한 장을 쓰면 여백만 남는다.
+     둘을 한 장에 담으면 A4 한 장이 알맞게 찬다. */
   const pages = [
     sheet('만세력 · 사주 원국', head + corr + grab('pdf-wonguk')),
-    /* 격국·용신·신살 표와 대운 표는 둘 다 짧아 각각 한 장을 쓰면 여백만 남는다. 한 장에 담는다. */
-    sheet('격국 · 용신 · 신살 · 대운', grab('pdf-sgy') + grab('pdf-daeun')),
-    sheet('세운 · 월운', grab('pdf-seyun') + grab('pdf-wolun')),
+    sheet('오행 · 격국 · 용신 · 신살', wheelSvg + wheelSum + grab('pdf-sgy')),
+    sheet('대운 · 세운 · 월운', grab('pdf-daeun') + grab('pdf-seyun') + grab('pdf-wolun')),
   ];
 
   return pages.filter(Boolean).join('');

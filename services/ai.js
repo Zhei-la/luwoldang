@@ -423,6 +423,10 @@ ${missing.map((k) => '- ' + k).join('\n')}`,
     }
   }
 
+  /* 한글로 풀어 쓴 나이·연도·금액을 숫자로 되돌린다 (무료사주도 동일 규칙) */
+  Object.keys(parsed).forEach((k) => {
+    if (typeof parsed[k] === 'string') parsed[k] = fixKoreanNumbers(parsed[k]);
+  });
   return parsed;
 }
 
@@ -1419,8 +1423,16 @@ ${probs.join('\n')}
 - "또한 / 따라서 / 즉 / 이러한" 으로 문장을 시작하지 마세요.
 - 분량은 줄이지 마세요.
 
+**숫자 표기 (반드시 지킬 것):**
+- 나이·연도·금액·개수는 **아라비아 숫자**로 씁니다. 한글로 풀어 쓰지 마세요.
+  · 맞음 — 30세, 2026년 8월, 60만원, 3가지
+  · 틀림 — 삼십살, 예순, 이천이십육년, 육십만원, 세 가지
+- 대운 나이도 숫자로 — "24세부터 33세까지" (○) / "스물넷부터 서른셋까지" (×)
+- 다만 관용 표현은 한글 그대로 둡니다 — 한두 번, 여러 번, 하나씩, 한 문장으로
+
 ⚠️ 이름은 반드시 한글 "${client.name}" 그대로 쓰세요. 영어 표기 금지.
 ⚠️ 한국어로만 쓰고 영어 단어를 섞지 마세요.
+⚠️ 나이·연도·금액은 반드시 숫자로 쓰세요. (30세 ○ / 삼십살 ×, 2026년 ○ / 이천이십육년 ×)
 
 [방금 쓴 글]
 ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}`,
@@ -1460,9 +1472,102 @@ ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}
 
 /** 최종 안전장치 — AI가 실수로 넣은 반말 호칭·이름 과다 반복을 정리한다.
  *  방침: 이름은 거의 다 뺀다. 소유격만 "님의"로 존대 보존. */
+/* ── 한글로 쓴 나이·연도를 숫자로 되돌린다 ──
+ *
+ * 프롬프트로 "숫자로 쓰라"고 해도 AI가 종종 "삼십살", "예순", "이천이십육년"처럼
+ * 한글로 풀어 쓴다. 유료 리포트에서 이렇게 나오면 읽다가 멈칫하게 되므로
+ * 글을 저장하기 전에 기계적으로 되돌린다.
+ *
+ * 주의 — "한두 번", "여러 번", "하나씩" 같은 관용 표현은 건드리지 않는다.
+ *        고유수사(예순, 서른)는 나이 단위가 붙은 경우에만 바꾼다.
+ */
+const SINO = { 영:0, 공:0, 일:1, 이:2, 삼:3, 사:4, 오:5, 육:6, 칠:7, 팔:8, 구:9 };
+const NATIVE = {
+  한:1, 두:2, 세:3, 네:4, 다섯:5, 여섯:6, 일곱:7, 여덟:8, 아홉:9, 열:10,
+  스물:20, 서른:30, 마흔:40, 쉰:50, 예순:60, 일흔:70, 여든:80, 아흔:90,
+};
+
+/** "이천이십육" → 2026 */
+function sinoToNum(ko) {
+  let total = 0, section = 0, num = 0;
+  for (const ch of ko) {
+    if (SINO[ch] !== undefined) { num = SINO[ch]; continue; }
+    if (ch === '십') { section += (num || 1) * 10; num = 0; continue; }
+    if (ch === '백') { section += (num || 1) * 100; num = 0; continue; }
+    if (ch === '천') { section += (num || 1) * 1000; num = 0; continue; }
+    if (ch === '만') { total += (section + num || 1) * 10000; section = 0; num = 0; continue; }
+    return null;
+  }
+  return total + section + num;
+}
+
+/** "서른넷" → 34 */
+function nativeToNum(ko) {
+  const tens = ['아흔', '여든', '일흔', '예순', '쉰', '마흔', '서른', '스물', '열'];
+  const ones = ['하나', '한', '둘', '두', '셋', '세', '넷', '네', '다섯', '여섯', '일곱', '여덟', '아홉'];
+  const oneVal = { 하나: 1, 한: 1, 둘: 2, 두: 2, 셋: 3, 세: 3, 넷: 4, 네: 4, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 아홉: 9 };
+  for (const t of tens) {
+    if (ko.startsWith(t)) {
+      const rest = ko.slice(t.length);
+      if (!rest) return NATIVE[t];
+      for (const o of ones) if (rest === o) return NATIVE[t] + oneVal[o];
+      return null;
+    }
+  }
+  if (oneVal[ko] !== undefined) return oneVal[ko];
+  return null;
+}
+
+function fixKoreanNumbers(text) {
+  let t = String(text || '');
+
+  // 연도 — 이천이십육년 → 2026년
+  t = t.replace(/([일이삼사오육칠팔구십백천만영공]{2,})\s*년(?![간대])/g, (m, ko) => {
+    const n = sinoToNum(ko);
+    return (n && n >= 1900 && n <= 2200) ? n + '년' : m;
+  });
+
+  // 나이 — 서른넷 / 예순 + (세|살|살에|부터...) → 34세
+  t = t.replace(/(아흔|여든|일흔|예순|쉰|마흔|서른|스물|열)(하나|한|둘|두|셋|세|넷|네|다섯|여섯|일곱|여덟|아홉)?\s*(살|세)(?![기대])/g,
+    (m, tens, ones, unit) => {
+      const n = nativeToNum(tens + (ones || ''));
+      return n ? n + unit : m;
+    });
+
+  // 나이 — 단위 없이 "서른넷부터", "예순 전후" 처럼 조사·꾸밈말이 붙은 경우
+  t = t.replace(/(아흔|여든|일흔|예순|쉰|마흔|서른|스물)(하나|한|둘|두|셋|세|넷|네|다섯|여섯|일곱|여덟|아홉)?\s*(부터|까지|이후|전후|무렵|즈음|이면|에는|에)/g,
+    (m, tens, ones, josa) => {
+      const n = nativeToNum(tens + (ones || ''));
+      if (!n) return m;
+      // 조사는 붙여 쓰고, 꾸밈말(전후·무렵·즈음)은 띄어 쓴다
+      const spaced = /^(전후|무렵|즈음)$/.test(josa);
+      return n + '세' + (spaced ? ' ' : '') + josa;
+    });
+
+  // 한자수사 + 살/세 — 삼십살 → 30세
+  t = t.replace(/([일이삼사오육칠팔구십백]{1,4})\s*(살|세)(?![기대])/g, (m, ko, unit) => {
+    const n = sinoToNum(ko);
+    return (n && n >= 1 && n <= 120) ? n + unit : m;
+  });
+
+  // 월 — 팔월 → 8월 (연도 뒤에 오는 경우가 많다)
+  t = t.replace(/([일이삼사오육칠팔구십]{1,3})\s*월(?![급간])/g, (m, ko) => {
+    const n = sinoToNum(ko);
+    return (n && n >= 1 && n <= 12) ? n + '월' : m;
+  });
+
+  // 금액 — 육십만원 → 60만원
+  t = t.replace(/([일이삼사오육칠팔구십백천]{1,6})\s*(만원|억원|만\s?원)/g, (m, ko, unit) => {
+    const n = sinoToNum(ko);
+    return n ? n + unit.replace(/\s/g, '') : m;
+  });
+
+  return t;
+}
+
 function tidyName(body, name) {
-  if (!name) return body;
-  let t = String(body);
+  let t = fixKoreanNumbers(body);   // 한글 숫자를 먼저 되돌린다
+  if (!name) return t;
 
   // 1) 소유격만 존대로: "김형희의 강점" → "김형희님의 강점"
   t = t.replace(new RegExp(name + '(?!님)의', 'g'), name + '님의');
@@ -1680,7 +1785,7 @@ ${client.name}님이라고 부르되 매 문단 반복하지 않습니다.
     }
   }
 
-  return answer;
+  return fixKoreanNumbers(answer);   // 추가질문 답변에도 숫자 표기를 맞춘다
 }
 
 module.exports.answerFollowUp = answerFollowUp;
