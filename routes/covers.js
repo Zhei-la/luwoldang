@@ -91,9 +91,24 @@ router.get('/covers/my-img/:type', async (req, res) => {
 });
 
 /* 내 표지 올리기 (data URI) */
+/* 표지는 그대로 두고 상호명·내담자 정보 위치만 저장 */
+router.post('/covers/pos', async (req, res) => {
+  try {
+    const { type, brandPos, infoPos } = req.body || {};
+    await store.saveMyCoverPos(req.user.id, {
+      type,
+      brandPos: brandPos || 'top',
+      infoPos: infoPos || 'bottom',
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
 router.post('/covers/upload', async (req, res) => {
   try {
-    const { type, img, style, brandTop } = req.body || {};
+    const { type, img, style, brandTop, brandPos, infoPos } = req.body || {};
     if (TYPES.indexOf(type) < 0) return res.status(400).json({ ok: false, error: '알 수 없는 리포트 종류입니다.' });
 
     await store.saveMyCover(req.user.id, {
@@ -101,6 +116,8 @@ router.post('/covers/upload', async (req, res) => {
       img,
       style: style || 'plain',   // 직접 만든 표지는 보통 이름까지 다 그려서 옴 → 안 얹음
       brandTop: brandTop != null ? Number(brandTop) : 18.2,
+      brandPos: brandPos || 'top',      // top | left | left-light | none
+      infoPos: infoPos || 'bottom',     // bottom | mid | low
     });
     res.json({ ok: true });
   } catch (e) {

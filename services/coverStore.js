@@ -21,14 +21,14 @@ async function pickCover(teacherId, type) {
   // 1) 내 표지
   try {
     const mine = await pool.query(
-      `SELECT img, style, brand_top FROM teacher_covers
+      `SELECT img, style, brand_top, brand_pos, info_pos FROM teacher_covers
        WHERE teacher_id = $1 AND type = $2
        ORDER BY created_at DESC LIMIT 1`,
       [teacherId, type]
     );
     if (mine.rows[0]) {
       const r = mine.rows[0];
-      return { img: r.img, style: r.style || 'circle', brandTop: r.brand_top, source: 'mine' };
+      return { img: r.img, style: r.style || 'circle', brandTop: r.brand_top, brandPos: r.brand_pos, infoPos: r.info_pos, source: 'mine' };
     }
   } catch (e) { /* 테이블이 아직 없을 수 있음 (첫 배포) */ }
 
@@ -39,13 +39,13 @@ async function pickCover(teacherId, type) {
     if (setKey) {
       // 2-a) 관리자가 만든 커스텀 세트 (DB)
       const custom = await pool.query(
-        `SELECT img, style, brand_top FROM cover_set_items
+        `SELECT img, style, brand_top, brand_pos, info_pos FROM cover_set_items
          WHERE set_key = $1 AND type = $2 LIMIT 1`,
         [setKey, type]
       );
       if (custom.rows[0]) {
         const r = custom.rows[0];
-        return { img: r.img, style: r.style || 'plain', brandTop: r.brand_top, source: 'set-custom' };
+        return { img: r.img, style: r.style || 'plain', brandTop: r.brand_top, brandPos: r.brand_pos, infoPos: r.info_pos, source: 'set-custom' };
       }
       // 2-b) 코드 내장 기본 세트 (public 파일)
       const built = builtinCoverPath(setKey, type);
@@ -56,14 +56,14 @@ async function pickCover(teacherId, type) {
   // 2) 관리자 기본 표지
   try {
     const preset = await pool.query(
-      `SELECT img, style, brand_top FROM cover_presets
+      `SELECT img, style, brand_top, brand_pos, info_pos FROM cover_presets
        WHERE type = $1 AND active
        ORDER BY sort ASC, created_at DESC LIMIT 1`,
       [type]
     );
     if (preset.rows[0]) {
       const r = preset.rows[0];
-      return { img: r.img, style: r.style || 'circle', brandTop: r.brand_top, source: 'preset' };
+      return { img: r.img, style: r.style || 'circle', brandTop: r.brand_top, brandPos: r.brand_pos, infoPos: r.info_pos, source: 'preset' };
     }
   } catch (e) { /* noop */ }
 
@@ -82,7 +82,7 @@ async function resolveCover(teacherId, type) {
 
 /* ── 교육생: 내 표지 ── */
 
-async function saveMyCover(teacherId, { type, img, style, brandTop }) {
+async function saveMyCover(teacherId, { type, img, style, brandTop, brandPos, infoPos }) {
   if (!type || !img) throw new Error('종류와 이미지가 필요합니다.');
   if (img.length > MAX_BYTES) throw new Error('이미지가 너무 큽니다. 3MB 이하로 올려주세요.');
   if (!/^data:image\//.test(img)) throw new Error('이미지 파일만 올릴 수 있습니다.');
@@ -90,9 +90,10 @@ async function saveMyCover(teacherId, { type, img, style, brandTop }) {
   // 종류별로 최신 하나만 남긴다 (기존 것 지우고 새로 넣기)
   await pool.query('DELETE FROM teacher_covers WHERE teacher_id = $1 AND type = $2', [teacherId, type]);
   await pool.query(
-    `INSERT INTO teacher_covers (teacher_id, type, img, style, brand_top)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [teacherId, type, img, style || 'circle', brandTop == null ? 18.2 : brandTop]
+    `INSERT INTO teacher_covers (teacher_id, type, img, style, brand_top, brand_pos, info_pos)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [teacherId, type, img, style || 'circle', brandTop == null ? 18.2 : brandTop,
+     brandPos || 'top', infoPos || 'bottom']
   );
 }
 
@@ -113,9 +114,20 @@ async function getMyCoverImg(teacherId, type) {
   } catch (e) { return null; }
 }
 
+/* 이미지를 다시 올리지 않고 상호명·내담자 정보 위치만 바꾼다 */
+async function saveMyCoverPos(teacherId, { type, brandPos, infoPos }) {
+  if (!type) throw new Error('종류가 필요합니다.');
+  const { rowCount } = await pool.query(
+    `UPDATE teacher_covers SET brand_pos = $3, info_pos = $4
+     WHERE teacher_id = $1 AND type = $2`,
+    [teacherId, type, brandPos || 'top', infoPos || 'bottom']
+  );
+  if (!rowCount) throw new Error('먼저 표지를 올려주세요.');
+}
+
 async function listMyCovers(teacherId) {
   const { rows } = await pool.query(
-    'SELECT type, style, brand_top, created_at FROM teacher_covers WHERE teacher_id = $1',
+    'SELECT type, style, brand_top, brand_pos, info_pos, created_at FROM teacher_covers WHERE teacher_id = $1',
     [teacherId]
   );
   const map = {};
@@ -156,7 +168,7 @@ async function getPresetImg(id) {
 
 module.exports = {
   resolveCover,
-  saveMyCover, deleteMyCover, listMyCovers, getMyCoverImg,
+  saveMyCover, saveMyCoverPos, deleteMyCover, listMyCovers, getMyCoverImg,
   addPreset, deletePreset, listPresets, getPresetImg,
   // 세트
   chooseSet, myChosenSet,

@@ -51,18 +51,22 @@ function coverPage({ type, client, teacher, baseUrl, cover }) {
     const style = cfg.style || 'circle';
     const brandTop = cfg.brandTop == null ? 18.2 : cfg.brandTop;
     const brandPos = cfg.brandPos || 'top';
-    // plain = 표지에 이미 종류 글자가 그려짐. 교육생 상호명을 세트 위치에 맞춰 얹는다.
+    const infoPos = cfg.infoPos || 'bottom';
+
+    /* 상호명 위치 — 교육생이 표지 관리 화면에서 고른다.
+     *   top        위쪽 가로
+     *   left       왼쪽 세로 (표지 글씨가 세로일 때)
+     *   left-light 왼쪽 세로 · 밝은 색 (어두운 배경용)
+     *   none       표시 안 함 (표지 이미지에 이미 상호명이 그려진 경우)
+     * style 이 plain 이 아니어도 위치 설정을 따르게 했다.
+     * 예전에는 plain 일 때만 적용돼서, 직접 올린 표지는 늘 가운데 가로로만 나왔다. */
     let overlay;
-    if (style === 'plain') {
-      if (!brand) {
-        overlay = '';
-      } else if (brandPos === 'left' || brandPos === 'left-light') {
-        // 왼쪽 세로 (표지 글씨가 세로일 때). left-light = 어두운 배경용 밝은 색
-        overlay = `<div class="cv-brand-vert${brandPos === 'left-light' ? ' light' : ''}">${esc(brand)}</div>`;
-      } else {
-        // 위쪽 가로
-        overlay = `<div class="cv-brand-top">${esc(brand)}</div>`;
-      }
+    if (!brand || brandPos === 'none') {
+      overlay = '';
+    } else if (brandPos === 'left' || brandPos === 'left-light') {
+      overlay = `<div class="cv-brand-vert${brandPos === 'left-light' ? ' light' : ''}">${esc(brand)}</div>`;
+    } else if (style === 'plain' || brandPos === 'top') {
+      overlay = `<div class="cv-brand-top">${esc(brand)}</div>`;
     } else {
       overlay = `<div class="${style === 'ink' ? 'cv-brand-overlay ink' : 'cv-brand-overlay circle'}" style="top:${brandTop}%">${esc(brand)}</div>`;
     }
@@ -70,7 +74,7 @@ function coverPage({ type, client, teacher, baseUrl, cover }) {
     return `
 <section class="page sheet cover cover-img cover-${style}" style="background-image:url('${esc(url)}')">
   ${overlay}
-  <div class="cv-info">
+  <div class="cv-info info-${esc(infoPos)}">
     <p class="cv-name">${esc(client.name)} 님</p>
     <p class="cv-birth">
       ${esc(client.birthDate)} ${esc(client.calendar || '양력')}
@@ -289,7 +293,9 @@ function enginePages({ client, saju, type }) {
   const pages = [
     sheet('만세력 · 사주 원국', head + corr + grab('pdf-wonguk')),
     sheet('오행 · 격국 · 용신 · 신살', wheelSvg + wheelSum + grab('pdf-sgy')),
-    sheet('대운 · 세운 · 월운', grab('pdf-daeun') + grab('pdf-seyun') + grab('pdf-wolun')),
+    /* 월운은 12행이라 대운·세운과 한 장에 넣으면 A4 를 넘겨 잘린다. 따로 뺀다. */
+    sheet('대운 · 세운', grab('pdf-daeun') + grab('pdf-seyun')),
+    sheet('월운', grab('pdf-wolun')),
   ];
 
   return pages.filter(Boolean).join('');
@@ -841,6 +847,14 @@ body {
   bottom: 6%;
   text-align: center;
 }
+/* 내담자 정보 위치 — 교육생이 표지 관리에서 고른다.
+   표지 그림에 이미 글씨가 있으면 겹치지 않게 옮길 수 있다. */
+.cv-info.info-mid    { bottom: 26%; }
+.cv-info.info-low    { bottom: 3%; }
+.cv-info.info-upper  { bottom: auto; top: 30%; }
+.cover-circle .cv-info.info-mid   { bottom: 26%; }
+.cover-circle .cv-info.info-low   { bottom: 3%; }
+.cover-circle .cv-info.info-upper { bottom: auto; top: 30%; }
 .cover-img .cv-name {
   font-family: 'Nanum Myeongjo', serif;
   font-size: 19px; font-weight: 700;

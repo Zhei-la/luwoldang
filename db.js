@@ -150,6 +150,13 @@ async function initDb() {
   // 편집본이 발송본과 달라졌는지 (수정했지만 발송본에 미적용) 표시
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS edits_pending BOOLEAN DEFAULT FALSE;`);
 
+  /* 표지에 얹는 상호명·내담자 정보의 위치를 교육생이 직접 고를 수 있게 한다.
+     이 값이 없으면 직접 올린 표지는 늘 '위쪽 가로'로만 나온다. */
+  for (const t of ['teacher_covers', 'cover_set_items', 'cover_presets']) {
+    await pool.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS brand_pos TEXT;`);
+    await pool.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS info_pos TEXT;`);
+  }
+
   /* 만들 때 쓴 사주 설정을 그대로 찍어둔다 (지역시 보정 On/Off · 지역 등).
      이게 없으면 나중에 신청자 설정을 바꿨을 때 만세력만 다시 계산되어
      본문(이미 써서 저장된 글)과 서로 안 맞게 된다. */

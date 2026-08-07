@@ -51,6 +51,25 @@
           <% } %>
         </div>
         <div class="cv-name"><%= t %></div>
+        <% var bp = (has && has.brand_pos) || 'top'; var ip = (has && has.info_pos) || 'bottom'; %>
+        <div class="cv-pos">
+          <label>상호명 위치
+            <select class="cv-sel" data-k="brandPos" data-type="<%= t %>">
+              <option value="top"<%= bp==='top'?' selected':'' %>>위쪽 가로</option>
+              <option value="left"<%= bp==='left'?' selected':'' %>>왼쪽 세로</option>
+              <option value="left-light"<%= bp==='left-light'?' selected':'' %>>왼쪽 세로 (밝은색)</option>
+              <option value="none"<%= bp==='none'?' selected':'' %>>표시 안 함</option>
+            </select>
+          </label>
+          <label>내담자 정보 위치
+            <select class="cv-sel" data-k="infoPos" data-type="<%= t %>">
+              <option value="bottom"<%= ip==='bottom'?' selected':'' %>>아래 (기본)</option>
+              <option value="low"<%= ip==='low'?' selected':'' %>>맨 아래</option>
+              <option value="mid"<%= ip==='mid'?' selected':'' %>>가운데 아래</option>
+              <option value="upper"<%= ip==='upper'?' selected':'' %>>위쪽</option>
+            </select>
+          </label>
+        </div>
         <div class="cv-actions">
           <label class="cv-btn">
             표지 <%= has ? '바꾸기' : '올리기' %>
@@ -140,6 +159,10 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
     position:relative; overflow:hidden; background-size:cover; background-position:center; }
   .cv-thumb.on { border-style:solid; border-color:#B59A62; }
+  .cv-pos { display:flex; flex-direction:column; gap:6px; margin:8px 0 10px; }
+  .cv-pos label { font-size:11.5px; color:#8a8574; display:flex; flex-direction:column; gap:3px; }
+  .cv-sel { font-size:12.5px; padding:6px 8px; border:1px solid #e2dccd; border-radius:7px;
+            background:#fff; color:#4a4438; }
   .cv-thumb-txt { font-size:12px; color:#8a6f3c; font-weight:700; }
   .cv-thumb-txt.muted { color:#b3ad9c; font-weight:500; }
   .cv-badge { position:absolute; top:8px; left:8px; background:#B59A62; color:#fff;
@@ -194,6 +217,37 @@
     } catch (e) { toast(e.message, true); }
   }
 
+  /* 카드에서 고른 위치 값을 읽는다 */
+  function selVal(type, key) {
+    var el = document.querySelector('.cv-sel[data-type="' + type + '"][data-k="' + key + '"]');
+    return el ? el.value : '';
+  }
+
+  /* 표지를 이미 올린 뒤 위치만 바꿀 때 — 이미지를 다시 올리지 않고 설정만 저장한다 */
+  document.addEventListener('change', async function (e) {
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('cv-sel')) return;
+    var type = el.getAttribute('data-type');
+    var card = document.querySelector('.cv-card[data-type="' + type + '"] .cv-thumb');
+    if (!card || !card.classList.contains('on')) return;   // 내 표지가 없으면 저장할 것도 없다
+    try {
+      var r = await fetch('/covers/pos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: type,
+          brandPos: selVal(type, 'brandPos'),
+          infoPos: selVal(type, 'infoPos')
+        })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || '실패');
+      toast('위치를 저장했습니다');
+    } catch (err) {
+      toast('저장 실패: ' + err.message, true);
+    }
+  });
+
   function uploadCover(input, type) {
     var file = input.files && input.files[0];
     input.value = '';
@@ -208,7 +262,10 @@
         var r = await fetch('/covers/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: type, img: reader.result, style: 'plain' })
+          body: JSON.stringify({
+            type: type, img: reader.result, style: 'plain',
+            brandPos: selVal(type, 'brandPos'), infoPos: selVal(type, 'infoPos')
+          })
         });
         var d = await r.json();
         if (!d.ok) throw new Error(d.error || '실패');
