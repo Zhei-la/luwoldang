@@ -217,9 +217,11 @@ function renderBlock(b, S){
     }
     case 'gauge':{
       const total = Math.max(1, Number(b.total)||30);
-      const left = total; // 미리보기: 아직 신청 0건 기준
-      const pct = 100;
-      const segs = Array.from({length:10},(_,i)=>`<i class="${i<10?'on':''}"></i>`).join('');
+      const off = Math.max(0, Number(b.offline)||0);      // 사이트 밖 접수
+      const left = Math.max(0, total - off);              // 미리보기: 사이트 신청 0건 기준
+      const pct = Math.max(3, Math.round(left/total*100));
+      const fill = Math.round((off/total)*10);
+      const segs = Array.from({length:10},(_,i)=>`<i class="${i<Math.max(1,fill)?'on':''}"></i>`).join('');
       return `<div class="wrap mt"><div class="card gg">${sk==='hanji'?'':moonSVG(pct)}
         <div class="body"><div class="top"><span>${esc(b.title)}</span><em>${left}<i> / ${total}명</i></em></div>
         ${sk==='hanji'?`<div class="seg">${segs}</div>`:`<div class="bar"><i style="width:${pct}%"></i></div>`}
@@ -465,8 +467,19 @@ function paintInspector(){
         + `<div class="fld"><div class="hint">색을 비워두면 테마 색을 따라갑니다. 교육생마다 다른 색을 쓰면 페이지가 서로 달라 보입니다.</div></div>`;
       break;
     case 'gauge':
-      h += T('title','제목') + N('total','모집 인원 (전체)') + T('note','설명')
-        + `<div class="fld"><div class="hint">남은 자리는 <b>실제 신청 건수</b>로 자동 계산됩니다. 예: 30명 모집 · 4명 신청 → 남은 자리 26명. 가짜 숫자가 아닙니다.</div></div>`;
+      h += T('title','제목') + N('total','모집 인원 (전체)')
+        + N('offline','사이트 밖에서 받은 신청 수')
+        + `<div class="fld"><div class="hint">
+             남은 자리는 <b>실제 신청 건수 + 위에 적은 수</b>를 빼서 자동 계산됩니다.<br>
+             예) 30명 모집 · 사이트 신청 4명 · 위에 3 입력 → <b>남은 자리 23명</b><br>
+             당근·인스타 DM·카톡처럼 사이트를 거치지 않고 받은 신청을 적으세요.
+             비워두면 0으로 봅니다.
+           </div></div>`
+        + `<div class="fld"><div class="hint" style="color:#c0392b">
+             <b>받지 않은 신청을 적으면 안 됩니다.</b> 남은 자리를 실제보다 적게 보이게 하는 것은
+             표시광고법상 문제가 될 수 있고, 들키면 신뢰를 잃습니다.
+           </div></div>`
+        + T('note','설명');
       break;
     case 'live':
       h += T('title','제목')

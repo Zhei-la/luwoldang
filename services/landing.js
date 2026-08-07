@@ -367,9 +367,14 @@ function renderBlock(b, ctx) {
     }
 
     case 'gauge': {
-      // 실제 신청 건수 기반 (DB) — 가짜 숫자 아님
+      /* 실제 신청 건수 기반 (DB) + 사이트 밖 접수 보정
+       *
+       * 당근·인스타 DM·카톡처럼 사이트를 거치지 않고 받은 신청은 DB에 없다.
+       * 그 수를 b.offline 에 적으면 남은 자리에서 함께 빼준다.
+       * (받지도 않은 신청을 적으면 안 된다 — 편집 화면에 경고를 띄운다) */
       const total = Math.max(1, Number(b.total) || 1);
-      const used = ctx.stats ? Number(ctx.stats.leadCount || 0) : 0;
+      const used = (ctx.stats ? Number(ctx.stats.leadCount || 0) : 0)
+                 + Math.max(0, Number(b.offline) || 0);
       const left = Math.max(0, total - used);
       // 막대는 '채워진 정도'를 보여준다 — 찰수록 길어져야 마감이 가까워 보인다
       const fill = Math.max(2, Math.min(100, Math.round((used / total) * 100)));
