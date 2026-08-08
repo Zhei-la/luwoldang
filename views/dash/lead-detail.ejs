@@ -325,7 +325,7 @@
     <div class="warn-box">사주 계산이 안 되어 리포트를 만들 수 없습니다.</div>
   <% } else { %>
     <div class="mk-mode">
-      <label class="mk-mode-item <%= hasKey ? 'on' : '' %>" id="mmAi"<%= hasKey ? '' : ' style="opacity:.45"' %>>
+      <label class="mk-mode-item <%= hasKey ? 'on' : '' %>" id="mmAi"<%- hasKey ? '' : ' style="opacity:.45"' %>>
         <input type="radio" name="mkMode" value="ai"<%= hasKey ? ' checked' : ' disabled' %>>
         <b>AI로 만들기</b>
         <span><%= hasKey ? '버튼만 누르면 알아서 작성 · 편당 약 900원' : 'API 키 등록 후 사용할 수 있어요' %></span>
@@ -547,7 +547,7 @@
   }
 
   /* ── 만들기 방식 고르기 (AI / 직접 작성) ── */
-  var mkMode = <%= hasKey ? "'ai'" : "'manual'" %>;
+  var mkMode = '<%= hasKey ? "ai" : "manual" %>';
   (function () {
     var ai = document.getElementById('mmAi');
     var man = document.getElementById('mmManual');
