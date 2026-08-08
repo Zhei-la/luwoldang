@@ -313,19 +313,25 @@
 <!-- PDF 제작 -->
 <div class="settings-block">
   <h2 class="section-h">사주 리포트 제작</h2>
+  <%# 키가 없어도 '직접 작성'으로는 만들 수 있으므로 화면을 막지 않는다. 안내만 띄운다. %>
   <% if (!hasKey) { %>
-    <div class="warn-box">OpenAI API 키를 먼저 등록해주세요. <a href="/free-saju-settings">설정하러 가기 →</a></div>
-  <% } else if (!saju) { %>
+    <div class="warn-box" style="margin-bottom:14px">
+      OpenAI API 키가 없어 <b>AI로 만들기</b>는 사용할 수 없습니다.
+      아래 <b>직접 작성</b>으로는 지금 바로 만드실 수 있어요. (요금 0원)
+      <a href="/free-saju-settings">키 등록하러 가기 →</a>
+    </div>
+  <% } %>
+  <% if (!saju) { %>
     <div class="warn-box">사주 계산이 안 되어 리포트를 만들 수 없습니다.</div>
   <% } else { %>
     <div class="mk-mode">
-      <label class="mk-mode-item on" id="mmAi">
-        <input type="radio" name="mkMode" value="ai" checked>
+      <label class="mk-mode-item <%= hasKey ? 'on' : '' %>" id="mmAi"<%= hasKey ? '' : ' style="opacity:.45"' %>>
+        <input type="radio" name="mkMode" value="ai"<%= hasKey ? ' checked' : ' disabled' %>>
         <b>AI로 만들기</b>
-        <span>버튼만 누르면 알아서 작성 · 편당 약 900원</span>
+        <span><%= hasKey ? '버튼만 누르면 알아서 작성 · 편당 약 900원' : 'API 키 등록 후 사용할 수 있어요' %></span>
       </label>
-      <label class="mk-mode-item" id="mmManual">
-        <input type="radio" name="mkMode" value="manual">
+      <label class="mk-mode-item <%= hasKey ? '' : 'on' %>" id="mmManual">
+        <input type="radio" name="mkMode" value="manual"<%= hasKey ? '' : ' checked' %>>
         <b>직접 작성</b>
         <span>내가 쓴 글을 붙여넣기 · <b>요금 0원</b></span>
       </label>
@@ -541,7 +547,7 @@
   }
 
   /* ── 만들기 방식 고르기 (AI / 직접 작성) ── */
-  var mkMode = 'ai';
+  var mkMode = <%= hasKey ? "'ai'" : "'manual'" %>;
   (function () {
     var ai = document.getElementById('mmAi');
     var man = document.getElementById('mmManual');
@@ -557,8 +563,9 @@
       var mk = document.getElementById('btnMake');
       if (mk && picked) mk.textContent = picked + (mode === 'manual' ? ' 리포트 만들기 (요금 0원)' : ' 리포트 만들기');
     }
-    ai.addEventListener('click', function () { apply('ai'); });
+    ai.addEventListener('click', function () { if (<%= hasKey ? 'true' : 'false' %>) apply('ai'); });
     man.addEventListener('click', function () { apply('manual'); });
+    apply(mkMode);   // 키가 없으면 직접 작성으로 시작
   })();
 
   if (btnMake) {

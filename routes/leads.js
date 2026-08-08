@@ -1242,7 +1242,13 @@ router.post('/pdf/create', async (req, res, next) => {
     });
 
     if (!b.name || !b.birthDate) return back('이름과 생년월일은 필수입니다.', b);
-    if (!req.user.openai_key) return back('OpenAI API 키를 먼저 등록해주세요.', b);
+
+    /* ⚠️ 예전에는 여기서 OpenAI 키가 없으면 되돌려보냈다.
+     * 그 탓에 키를 등록하지 않은 교육생은 신청자 저장조차 되지 않아
+     * "리포트 만들기를 눌러도 목록에 안 뜬다"는 문제가 있었다.
+     * 지금은 '직접 작성' 모드로 키 없이도 리포트를 만들 수 있으므로
+     * 신청자 등록 단계에서는 키를 요구하지 않는다.
+     * 키가 필요한 것은 'AI로 만들기'를 누르는 순간뿐이다. */
 
     const lead = await pool.query(
       `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region, email, phone, memo, status, source,
