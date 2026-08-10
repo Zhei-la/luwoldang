@@ -1,0 +1,1388 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '스레드 도구' }) %>
+
+<style>
+/* ══════════════════════════════════════════════════════════
+ * 스레드 도구 — 원본 도구의 구조와 기능은 그대로 두고
+ * 색만 루월당(한지·먹·금박)으로 바꿨다.
+ *
+ * ⚠️ 모든 규칙을 #th-app 안에 가뒀다.
+ *    원본에 * { margin:0 } 과 body { } 같은 전역 규칙이 있어서
+ *    그대로 두면 대시보드 전체가 깨진다.
+ * ══════════════════════════════════════════════════════════ */
+/* ── 루월당 다크 테마 ── */
+#th-app {
+  /* 루월당 한지 톤 — 대시보드(dashboard.css)의 색을 그대로 따른다 */
+  --bg:   #F7F3EA;
+  --bg2:  #FFFDF8;
+  --sur:  #FFFFFF;
+  --sur2: #F4EFE3;
+  --bdr:  #E9E0CF;
+  --acc:  #B59A62;       /* 금박 */
+  --acc2: #8A6F3C;
+  --red:  #A8332B;
+  --green:#4C8577;
+  --blue: #3B6EA5;
+  --txt:  #252522;
+  --txt2: #6B6656;
+  --txt3: #9A9384;
+  --navy: #182234;       /* 사이드바와 같은 남색 — 주요 버튼에 쓴다 */
+  --onacc:#FFFFFF;       /* 금박 위에 얹는 글자색 (원본은 어두운 색이었다) */
+  --r: 12px;
+}
+#th-app * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+#th-app, #th-app { background: var(--bg); color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; font-size: 15px; line-height: 1.6; }
+#th-app { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+/* ── 레이아웃 ── */
+#th-app .wrap { max-width: 680px; margin: 0 auto; padding: 0 16px; padding-top: env(safe-area-inset-top); }
+/* ── 헤더 ── */
+#th-app .hd { display: flex; align-items: center; justify-content: space-between; padding: 20px 0 12px; border-bottom: 1px solid var(--bdr); margin-bottom: 16px; }
+#th-app .hd-title { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+#th-app .hd-title span { color: var(--acc); }
+#th-app .hd-sub { font-size: 12px; color: var(--txt3); }
+/* ── 스크롤 탭 ── */
+#th-app .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-bottom: 14px; }
+#th-app .tabs::-webkit-scrollbar { display: none; }
+#th-app .tab { flex: 0 0 auto; padding: 7px 14px; border-radius: 100px; border: 1px solid var(--bdr); background: var(--sur); color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+#th-app .tab .n { font-size: 10px; opacity: .6; }
+#th-app .tab.on { background: var(--acc); color: var(--onacc); border-color: var(--acc); }
+#th-app .tab.plus { color: var(--txt3); }
+/* ── 검색 ── */
+#th-app .search { display: flex; gap: 8px; margin-bottom: 10px; }
+#th-app .search input { flex: 1; background: var(--sur); border: 1px solid var(--bdr); border-radius: 10px; padding: 10px 13px; font-size: 15px; font-family: inherit; color: var(--txt); outline: none; transition: border-color .15s; }
+#th-app .search input::placeholder { color: var(--txt3); }
+#th-app .search input:focus { border-color: var(--acc); }
+#th-app .search-btn { padding: 10px 16px; background: var(--sur2); border: 1px solid var(--bdr); border-radius: 10px; color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+/* ── 도구 바 ── */
+#th-app .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; color: var(--txt3); }
+#th-app .toolbar button { background: none; border: none; color: var(--txt3); font: inherit; font-size: 12px; cursor: pointer; padding: 0; }
+#th-app .toolbar button.on { color: var(--acc); font-weight: 700; }
+#th-app .toolbar .sp { flex: 1; }
+#th-app .toolbar .edit-btn { color: var(--txt3); font-size: 12px; }
+/* ── 글 목록 ── */
+#th-app .sec-label { font-size: 11px; letter-spacing: .14em; color: var(--txt3); padding: 6px 0; border-bottom: 1px solid var(--bdr); margin-bottom: 10px; }
+#th-app .post { background: var(--sur); border: 1px solid var(--bdr); border-radius: var(--r); padding: 13px; margin-bottom: 8px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; transition: border-color .15s; position: relative; overflow: hidden; }
+#th-app .post::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--acc); opacity: 0; transition: opacity .15s; }
+#th-app .post:hover { border-color: rgba(201,169,110,.25); }
+#th-app .post:hover::before { opacity: 1; }
+#th-app .post .body { flex: 1; min-width: 0; }
+#th-app .post .t { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+#th-app .post .t .star { color: var(--acc); font-size: 12px; }
+#th-app .post .pv { font-size: 12.5px; color: var(--txt2); white-space: pre-wrap; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5; word-break: break-all; }
+#th-app .post .meta { margin-top: 7px; font-size: 11px; color: var(--txt3); display: flex; gap: 8px; flex-wrap: wrap; }
+#th-app .post .side { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+#th-app .post .copy-btn { background: var(--acc); color: var(--onacc); border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+#th-app .post .fav-btn { background: none; border: none; color: var(--txt3); font-size: 15px; cursor: pointer; padding: 2px 4px; }
+#th-app .post .fav-btn.on { color: var(--acc); }
+/* ── 빈 상태 ── */
+#th-app .empty { text-align: center; padding: 48px 0; color: var(--txt3); font-size: 13px; line-height: 2; }
+#th-app .empty strong { display: block; font-size: 24px; margin-bottom: 8px; }
+/* ── FAB ── */
+#th-app .fab { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 60%, transparent); z-index: 20; }
+#th-app .fab button { display: block; width: 100%; max-width: 648px; margin: 0 auto; background: var(--acc); color: var(--onacc); border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; }
+/* ── 오버레이 시트 ── */
+#th-app .ov { position: fixed; inset: 0; background: rgba(37,37,34,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 60; animation: fade .15s ease; }
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+#th-app .sheet { background: var(--sur); width: 100%; max-width: 680px; border-radius: 20px 20px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; animation: up .2s ease; }
+@keyframes up { from { transform: translateY(20px) } to { transform: none } }
+#th-app .sheet-bar { width: 36px; height: 4px; background: var(--bdr); border-radius: 2px; margin: 0 auto 18px; }
+#th-app .sheet h3 { font-size: 17px; font-weight: 800; margin-bottom: 14px; }
+#th-app .sheet label { display: block; font-size: 11px; letter-spacing: .12em; color: var(--txt3); margin: 14px 0 5px; }
+#th-app .sheet input[type=text], #th-app .sheet textarea { width: 100%; background: var(--sur2); border: 1px solid var(--bdr); border-radius: 10px; padding: 11px 13px; font-size: 15px; font-family: inherit; color: var(--txt); outline: none; line-height: 1.6; transition: border-color .15s; }
+#th-app .sheet input:focus, #th-app .sheet textarea:focus { border-color: var(--acc); }
+#th-app .sheet textarea { resize: vertical; min-height: 200px; white-space: pre-wrap; }
+#th-app .sheet .note { font-size: 12px; color: var(--txt3); line-height: 1.7; margin-top: 8px; word-break: keep-all; }
+#th-app .sheet .full { background: var(--sur2); border: 1px solid var(--bdr); border-radius: 10px; padding: 13px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-all; max-height: 40vh; overflow-y: auto; color: var(--txt); }
+#th-app .sheet .char-count { font-size: 12px; color: var(--txt3); text-align: right; margin-top: 5px; }
+#th-app .sheet .char-count.over { color: var(--red); font-weight: 700; }
+/* ── 액션 버튼 ── */
+#th-app .acts { display: flex; gap: 8px; margin-top: 16px; }
+#th-app .acts button { flex: 1; border: none; border-radius: 11px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+#th-app .acts .ok { background: var(--acc); color: var(--onacc); flex: 1.8; }
+#th-app .acts .gray { background: var(--sur2); color: var(--txt2); }
+#th-app .acts .red { background: rgba(239,68,68,.12); color: var(--red); }
+#th-app .acts .blue { background: rgba(96,165,250,.12); color: var(--blue); }
+/* ── 예약 발행 시트 ── */
+#th-app .pub-accounts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+#th-app .pub-acc { padding: 7px 14px; border-radius: 100px; border: 1px solid var(--bdr); background: var(--sur2); color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+#th-app .pub-acc.on { border-color: var(--acc); color: var(--acc); background: rgba(201,169,110,.1); }
+#th-app .time-slots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+#th-app .time-slot { padding: 7px 14px; border-radius: 100px; border: 1px solid var(--bdr); background: var(--sur2); color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+#th-app .time-slot.on { border-color: var(--blue); color: var(--blue); background: rgba(96,165,250,.1); }
+#th-app .custom-time { margin-top: 10px; display: none; }
+#th-app .custom-time input { width: 100%; }
+#th-app .preview-box { background: var(--bg); border: 1px solid var(--bdr); border-radius: 10px; padding: 13px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-all; color: var(--txt); margin-top: 8px; max-height: 200px; overflow-y: auto; }
+#th-app .preview-count { font-size: 12px; text-align: right; margin-top: 5px; }
+/* ── 예약 목록 배지 ── */
+#th-app .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; }
+#th-app .badge.blue { background: rgba(96,165,250,.15); color: var(--blue); }
+#th-app .badge.green { background: rgba(34,197,94,.15); color: var(--green); }
+#th-app .badge.red { background: rgba(239,68,68,.15); color: var(--red); }
+/* ── 토스트 ── */
+#th-app .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--sur); border: 1px solid var(--bdr); color: var(--txt); padding: 10px 18px; border-radius: 100px; font-size: 13px; font-weight: 600; z-index: 90; animation: pop .2s ease; white-space: nowrap; }
+@keyframes pop { from { opacity: 0; transform: translate(-50%, 8px) } to { opacity: 1; transform: translate(-50%, 0) } }
+/* ── 구분선 탭 (글목록/예약/기록) ── */
+#th-app .main-tabs { display: flex; border-bottom: 1px solid var(--bdr); margin-bottom: 16px; gap: 0; }
+#th-app .main-tab { flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; color: var(--txt3); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+#th-app .main-tab.on { color: var(--acc); border-bottom-color: var(--acc); }
+/* ── 자동 스케줄러 ── */
+#th-app .auto-card { background: var(--sur); border: 1px solid var(--bdr); border-radius: var(--r); padding: 16px; margin-bottom: 12px; }
+#th-app .auto-card .ac-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+#th-app .auto-card .ac-title { font-size: 14px; font-weight: 700; }
+#th-app .auto-card .ac-time { font-size: 12px; color: var(--acc); font-weight: 700; }
+#th-app .auto-card .ac-posts { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+#th-app .ac-post-chip { background: var(--sur2); border: 1px solid var(--bdr); border-radius: 8px; padding: 5px 10px; font-size: 12px; color: var(--txt2); display: flex; align-items: center; gap: 5px; }
+#th-app .ac-post-chip .x { color: var(--txt3); cursor: pointer; font-size: 14px; line-height: 1; }
+#th-app .ac-post-chip.active { border-color: var(--acc); color: var(--acc); background: rgba(201,169,110,.08); }
+#th-app .toggle-btn { width: 44px; height: 24px; border-radius: 100px; border: none; cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0; }
+#th-app .toggle-btn.on { background: var(--green); }
+#th-app .toggle-btn.off { background: var(--sur2); }
+#th-app .toggle-btn::after { content: ''; position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s; }
+#th-app .toggle-btn.on::after { left: 22px; }
+#th-app .toggle-btn.off::after { left: 2px; }
+#th-app .add-time-btn { width: 100%; padding: 12px; background: var(--sur2); border: 1px dashed var(--bdr); border-radius: var(--r); color: var(--txt3); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 8px; }
+#th-app .add-time-btn:hover { border-color: var(--acc); color: var(--acc); }
+/* ── 토큰 가이드 ── */
+#th-app .guide-step { background: var(--sur); border: 1px solid var(--bdr); border-radius: var(--r); padding: 16px; margin-bottom: 10px; display: flex; gap: 14px; }
+#th-app .guide-num { width: 28px; height: 28px; border-radius: 50%; background: var(--acc); color: var(--onacc); font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+#th-app .guide-body h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+#th-app .guide-body p { font-size: 13px; color: var(--txt2); line-height: 1.7; word-break: keep-all; }
+#th-app .guide-body .tip { background: var(--sur2); border-left: 3px solid var(--acc); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 12px; color: var(--txt2); line-height: 1.7; margin-top: 8px; }
+#th-app .guide-body .warn { background: rgba(239,68,68,.08); border-left: 3px solid var(--red); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 12px; color: #fca5a5; line-height: 1.7; margin-top: 8px; }
+#th-app .guide-link { display: inline-flex; align-items: center; gap: 5px; color: var(--blue); font-size: 12px; font-weight: 600; text-decoration: none; margin-top: 6px; }
+#th-app .sec-title { font-size: 13px; font-weight: 800; color: var(--acc); letter-spacing: .08em; margin: 20px 0 12px; }
+#th-app .info-box { background: rgba(201,169,110,.06); border: 1px solid rgba(201,169,110,.2); border-radius: var(--r); padding: 14px; margin-bottom: 16px; font-size: 13px; color: var(--txt2); line-height: 1.8; }
+@media (prefers-reduced-motion: reduce) {
+#th-app * { animation: none !important; }
+}
+
+/* ── 대시보드 안에 넣으면서 필요한 보정 ── */
+#th-app{ padding-bottom: 20px; }                 /* 원본은 body 하단 여백이었다 */
+#th-app .wrap{ max-width: 760px; padding: 0; }
+/* 새 글 버튼 — 원본은 화면 하단 고정이었는데, 대시보드에선 아래 메뉴와 겹친다 */
+#th-app .fab{ position: sticky; bottom: 0; left: auto; right: auto;
+  padding: 14px 0 6px; background: linear-gradient(to top, var(--bg) 72%, rgba(247,243,234,0)); }
+#th-app .fab button{ width: 100%; max-width: 760px; margin: 0 auto; }
+/* 시트는 화면 전체 기준이라 스코프 안에서도 위치가 맞아야 한다 */
+#th-app .ov{ position: fixed; inset: 0; }
+#th-app .toast{ position: fixed; }
+
+</style>
+
+<div id="th-app">
+
+
+<div class="wrap">
+  <!-- 제목은 대시보드 상단바가 대신하므로 안내 문구와 백업 버튼만 둔다 -->
+  <div class="hd">
+    <div class="hd-sub">글을 적어두고 예약 발행까지 한 곳에서</div>
+    <button class="search-btn" id="backupBtn">백업/불러오기</button>
+  </div>
+
+  <!-- 메인 탭 (글목록 / 예약목록 / 발행기록) -->
+  <div class="main-tabs">
+    <div class="main-tab on" data-main="list">글 목록</div>
+    <div class="main-tab" data-main="scheduled">예약 목록</div>
+    <div class="main-tab" data-main="auto">자동 스케줄러</div>
+    <div class="main-tab" data-main="reply">자동 대댓글</div>
+    <div class="main-tab" data-main="history">발행 기록</div>
+    <div class="main-tab" data-main="token">토큰 발급</div>
+  </div>
+
+  <!-- 글 목록 화면 -->
+  <div id="page-list">
+    <div class="tabs" id="accTabs"></div>
+    <div class="tabs" id="boxTabs"></div>
+    <div class="search">
+      <input id="searchQ" placeholder="제목·내용 찾기" autocomplete="off">
+    </div>
+    <div class="toolbar" id="toolbar"></div>
+    <div id="postList"></div>
+  </div>
+
+  <!-- 예약 목록 화면 -->
+  <div id="page-scheduled" style="display:none">
+    <div id="scheduledList"></div>
+  </div>
+
+  <!-- 발행 기록 화면 -->
+  <div id="page-history" style="display:none">
+    <div id="historyList"></div>
+  </div>
+
+  <!-- 자동 대댓글 화면 -->
+  <div id="page-reply" style="display:none">
+    <div id="replyPage"></div>
+  </div>
+
+  <!-- 자동 스케줄러 화면 -->
+  <div id="page-auto" style="display:none">
+    <div id="autoPage"></div>
+  </div>
+
+  <!-- 토큰 발급 가이드 화면 -->
+  <div id="page-token" style="display:none">
+    <div id="tokenPage"></div>
+  </div>
+</div>
+
+<div class="fab"><button id="newBtn">+ 새 글 쓰기</button></div>
+
+
+</div>
+
+<script>
+
+// ══════════════════════════════════
+//  상태 / 저장소
+// ══════════════════════════════════
+const MEMO_KEY = 'luwol-memo-v1';
+const SCHED_KEY = 'luwol-sched-v1';
+const HIST_KEY = 'luwol-hist-v1';
+
+let D = { accs: [], boxes: [], posts: [] };
+let schedules = [];
+let history = [];
+let curAcc = null, curBox = null, sortBy = 'recent', searchQ = '', mainTab = 'list';
+
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+
+function save() { localStorage.setItem(MEMO_KEY, JSON.stringify(D)); }
+function saveSchedules() { localStorage.setItem(SCHED_KEY, JSON.stringify(schedules)); }
+function saveHistory() { localStorage.setItem(HIST_KEY, JSON.stringify(history)); }
+
+function load() {
+  try { const r = localStorage.getItem(MEMO_KEY); if (r) D = JSON.parse(r); } catch(e) {}
+  try { const r = localStorage.getItem(SCHED_KEY); if (r) schedules = JSON.parse(r); } catch(e) {}
+  try { const r = localStorage.getItem(HIST_KEY); if (r) history = JSON.parse(r); } catch(e) {}
+  // 계정 초기화
+  if (!D.accs || !D.accs.length) {
+    const defAcc = { id: uid(), name: '기본 계정', color: '#B59A62' };
+    D.accs = [defAcc];
+    D.boxes = ['게시글', '안내멘트', '공지사항', '이벤트'].map(n => ({ id: uid(), accId: defAcc.id, name: n }));
+    D.posts = [];
+  }
+  // 기존 데이터 마이그레이션 (accId 없는 박스/포스트 처리)
+  if (D.boxes && D.boxes.some(b => !b.accId)) {
+    const firstAcc = D.accs[0];
+    D.boxes.forEach(b => { if (!b.accId) b.accId = firstAcc.id; });
+    D.posts.forEach(p => { if (!p.accId) p.accId = firstAcc.id; });
+  }
+  curAcc = D.accs[0]?.id || null;
+  const accBoxes = D.boxes.filter(b => b.accId === curAcc);
+  curBox = accBoxes[0]?.id || null;
+}
+
+// ══════════════════════════════════
+//  유틸
+// ══════════════════════════════════
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function when(ts) {
+  const d = Math.floor((Date.now() - ts) / 864e5);
+  if (d === 0) return '오늘';
+  if (d === 1) return '어제';
+  if (d < 7) return d + '일 전';
+  const t = new Date(ts);
+  return `${t.getMonth()+1}/${t.getDate()}`;
+}
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// 변수 감지 ({이름} 형태)
+function getVars(text) {
+  const set = [];
+  (text.match(/\{[^}\n]{1,24}\}/g) || []).forEach(v => { if (!set.includes(v)) set.push(v); });
+  return set;
+}
+
+// 복사
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch(e) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.cssText = 'position:fixed;top:-9999px;opacity:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand('copy'); ta.remove();
+    if (ok) return true;
+  } catch(e) {}
+  return false;
+}
+
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(el => el.remove());
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 1800);
+}
+
+// ══════════════════════════════════
+//  시트 (오버레이)
+// ══════════════════════════════════
+let sheetCb = null;
+function openSheet(html, afterFn, actCb) {
+  closeSheet();
+  const ov = document.createElement('div'); ov.className = 'ov'; ov.id = 'ov';
+  ov.innerHTML = `<div class="sheet"><div class="sheet-bar"></div>${html}</div>`;
+  document.body.appendChild(ov);
+  sheetCb = actCb || null;
+  ov.addEventListener('click', e => {
+    if (e.target === ov) return closeSheet();
+    const btn = e.target.closest('[data-x]');
+    if (!btn) return;
+    const x = btn.dataset.x;
+    if (x === 'close') return closeSheet();
+    if (sheetCb && sheetCb(x, btn)) return;
+  });
+  if (afterFn) setTimeout(afterFn, 60);
+}
+function closeSheet() { const o = $('ov'); if (o) o.remove(); sheetCb = null; }
+
+// ══════════════════════════════════
+//  메인 탭 전환
+// ══════════════════════════════════
+function switchMain(tab) {
+  mainTab = tab;
+  document.querySelectorAll('.main-tab').forEach(el => el.classList.toggle('on', el.dataset.main === tab));
+  $('page-list').style.display = tab === 'list' ? '' : 'none';
+  $('page-scheduled').style.display = tab === 'scheduled' ? '' : 'none';
+  $('page-history').style.display = tab === 'history' ? '' : 'none';
+  $('page-auto').style.display = tab === 'auto' ? '' : 'none';
+  $('page-reply').style.display = tab === 'reply' ? '' : 'none';
+  $('page-token').style.display = tab === 'token' ? '' : 'none';
+  $('newBtn').style.display = tab === 'list' ? '' : 'none';
+  if (tab === 'scheduled') renderScheduled();
+  if (tab === 'history') renderHistory();
+  if (tab === 'auto') renderAutoPage();
+  if (tab === 'reply') renderReplyPage();
+  if (tab === 'token') renderTokenPage();
+}
+
+// ══════════════════════════════════
+//  자동 대댓글
+// ══════════════════════════════════
+const REPLY_KEY = 'luwol-reply-v1';
+let replyRules = [];
+
+function saveReply() { localStorage.setItem(REPLY_KEY, JSON.stringify(replyRules)); }
+function loadReply() { try { const r = localStorage.getItem(REPLY_KEY); if (r) replyRules = JSON.parse(r); } catch(e) {} }
+
+function renderReplyPage() {
+  const el = $('replyPage');
+  el.innerHTML = `
+    <div class="info-box">
+      💬 <strong>자동 대댓글이란?</strong><br>
+      내 Threads 게시글에 댓글이 달리면 자동으로 대댓글을 달아줘.<br>
+      특정 키워드가 포함된 댓글에만 반응하거나, 모든 댓글에 자동 응답할 수 있어.<br>
+      대댓글 끝에 <strong>DM 유도 문구</strong>를 자동으로 붙여서 DM이 오게 유도할 수도 있어.<br><br>
+      <strong>⚠️ 실제 동작은 루월당 서버 연동 필요</strong> — 서버에서 1분마다 댓글 체크 후 자동 발송
+    </div>
+    <div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;font-size:12px;color:#3B6EA5;line-height:1.8">
+      📌 <strong>동작 방식</strong><br>
+      서버가 1분마다 내 게시글의 새 댓글 체크<br>
+      → 조건 맞으면 설정한 대댓글 자동 발송<br>
+      → DM 유도 옵션 켜면 대댓글 끝에 문구 자동 추가<br>
+      → 사람들이 DM 보내게 유도
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700">대댓글 규칙 <span style="color:var(--acc)">${replyRules.length}</span></div>
+      <button onclick="openReplyRuleSheet(null)" style="background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">+ 규칙 추가</button>
+    </div>
+    ${replyRules.length === 0
+      ? '<p class="empty" style="padding:32px 0"><strong>💬</strong>규칙이 없어<br>위 버튼으로 추가해봐</p>'
+      : replyRules.map(r => `
+        <div class="auto-card">
+          <div class="ac-head">
+            <div>
+              <div class="ac-title">${esc(r.name)}</div>
+              <div style="font-size:11px;color:var(--txt3);margin-top:3px">
+                ${r.triggerType==='all' ? '모든 댓글에 반응' : '키워드 포함 시: ' + esc((r.keywords||[]).join(', '))}
+              </div>
+              ${r.dmLure ? '<div style="font-size:11px;color:var(--blue);margin-top:2px">💌 DM 유도 문구 포함</div>' : ''}
+              ${r.delayMin ? `<div style="font-size:11px;color:var(--txt3);margin-top:2px">⏱ ${r.delayMin}분 후 발송</div>` : ''}
+            </div>
+            <button class="toggle-btn ${r.enabled?'on':'off'}" onclick="toggleReply('${r.id}')"></button>
+          </div>
+          <div style="font-size:11px;color:var(--txt3);margin-bottom:6px">대댓글 ${(r.replyTexts||[]).length}개 · ${r.replyMode==='random'?'랜덤':'순서대로'}</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${(r.replyTexts||[]).slice(0,2).map(t => `<div style="background:var(--sur2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--txt2)">${esc(t.slice(0,40))}${t.length>40?'…':''}</div>`).join('')}
+            ${(r.replyTexts||[]).length > 2 ? `<div style="font-size:11px;color:var(--txt3)">+${(r.replyTexts||[]).length-2}개 더</div>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button onclick="openReplyRuleSheet('${r.id}')" style="flex:1;padding:8px;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">수정</button>
+            <button onclick="deleteReply('${r.id}')" style="padding:8px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">삭제</button>
+          </div>
+        </div>`).join('')}`;
+}
+
+function toggleReply(id) {
+  const r = replyRules.find(x => x.id === id);
+  if (r) { r.enabled = !r.enabled; saveReply(); renderReplyPage(); }
+}
+function deleteReply(id) {
+  if (!confirm('이 규칙을 삭제할까?')) return;
+  replyRules = replyRules.filter(x => x.id !== id);
+  saveReply(); renderReplyPage(); toast('삭제됐어');
+}
+
+function openReplyRuleSheet(editId) {
+  const r = editId ? replyRules.find(x => x.id === editId) : null;
+  let replyTexts = r ? [...(r.replyTexts||[])] : [''];
+
+  const buildList = () =>
+    replyTexts.map((t, i) => `
+      <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+        <input type="text" id="rt_${i}" value="${esc(t)}" placeholder="대댓글 내용" style="flex:1;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--txt);outline:none">
+        <button onclick="rrDel(${i})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 4px">×</button>
+      </div>`).join('') +
+    `<button onclick="rrAdd()" style="width:100%;padding:9px;background:var(--sur2);border:1px dashed var(--bdr);border-radius:8px;color:var(--txt3);font-size:12px;cursor:pointer;font-family:inherit;margin-top:4px">+ 대댓글 추가</button>`;
+
+  window.rrAdd = () => { replyTexts.push(''); $('replyTextList').innerHTML = buildList(); };
+  window.rrDel = (i) => { replyTexts.splice(i,1); if(!replyTexts.length) replyTexts=[''];  $('replyTextList').innerHTML = buildList(); };
+
+  openSheet(`<h3>${r ? '규칙 수정' : '대댓글 규칙 추가'}</h3>
+
+    <label>규칙 이름</label>
+    <input type="text" id="rlName" value="${r ? esc(r.name) : ''}" placeholder="예: 문의 자동응답, DM 유도">
+
+    <label>반응 조건</label>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="time-slot ${!r||r.triggerType==='all'?'on':''}" id="trigAll" onclick="this.classList.add('on');document.getElementById('trigKw').classList.remove('on');document.getElementById('kwWrap').style.display='none'">모든 댓글</button>
+      <button class="time-slot ${r&&r.triggerType==='keyword'?'on':''}" id="trigKw" onclick="this.classList.add('on');document.getElementById('trigAll').classList.remove('on');document.getElementById('kwWrap').style.display=''">키워드 포함 시</button>
+    </div>
+    <div id="kwWrap" style="margin-top:8px;display:${r&&r.triggerType==='keyword'?'':'none'}">
+      <input type="text" id="rlKeywords" value="${r?esc((r.keywords||[]).join(', ')):''}  " placeholder="예: 구매, 문의, 가격 (쉼표로 구분)">
+      <div class="note" style="margin-top:4px">이 단어 중 하나라도 포함된 댓글에만 반응해</div>
+    </div>
+
+    <label>대댓글 내용 (여러 개 등록 가능)</label>
+    <div id="replyTextList">${buildList()}</div>
+
+    <label>발송 모드</label>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="time-slot ${!r||r.replyMode==='random'?'on':''}" id="rmRand" onclick="this.classList.add('on');document.getElementById('rmSeq').classList.remove('on')">🎲 랜덤</button>
+      <button class="time-slot ${r&&r.replyMode==='seq'?'on':''}" id="rmSeq" onclick="this.classList.add('on');document.getElementById('rmRand').classList.remove('on')">📋 순서대로</button>
+    </div>
+
+    <label>발송 딜레이</label>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+      <input type="number" id="rlDelay" value="${r?(r.delayMin||0):1}" min="0" max="60" style="width:80px;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;color:var(--txt);outline:none;text-align:center">
+      <span style="font-size:13px;color:var(--txt2)">분 후 발송 (0 = 즉시)</span>
+    </div>
+
+    <label style="margin-top:14px">💌 DM 유도</label>
+    <div style="background:var(--sur2);border-radius:10px;padding:12px;margin-top:6px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+        <input type="checkbox" id="dmChk" ${r&&r.dmLure?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)">
+        <span style="font-size:13px;font-weight:600">대댓글 끝에 DM 유도 문구 자동 추가</span>
+      </label>
+      <div id="dmTextWrap" style="margin-top:10px;display:${r&&r.dmLure?'':'none'}">
+        <input type="text" id="dmText" value="${r?esc(r.dmLureText||'궁금하신 분은 DM 주세요'):'궁금하신 분은 DM 주세요'}" placeholder="DM 유도 문구">
+        <div class="note" style="margin-top:4px">대댓글 맨 끝에 이 문구가 자동으로 붙어</div>
+      </div>
+    </div>
+
+    <div class="acts">
+      ${r ? '<button class="red" data-x="del">삭제</button>' : ''}
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`,
+    () => {
+      $('dmChk').addEventListener('change', e => {
+        $('dmTextWrap').style.display = e.target.checked ? '' : 'none';
+      });
+      $('rlName').focus();
+    },
+    x => {
+      if (x === 'del') {
+        if (!confirm('삭제할까?')) return true;
+        replyRules = replyRules.filter(z => z.id !== editId);
+        saveReply(); closeSheet(); renderReplyPage(); return true;
+      }
+      if (x !== 'save') return false;
+      const texts = [];
+      document.querySelectorAll('[id^="rt_"]').forEach(inp => { if (inp.value.trim()) texts.push(inp.value.trim()); });
+      if (!texts.length) { toast('대댓글을 최소 1개 입력해줘'); return true; }
+      const trigType = $('trigKw').classList.contains('on') ? 'keyword' : 'all';
+      const keywords = trigType === 'keyword' ? ($('rlKeywords').value||'').split(',').map(s=>s.trim()).filter(Boolean) : [];
+      const replyMode = $('rmSeq').classList.contains('on') ? 'seq' : 'random';
+      const dmLure = $('dmChk').checked;
+      const dmLureText = $('dmText')?.value?.trim() || '';
+      const delayMin = parseInt($('rlDelay').value)||0;
+      const name = $('rlName').value.trim() || '규칙';
+      const data = { name, triggerType: trigType, keywords, replyTexts: texts, replyMode, dmLure, dmLureText, delayMin, enabled: true };
+      if (r) { Object.assign(r, data); }
+      else { replyRules.push({ id: uid(), ...data, lastIdx: 0, createdAt: Date.now() }); }
+      saveReply(); closeSheet(); renderReplyPage(); toast('저장됐어'); return true;
+    });
+}
+
+// ══════════════════════════════════
+//  칸(보관함) 관리
+// ══════════════════════════════════
+// ══════════════════════════════════
+//  계정 관리
+// ══════════════════════════════════
+const ACC_COLORS = ['#B59A62','#3B6EA5','#4C8577','#A8332B','#5B3FA8','#B4622A','#8A3070','#2F7D9E'];
+
+function accSheet(a) {
+  const editing = !!a;
+  let color = a ? a.color : ACC_COLORS[D.accs.length % ACC_COLORS.length];
+  openSheet(`<h3>${editing ? '계정 수정' : '계정 추가'}</h3>
+    <label>계정 이름</label>
+    <input type="text" id="accName" value="${editing ? esc(a.name) : ''}" placeholder="예: 루월당 본계정, 부계정">
+    <label>색상</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="accColors">
+      ${ACC_COLORS.map(c => `<button data-c="${c}" onclick="accPickColor('${c}')" style="width:30px;height:30px;border-radius:50%;background:${c};border:2px solid ${c===color?'#fff':'transparent'};cursor:pointer;id='cc_${c}'"></button>`).join('')}
+    </div>
+    <div class="acts">
+      ${editing ? '<button class="red" data-x="del">삭제</button>' : ''}
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`,
+    () => { $('accName').focus(); window._accColor = color; },
+    x => {
+      if (x === 'del') {
+        if (D.accs.length < 2) { toast('계정이 하나뿐이라 삭제할 수 없어'); return true; }
+        const cnt = D.posts.filter(p => p.accId === a.id).length;
+        if (!confirm(`"${a.name}" 계정 삭제? 글 ${cnt}개도 같이 사라져.`)) return true;
+        D.posts = D.posts.filter(p => p.accId !== a.id);
+        D.boxes = D.boxes.filter(b => b.accId !== a.id);
+        D.accs = D.accs.filter(x2 => x2.id !== a.id);
+        curAcc = D.accs[0].id;
+        curBox = D.boxes.filter(b => b.accId === curAcc)[0]?.id || null;
+        save(); closeSheet(); render(); return true;
+      }
+      if (x !== 'save') return false;
+      const name = $('accName').value.trim() || '계정';
+      const col = window._accColor || color;
+      if (editing) { a.name = name; a.color = col; }
+      else {
+        const na = { id: uid(), name, color: col };
+        D.accs.push(na);
+        // 새 계정에 기본 칸 자동 생성
+        ['게시글', '안내멘트'].forEach(n => D.boxes.push({ id: uid(), accId: na.id, name: n }));
+        curAcc = na.id;
+        curBox = D.boxes.filter(b => b.accId === curAcc)[0]?.id || null;
+      }
+      save(); closeSheet(); render(); toast(editing ? '수정됐어' : '계정 추가됐어'); return true;
+    });
+}
+
+window.accPickColor = (c) => {
+  window._accColor = c;
+  document.querySelectorAll('#accColors button').forEach(btn => {
+    btn.style.borderColor = btn.dataset.c === c ? '#fff' : 'transparent';
+  });
+};
+
+function boxSheet(b) {
+  const editing = !!b;
+  openSheet(`<h3>${editing ? '칸 고치기' : '칸 추가'}</h3>
+    <label>이름</label>
+    <input type="text" id="bn" value="${editing ? esc(b.name) : ''}" placeholder="예: 홍보글">
+    <div class="acts">
+      ${editing ? '<button class="red" data-x="del">삭제</button>' : ''}
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`, () => $('bn').focus(),
+    x => {
+      if (x === 'save') {
+        const n = $('bn').value.trim() || '이름없음';
+        if (editing) b.name = n;
+        else { const nb = { id: uid(), accId: curAcc, name: n }; D.boxes.push(nb); curBox = nb.id; }
+        save(); closeSheet(); render(); return true;
+      }
+      if (x === 'del') {
+        const cnt = D.posts.filter(p => p.boxId === b.id).length;
+        if (!confirm(`"${b.name}" 칸을 지울까? 글 ${cnt}개도 같이 사라져.`)) return true;
+        D.posts = D.posts.filter(p => p.boxId !== b.id);
+        D.boxes = D.boxes.filter(x2 => x2.id !== b.id);
+        curBox = D.boxes[0]?.id || null;
+        save(); closeSheet(); render(); return true;
+      }
+    });
+}
+
+// ══════════════════════════════════
+//  글 관리
+// ══════════════════════════════════
+function postSheet(p) {
+  const editing = !!p;
+  openSheet(`<h3>${editing ? '글 고치기' : '새 글'}</h3>
+    <label>제목 (비우면 첫 줄이 제목)</label>
+    <input type="text" id="pt" value="${editing ? esc(p.title) : ''}" placeholder="제목">
+    <label>본문</label>
+    <textarea id="pb" placeholder="글 내용을 여기에 써줘\n{이름} 처럼 중괄호 쓰면 복사할 때 채울 수 있어">${editing ? esc(p.body) : ''}</textarea>
+    <div class="char-count" id="cc"></div>
+    <div class="acts">
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`,
+    () => {
+      const pb = $('pb');
+      const cc = () => {
+        const len = pb.value.length;
+        $('cc').textContent = `${len}자`;
+        $('cc').className = 'char-count' + (len > 500 ? ' over' : '');
+      };
+      pb.addEventListener('input', cc); cc();
+      if (!editing) $('pt').focus();
+    },
+    x => {
+      if (x !== 'save') return false;
+      const body = $('pb').value;
+      if (!body.trim()) { alert('본문을 입력해줘'); return true; }
+      const title = $('pt').value.trim() || body.split('\n').find(l => l.trim())?.trim().slice(0, 40) || '제목없음';
+      if (editing) {
+        p.title = title; p.body = body; p.updatedAt = Date.now();
+      } else {
+        D.posts.unshift({ id: uid(), accId: curAcc, boxId: curBox, title, body, fav: false, uses: 0, lastUsed: null, createdAt: Date.now(), updatedAt: Date.now() });
+      }
+      save(); closeSheet(); render(); return true;
+    });
+}
+
+function viewSheet(p) {
+  const schCnt = schedules.filter(s => s.postId === p.id && s.status === 'pending').length;
+  openSheet(`<h3>${esc(p.title)}</h3>
+    <div class="full">${esc(p.body)}</div>
+    <div class="note" style="margin-top:8px">${p.uses||0}번 씀${p.lastUsed ? ` · 마지막 ${when(p.lastUsed)}` : ''}${schCnt ? ` · <span style="color:var(--blue)">예약 ${schCnt}건</span>` : ''}</div>
+    <div class="acts">
+      <button class="ok" data-x="copy">복사</button>
+      <button class="blue" data-x="publish">발행/예약</button>
+    </div>
+    <div class="acts">
+      <button class="gray" data-x="edit">고치기</button>
+      <button class="gray" data-x="dup">복제</button>
+      <button class="red" data-x="del">삭제</button>
+    </div>`, null,
+    x => {
+      if (x === 'copy') { closeSheet(); doCopy(p); return true; }
+      if (x === 'publish') { closeSheet(); publishSheet(p); return true; }
+      if (x === 'edit') { closeSheet(); postSheet(p); return true; }
+      if (x === 'dup') {
+        D.posts.unshift({ ...p, id: uid(), title: p.title + ' (복제)', uses: 0, lastUsed: null, createdAt: Date.now() });
+        save(); closeSheet(); render(); toast('복제됐어'); return true;
+      }
+      if (x === 'del') {
+        if (!confirm('이 글을 지울까?')) return true;
+        D.posts = D.posts.filter(z => z.id !== p.id);
+        save(); closeSheet(); render(); return true;
+      }
+    });
+}
+
+// ══════════════════════════════════
+//  복사 (빈칸 채우기)
+// ══════════════════════════════════
+async function doCopy(p) {
+  const vs = getVars(p.body);
+  if (!vs.length) return finishCopy(p, p.body);
+  openSheet(`<h3>빈칸 채우기</h3>
+    <p class="note">"${esc(p.title)}"의 빈칸을 채워줘</p>
+    ${vs.map((v,i) => `<label>${esc(v)}</label><input type="text" id="v${i}" placeholder="${esc(v.slice(1,-1))}">`).join('')}
+    <div class="acts">
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="fill">채워서 복사</button>
+    </div>`, null,
+    x => {
+      if (x !== 'fill') return false;
+      let t = p.body;
+      vs.forEach((v, i) => { const val = $('v'+i).value; t = t.split(v).join(val || v); });
+      closeSheet(); finishCopy(p, t); return true;
+    });
+}
+async function finishCopy(p, text) {
+  const ok = await copyText(text);
+  p.uses = (p.uses || 0) + 1; p.lastUsed = Date.now(); save(); render();
+  if (ok) toast('복사됐어');
+  else {
+    openSheet(`<h3>직접 복사해줘</h3>
+      <p class="note">자동 복사가 막혀 있어. 아래 글을 길게 눌러 전체 선택 후 복사해줘.</p>
+      <label>본문</label>
+      <textarea style="min-height:200px">${esc(text)}</textarea>
+      <div class="acts"><button class="ok" data-x="close">닫기</button></div>`);
+  }
+}
+
+// ══════════════════════════════════
+//  발행 / 예약 시트
+// ══════════════════════════════════
+// ※ 실제 Threads API 연동은 루월당 서버에서 처리
+// 여기서는 예약 데이터만 저장하고, 서버 API 호출 부분은 TODO로 표시
+
+function publishSheet(p) {
+  const body = p.body;
+  const len = body.length;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+
+  // 시간 슬롯 생성
+  const slots = [];
+  for (let h of [9, 12, 18, 21]) {
+    const d = new Date(); d.setHours(h, 0, 0, 0);
+    if (d > now) slots.push({ label: `오늘 ${h}시`, value: d.toISOString() });
+  }
+  const tom = new Date(); tom.setDate(tom.getDate() + 1);
+  slots.push({ label: '내일 오전 9시', value: new Date(tom.setHours(9,0,0,0)).toISOString() });
+
+  let selSlot = 'now';
+  let selAcc = null; // 계정 선택 (루월당 계정 목록과 연동 필요)
+
+  openSheet(`<h3>발행 / 예약</h3>
+    <label>미리보기 <span style="font-size:11px;color:${len > 500 ? 'var(--red)' : 'var(--txt3)'}">${len}/500자</span></label>
+    <div class="preview-box">${esc(body)}</div>
+    ${len > 500 ? '<p class="note" style="color:var(--red)">500자를 초과했어. 글을 줄여줘.</p>' : ''}
+
+    <label>계정 선택</label>
+    <div id="pubAccs" class="pub-accounts">
+      <div class="note" style="margin:0">루월당 계정 목록과 연동 필요 (서버 API)</div>
+    </div>
+
+    <label>발행 시간</label>
+    <div class="time-slots" id="timeSlots">
+      <button class="time-slot on" data-slot="now">지금 바로</button>
+      ${slots.map((s,i) => `<button class="time-slot" data-slot="${i}">${esc(s.label)}</button>`).join('')}
+      <button class="time-slot" data-slot="custom">직접 입력</button>
+    </div>
+    <div class="custom-time" id="customTimeWrap">
+      <input type="datetime-local" id="customTime" style="width:100%;margin-top:8px">
+    </div>
+
+    <div class="acts">
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="pub" ${len > 500 ? 'disabled style="opacity:.4"' : ''}>예약 / 발행</button>
+    </div>`,
+    () => {
+      document.querySelectorAll('#timeSlots .time-slot').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#timeSlots .time-slot').forEach(b => b.classList.remove('on'));
+          btn.classList.add('on');
+          selSlot = btn.dataset.slot;
+          $('customTimeWrap').style.display = selSlot === 'custom' ? '' : 'none';
+        });
+      });
+    },
+    x => {
+      if (x !== 'pub') return false;
+      if (len > 500) { toast('500자 초과야. 줄여줘'); return true; }
+
+      let scheduledAt;
+      if (selSlot === 'now') {
+        scheduledAt = new Date().toISOString();
+      } else if (selSlot === 'custom') {
+        const cv = $('customTime').value;
+        if (!cv) { toast('시간을 입력해줘'); return true; }
+        scheduledAt = new Date(cv).toISOString();
+      } else {
+        scheduledAt = slots[parseInt(selSlot)].value;
+      }
+
+      const job = {
+        id: uid(),
+        postId: p.id,
+        title: p.title,
+        bodySnapshot: body,   // 예약 시점 본문 복사
+        scheduledAt,
+        status: 'pending',    // pending / published / failed
+        createdAt: Date.now()
+      };
+      schedules.unshift(job);
+      saveSchedules();
+      closeSheet();
+      toast(selSlot === 'now' ? '발행 요청됐어 (서버 연동 필요)' : `${fmtTime(scheduledAt)}에 예약됐어`);
+      render();
+      return true;
+    });
+}
+
+// ══════════════════════════════════
+//  예약 목록 렌더
+// ══════════════════════════════════
+function renderScheduled() {
+  const el = $('scheduledList');
+  const pending = schedules.filter(s => s.status === 'pending').sort((a,b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+  if (!pending.length) {
+    el.innerHTML = '<p class="empty"><strong>📅</strong>예약된 글이 없어</p>';
+    return;
+  }
+  el.innerHTML = `<div class="sec-label">예약 ${pending.length}건</div>` +
+    pending.map(s => `
+      <div class="post" style="cursor:default">
+        <div class="body">
+          <div class="t">${esc(s.title)} <span class="badge blue">예약</span></div>
+          <div class="pv">${esc(s.bodySnapshot)}</div>
+          <div class="meta"><span>📅 ${fmtTime(s.scheduledAt)}</span></div>
+        </div>
+        <div class="side">
+          <button class="copy-btn" style="background:var(--red);color:#fff" onclick="cancelSchedule('${s.id}')">취소</button>
+        </div>
+      </div>`).join('');
+}
+
+function cancelSchedule(id) {
+  if (!confirm('예약을 취소할까?')) return;
+  schedules = schedules.filter(s => s.id !== id);
+  saveSchedules(); renderScheduled(); toast('예약 취소됐어');
+}
+
+// ══════════════════════════════════
+//  발행 기록 렌더
+// ══════════════════════════════════
+function renderHistory() {
+  const el = $('historyList');
+  if (!history.length) {
+    el.innerHTML = '<p class="empty"><strong>📋</strong>발행 기록이 없어<br>글을 발행하면 여기에 쌓여</p>';
+    return;
+  }
+  el.innerHTML = history.slice(0, 50).map(h => `
+    <div class="post" style="cursor:default">
+      <div class="body">
+        <div class="t">${esc(h.title)} <span class="badge ${h.status === 'published' ? 'green' : 'red'}">${h.status === 'published' ? '발행완료' : '실패'}</span></div>
+        <div class="pv">${esc(h.bodySnapshot || '')}</div>
+        <div class="meta"><span>${fmtTime(h.publishedAt || h.createdAt)}</span>${h.error ? `<span style="color:var(--red)">${esc(h.error)}</span>` : ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════
+//  백업 / 불러오기
+// ══════════════════════════════════
+function backupSheet() {
+  openSheet(`<h3>백업 · 불러오기</h3>
+    <p class="note">브라우저 저장소는 캐시 초기화 시 사라질 수 있어. 가끔 내려받아 두면 안전해.</p>
+    <div class="acts" style="margin-top:12px">
+      <button class="gray" data-x="dl">파일로 내려받기</button>
+      <button class="gray" data-x="cp">전체 복사</button>
+    </div>
+    <label>불러오기 — 백업 내용 붙여넣기</label>
+    <textarea id="impData" style="min-height:100px" placeholder='{"boxes":[...],"posts":[...]}'></textarea>
+    <div class="acts">
+      <button class="gray" data-x="close">닫기</button>
+      <button class="ok" data-x="imp">불러오기</button>
+    </div>`, null,
+    async x => {
+      const json = JSON.stringify(D, null, 2);
+      if (x === 'dl') {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        a.download = `글보관함_${new Date().toISOString().slice(0,10)}.json`;
+        a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+        return true;
+      }
+      if (x === 'cp') { const ok = await copyText(json); toast(ok ? '복사됐어' : '복사 실패'); return true; }
+      if (x === 'imp') {
+        try {
+          const o = JSON.parse($('impData').value);
+          if (!o.boxes || !o.posts) throw 0;
+          if (!confirm('현재 내용이 모두 바뀌어. 계속할까?')) return true;
+          D = o; curBox = D.boxes[0]?.id || null;
+          save(); closeSheet(); render(); toast('불러왔어');
+        } catch(e) { alert('올바른 백업 파일이 아니야'); }
+        return true;
+      }
+    });
+}
+
+// ══════════════════════════════════
+//  메인 렌더
+// ══════════════════════════════════
+function render() {
+  const curAccObj = D.accs ? D.accs.find(a => a.id === curAcc) : null;
+  const accColor = curAccObj ? curAccObj.color : 'var(--acc)';
+
+  // 계정 탭
+  if ($('accTabs') && D.accs) {
+    $('accTabs').innerHTML = D.accs.map(a => {
+      const on = a.id === curAcc;
+      return `<button class="tab ${on ? 'on' : ''}" data-acc="${a.id}" style="${on ? `background:${a.color};border-color:${a.color};color:#fff` : ''}">${esc(a.name)}</button>`;
+    }).join('') +
+    '<button class="tab plus" data-newacc="1">+ 계정</button>' +
+    (curAccObj ? `<button class="tab plus" data-editacc="1">계정 수정</button>` : '');
+  }
+
+  // 현재 계정의 칸만 필터
+  const accBoxes = D.boxes.filter(b => b.accId === curAcc || !b.accId);
+  if (!accBoxes.some(b => b.id === curBox)) curBox = accBoxes[0] ? accBoxes[0].id : null;
+
+  // 칸 탭
+  $('boxTabs').innerHTML = accBoxes.map(b => {
+    const n = D.posts.filter(p => p.boxId === b.id).length;
+    const on = b.id === curBox;
+    return `<button class="tab ${on ? 'on' : ''}" data-box="${b.id}" style="${on ? `background:${accColor};border-color:${accColor};color:#fff` : ''}">${esc(b.name)}<span class="n">${n}</span></button>`;
+  }).join('') + '<button class="tab plus" data-newbox="1">+ 칸</button>';
+
+  // 툴바
+  $('toolbar').innerHTML = `
+    <button data-s="recent" class="${sortBy==='recent'?'on':''}">최근순</button>
+    <button data-s="used" class="${sortBy==='used'?'on':''}">많이쓴순</button>
+    <button data-s="name" class="${sortBy==='name'?'on':''}">이름순</button>
+    <span class="sp"></span>
+    <button class="edit-btn" data-editbox="1">칸 수정</button>`;
+
+  // 글 목록 필터링
+  let list = D.posts.filter(p => {
+    if (searchQ) {
+      const k = searchQ.toLowerCase();
+      return (p.title + '\n' + p.body).toLowerCase().includes(k);
+    }
+    return p.boxId === curBox;
+  });
+
+  list.sort((a, b) => {
+    if (a.fav !== b.fav) return a.fav ? -1 : 1;
+    if (sortBy === 'used') return (b.uses||0) - (a.uses||0);
+    if (sortBy === 'name') return a.title.localeCompare(b.title, 'ko');
+    return (b.lastUsed || b.updatedAt || b.createdAt) - (a.lastUsed || a.updatedAt || a.createdAt);
+  });
+
+  const schBadge = id => {
+    const cnt = schedules.filter(s => s.postId === id && s.status === 'pending').length;
+    return cnt ? `<span class="badge blue">예약 ${cnt}</span>` : '';
+  };
+
+  $('postList').innerHTML = list.length
+    ? `<div class="sec-label">${searchQ ? `검색결과 ${list.length}` : `${D.boxes.find(b=>b.id===curBox)?.name||''} ${list.length}개`}</div>` +
+      list.map(p => `
+        <div class="post" data-id="${p.id}">
+          <div class="body" data-open="${p.id}">
+            <div class="t">${p.fav ? '<span class="star">★</span>' : ''}${esc(p.title)} ${schBadge(p.id)}</div>
+            <div class="pv">${esc(p.body)}</div>
+            <div class="meta">
+              <span>${p.uses||0}번 씀</span>
+              ${p.lastUsed ? `<span>${when(p.lastUsed)}</span>` : ''}
+              <span>${p.body.length}자</span>
+            </div>
+          </div>
+          <div class="side">
+            <button class="copy-btn" data-copy="${p.id}">복사</button>
+            <button class="fav-btn ${p.fav?'on':''}" data-fav="${p.id}">${p.fav ? '★' : '☆'}</button>
+          </div>
+        </div>`).join('')
+    : `<p class="empty"><strong>${searchQ ? '🔍' : '✏️'}</strong>${searchQ ? '검색 결과가 없어' : '아직 글이 없어<br>아래 버튼으로 첫 글을 써봐'}</p>`;
+}
+
+// ══════════════════════════════════
+//  이벤트
+// ══════════════════════════════════
+document.addEventListener('click', async e => {
+  if (e.target.closest('#ov')) return;
+  const t = e.target;
+
+  // 메인 탭
+  const mt = t.closest('[data-main]');
+  if (mt) { switchMain(mt.dataset.main); return; }
+
+  // 계정 탭
+  const ac = t.closest('[data-acc]');
+  if (ac) {
+    curAcc = ac.dataset.acc;
+    curBox = (D.boxes.filter(b => b.accId === curAcc)[0] || {}).id || null;
+    searchQ = ''; $('searchQ').value = '';
+    render(); return;
+  }
+  if (t.closest('[data-newacc]')) { accSheet(null); return; }
+  if (t.closest('[data-editacc]')) { accSheet(D.accs.find(a => a.id === curAcc)); return; }
+
+  // 칸 탭
+  const bx = t.closest('[data-box]');
+  if (bx) { curBox = bx.dataset.box; searchQ = ''; $('searchQ').value = ''; render(); return; }
+  if (t.closest('[data-newbox]')) { boxSheet(null); return; }
+  if (t.closest('[data-editbox]')) { boxSheet(D.boxes.find(b => b.id === curBox)); return; }
+
+  // 정렬
+  const s = t.closest('[data-s]');
+  if (s) { sortBy = s.dataset.s; render(); return; }
+
+  // 복사
+  const cp = t.closest('[data-copy]');
+  if (cp) { const p = D.posts.find(x => x.id === cp.dataset.copy); if (p) doCopy(p); return; }
+
+  // 즐겨찾기
+  const fv = t.closest('[data-fav]');
+  if (fv) { const p = D.posts.find(x => x.id === fv.dataset.fav); if (p) { p.fav = !p.fav; save(); render(); } return; }
+
+  // 글 열기
+  const op = t.closest('[data-open]');
+  if (op) { const p = D.posts.find(x => x.id === op.dataset.open); if (p) viewSheet(p); return; }
+});
+
+$('newBtn').onclick = () => { if (!curBox) { alert('칸을 먼저 만들어줘'); return; } postSheet(null); };
+$('backupBtn').onclick = backupSheet;
+$('searchQ').addEventListener('input', e => { searchQ = e.target.value.trim(); render(); });
+
+// 예약 취소 전역
+window.cancelSchedule = cancelSchedule;
+
+// ══════════════════════════════════
+//  예약 발행 체크 (1분마다)
+//  ※ 실제 발행은 루월당 서버 API 연동 필요
+// ══════════════════════════════════
+function checkSchedules() {
+  const now = new Date();
+  let changed = false;
+  schedules.forEach(s => {
+    if (s.status === 'pending' && new Date(s.scheduledAt) <= now) {
+      // TODO: 루월당 서버 API 호출
+      // POST /api/memo/publish { bodySnapshot: s.bodySnapshot, ... }
+      console.log('[MEMO] 예약 발행 시간됨:', s.title, s.scheduledAt);
+      // 임시: 발행 기록으로 이동 (실제 연동 후 status 업데이트)
+      // s.status = 'published';
+      changed = true;
+    }
+  });
+  if (changed) { saveSchedules(); if (mainTab === 'scheduled') renderScheduled(); }
+}
+setInterval(checkSchedules, 60000);
+
+// ══════════════════════════════════
+//  자동 스케줄러
+// ══════════════════════════════════
+const AUTO_KEY = 'luwol-auto-v1';
+let autoSchedules = []; // [{ id, name, time, postIds, enabled, createdAt }]
+
+function saveAuto() { localStorage.setItem(AUTO_KEY, JSON.stringify(autoSchedules)); }
+function loadAuto() { try { const r = localStorage.getItem(AUTO_KEY); if (r) autoSchedules = JSON.parse(r); } catch(e) {} }
+
+function renderAutoPage() {
+  const el = $('autoPage');
+
+  const html = `
+    <div class="info-box">
+      💡 <strong>자동 스케줄러란?</strong><br>
+      글을 여러 개 등록해두면 설정한 시간에 자동으로 랜덤 발행해줘.<br>
+      특정 시간에 특정 글만 나가게 고정할 수도 있고,<br>
+      랜덤으로 돌아가면서 발행하게 설정할 수도 있어.<br><br>
+      <strong>⚠️ 실제 발행은 루월당 서버 연동 필요</strong> — 지금은 스케줄 설정만 저장돼.
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700">등록된 스케줄 <span style="color:var(--acc)">${autoSchedules.length}</span></div>
+      <button onclick="openAutoAddSheet(null)" style="background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">+ 스케줄 추가</button>
+    </div>
+
+    ${autoSchedules.length === 0
+      ? '<p class="empty" style="padding:32px 0"><strong>⏰</strong>스케줄이 없어<br>위 버튼으로 추가해봐</p>'
+      : autoSchedules.map(s => renderAutoCard(s)).join('')
+    }`;
+
+  el.innerHTML = html;
+}
+
+function renderAutoCard(s) {
+  const posts = s.postIds.map(id => D.posts.find(p => p.id === id)).filter(Boolean);
+  return `<div class="auto-card">
+    <div class="ac-head">
+      <div>
+        <div class="ac-title">${esc(s.name || '이름없음')}</div>
+        <div class="ac-time">🕐 매일 ${esc(s.time)} 발행</div>
+        ${s.mode === 'random' ? '<div style="font-size:11px;color:var(--txt3);margin-top:2px">랜덤 발행 모드</div>' : '<div style="font-size:11px;color:var(--txt3);margin-top:2px">순서대로 발행 모드</div>'}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="toggle-btn ${s.enabled ? 'on' : 'off'}" onclick="toggleAuto('${s.id}')"></button>
+      </div>
+    </div>
+
+    ${s.desc ? `<div style="font-size:12px;color:var(--txt3);margin-bottom:10px;padding:8px;background:var(--sur2);border-radius:8px">${esc(s.desc)}</div>` : ''}
+
+    <div style="font-size:11px;color:var(--txt3);margin-bottom:6px">등록된 글 ${posts.length}개</div>
+    <div class="ac-posts">
+      ${posts.length === 0
+        ? '<span style="font-size:12px;color:var(--txt3)">글이 없어. 수정에서 추가해줘</span>'
+        : posts.map(p => `<div class="ac-post-chip">${esc(p.title.slice(0,12))}${p.title.length>12?'…':''}</div>`).join('')
+      }
+    </div>
+
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <button onclick="openAutoAddSheet('${s.id}')" style="flex:1;padding:8px;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">수정</button>
+      <button onclick="deleteAuto('${s.id}')" style="padding:8px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">삭제</button>
+    </div>
+  </div>`;
+}
+
+function toggleAuto(id) {
+  const s = autoSchedules.find(x => x.id === id);
+  if (s) { s.enabled = !s.enabled; saveAuto(); renderAutoPage(); }
+}
+
+function deleteAuto(id) {
+  if (!confirm('이 스케줄을 삭제할까?')) return;
+  autoSchedules = autoSchedules.filter(x => x.id !== id);
+  saveAuto(); renderAutoPage(); toast('삭제됐어');
+}
+
+function openAutoAddSheet(editId) {
+  const s = editId ? autoSchedules.find(x => x.id === editId) : null;
+  const allPosts = D.posts;
+  let selPostIds = s ? [...s.postIds] : [];
+
+  const postCheckboxes = allPosts.map(p =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+      <input type="checkbox" id="acp_${p.id}" ${selPostIds.includes(p.id)?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)">
+      <label for="acp_${p.id}" style="flex:1;font-size:13px;cursor:pointer">
+        <div style="font-weight:600">${esc(p.title.slice(0,30))}</div>
+        <div style="font-size:11px;color:var(--txt3)">${p.body.slice(0,40)}...</div>
+      </label>
+    </div>`
+  ).join('');
+
+  openSheet(`<h3>${s ? '스케줄 수정' : '스케줄 추가'}</h3>
+
+    <label>스케줄 이름</label>
+    <input type="text" id="autoName" value="${s ? esc(s.name) : ''}" placeholder="예: 아침 발행, 저녁 자동">
+
+    <label>설명 (선택)</label>
+    <input type="text" id="autoDesc" value="${s ? esc(s.desc||'') : ''}" placeholder="이 스케줄에 대한 메모">
+
+    <label>발행 시간 (24시간)</label>
+    <input type="time" id="autoTime" value="${s ? s.time : '09:00'}" style="width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--txt);outline:none">
+
+    <label>발행 모드</label>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="time-slot ${!s||s.mode==='random'?'on':''}" id="modeRandom" onclick="document.getElementById('modeRandom').classList.add('on');document.getElementById('modeSeq').classList.remove('on')">🎲 랜덤 발행</button>
+      <button class="time-slot ${s&&s.mode==='seq'?'on':''}" id="modeSeq" onclick="document.getElementById('modeSeq').classList.add('on');document.getElementById('modeRandom').classList.remove('on')">📋 순서대로</button>
+    </div>
+    <p style="font-size:11px;color:var(--txt3);margin-top:6px">랜덤: 등록된 글 중 아직 안 올린 것 위주로 랜덤 발행<br>순서대로: 등록 순서대로 하나씩 발행</p>
+
+    <label>발행할 글 선택 (여러 개 가능)</label>
+    ${allPosts.length === 0
+      ? '<p style="font-size:13px;color:var(--txt3);padding:10px 0">글 목록에서 먼저 글을 작성해줘</p>'
+      : `<div style="max-height:250px;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:4px 12px;background:var(--sur2)">${postCheckboxes}</div>`
+    }
+
+    <div class="acts">
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`, null,
+    x => {
+      if (x !== 'save') return false;
+      const name = $('autoName').value.trim() || '이름없음';
+      const desc = $('autoDesc').value.trim();
+      const time = $('autoTime').value || '09:00';
+      const mode = $('modeSeq').classList.contains('on') ? 'seq' : 'random';
+      const postIds = allPosts.filter(p => document.getElementById('acp_'+p.id)?.checked).map(p => p.id);
+
+      if (s) {
+        Object.assign(s, { name, desc, time, mode, postIds });
+      } else {
+        autoSchedules.push({ id: uid(), name, desc, time, mode, postIds, enabled: true, lastIdx: 0, createdAt: Date.now() });
+      }
+      saveAuto(); closeSheet(); renderAutoPage(); toast('저장됐어');
+      return true;
+    });
+}
+
+// ══════════════════════════════════
+//  토큰 발급 가이드
+// ══════════════════════════════════
+const TOKEN_KEY = 'luwol-tokens-v1';
+let tokenList = []; // [{ id, name, issuedAt, note }]
+
+function saveTokens() { localStorage.setItem(TOKEN_KEY, JSON.stringify(tokenList)); }
+function loadTokens() { try { const r = localStorage.getItem(TOKEN_KEY); if (r) tokenList = JSON.parse(r); } catch(e) {} }
+
+function tokenDaysLeft(issuedAt) {
+  const exp = new Date(issuedAt).getTime() + 60 * 86400000;
+  return Math.ceil((exp - Date.now()) / 86400000);
+}
+function tokenDaysPassed(issuedAt) {
+  return Math.floor((Date.now() - new Date(issuedAt).getTime()) / 86400000);
+}
+
+function openTokenRegSheet(editId) {
+  const t = editId ? tokenList.find(x => x.id === editId) : null;
+  openSheet(`<h3>${t ? '토큰 수정' : '토큰 등록'}</h3>
+    <label>계정 이름</label>
+    <input type="text" id="tkName" value="${t ? esc(t.name) : ''}" placeholder="예: 루월당 본계정, 부계정1">
+    <label>발급일 (토큰 발급받은 날짜)</label>
+    <input type="date" id="tkDate" value="${t ? t.issuedAt.slice(0,10) : new Date().toISOString().slice(0,10)}" style="width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--txt);outline:none">
+    <label>메모 (선택)</label>
+    <input type="text" id="tkNote" value="${t ? esc(t.note||'') : ''}" placeholder="예: 갱신 완료, 테스터 계정">
+    <div class="acts">
+      ${t ? '<button class="red" data-x="del">삭제</button>' : ''}
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`, () => $('tkName').focus(),
+    x => {
+      if (x === 'del') {
+        if (!confirm('이 토큰 기록을 삭제할까?')) return true;
+        tokenList = tokenList.filter(x2 => x2.id !== editId);
+        saveTokens(); closeSheet(); renderTokenPage(); return true;
+      }
+      if (x !== 'save') return false;
+      const name = $('tkName').value.trim() || '계정';
+      const issuedAt = new Date($('tkDate').value).toISOString();
+      const note = $('tkNote').value.trim();
+      if (t) { Object.assign(t, { name, issuedAt, note }); }
+      else { tokenList.push({ id: uid(), name, issuedAt, note, createdAt: Date.now() }); }
+      saveTokens(); closeSheet(); renderTokenPage(); toast('저장됐어'); return true;
+    });
+}
+
+function renderTokenPage() {
+  const el = $('tokenPage');
+
+  const tokenStatusHtml = () => {
+    if (!tokenList.length) return `
+      <div style="background:rgba(201,169,110,.06);border:1px dashed rgba(201,169,110,.3);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--txt3);line-height:1.8">토큰 발급일을 등록해두면<br>며칠 지났는지, 언제 갱신해야 하는지 알려줘</div>
+        <button onclick="openTokenRegSheet(null)" style="margin-top:10px;background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">+ 토큰 등록</button>
+      </div>`;
+
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--acc)">🔑 내 토큰 현황</div>
+        <button onclick="openTokenRegSheet(null)" style="background:var(--sur2);border:1px solid var(--bdr);color:var(--txt2);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">+ 추가</button>
+      </div>
+      ${tokenList.map(t => {
+        const left = tokenDaysLeft(t.issuedAt);
+        const passed = tokenDaysPassed(t.issuedAt);
+        const expDate = new Date(new Date(t.issuedAt).getTime() + 60*86400000);
+        const expStr = `${expDate.getMonth()+1}/${expDate.getDate()}`;
+        let statusColor = 'var(--green)';
+        let statusMsg = `${left}일 남음`;
+        let bgColor = 'rgba(34,197,94,.06)';
+        let borderColor = 'rgba(34,197,94,.2)';
+        if (left <= 0) { statusColor='var(--red)'; statusMsg='만료됨! 지금 바로 재발급해줘'; bgColor='rgba(239,68,68,.06)'; borderColor='rgba(239,68,68,.2)'; }
+        else if (left <= 7) { statusColor='var(--red)'; statusMsg=`⚠️ ${left}일 남음 — 곧 만료돼!`; bgColor='rgba(239,68,68,.06)'; borderColor='rgba(239,68,68,.2)'; }
+        else if (left <= 15) { statusColor='#B4622A'; statusMsg=`⏰ ${left}일 남음 — 미리 갱신해줘`; bgColor='rgba(245,158,11,.06)'; borderColor='rgba(245,158,11,.2)'; }
+
+        return `<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:var(--r);padding:14px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:14px;font-weight:700">${esc(t.name)}</div>
+            <button onclick="openTokenRegSheet('${t.id}')" style="background:var(--sur2);border:1px solid var(--bdr);color:var(--txt3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit">수정</button>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:6px">
+            <span style="color:var(--txt3)">발급일: <strong style="color:var(--txt)">${t.issuedAt.slice(0,10)}</strong></span>
+            <span style="color:var(--txt3)">경과: <strong style="color:var(--txt)">${passed}일</strong></span>
+            <span style="color:var(--txt3)">만료일: <strong style="color:var(--txt)">${expStr}</strong></span>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:${statusColor}">${statusMsg}</div>
+          ${t.note ? `<div style="font-size:11px;color:var(--txt3);margin-top:5px">${esc(t.note)}</div>` : ''}
+        </div>`;
+      }).join('')}
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:20px;line-height:1.7">
+        💡 토큰 갱신 시기: 만료 <strong>15일 전</strong>부터 갱신 가능. 만료 후엔 처음부터 다시 발급 필요.
+      </div>`;
+  };
+
+  el.innerHTML = `
+    ${tokenStatusHtml()}
+
+    <div class="info-box">
+      🔑 <strong>Threads 액세스 토큰이란?</strong><br>
+      Threads에 글을 자동 발행하려면 Meta(페이스북)에서 발급하는 <strong>액세스 토큰</strong>이 필요해.<br>
+      한 번 발급하면 <strong>60일간</strong> 유효하고, 만료 전에 갱신할 수 있어.
+    </div>
+
+    <div class="sec-title">📋 토큰 발급 순서</div>
+
+    <div class="guide-step">
+      <div class="guide-num">1</div>
+      <div class="guide-body">
+        <h4>Meta 개발자 계정 만들기</h4>
+        <p>Meta 개발자 사이트에서 계정을 만들어줘. 기존 페이스북 계정으로 로그인하면 돼.</p>
+        <a class="guide-link" href="https://developers.facebook.com" target="_blank">🔗 developers.facebook.com 바로가기</a>
+        <div class="tip">⚡ 이미 Meta 개발자 계정이 있으면 이 단계 건너뛰어도 돼</div>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="guide-num">2</div>
+      <div class="guide-body">
+        <h4>앱 만들기</h4>
+        <p>My Apps → 앱 만들기 클릭<br>
+        앱 유형: <strong>소비자</strong> 선택<br>
+        앱 이름: 아무거나 적어도 됨 (예: 루월당발행)</p>
+        <div class="tip">💡 앱은 한 번만 만들면 돼. 여러 계정을 쓸 때도 같은 앱 씀</div>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="guide-num">3</div>
+      <div class="guide-body">
+        <h4>Threads API 추가</h4>
+        <p>앱 대시보드 → <strong>제품 추가</strong><br>
+        스크롤 내려서 <strong>Threads API</strong> 찾아서 설정 클릭</p>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="guide-num">4</div>
+      <div class="guide-body">
+        <h4>테스터 추가 (내 Threads 계정)</h4>
+        <p>앱 역할 → 역할 → <strong>Threads 테스터</strong> 추가<br>
+        발행할 Threads 계정의 사용자 이름 입력<br>
+        그 계정으로 Threads 앱 접속 → 설정 → 웹사이트 권한 → 초대 수락</p>
+        <div class="warn">⚠️ 이 단계를 빠뜨리면 토큰이 발급돼도 발행이 안 돼</div>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="guide-num">5</div>
+      <div class="guide-body">
+        <h4>단기 토큰 발급</h4>
+        <p>Threads API → 설정 → <strong>Threads 그래프 API 탐색기</strong> 클릭<br>
+        발행할 계정 선택 후 <strong>토큰 생성</strong><br>
+        권한 체크: <strong>threads_basic</strong>, <strong>threads_content_publish</strong></p>
+        <div class="tip">💡 여기서 나오는 토큰은 단기(1시간)야. 바로 아래 6단계로 장기로 바꿔줘</div>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="guide-num">6</div>
+      <div class="guide-body">
+        <h4>장기 토큰으로 교환 (60일)</h4>
+        <p>아래 URL에 발급받은 단기 토큰을 넣어서 접속해:<br>
+        <code style="background:var(--sur2);padding:2px 6px;border-radius:4px;font-size:11px;word-break:break-all">https://graph.threads.net/access_token?grant_type=th_exchange_token&client_secret=<strong>앱시크릿</strong>&access_token=<strong>단기토큰</strong></code></p>
+        <p style="margin-top:8px">앱 시크릿은: 앱 설정 → 기본 설정 → <strong>앱 시크릿 코드</strong></p>
+        <div class="tip">✅ 응답에서 <strong>access_token</strong> 값이 장기 토큰이야. 복사해서 루월당에 등록해줘</div>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="guide-num">7</div>
+      <div class="guide-body">
+        <h4>루월당에 토큰 등록</h4>
+        <p>루월당 → 계정 관리 → <strong>+ 계정 추가</strong><br>
+        계정 이름과 발급받은 장기 토큰 입력 후 저장</p>
+        <div class="tip">🔄 토큰은 60일마다 갱신 필요. 만료 전에 알림이 와</div>
+      </div>
+    </div>
+
+    <div class="sec-title">❓ 자주 묻는 질문</div>
+
+    <div class="auto-card">
+      <div class="ac-title" style="margin-bottom:8px">페이스북 번호 인증이 안 돼요</div>
+      <p style="font-size:13px;color:var(--txt2);line-height:1.7">Meta 서비스 오류일 수 있어. 잠시 후 다시 시도하거나, 가족 번호나 다른 번호로 새 페이스북 계정을 만들어야 할 수도 있어. Meta 측 오류라 어쩔 수 없는 경우도 있어.</p>
+    </div>
+
+    <div class="auto-card">
+      <div class="ac-title" style="margin-bottom:8px">토큰이 만료됐어요</div>
+      <p style="font-size:13px;color:var(--txt2);line-height:1.7">60일이 지나면 자동 만료돼. 5~6단계를 다시 진행해서 새 장기 토큰을 발급받고 루월당에 업데이트해줘.</p>
+    </div>
+
+    <div class="auto-card">
+      <div class="ac-title" style="margin-bottom:8px">다른 Threads 계정도 추가하고 싶어요</div>
+      <p style="font-size:13px;color:var(--txt2);line-height:1.7">4단계(테스터 추가)부터 다시 진행하면 돼. 같은 앱에서 여러 계정 토큰을 발급받을 수 있어.</p>
+    </div>
+
+    <div style="height:20px"></div>
+  `;
+}
+
+// ══════════════════════════════════
+//  switchMain 업데이트
+// ══════════════════════════════════
+
+// ── 시작 ──
+load();
+loadAuto();
+loadTokens();
+loadReply();
+render();
+
+</script>
+
+<%- include('../partials/dash-bottom') %>
