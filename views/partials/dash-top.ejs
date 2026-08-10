@@ -10,7 +10,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="루월당">
   <link rel="apple-touch-icon" href="/img/push-icon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="apple-touch-icon" href="/img/logo-luwol-192.png">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <style>
+    /* 사이드바 로고 — 남색 배경 위에 얹힌다 */
+    .brand-mini{ display:flex; align-items:center; gap:10px; }
+    .brand-logo{ width:34px; height:34px; flex:0 0 auto; display:block; }
+    .brand-name{ font-family:"Nanum Myeongjo", serif; }
+  </style>
 </head>
 <body>
 <% if (typeof adminAs !== 'undefined' && adminAs) { %>
@@ -55,7 +63,10 @@
   <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
   <aside class="sidebar" id="sidebar">
-    <div class="brand-mini">루월당</div>
+    <div class="brand-mini">
+      <img src="/img/logo-luwol-96.png" alt="" class="brand-logo">
+      <span class="brand-name">루월당</span>
+    </div>
     <nav>
       <%
         const menu = [
