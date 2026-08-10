@@ -1,0 +1,16 @@
+{
+  "name": "루월당 바로가기",
+  "short_name": "루월당",
+  "start_url": "./",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F3EA",
+  "theme_color": "#F7F3EA",
+  "lang": "ko",
+  "icons": [
+    { "src": "/img/logo-luwol-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/logo-luwol-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/logo-luwol-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

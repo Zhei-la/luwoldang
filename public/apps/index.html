@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F3EA">
+<title>루월당</title>
+
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="/img/logo-luwol-180.png">
+<link rel="icon" href="/img/favicon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="루월당">
+<meta name="mobile-web-app-capable" content="yes">
+
+<style>
+:root{ --bg:#F7F3EA; --card:#FFFDF8; --ink:#252522; --sub:#6B6656;
+       --line:#E9E0CF; --gold:#B59A62; --navy:#182234; }
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  min-height:100vh; display:flex; flex-direction:column;
+  padding:calc(38px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+}
+.head{ text-align:center; margin-bottom:30px; }
+.head img{ width:78px; height:78px; display:block; margin:0 auto 12px; }
+.head h1{ font-family:"Nanum Myeongjo",serif; font-size:22px; margin:0; letter-spacing:.02em; }
+.head p{ font-size:12.5px; color:var(--sub); margin:6px 0 0; letter-spacing:.06em; }
+
+.list{ width:100%; max-width:430px; margin:0 auto; display:flex; flex-direction:column; gap:11px; }
+a.app{
+  display:flex; align-items:center; gap:15px; text-decoration:none; color:inherit;
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:15px 17px; transition:border-color .15s, transform .1s;
+}
+a.app:active{ transform:scale(.985); }
+a.app:hover{ border-color:var(--gold); }
+a.app img{ width:46px; height:46px; border-radius:11px; flex:0 0 auto; display:block; }
+a.app .tx{ flex:1; min-width:0; }
+a.app .nm{ font-size:16px; font-weight:700; letter-spacing:-.01em; }
+a.app .ds{ font-size:12.5px; color:var(--sub); margin-top:3px; line-height:1.5; word-break:keep-all; }
+a.app .go{ color:var(--gold); font-size:18px; flex:0 0 auto; }
+
+.foot{ margin-top:auto; padding-top:26px; text-align:center; font-size:11.5px; color:#9A9384; line-height:1.8; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none!important; } }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <img src="/img/logo-luwol-192.png" alt="">
+  <h1>루월당</h1>
+  <p>바로 가기</p>
+</div>
+
+<div class="list">
+  <a class="app" href="/home">
+    <img src="/img/logo-luwol-180.png" alt="">
+    <span class="tx">
+      <span class="nm">루월당</span>
+      <span class="ds">만세력·리포트·스레드 자동화</span>
+    </span>
+    <span class="go">›</span>
+  </a>
+
+  <a class="app" href="/memo/">
+    <img src="/memo/icon-180.png" alt="">
+    <span class="tx">
+      <span class="nm">글 보관</span>
+      <span class="ds">자주 쓰는 글을 저장해두고 한 번에 복사</span>
+    </span>
+    <span class="go">›</span>
+  </a>
+
+  <a class="app" href="/todo/">
+    <img src="/todo/icon-180.png" alt="">
+    <span class="tx">
+      <span class="nm">할 일</span>
+      <span class="ds">쌓인 할 일과 매일 챙길 것</span>
+    </span>
+    <span class="go">›</span>
+  </a>
+</div>
+
+<p class="foot">
+  이 화면을 홈 화면에 추가해두면<br>
+  세 가지를 한 번에 열 수 있어요
+</p>
+
+</body>
+</html>
