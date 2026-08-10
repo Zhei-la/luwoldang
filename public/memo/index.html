@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E9E6EF">
+<meta name="description" content="자주 쓰는 글을 저장해두고 한 번에 복사하는 메모장">
+
+<!-- 홈 화면에 추가했을 때 앱처럼 뜨게 -->
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="글 보관">
+<meta name="mobile-web-app-capable" content="yes">
+
+<title>글 보관</title>
+<style>
+:root{--paper:#E9E6EF;--card:#FDFCFF;--ink:#1E1B26;--muted:#6A6478;--faint:#9A93A8;--line:#D9D4E4;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;font-size:16px;line-height:1.5;padding:0 0 90px;-webkit-font-smoothing:antialiased}
+.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+.wrap{max-width:620px;margin:0 auto;padding:0 16px;padding-top:env(safe-area-inset-top)}
+header{padding:20px 0 10px;display:flex;align-items:baseline;justify-content:space-between}
+header h1{font-size:15px;font-weight:800;letter-spacing:-.01em;margin:0}
+header button{background:none;border:0;color:var(--faint);font:inherit;font-size:12px;cursor:pointer;padding:0}
+
+.rowscroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.rowscroll::-webkit-scrollbar{display:none}
+.rowscroll button{flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px 13px;border-radius:100px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.rowscroll button .n{font-size:11px;opacity:.6;font-weight:700}
+.rowscroll button.on{color:#fff;border-color:transparent}
+.rowscroll button.plus{color:var(--faint);font-weight:700}
+
+.search{margin:14px 0 4px;display:flex;gap:8px}
+.search input{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 13px;font-size:16px;font-family:inherit;color:var(--ink);outline:none;min-width:0}
+.search input:focus{border-color:var(--ink)}
+.tools{display:flex;align-items:center;gap:10px;margin:10px 0 4px;font-size:11px;color:var(--faint);letter-spacing:.1em;flex-wrap:wrap}
+.tools button{background:none;border:0;color:var(--faint);font:inherit;font-size:11px;cursor:pointer;padding:0}
+.tools button.on{color:var(--ink);font-weight:800}
+.tools .sp{flex:1}
+
+.sec{display:flex;align-items:center;gap:10px;margin:18px 0 10px;font-size:11px;letter-spacing:.16em;color:var(--faint)}
+.sec:after{content:"";flex:1;height:1px;background:var(--line)}
+
+.post{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 13px 11px;margin-bottom:8px;position:relative;overflow:hidden;display:flex;gap:11px;align-items:flex-start}
+.post .accent{position:absolute;left:0;top:0;bottom:0;width:5px}
+.post .body{flex:1;min-width:0;margin-left:6px;cursor:pointer}
+.post .t{font-size:15.5px;font-weight:700;letter-spacing:-.01em;word-break:break-all;display:flex;align-items:center;gap:6px}
+.post .t .star{color:#D0A215}
+.post .pv{margin-top:5px;font-size:13px;color:var(--muted);white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.45;word-break:break-all}
+.post .meta{margin-top:7px;font-size:11px;color:var(--faint);display:flex;gap:8px;flex-wrap:wrap}
+.post .side{display:flex;flex-direction:column;gap:6px;align-items:center;flex:0 0 auto}
+.post .copy{border:0;background:var(--ink);color:#fff;border-radius:9px;padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.post .fav{border:0;background:none;font-size:17px;line-height:1;cursor:pointer;color:var(--line);padding:2px}
+.post .fav.on{color:#D0A215}
+
+.fab{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--paper) 65%,rgba(233,230,239,0));z-index:20}
+.fab button{display:block;width:100%;max-width:588px;margin:0 auto;border:0;background:var(--ink);color:#fff;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+
+.empty{color:var(--faint);font-size:14px;padding:26px 2px;line-height:1.7;word-break:keep-all;text-align:center}
+
+.ov{position:fixed;inset:0;background:rgba(30,27,38,.45);display:flex;align-items:flex-end;justify-content:center;z-index:60;animation:fade .15s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{background:var(--card);width:100%;max-width:620px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:up .2s ease both;max-height:88vh;overflow:auto}
+@keyframes up{from{transform:translateY(20px)}to{transform:none}}
+.sheet h3{margin:0 0 12px;font-size:17px;font-weight:800}
+.sheet label{display:block;font-size:11px;letter-spacing:.14em;color:var(--faint);margin:12px 0 5px}
+.sheet input[type=text],.sheet textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:16px;font-family:inherit;color:var(--ink);background:#fff;outline:none;line-height:1.55}
+.sheet textarea{resize:vertical;min-height:180px;white-space:pre-wrap}
+.sheet input:focus,.sheet textarea:focus{border-color:var(--ink)}
+.acts{display:flex;gap:8px;margin-top:16px}
+.acts button{flex:1;border:0;border-radius:11px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.acts .ok{background:var(--ink);color:#fff;flex:1.7}
+.acts .gray{background:rgba(30,27,38,.06);color:var(--muted)}
+.acts .red{background:rgba(160,63,44,.09);color:#A03F2C}
+.full{white-space:pre-wrap;word-break:break-all;font-size:15px;line-height:1.6;background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px;max-height:44vh;overflow:auto}
+.swatch{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.swatch button{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.swatch button.on{border-color:var(--ink)}
+.note{font-size:12px;color:var(--faint);line-height:1.6;margin-top:10px;word-break:keep-all}
+
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:100px;font-size:14px;font-weight:700;z-index:90;animation:pop .2s ease both}
+@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>글 보관</h1><button id="backup">백업 · 불러오기</button></header>
+  <div class="rowscroll" id="accs"></div>
+  <div class="search"><input id="q" placeholder="제목·내용 찾기" autocomplete="off"></div>
+  <div class="rowscroll" id="boxes" style="margin-top:12px"></div>
+  <div class="tools" id="tools"></div>
+  <div id="list"></div>
+</div>
+<div class="fab"><button id="new">+ 새 글 쓰기</button></div>
+
+<script>
+/* ──────────────────────────────────────────────
+   글 보관 — 혼자 쓰는 메모장
+   저장은 이 브라우저 안에만 이뤄진다. 서버로 나가는 데이터는 없다.
+   ────────────────────────────────────────────── */
+const KEY="posts-v1";
+const PALETTE=["#5B3FA8","#1F6F5C","#B03A6B","#23459E","#B4622A","#2F7D9E","#7A6B1F","#8A3030"];
+let D={accs:[],boxes:[],posts:[]};
+let curAcc=null,curBox=null,sort="recent",q="";
+
+const $=i=>document.getElementById(i);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const acc=id=>D.accs.find(a=>a.id===id);
+const box=id=>D.boxes.find(b=>b.id===id);
+
+/* 저장소 — localStorage 한 곳만 쓴다 */
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(D)); }
+  catch(e){ toast("저장 공간이 꽉 찼어. 오래된 글을 지워줘"); }
+}
+function seed(){
+  const a={id:uid(),name:"계정 1",color:PALETTE[0]};
+  D.accs=[a];
+  D.boxes=["게시글","안내멘트","무료사주"].map(n=>({id:uid(),accId:a.id,name:n}));
+  D.posts=[];
+}
+function load(){
+  let raw=null;
+  try{ raw=localStorage.getItem(KEY); }catch(e){}
+  if(raw){ try{ D=JSON.parse(raw); }catch(e){} }
+  if(!D.accs||!D.accs.length) seed();
+  curAcc=D.accs[0].id;
+  const bs=D.boxes.filter(b=>b.accId===curAcc);
+  curBox=bs.length?bs[0].id:null;
+}
+
+/* ── 복사 ──
+   줄바꿈이 그대로 보존되는 게 가장 중요하다.
+   1) navigator.clipboard  2) execCommand  3) 손으로 복사 */
+async function copyText(t){
+  if(navigator.clipboard && window.isSecureContext){
+    try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+  }
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=t;
+    ta.setAttribute("readonly","");
+    ta.style.cssText="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0";
+    document.body.appendChild(ta);
+    ta.contentEditable="true"; ta.readOnly=false;   // 아이폰 사파리 대응
+    const range=document.createRange();
+    range.selectNodeContents(ta);
+    const sel=window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    ta.setSelectionRange(0,t.length);
+    ta.focus();
+    const ok=document.execCommand("copy");
+    ta.remove();
+    if(ok) return true;
+  }catch(e){}
+  return false;
+}
+function toast(m){
+  const el=document.createElement("div");el.className="toast";el.textContent=m;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1600);
+}
+function manualCopy(text){
+  openSheet(`<h3>손으로 복사해줘</h3>
+    <p class="note">이 기기에서는 자동 복사가 막혀 있어. 아래 글이 이미 선택돼 있으니 길게 눌러서 복사하면 돼.</p>
+    <label>본문</label><textarea id="mc" style="min-height:220px">${esc(text)}</textarea>
+    <div class="acts"><button class="ok" data-x="close">닫기</button></div>`,
+    ()=>{const t=$("mc");t.focus();t.setSelectionRange(0,t.value.length)});
+}
+
+/* ── 빈칸 채우기  {이름} {생년월일} ── */
+function vars(text){
+  const set=[];(String(text).match(/\{[^}\n]{1,24}\}/g)||[]).forEach(v=>{if(!set.includes(v))set.push(v)});
+  return set;
+}
+function doCopy(p){
+  const vs=vars(p.body);
+  if(!vs.length) return finishCopy(p,p.body);
+  openSheet(`<h3>빈칸 채우기</h3><p class="note">${esc(p.title||"제목 없음")}</p>
+    ${vs.map((v,i)=>`<label>${esc(v)}</label><input type="text" id="v${i}" placeholder="${esc(v.slice(1,-1))}">`).join("")}
+    <div class="acts"><button class="gray" data-x="close">취소</button><button class="ok" data-x="fill">채워서 복사</button></div>`,
+    ()=>{const f=$("v0"); if(f) f.focus();},
+    x=>{
+      if(x!=="fill")return false;
+      let t=p.body;
+      vs.forEach((v,i)=>{const val=$("v"+i).value; t=t.split(v).join(val||v)});
+      closeSheet(); finishCopy(p,t); return true;
+    });
+}
+async function finishCopy(p,text){
+  const ok=await copyText(text);
+  p.uses=(p.uses||0)+1; p.lastUsed=Date.now(); save(); render();
+  if(ok) toast("복사됐어"); else manualCopy(text);
+}
+
+/* ── 시트 ── */
+let sheetSubmit=null;
+function openSheet(html,after,onAct){
+  closeSheet();
+  const ov=document.createElement("div");ov.className="ov";ov.id="ov";
+  ov.innerHTML=`<div class="sheet">${html}</div>`;
+  document.body.appendChild(ov);
+  sheetSubmit=onAct||null;
+  ov.addEventListener("click",e=>{
+    if(e.target===ov)return closeSheet();
+    const b=e.target.closest("[data-x],[data-c]");if(!b)return;
+    const x=b.dataset.x;
+    if(x==="close")return closeSheet();
+    if(sheetSubmit&&sheetSubmit(x,b))return;
+  });
+  if(after)setTimeout(after,60);
+}
+function closeSheet(){const o=$("ov");if(o)o.remove();sheetSubmit=null}
+
+/* ── 계정 ── */
+function accSheet(a){
+  const editing=!!a;
+  const cur=a||{name:"",color:PALETTE[D.accs.length%PALETTE.length]};
+  let color=cur.color;
+  openSheet(`<h3>${editing?"계정 고치기":"계정 추가"}</h3>
+    <label>이름</label><input type="text" id="an" value="${esc(cur.name)}" placeholder="예: 루월당 본계정">
+    <label>색</label><div class="swatch" id="sw">${PALETTE.map(c=>`<button data-c="${c}" style="background:${c}" class="${c===color?"on":""}"></button>`).join("")}</div>
+    <div class="acts">
+      ${editing?'<button class="red" data-x="del">삭제</button>':''}
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`,()=>$("an").focus(),
+    (x,btn)=>{
+      if(btn.dataset.c){color=btn.dataset.c;[...$("sw").children].forEach(el=>el.classList.toggle("on",el.dataset.c===color));return true}
+      if(x==="save"){
+        const n=$("an").value.trim()||"이름 없음";
+        if(editing){a.name=n;a.color=color}
+        else{
+          const na={id:uid(),name:n,color};D.accs.push(na);
+          ["게시글","안내멘트","무료사주"].forEach(bn=>D.boxes.push({id:uid(),accId:na.id,name:bn}));
+          curAcc=na.id;curBox=D.boxes.filter(b=>b.accId===curAcc)[0].id;
+        }
+        save();closeSheet();render();return true;
+      }
+      if(x==="del"){
+        if(D.accs.length<2){alert("계정이 하나뿐이라 지울 수 없어.");return true}
+        const cnt=D.posts.filter(p=>p.accId===a.id).length;
+        if(!confirm(`${a.name} 계정을 지울까? 저장된 글 ${cnt}개도 같이 사라져.`))return true;
+        D.posts=D.posts.filter(p=>p.accId!==a.id);
+        D.boxes=D.boxes.filter(b=>b.accId!==a.id);
+        D.accs=D.accs.filter(z=>z.id!==a.id);
+        curAcc=D.accs[0].id;curBox=(D.boxes.filter(b=>b.accId===curAcc)[0]||{}).id||null;
+        save();closeSheet();render();return true;
+      }
+    });
+}
+
+/* ── 칸 ── */
+function boxSheet(b){
+  const editing=!!b;
+  openSheet(`<h3>${editing?"칸 고치기":"칸 추가"}</h3>
+    <label>이름</label><input type="text" id="bn" value="${editing?esc(b.name):""}" placeholder="예: 후기용">
+    <div class="acts">
+      ${editing?'<button class="red" data-x="del">삭제</button>':''}
+      <button class="gray" data-x="close">취소</button>
+      <button class="ok" data-x="save">저장</button>
+    </div>`,()=>$("bn").focus(),
+    x=>{
+      if(x==="save"){
+        const n=$("bn").value.trim()||"이름 없음";
+        if(editing)b.name=n;
+        else{const nb={id:uid(),accId:curAcc,name:n};D.boxes.push(nb);curBox=nb.id}
+        save();closeSheet();render();return true;
+      }
+      if(x==="del"){
+        const cnt=D.posts.filter(p=>p.boxId===b.id).length;
+        if(!confirm(`${b.name} 칸을 지울까? 안에 있는 글 ${cnt}개도 같이 사라져.`))return true;
+        D.posts=D.posts.filter(p=>p.boxId!==b.id);
+        D.boxes=D.boxes.filter(z=>z.id!==b.id);
+        curBox=(D.boxes.filter(z=>z.accId===curAcc)[0]||{}).id||null;
+        save();closeSheet();render();return true;
+      }
+    });
+}
+
+/* ── 글 ── */
+function postSheet(p){
+  const editing=!!p;
+  openSheet(`<h3>${editing?"글 고치기":"새 글"}</h3>
+    <label>제목 — 비우면 첫 줄이 제목이 돼</label>
+    <input type="text" id="pt" value="${editing?esc(p.title):""}" placeholder="제목">
+    <label>본문 — 줄바꿈 그대로 저장돼</label>
+    <textarea id="pb" placeholder="여기에 글 전체를 넣어.&#10;{이름} 처럼 중괄호를 쓰면 복사할 때 그 자리를 채울 수 있어.">${editing?esc(p.body):""}</textarea>
+    <div class="note" id="cc"></div>
+    <div class="acts"><button class="gray" data-x="close">취소</button><button class="ok" data-x="save">저장</button></div>`,
+    ()=>{const b=$("pb");b.addEventListener("input",cc);cc();if(!editing)$("pt").focus()},
+    x=>{
+      if(x!=="save")return false;
+      const body=$("pb").value;
+      if(!body.trim()){alert("본문을 적어줘.");return true}
+      const first=body.split("\n").find(l=>l.trim());
+      const title=$("pt").value.trim()||(first?first.trim().slice(0,40):"제목 없음");
+      if(editing){p.title=title;p.body=body;p.updatedAt=Date.now()}
+      else D.posts.unshift({id:uid(),accId:curAcc,boxId:curBox,title,body,fav:false,uses:0,lastUsed:null,createdAt:Date.now(),updatedAt:Date.now()});
+      save();closeSheet();render();return true;
+    });
+  function cc(){const v=$("pb").value;const n=vars(v).length;$("cc").textContent=`${v.length}자 · ${v.split("\n").length}줄`+(n?` · 빈칸 ${n}개`:"")}
+}
+function viewSheet(p){
+  openSheet(`<h3>${esc(p.title)}</h3>
+    <div class="full">${esc(p.body)}</div>
+    <div class="note">${p.uses||0}번 씀${p.lastUsed?` · 마지막 ${when(p.lastUsed)}`:""}</div>
+    <div class="acts"><button class="ok" data-x="copy">복사</button></div>
+    <div class="acts">
+      <button class="gray" data-x="edit">고치기</button>
+      <button class="gray" data-x="dup">복제</button>
+      <button class="red" data-x="del">삭제</button>
+    </div>`,null,
+    x=>{
+      if(x==="copy"){closeSheet();doCopy(p);return true}
+      if(x==="edit"){closeSheet();postSheet(p);return true}
+      if(x==="dup"){D.posts.unshift({...p,id:uid(),title:p.title+" (복제)",uses:0,lastUsed:null,createdAt:Date.now()});save();closeSheet();render();return true}
+      if(x==="del"){if(!confirm("이 글을 지울까?"))return true;D.posts=D.posts.filter(z=>z.id!==p.id);save();closeSheet();render();return true}
+    });
+}
+
+/* ── 백업 ── */
+function backupSheet(){
+  openSheet(`<h3>백업 · 불러오기</h3>
+    <p class="note">글은 이 브라우저 안에만 저장돼. 기록을 지우거나 기기를 바꾸면 사라지니까 가끔 내려받아 두면 안전해.</p>
+    <div class="acts"><button class="gray" data-x="dl">파일로 내려받기</button><button class="gray" data-x="cp">전체 복사</button></div>
+    <label>불러오기 — 백업 내용을 여기에 붙여넣고 눌러</label>
+    <textarea id="imp" style="min-height:110px" placeholder='{"accs":[...],"boxes":[...],"posts":[...]}'></textarea>
+    <div class="acts"><button class="gray" data-x="close">닫기</button><button class="ok" data-x="imp">불러오기</button></div>`,null,
+    x=>{
+      const json=JSON.stringify(D,null,2);
+      if(x==="dl"){
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+        a.download=`글보관_백업_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href),3000);return true;
+      }
+      if(x==="cp"){copyText(json).then(ok=>toast(ok?"백업 내용 복사됐어":"복사 실패"));return true}
+      if(x==="imp"){
+        try{
+          const o=JSON.parse($("imp").value);
+          if(!o.accs||!o.posts)throw 0;
+          if(!confirm("지금 내용이 전부 이 백업으로 바뀌어. 계속할까?"))return true;
+          D=o;curAcc=D.accs[0].id;curBox=(D.boxes.filter(b=>b.accId===curAcc)[0]||{}).id||null;
+          save();closeSheet();render();toast("불러왔어");
+        }catch(e){alert("백업 내용을 읽을 수 없어. 전체를 그대로 붙여넣었는지 확인해줘.")}
+        return true;
+      }
+    });
+}
+
+function when(ts){
+  const d=Math.floor((Date.now()-ts)/864e5);
+  if(d===0)return "오늘"; if(d===1)return "어제"; if(d<7)return d+"일 전";
+  const t=new Date(ts);return `${t.getMonth()+1}/${t.getDate()}`;
+}
+
+/* ── 그리기 ── */
+function render(){
+  $("accs").innerHTML=D.accs.map(a=>{
+    const on=a.id===curAcc;
+    return `<button data-acc="${a.id}" class="${on?"on":""}" style="${on?`background:${a.color}`:""}">${esc(a.name)}</button>`;
+  }).join("")+`<button class="plus" data-newacc="1">+ 계정</button>`;
+
+  const bs=D.boxes.filter(b=>b.accId===curAcc);
+  if(!bs.some(b=>b.id===curBox))curBox=bs.length?bs[0].id:null;
+  const A=acc(curAcc)||{color:"#1E1B26"};
+  $("boxes").innerHTML=bs.map(b=>{
+    const on=b.id===curBox, n=D.posts.filter(p=>p.boxId===b.id).length;
+    return `<button data-box="${b.id}" class="${on?"on":""}" style="${on?`background:${A.color}`:""}">${esc(b.name)}<span class="n">${n}</span></button>`;
+  }).join("")+`<button class="plus" data-newbox="1">+ 칸</button>`;
+
+  $("tools").innerHTML=`<button data-s="recent" class="${sort==="recent"?"on":""}">최근순</button>
+    <button data-s="used" class="${sort==="used"?"on":""}">많이 쓴 순</button>
+    <button data-s="name" class="${sort==="name"?"on":""}">이름순</button>
+    <span class="sp"></span>
+    <button data-editacc="1">계정 고치기</button>
+    ${curBox?'<button data-editbox="1">칸 고치기</button>':""}`;
+
+  let list=D.posts.filter(p=>p.accId===curAcc&&(q?true:p.boxId===curBox));
+  if(q){const k=q.toLowerCase();list=list.filter(p=>(p.title+"\n"+p.body).toLowerCase().includes(k))}
+  list.sort((a,b)=>{
+    if(!!a.fav!==!!b.fav)return a.fav?-1:1;
+    if(sort==="used")return (b.uses||0)-(a.uses||0);
+    if(sort==="name")return a.title.localeCompare(b.title,"ko");
+    return (b.lastUsed||b.updatedAt||b.createdAt)-(a.lastUsed||a.updatedAt||a.createdAt);
+  });
+
+  $("list").innerHTML=list.length?
+    `<div class="sec">${q?`찾은 글 ${list.length}`:`${esc((box(curBox)||{}).name||"")} ${list.length}`}</div>`+
+    list.map(p=>{
+      const b=box(p.boxId)||{name:""};
+      const nv=vars(p.body).length;
+      return `<div class="post" data-id="${p.id}">
+        <span class="accent" style="background:${A.color}"></span>
+        <div class="body" data-open="${p.id}">
+          <div class="t">${p.fav?'<span class="star">★</span>':""}${esc(p.title)}</div>
+          <div class="pv">${esc(p.body)}</div>
+          <div class="meta"><span>${q?esc(b.name)+" · ":""}${p.uses||0}번 씀</span>${p.lastUsed?`<span>${when(p.lastUsed)}</span>`:""}<span>${p.body.length}자</span>${nv?`<span>빈칸 ${nv}</span>`:""}</div>
+        </div>
+        <div class="side">
+          <button class="copy" data-copy="${p.id}">복사</button>
+          <button class="fav ${p.fav?"on":""}" data-fav="${p.id}">${p.fav?"★":"☆"}</button>
+        </div></div>`;
+    }).join("")
+    :`<p class="empty">${q?"찾는 글이 없어.":"이 칸은 아직 비었어.<br>아래 버튼으로 첫 글을 넣어봐."}</p>`;
+}
+
+/* ── 이벤트 ── */
+document.addEventListener("click",e=>{
+  if(e.target.closest("#ov"))return;
+  const t=e.target;
+  const a=t.closest("[data-acc]");if(a){curAcc=a.dataset.acc;render();return}
+  if(t.closest("[data-newacc]"))return accSheet(null);
+  if(t.closest("[data-editacc]"))return accSheet(acc(curAcc));
+  const b=t.closest("[data-box]");if(b){curBox=b.dataset.box;q="";$("q").value="";render();return}
+  if(t.closest("[data-newbox]"))return boxSheet(null);
+  if(t.closest("[data-editbox]"))return boxSheet(box(curBox));
+  const s=t.closest("[data-s]");if(s){sort=s.dataset.s;render();return}
+  const c=t.closest("[data-copy]");if(c){const p=D.posts.find(z=>z.id===c.dataset.copy);if(p)doCopy(p);return}
+  const f=t.closest("[data-fav]");if(f){const p=D.posts.find(z=>z.id===f.dataset.fav);if(p){p.fav=!p.fav;save();render()}return}
+  const o=t.closest("[data-open]");if(o){const p=D.posts.find(z=>z.id===o.dataset.open);if(p)viewSheet(p);return}
+});
+$("new").onclick=()=>{if(!curBox){alert("먼저 칸을 하나 만들어줘.");return}postSheet(null)};
+$("backup").onclick=backupSheet;
+$("q").addEventListener("input",e=>{q=e.target.value.trim();render()});
+
+load(); render();
+
+/* 오프라인에서도 열리게 (인터넷이 없어도 저장한 글을 꺼내 쓸 수 있다) */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
