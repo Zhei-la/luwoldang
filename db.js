@@ -162,6 +162,23 @@ async function initDb() {
      본문(이미 써서 저장된 글)과 서로 안 맞게 된다. */
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS saju_meta JSONB;`);
 
+  /* 만세력 계산기에서 저장한 사주.
+     예전에는 교육생 브라우저 안에만 저장돼서 PC 에서 저장한 것이 폰에서 안 보였다.
+     계정에 묶어 두면 어느 기기에서 열어도 같은 목록이 나온다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS manse_saved (
+      id         SERIAL PRIMARY KEY,
+      teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      filename   TEXT    NOT NULL,
+      type       TEXT    NOT NULL DEFAULT '개인',
+      data       JSONB   NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (teacher_id, filename)
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_manse_saved_teacher ON manse_saved(teacher_id, updated_at DESC);`);
+
   // 내담자 공개 열람 링크 (/r/:token) — 로그인 없이 리포트를 보고 PDF로 저장
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS share_token TEXT;`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_pdfs_share ON pdfs(share_token) WHERE share_token IS NOT NULL;`);

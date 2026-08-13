@@ -215,7 +215,15 @@
   #manse-app .hangul-toggle { flex: 1 1 100%; margin-left: 0; justify-content: flex-start; }
 
   #manse-app .top-bar h1 { font-size: 18px; }
-  #manse-app .saved-pop { width: min(320px, calc(100vw - 40px)); }
+  /* 서랍이 화면 밖으로 잘리던 문제.
+     좁은 화면에서는 버튼 옆에 붙이지 않고 화면 가운데에 띄운다. */
+  #manse-app .saved-wrap { position: static; }
+  #manse-app .saved-pop {
+    position: fixed; left: 12px; right: 12px; width: auto;
+    top: auto; margin-top: 0;
+    max-height: 70vh; z-index: 200;
+  }
+  #manse-app .saved-pop .saved-list { max-height: 52vh; }
 
   /* 명식 표는 폭이 좁으면 가로로 밀어서 본다 */
   #manse-app .pdf-table { font-size: 12px; }
@@ -653,54 +661,63 @@
  *   · 이 컴퓨터/이 브라우저에서만 보인다
  *   · 교육생별로 키를 나눠 계정이 섞이지 않게 한다
  * 나중에 여러 기기에서 공유하려면 DB로 옮기면 된다. */
+/* ══════════════════════════════════════════════════════
+ * 저장된 사주 — 서버(계정)에 저장한다
+ *
+ * 예전에는 이 브라우저 안에만 저장해서, PC 에서 저장한 것이
+ * 폰에서는 보이지 않았다. 이제 계정에 묶여 있어 어느 기기에서
+ * 열어도 같은 목록이 나온다.
+ *
+ * 처음 한 번은 이 브라우저에 남아 있던 예전 저장분을
+ * 계정으로 옮겨준다. 그래야 쓰던 게 사라지지 않는다.
+ * ══════════════════════════════════════════════════════ */
 const MS_STORE = (function () {
-  const KEY = 'luwol_manse_saved_<%= user.id %>';
+  const OLD_KEY = 'luwol_manse_saved_<%= user.id %>';
+  const MOVED   = 'luwol_manse_moved_<%= user.id %>';
 
-  const all = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
-  const put = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
-  const today = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0');
-    return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };
-
-  function nameOf(d) {
-    if (isGunghap(d)) {
-      return ((d.person1 && d.person1.name) || '본인') + '_' + ((d.person2 && d.person2.name) || '상대') + '_궁합';
-    }
-    return d.name || '이름없음';
+  async function req(url, opt) {
+    const r = await fetch(url, opt);
+    return r.json();
   }
 
-  /* 개인 사주인지 궁합인지 판정.
-     원래는 서버가 저장분을 읽을 때 붙여주던 값인데, 브라우저 저장으로 바꾸면서
-     빠져 있었다. 이게 없으면 목록에서 type 으로 거르는 단계에서 전부 걸러져
-     "저장은 되는데 목록에 안 뜨는" 현상이 생긴다. */
-  function isGunghap(d) {
-    return d.kind === 'gunghap' || !!(d && d.person1 && d.person2);
+  /* 브라우저에 남은 예전 저장분을 계정으로 옮긴다 (한 번만) */
+  async function moveOld() {
+    try {
+      if (localStorage.getItem(MOVED)) return;
+      const raw = localStorage.getItem(OLD_KEY);
+      if (!raw) { localStorage.setItem(MOVED, '1'); return; }
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr) || !arr.length) { localStorage.setItem(MOVED, '1'); return; }
+      const r = await req('/api/manse/saved/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profiles: arr }),
+      });
+      if (r && r.ok) {
+        localStorage.setItem(MOVED, '1');
+        if (r.moved) alert('이 기기에 저장돼 있던 사주 ' + r.moved + '건을 계정으로 옮겼습니다.\n이제 다른 기기에서도 보입니다.');
+      }
+    } catch (e) { /* 옮기기에 실패해도 나머지는 그대로 쓸 수 있다 */ }
   }
+  moveOld();
 
   return {
-    list() {
-      /* type 이 없던 시절에 저장된 항목도 살려낸다 */
-      const rows = all().map((r) => (r.type ? r : Object.assign({}, r, { type: isGunghap(r) ? '궁합' : '개인' })));
-      return { ok: true, profiles: rows };
+    async list() {
+      try { return await req('/api/manse/saved'); }
+      catch (e) { return { ok: false, profiles: [] }; }
     },
 
-    save(data) {
-      const overwrite = !!data.overwrite;
-      const filename = nameOf(data) + '_' + today() + '.json';
-      const arr = all();
-      const at = arr.findIndex((x) => x.filename === filename);
-      if (at >= 0 && !overwrite) return { ok: true, needsConfirm: true, filename };
-      const row = Object.assign({}, data, {
-        filename,
-        type: isGunghap(data) ? '궁합' : '개인',   // ← 목록에서 이 값으로 거른다
-        savedAt: new Date().toISOString(),
+    async save(data) {
+      return req('/api/manse/saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      delete row.overwrite;
-      if (at >= 0) arr[at] = row; else arr.unshift(row);
-      put(arr);
-      return { ok: true, filename };
     },
 
-    del(filename) { put(all().filter((x) => x.filename !== filename)); return { ok: true }; },
+    async del(filename) {
+      return req('/api/manse/saved?filename=' + encodeURIComponent(filename), { method: 'DELETE' });
+    },
   };
 })();
 
@@ -713,6 +730,14 @@ const MS_STORE = (function () {
   btn.addEventListener('click', function (e) {
     e.stopPropagation();
     pop.classList.toggle('open');
+    /* 좁은 화면에서는 서랍이 화면 기준으로 뜨므로,
+       버튼 바로 아래에 오도록 위치를 잡아준다. */
+    if (pop.classList.contains('open') && window.innerWidth <= 900) {
+      const r = btn.getBoundingClientRect();
+      pop.style.top = Math.round(r.bottom + 8) + 'px';
+    } else {
+      pop.style.top = '';
+    }
   });
   pop.addEventListener('click', function (e) { e.stopPropagation(); });
   document.addEventListener('click', function () { pop.classList.remove('open'); });
@@ -1409,7 +1434,7 @@ function renderSavedSide() {
     delBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!confirm(savedItemLabel(p) + ' 항목을 삭제할까요?')) return;
-      MS_STORE.del(p.filename);
+      await MS_STORE.del(p.filename);
       await loadSavedList();
     });
 
@@ -1448,7 +1473,7 @@ savedSearchEl.addEventListener('input', () => {
 
 async function loadSavedList() {
   try {
-    const data = MS_STORE.list();
+    const data = await MS_STORE.list();
     allSavedProfiles = data.profiles || [];
     renderSavedSide();
   } catch (err) {

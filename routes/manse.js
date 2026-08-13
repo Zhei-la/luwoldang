@@ -7,9 +7,9 @@
  * 원본 프로그램의 API 요청 형식을 그대로 받는다.
  * (그래야 원본 화면 코드를 거의 안 고치고 쓸 수 있다)
  *
- * ⚠️ 원본에 있던 "저장" 기능(/api/saved)은 뺐다.
- *    Railway는 배포할 때마다 파일이 초기화돼서 저장해도 사라진다.
- *    필요해지면 DB(pdfs·leads처럼)에 넣는 방식으로 다시 만들어야 한다.
+ * 저장 기능은 DB(manse_saved)에 넣는다.
+ * 예전에는 교육생 브라우저 안에만 저장해서 PC 에서 저장한 것이 폰에서 안 보였다.
+ * 계정에 묶어 두면 어느 기기에서 열어도 같은 목록이 나온다.
  * ============================================================ */
 
 const express = require('express');
@@ -17,6 +17,7 @@ const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const engine = require('../services/cbEngine');
 const { REGIONS } = require('../services/cbRegions');
+const pool = require('../db').pool;
 
 const 명식표상세 = engine['명식표상세'];
 const 궁합분석 = engine['궁합분석'];
@@ -94,6 +95,111 @@ router.post('/api/manse/gunghap', (req, res) => {
     });
   } catch (e) {
     console.error('[만세력] 궁합 계산 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ══════════════════════════════════════════
+   저장된 사주 — 계정에 묶어 저장한다
+   ══════════════════════════════════════════ */
+
+/** 개인 사주인지 궁합인지 판정 */
+function kindOf(d) {
+  return (d && (d.kind === 'gunghap' || (d.person1 && d.person2))) ? '궁합' : '개인';
+}
+/** 파일 이름 (기존 방식 그대로: 이름_YYMMDD.json) */
+function nameOf(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  const t = new Date();
+  const day = String(t.getFullYear()).slice(2) + p(t.getMonth() + 1) + p(t.getDate());
+  const base = kindOf(d) === '궁합'
+    ? (((d.person1 && d.person1.name) || '본인') + '_' + ((d.person2 && d.person2.name) || '상대') + '_궁합')
+    : (d.name || '이름없음');
+  return base + '_' + day + '.json';
+}
+
+/* 목록 */
+router.get('/api/manse/saved', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT filename, type, data FROM manse_saved
+       WHERE teacher_id = $1 ORDER BY updated_at DESC`,
+      [req.user.id]
+    );
+    const profiles = rows.map((r) => Object.assign({}, r.data, { filename: r.filename, type: r.type }));
+    res.json({ ok: true, profiles });
+  } catch (e) {
+    console.error('[만세력] 저장 목록 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 저장 (같은 이름이 있으면 덮어쓸지 먼저 물어본다) */
+router.post('/api/manse/saved', async (req, res) => {
+  try {
+    const d = req.body || {};
+    const overwrite = !!d.overwrite;
+    const data = Object.assign({}, d);
+    delete data.overwrite;
+
+    const filename = nameOf(data);
+    const type = kindOf(data);
+
+    const dup = await pool.query(
+      'SELECT 1 FROM manse_saved WHERE teacher_id = $1 AND filename = $2',
+      [req.user.id, filename]
+    );
+    if (dup.rowCount && !overwrite) {
+      return res.json({ ok: true, needsConfirm: true, filename });
+    }
+
+    await pool.query(
+      `INSERT INTO manse_saved (teacher_id, filename, type, data)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (teacher_id, filename)
+       DO UPDATE SET data = EXCLUDED.data, type = EXCLUDED.type, updated_at = NOW()`,
+      [req.user.id, filename, type, JSON.stringify(data)]
+    );
+    res.json({ ok: true, filename });
+  } catch (e) {
+    console.error('[만세력] 저장 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 삭제 */
+router.delete('/api/manse/saved', async (req, res) => {
+  try {
+    await pool.query(
+      'DELETE FROM manse_saved WHERE teacher_id = $1 AND filename = $2',
+      [req.user.id, String(req.query.filename || '')]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 브라우저에만 있던 예전 저장분을 계정으로 옮긴다 (한 번만 실행된다) */
+router.post('/api/manse/saved/import', async (req, res) => {
+  try {
+    const list = Array.isArray(req.body && req.body.profiles) ? req.body.profiles : [];
+    let moved = 0;
+    for (const row of list) {
+      const filename = row.filename || nameOf(row);
+      const data = Object.assign({}, row);
+      delete data.filename; delete data.type;
+      const r = await pool.query(
+        `INSERT INTO manse_saved (teacher_id, filename, type, data)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (teacher_id, filename) DO NOTHING`,
+        [req.user.id, filename, row.type || kindOf(row), JSON.stringify(data)]
+      );
+      moved += r.rowCount;
+    }
+    res.json({ ok: true, moved });
+  } catch (e) {
+    console.error('[만세력] 옮기기 실패:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
