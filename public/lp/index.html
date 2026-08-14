@@ -3,1518 +3,603 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>사주 명식표</title>
+<title>루월당 · AI 사주 자동화 컨설팅 — 사주 몰라도, 퇴근 후 월 100</title>
+<script src="https://js.tosspayments.com/v2/standard"></script>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; max-width: 1180px; margin: 40px auto; padding: 0 16px; background: #f5f5f7; color: #1d1d1f; }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  p.desc { color: #666; margin-top: 0; font-size: 14px; }
-
-  form { background: #fff; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  label { font-size: 12px; color: #444; font-weight: 600; white-space: nowrap; }
-  input, select, textarea { padding: 7px 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; font-family: inherit; }
-
-  #name { width: 100px; }
-  #gender { width: 72px; }
-  #birth { width: 100px; }
-  #calendar { width: 72px; }
-  #leap { width: 72px; }
-  #seyunRange { width: 80px; }
-  #wolunRange { width: 88px; }
-  #loveStatus { width: 128px; }
-  #time { width: 76px; }
-  #time:disabled { background: #eee; color: #999; }
-  #ganjiSelect { width: 220px; }
-  #ganjiSelect:disabled { background: #eee; color: #999; }
-  .field { position: relative; }
-  .region-search-input { width: 170px; }
-  .region-manual-input { width: 110px; }
-  .region-search-input.warn { border-color: #d9a300; background: #fffbe8; }
-  .region-warning { display: none; font-size: 11px; color: #a66a00; }
-  .region-warning.show { display: block; }
-  .region-suggest { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 200px; max-height: 220px; overflow-y: auto; z-index: 20; }
-  .region-suggest.open { display: block; }
-  .region-suggest-row { padding: 7px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
-  .region-suggest-row:last-child { border-bottom: none; }
-  .region-suggest-row:hover { background: #f5f5f7; }
-  .or-field { flex-direction: row; align-items: center; padding-bottom: 8px; }
-  .or-field .or-text { font-size: 13px; color: #888; white-space: nowrap; }
-  .checkbox-field { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 8px; }
-  .checkbox-field label { white-space: nowrap; }
-
-  textarea { resize: vertical; min-height: 70px; width: 100%; }
-  .concern-field { margin-top: 12px; }
-
-  .actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
-  button { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: #fff; }
-  button.btn-jeong { background: #0071e3; }
-  button.btn-jeong:hover { background: #0060c0; }
-  button.btn-ya { background: #d92d20; }
-  button.btn-ya:hover { background: #b7241a; }
-  button.secondary { background: #6e6e73; }
-  button.secondary:hover { background: #57575c; }
-  button:disabled { background: #c7c7cc; cursor: not-allowed; }
-  button:disabled:hover { background: #c7c7cc; }
-
-  .result-toolbar { display: flex; gap: 10px; margin-top: 24px; }
-  .result-bottom-actions { margin-top: 18px; padding-top: 14px; border-top: 1px solid #333; display: flex; }
-
-  .form-error { color: #c00; font-weight: 600; font-size: 13px; margin-top: 8px; }
-
-  .layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
-  .form-panel { flex: 1 1 620px; min-width: 480px; }
-  .form-panel form:last-child { margin-bottom: 0; }
-
-  .saved-side { flex: 1 1 280px; min-width: 260px; max-width: 340px; background: #fff; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; flex-direction: column; max-height: 720px; }
-  .saved-side-title { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
-  .saved-search-input { width: 100%; margin-bottom: 10px; }
-  .saved-list { flex: 1 1 auto; overflow-y: auto; min-height: 80px; }
-  .saved-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 6px; border-bottom: 1px solid #f0f0f0; border-radius: 6px; cursor: pointer; }
-  .saved-item:last-child { border-bottom: none; }
-  .saved-item:hover { background: #f5f5f7; }
-  .saved-item-label { font-size: 13px; line-height: 1.4; }
-  .saved-item-delete { background: none; border: none; color: #999; font-size: 15px; padding: 4px 7px; cursor: pointer; border-radius: 6px; flex-shrink: 0; }
-  .saved-item-delete:hover { color: #c00; background: #fdeceb; }
-  .saved-empty { padding: 16px 4px; font-size: 13px; color: #888; text-align: center; }
-  .saved-pagination { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
-  .saved-page-btn { padding: 5px 10px; border: 1px solid #ccc; background: #fff; color: #444; border-radius: 6px; font-size: 12px; cursor: pointer; }
-  .saved-page-btn.active { background: #0071e3; color: #fff; border-color: #0071e3; }
-  .saved-page-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-  @media (max-width: 860px) {
-    .saved-side { max-width: none; }
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+  :root{
+    --ink:#2b2521; --muted:#7d7369; --line:#ece4d9;
+    --accent:#e2661a; --accent-2:#b8500f; --accent-soft:#fdefe3;
+    --cream:#fbf6ef; --card:#ffffff; --deep:#241a12;
   }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Pretendard',-apple-system,system-ui,sans-serif; color:var(--ink);
+    background:var(--cream); line-height:1.7; -webkit-font-smoothing:antialiased; font-size:16px;}
+  .wrap{max-width:1000px; margin:0 auto; padding:0 22px;}
+  section{padding:70px 0;}
+  h2.st{font-size:31px; font-weight:800; letter-spacing:-.02em; line-height:1.3; margin-bottom:10px;}
+  h2.st .hl{color:var(--accent);}
+  .kick{display:inline-block; font-size:12.5px; font-weight:800; letter-spacing:.16em;
+    color:var(--accent); background:var(--accent-soft); padding:6px 14px; border-radius:100px; margin-bottom:16px;}
+  .lead{font-size:17px; color:var(--muted); max-width:620px; margin-bottom:8px;}
+  .center{text-align:center;} .center .lead{margin-left:auto; margin-right:auto;}
+  strong{font-weight:750;} em{font-style:normal; color:var(--accent); font-weight:700;}
 
-  .result-box { background: #111; color: #eee; padding: 20px; border-radius: 12px; font-size: 13.5px; line-height: 1.6; margin-top: 12px; }
-  pre { white-space: pre-wrap; word-break: break-word; margin: 0; color: #eee; font-size: 13.5px; line-height: 1.6; font-family: inherit; }
-  .error { color: #c00; font-weight: 600; }
+  /* header */
+  header{position:sticky; top:0; z-index:50; background:rgba(251,246,239,.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);}
+  header .wrap{display:flex; align-items:center; justify-content:space-between; height:62px;}
+  .hbtns{display:flex; gap:8px; align-items:center;}
+  .logo{font-weight:800; font-size:19px; letter-spacing:-.01em; display:flex; align-items:baseline; gap:8px;}
+  .logo .tag{font-size:12px; font-weight:700; color:var(--muted); letter-spacing:0;}
+  .ebookcard{display:flex; gap:24px; background:var(--cream); border:1px solid var(--line); border-radius:18px; padding:28px 30px; margin-top:20px; align-items:center; flex-wrap:wrap;}
+  .eb-left{flex:1; min-width:260px;}
+  .eb-title{font-size:19px; font-weight:800; margin-bottom:12px;}
+  .eb-list{list-style:none; padding:0;}
+  .eb-list li{font-size:14.5px; color:#5c5348; padding:5px 0 5px 22px; position:relative;}
+  .eb-list li::before{content:'✓'; color:var(--accent); font-weight:800; position:absolute; left:0;}
+  .eb-right{text-align:center; min-width:220px;}
+  .eb-price{font-size:30px; font-weight:850; letter-spacing:-.02em; margin-bottom:14px;}
+  .eb-price small{font-size:14px; font-weight:700; color:var(--muted);}
+  .eb-up{font-size:13px; color:var(--muted); margin-top:12px;}
+  .btn{display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:#fff;
+    font-weight:750; font-size:15px; padding:12px 22px; border-radius:100px; text-decoration:none;
+    box-shadow:0 6px 18px rgba(226,102,26,.28); transition:transform .12s, box-shadow .12s; border:0; cursor:pointer;}
+  .btn:hover{transform:translateY(-1px); box-shadow:0 10px 24px rgba(226,102,26,.34);}
+  .btn.sm{padding:9px 18px; font-size:14px;}
+  .btn.ghost{background:#fff; color:var(--accent); border:1.5px solid var(--accent); box-shadow:none;}
+  .btn.big{font-size:17px; padding:17px 34px;}
+  .btn.light{background:#fff; color:var(--deep); box-shadow:none;}
+  .btn.light:hover{box-shadow:0 8px 20px rgba(0,0,0,.18);}
+  .btn.outline{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.55); box-shadow:none;}
+  .btn.outline:hover{border-color:#fff; background:rgba(255,255,255,.08);}
+  .pay-opts{display:flex; flex-direction:column; gap:10px; max-width:380px; margin:0 auto;}
+  .pay-opts .btn{width:100%; justify-content:center;}
+  .pay-note{color:#e0a06a; font-size:13px; margin-top:12px;}
+  .ctarow{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:14px;}
+  .pay-modal{display:none; position:fixed; inset:0; z-index:100; background:rgba(30,20,10,.55); align-items:center; justify-content:center; padding:20px;}
+  .pay-modal.open{display:flex;}
+  .pay-box{background:#fff; border-radius:20px; padding:30px 26px 26px; max-width:380px; width:100%; text-align:center; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  .pay-box .btn{width:100%; justify-content:center; margin-top:10px;}
+  .pay-title{font-size:20px; font-weight:800; letter-spacing:-.01em;}
+  .pay-sub{font-size:14px; color:var(--muted); margin:4px 0 16px;}
+  .pay-close{position:absolute; top:12px; right:16px; background:none; border:0; font-size:28px; color:var(--muted); cursor:pointer; line-height:1;}
+  .pay-hint{font-size:12.5px; color:var(--muted); margin-top:14px; line-height:1.5;}
+  .toss-box{max-width:460px; max-height:88vh; overflow:auto;}
+  .bank-acc{background:var(--cream); border:1px solid var(--line); border-radius:12px; padding:16px; margin:6px 0 4px;}
+  .bank-acc .lbl{font-size:12.5px; color:var(--muted);}
+  .bank-acc b{font-size:18px; display:block; margin-top:2px;}
+  .eb-pay{display:flex; flex-direction:column; gap:8px;}
+  .eb-pay .btn{width:100%; justify-content:center;}
 
-  .result-tabs { display: flex; gap: 6px; margin-top: 24px; }
-  .tab-btn { padding: 8px 16px; border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0; background: #e4e4e7; color: #444; font-size: 13px; cursor: pointer; }
-  .tab-btn.active { background: #fff; color: #111; font-weight: 700; }
-  .result-box, .pdf-view { margin-top: 0; border-radius: 0 12px 12px 12px; }
+  /* hero */
+  .hero{background:linear-gradient(180deg,#fff7ef 0%, var(--cream) 100%); padding:74px 0 60px; text-align:center;}
+  .hero h1{font-size:46px; font-weight:850; line-height:1.24; letter-spacing:-.03em; margin-bottom:18px;}
+  .hero h1 .hl{color:var(--accent);}
+  .hero .sub{font-size:18px; color:#5c5348; max-width:640px; margin:0 auto 26px; line-height:1.7;}
+  .hero .cta-row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:16px;}
+  .hero .micro{font-size:13.5px; color:var(--muted);}
+  .pills{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:22px;}
+  .pill{font-size:13px; font-weight:700; color:var(--accent-2); background:#fff; border:1px solid #f2ddc7;
+    padding:6px 13px; border-radius:100px;}
 
-  .pdf-view { display: none; }
-  .pdf-card { background: #fff; color: #000; padding: 20px; border-radius: 0 12px 12px 12px; border: 1px solid #ccc; font-family: 'Malgun Gothic', sans-serif; margin-bottom: 16px; }
-  .pdf-card:last-child { margin-bottom: 0; }
-  .pdf-header { padding: 0 2px 12px; margin-bottom: 14px; border-bottom: 1px solid #e4e4e7; }
-  .pdf-header-name { font-size: 19px; font-weight: 700; color: #000; }
-  .pdf-header-info { font-size: 12px; color: #666; margin-top: 3px; }
-  .pdf-card-a { background: #f0f6ff; }
-  .pdf-card-a .pdf-header-name { color: #1d4ed8; }
-  .pdf-card-a .pdf-header { border-bottom-color: #c9dcfb; }
-  .pdf-card-b { background: #fff4f0; }
-  .pdf-card-b .pdf-header-name { color: #c2410c; }
-  .pdf-card-b .pdf-header { border-bottom-color: #f7d9cc; }
-  .pdf-table { border-collapse: collapse; width: 100%; margin-bottom: 22px; font-size: 13px; border: 1.5px solid #333; font-family: 'Malgun Gothic', sans-serif; }
-  .pdf-table caption { caption-side: top; text-align: left; font-weight: 700; font-size: 14px; margin-bottom: 6px; color: #000; }
-  .pdf-table th, .pdf-table td { border: 0.5px solid #ccc; padding: 8px 10px; text-align: center; color: #000; background: #fff; }
-  .pdf-table thead th { background: #f2f2f2; font-weight: 700; }
-  .pdf-wonguk-label { background: #f2f2f2; font-weight: 700; text-align: left; white-space: nowrap; width: 1%; }
-  .pdf-wonguk thead th:nth-child(3), .pdf-wonguk tbody td:nth-child(3) { background: #fffbe8; }
-  .pdf-big { font-size: 27px; font-weight: 700; }
-  .pdf-hanja-main { line-height: 1.2; }
-  .pdf-hanja-sub { font-size: 13px; font-weight: 400; color: #888; line-height: 1.3; margin-top: 2px; }
-  .hide-hangul-sub .pdf-hanja-sub { display: none; }
-  .hangul-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #444; margin-left: auto; cursor: pointer; user-select: none; }
+  /* pain */
+  .painbox{background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-top:18px;}
+  .painbox .q{font-size:17px; color:#5c5348; padding:9px 0; border-bottom:1px dashed var(--line);}
+  .painbox .q:last-child{border-bottom:0;}
+  .painbox .q b{color:var(--ink);}
+  .turn{font-size:20px; font-weight:800; margin-top:22px; letter-spacing:-.01em;}
+  .turn .hl{color:var(--accent);}
 
-  .color-tile { width: 52px; height: 52px; margin: 0 auto; border-radius: 4px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; }
-  .tile-mok { background: #2e9e4f; color: #fff; }
-  .tile-hwa { background: #d23c3c; color: #fff; }
-  .tile-to { background: #e0a92e; color: #fff; }
-  .tile-geum { background: #fff; color: #333; border-width: 2px; }
-  .tile-su { background: #3a3a3a; color: #fff; }
-  .pdf-jijanggan-cell div { line-height: 1.5; }
-  .pdf-jijanggan-cell div:not(:last-child) { border-bottom: 1px dashed #ccc; padding-bottom: 2px; margin-bottom: 2px; }
-  tr.pdf-current td { background: #fff2b8; font-weight: 700; }
-  .pdf-sgy td { text-align: left; }
-  .pdf-gunghap td { text-align: left; }
-  .pdf-gunghap td div:not(:last-child) { margin-bottom: 3px; }
-  .gunghap-relation-label { font-weight: 700; font-size: 16px; margin-bottom: 10px; color: #000; }
-  .gunghap-person-label { font-weight: 700; font-size: 15px; margin: 18px 0 6px; color: #000; }
+  /* market stats */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px;}
+  .stat{background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; text-align:center;}
+  .stat .n{font-size:30px; font-weight:850; color:var(--accent); letter-spacing:-.02em;}
+  .stat .l{font-size:13.5px; color:var(--muted); margin-top:4px;}
 
-  .el-mok { color: #2e7d32; }
-  .el-hwa { color: #c62828; }
-  .el-to { color: #a06a00; }
-  .el-geum { color: #757575; }
-  .el-su { color: #1a237e; }
-  .pdf-gwiin { color: #1565c0; }
-  .pdf-sal { color: #b71c1c; }
-  .pdf-gongmang { color: #000; font-weight: 700; }
+  /* compare */
+  .cmp{background:var(--deep); color:#f3ece4; border-radius:20px; overflow:hidden; margin-top:24px;}
+  .cmp table{width:100%; border-collapse:collapse; font-size:14.5px;}
+  .cmp th,.cmp td{padding:15px 16px; text-align:left; vertical-align:top; border-bottom:1px solid rgba(255,255,255,.09);}
+  .cmp thead th{font-size:15px; font-weight:800; background:rgba(255,255,255,.04);}
+  .cmp thead th.hi{color:#ffb066;}
+  .cmp td.rk{color:#c9bdb0; font-weight:700; width:30%;}
+  .cmp td.base{color:#b9ad9f; width:33%;}
+  .cmp td.pro{color:#fff; font-weight:600; width:37%; background:rgba(226,102,26,.10);}
+  .cmp .x{color:#8a7d6f;} .cmp .o{color:#ffb066; font-weight:800;}
+  .cmp thead th.hi span{display:block; font-size:12px; font-weight:600; color:#e0a06a; margin-top:2px;}
 
-  .top-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  #refreshBtn { background: #fff; color: #333; border: 1px solid #ccc; padding: 7px 14px; font-size: 13px; }
-  #refreshBtn:hover { background: #f2f2f2; }
+  /* feature grid */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:26px;}
+  .fcard{background:#fff; border:1px solid var(--line); border-radius:16px; padding:22px; position:relative;}
+  .fcard .ic{width:44px; height:44px; border-radius:12px; background:var(--accent-soft);
+    display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:12px;}
+  .fcard h3{font-size:16.5px; font-weight:800; margin-bottom:6px; letter-spacing:-.01em;}
+  .fcard p{font-size:14px; color:var(--muted); line-height:1.6;}
+  .fcard .soon{position:absolute; top:16px; right:16px; font-size:11px; font-weight:800;
+    color:var(--accent-2); background:var(--accent-soft); padding:3px 9px; border-radius:100px;}
 
-  .mode-tabs { display: flex; gap: 8px; margin: 14px 0; }
-  .mode-tab-btn { padding: 8px 18px; border: 1px solid #ccc; border-radius: 8px; background: #fff; color: #444; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .mode-tab-btn.active { background: #0071e3; color: #fff; border-color: #0071e3; }
+  /* steps */
+  .steps{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:24px;}
+  .stp{background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 18px; position:relative;}
+  .stp .no{width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff;
+    font-weight:800; display:flex; align-items:center; justify-content:center; font-size:15px; margin-bottom:10px;}
+  .stp h4{font-size:15px; font-weight:800; margin-bottom:4px;}
+  .stp p{font-size:13px; color:var(--muted); line-height:1.55;}
 
-  .gunghap-person-block { border: 1px solid #e4e4e7; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-  .gunghap-person-title { font-weight: 700; font-size: 13px; color: #333; margin-bottom: 8px; }
-  .gunghap-block-a { background: #f0f6ff; border-color: #d6e6ff; }
-  .gunghap-block-a .gunghap-person-title { color: #1d4ed8; }
-  .gunghap-block-b { background: #fff4f0; border-color: #ffe0d3; }
-  .gunghap-block-b .gunghap-person-title { color: #c2410c; }
-  /* ── 빠른 입력(문의글 붙여넣기) ── */
-  .quick-box { border: 2px solid #7c3aed; background: #faf5ff; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; }
-  .quick-box h2 { margin: 0 0 4px; font-size: 15px; color: #6b21a8; }
-  .quick-box .quick-desc { margin: 0 0 8px; font-size: 12px; color: #7e6a94; }
-  .quick-box textarea { width: 100%; box-sizing: border-box; border: 1px solid #c4b5fd; border-radius: 6px; padding: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
-  .quick-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-  .quick-actions button { padding: 8px 14px; border-radius: 6px; border: 1px solid #7c3aed; background: #fff; color: #6b21a8; font-size: 13px; cursor: pointer; }
-  .quick-actions button.primary { background: #7c3aed; color: #fff; }
-  .quick-actions button:hover { opacity: .85; }
-  .quick-summary { display: none; margin-top: 10px; padding: 8px 10px; border-radius: 6px; background: #fff; border: 1px solid #ddd6fe; font-size: 13px; line-height: 1.7; color: #333; }
-  .quick-summary.error { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
-  .quick-summary .qs-warn { color: #b45309; }
-  .quick-summary b { color: #6b21a8; }
+  /* included list */
+  .incl{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:22px;}
+  .item{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; gap:12px;}
+  .item .ck{color:var(--accent); font-weight:900; font-size:18px; line-height:1.5;}
+  .item b{display:block; font-size:15px; margin-bottom:2px;}
+  .item span{font-size:13.5px; color:var(--muted);}
+
+  /* feedback highlight */
+  .fb{background:linear-gradient(135deg,#e2661a,#f0863c); color:#fff; border-radius:22px; padding:44px 40px; margin-top:8px; text-align:center;}
+  .fb .kick{background:rgba(255,255,255,.2); color:#fff;}
+  .fb h2{font-size:30px; font-weight:850; letter-spacing:-.02em; line-height:1.3; margin-bottom:12px;}
+  .fb p{font-size:16.5px; color:#fff3ea; max-width:640px; margin:0 auto; line-height:1.7;}
+
+  /* cost callout */
+  .cost{background:#fff; border:2px solid var(--accent); border-radius:18px; padding:30px 32px; margin-top:24px;}
+  .cost h3{font-size:21px; font-weight:850; margin-bottom:14px; letter-spacing:-.01em;}
+  .cost .row{display:flex; gap:12px; align-items:flex-start; padding:9px 0; font-size:15.5px;}
+  .cost .row .ck{color:var(--accent); font-weight:900;}
+  .cost .row b{font-weight:750;}
+
+  /* reviews */
+  .revwrap{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:24px;}
+  .rev{background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px 22px;}
+  .rev .stars{color:var(--accent); font-size:14px; letter-spacing:2px; margin-bottom:8px;}
+  .rev p{font-size:14.5px; color:#43392f; line-height:1.65;}
+  .rev .who{font-size:13px; color:var(--muted); margin-top:12px; font-weight:600;}
+  .rev-note{margin-top:16px; font-size:13px; color:var(--muted); text-align:center; background:var(--accent-soft);
+    border-radius:10px; padding:12px 16px;}
+
+  /* pricing */
+  .price-ladder{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; margin:8px 0 24px; font-size:15px; color:var(--muted);}
+  .price-ladder s{opacity:.6;} .price-ladder .now{color:var(--accent); font-weight:850; font-size:18px;}
+  .price-ladder .arrow{color:#c9bdb0;}
+  .pricecard{background:var(--deep); color:#fff; border-radius:22px; padding:44px 40px; text-align:center; max-width:560px; margin:0 auto; position:relative; overflow:hidden;}
+  .pricecard .tag{display:inline-block; background:var(--accent); color:#fff; font-weight:800; font-size:13px; padding:6px 16px; border-radius:100px; margin-bottom:16px;}
+  .pricecard .amt{font-size:52px; font-weight:850; letter-spacing:-.03em; line-height:1;}
+  .pricecard .amt small{font-size:20px; font-weight:700; color:#e0a06a;}
+  .pricecard .note{color:#c9bdb0; font-size:14.5px; margin:14px 0 4px;}
+  .pricecard .meta{display:flex; gap:22px; justify-content:center; flex-wrap:wrap; margin:22px 0; font-size:14px; color:#e6dccf;}
+  .pricecard .meta b{color:#fff;}
+  .warnline{color:#ffb066; font-size:13.5px; margin-top:10px;}
+
+  /* faq */
+  .faq{margin-top:20px;}
+  details{background:#fff; border:1px solid var(--line); border-radius:12px; padding:2px 20px; margin-bottom:10px;}
+  details summary{font-weight:750; font-size:16px; padding:16px 0; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::after{content:'+'; color:var(--accent); font-weight:800; font-size:22px;}
+  details[open] summary::after{content:'–';}
+  details p{padding:0 0 16px; color:#5c5348; font-size:14.5px; line-height:1.7;}
+
+  /* final cta */
+  .final{background:var(--deep); color:#fff; text-align:center; border-radius:0;}
+  .final h2{font-size:34px; font-weight:850; letter-spacing:-.02em; line-height:1.3; margin-bottom:14px;}
+  .final p{color:#c9bdb0; font-size:16px; max-width:560px; margin:0 auto 26px;}
+
+  footer{background:var(--deep); color:#8a7d6f; text-align:center; font-size:12.5px; padding:26px 0 40px; border-top:1px solid rgba(255,255,255,.08);}
+
+  /* sticky mobile cta */
+  .mobicta{display:none;}
+
+  @media (max-width:760px){
+    section{padding:52px 0;} h2.st{font-size:25px;} .hero h1{font-size:33px;}
+    .stats,.grid,.steps,.incl,.revwrap{grid-template-columns:1fr;}
+    .steps{grid-template-columns:1fr 1fr;}
+    .cmp table{font-size:12.5px;} .cmp th,.cmp td{padding:11px 9px;}
+    header .btn{padding:7px 11px; font-size:12px;}
+    .logo{font-size:17px;} .logo .tag{display:none;}
+    .pricecard{padding:34px 20px;} .pricecard .amt{font-size:42px;}
+    .ebookcard{padding:22px 18px; gap:14px;} .eb-right{width:100%;} .eb-title{font-size:17px;} .eb-price{font-size:26px;}
+    .pay-opts{max-width:100%;}
+    .fb,.final h2{padding-left:6px; padding-right:6px;}
+    .mobicta{display:flex; gap:8px; position:fixed; bottom:0; left:0; right:0; z-index:60; padding:10px 14px;
+      background:rgba(251,246,239,.96); backdrop-filter:blur(8px); border-top:1px solid var(--line);}
+    .mobicta .btn{flex:1; justify-content:center; padding:13px 6px; font-size:14px; box-shadow:none; white-space:nowrap;}
+    body{padding-bottom:76px;}
+  }
 </style>
 </head>
 <body>
-  <div class="top-bar">
-    <h1>사주 명식 엔진</h1>
-    <button type="button" id="refreshBtn">새로고침</button>
+
+<header>
+  <div class="wrap">
+    <div class="logo">루월당 <span class="tag">AI 사주 부업</span></div>
+    <div class="hbtns">
+      <a class="btn sm ghost" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">문의하기</a>
+      <a class="btn sm" href="#apply">구매하기</a>
+    </div>
   </div>
-  <p class="desc">이름·성별·생일·달력·윤달·생시를 입력하고 버튼을 눌러 명식표를 생성합니다.</p>
+</header>
 
-  <div class="mode-tabs">
-    <button type="button" class="mode-tab-btn active" id="modeIndividual">개인 사주</button>
-    <button type="button" class="mode-tab-btn" id="modeGunghap">궁합</button>
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="pills">
+      <span class="pill">AI + 사주 + 반자동</span>
+      <span class="pill">사주 몰라도 OK</span>
+      <span class="pill">평생 피드백</span>
+    </div>
+    <h1>사주 몰라도,<br>퇴근 후 <span class="hl">온라인 사주로 월 100</span></h1>
+    <p class="sub">수천 번의 실패 끝에 직접 만든 <strong>전용 AI + 자동화 프로그램</strong>을 그대로 드립니다.<br>웹사이트·PDF 자동 생성·이메일 발송까지 — 혼자서도 돌아가는 수익 구조를, 평생 피드백과 함께.</p>
+    <div class="cta-row">
+      <a class="btn big" href="#apply">3기 수강 신청하기</a>
+      <a class="btn big ghost" href="#compare">전자책과 뭐가 다른가요?</a>
+    </div>
+    <p class="micro">3기 모집 10명 · 신청 마감 2026년 11월 · 이후 참여비 인상 예정</p>
   </div>
+</section>
 
-  <div class="layout">
-  <div class="form-panel">
-  <div class="quick-box" id="quickBox">
-    <h2>빠른 입력 (문의글 붙여넣기)</h2>
-    <p class="quick-desc">스레드/DM에서 받은 문의글을 그대로 붙여넣으면 생년월일 · 성별 · 양음력 · 생시 · 고민내용을 자동으로 분해해서 아래 폼에 채워줍니다.</p>
-    <textarea id="quickInput" rows="3" placeholder="예) 1989년 8월10일 여자 양력 오전 9시30분 결혼할만한 남자가 생길까요? 혼자살아야할 팔자인지요.."></textarea>
-    <div class="quick-actions">
-      <button type="button" class="primary" id="quickFillRunBtn">자동입력 + 바로 분석</button>
-      <button type="button" id="quickFillBtn">자동입력만</button>
-      <button type="button" id="quickClearBtn">비우기</button>
+<!-- PAIN -->
+<section>
+  <div class="wrap">
+    <span class="kick">이런 생각, 해보셨죠</span>
+    <h2 class="st">시작을 막는 건 재능이 아니라<br><span class="hl">'구조'를 몰라서</span>입니다</h2>
+    <div class="painbox">
+      <div class="q">🤔 <b>"사주? 나는 전혀 모르는데…"</b></div>
+      <div class="q">💸 <b>"온라인으로 돈 버는 거, 나 같은 사람이 할 수 있을까?"</b></div>
+      <div class="q">😮‍💨 <b>"콘텐츠를 올려도 반응이 없어서 그냥 포기했어."</b></div>
     </div>
-    <div class="quick-summary" id="quickSummary"></div>
+    <p class="turn">저도 똑같았습니다. 못하는 게 아니라, <span class="hl">'구조'를 몰랐던 것</span>뿐이었어요.</p>
+    <p class="lead" style="margin-top:10px;">그 구조를 — AI 프롬프트, 자동화 프로그램, 유입·상담·수익화 흐름까지 — 통째로 드립니다.</p>
   </div>
-  <form id="form">
-    <div class="row">
-      <div class="field">
-        <label for="name">이름</label>
-        <input type="text" id="name" placeholder="이름">
-      </div>
-      <div class="field">
-        <label for="gender">성별</label>
-        <select id="gender">
-          <option value="male">남자</option>
-          <option value="female">여자</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="birth">생일</label>
-        <input type="text" id="birth" inputmode="numeric" maxlength="8" placeholder="YYYYMMDD">
-      </div>
-      <div class="field">
-        <label for="calendar">달력</label>
-        <select id="calendar">
-          <option value="solar">양력</option>
-          <option value="lunar">음력</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="leap">윤달</label>
-        <select id="leap">
-          <option value="false">평달</option>
-          <option value="true">윤달</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="time">생시</label>
-        <input type="text" id="time" inputmode="numeric" maxlength="4" placeholder="HHMM">
-      </div>
-      <div class="field or-field">
-        <span class="or-text">또는</span>
-      </div>
-      <div class="field">
-        <label for="ganjiSelect">간지선택</label>
-        <select id="ganjiSelect">
-          <option value="선택안함">선택안함</option>
-          <option value="자시(子時) 23:30~01:30">자시(子時) 23:30~01:30</option>
-          <option value="축시(丑時) 01:30~03:30">축시(丑時) 01:30~03:30</option>
-          <option value="인시(寅時) 03:30~05:30">인시(寅時) 03:30~05:30</option>
-          <option value="묘시(卯時) 05:30~07:30">묘시(卯時) 05:30~07:30</option>
-          <option value="진시(辰時) 07:30~09:30">진시(辰時) 07:30~09:30</option>
-          <option value="사시(巳時) 09:30~11:30">사시(巳時) 09:30~11:30</option>
-          <option value="오시(午時) 11:30~13:30">오시(午時) 11:30~13:30</option>
-          <option value="미시(未時) 13:30~15:30">미시(未時) 13:30~15:30</option>
-          <option value="신시(申時) 15:30~17:30">신시(申時) 15:30~17:30</option>
-          <option value="유시(酉時) 17:30~19:30">유시(酉時) 17:30~19:30</option>
-          <option value="술시(戌時) 19:30~21:30">술시(戌時) 19:30~21:30</option>
-          <option value="해시(亥時) 21:30~23:30">해시(亥時) 21:30~23:30</option>
-        </select>
-      </div>
-      <div class="field checkbox-field">
-        <input type="checkbox" id="hourUnknown">
-        <label for="hourUnknown">생시모름</label>
-      </div>
-      <div class="field">
-        <label for="birthRegionSearch">출생지역</label>
-        <input type="text" id="birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
-        <div class="region-suggest" id="birthRegionSuggest"></div>
-        <div class="region-warning" id="birthRegionWarning">목록에서 지역을 선택하세요</div>
-      </div>
-      <div class="field">
-        <label for="birthCorrectionManual">보정(분)</label>
-        <input type="number" id="birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
-      </div>
-      <div class="field">
-        <label for="seyunRange">세운</label>
-        <select id="seyunRange">
-          <option value="5">5년</option>
-          <option value="10">10년</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="wolunRange">월운</label>
-        <select id="wolunRange">
-          <option value="12">12개월</option>
-          <option value="24">24개월</option>
-          <option value="36">36개월</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="loveStatus">연애상태</label>
-        <select id="loveStatus">
-          <option value="선택안함">선택안함</option>
-          <option value="싱글">싱글</option>
-          <option value="연애중">연애중</option>
-          <option value="기혼">기혼</option>
-          <option value="이별·재회고민">이별·재회고민</option>
-        </select>
-      </div>
+</section>
+
+<!-- MARKET -->
+<section style="background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+  <div class="wrap center">
+    <span class="kick">지금이 기회인 이유</span>
+    <h2 class="st">사주 시장, 끝난 거 아니냐고요?</h2>
+    <p class="lead">오히려 <em>반복 소비 시장</em>으로 커지고 있습니다. 지금 치고 올라가는 건 전문가가 아니라 'AI로 구조를 아는 사람'입니다.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">약 1.4조원</div><div class="l">국내 점술·운세 시장 규모</div></div>
+      <div class="stat"><div class="n">1인당 8만원</div><div class="l">10~40세 평균 연간 소비</div></div>
+      <div class="stat"><div class="n">반복 소비</div><div class="l">일회성 체험을 넘어선 재구매 시장</div></div>
     </div>
-
-    <div class="field concern-field">
-      <label for="concern">고민</label>
-      <textarea id="concern" rows="3" placeholder="고민 내용을 입력하세요 (선택)"></textarea>
-    </div>
-
-    <div id="formError" class="form-error" style="display:none;"></div>
-
-    <div class="actions">
-      <button type="button" class="btn-jeong" id="btnJeong">사주분석 (정)</button>
-      <button type="button" class="btn-ya" id="btnYa">사주분석 (야)</button>
-      <button type="button" class="secondary" id="saveBtn">저장하기</button>
-    </div>
-  </form>
-
-  <form id="gunghapForm" style="display:none;">
-    <div class="gunghap-person-block gunghap-block-a">
-      <div class="gunghap-person-title">본인(의뢰인)</div>
-      <div class="row">
-        <div class="field">
-          <label for="p1_name">이름</label>
-          <input type="text" id="p1_name" placeholder="이름">
-        </div>
-        <div class="field">
-          <label for="p1_gender">성별</label>
-          <select id="p1_gender">
-            <option value="male">남자</option>
-            <option value="female">여자</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="p1_birth">생일</label>
-          <input type="text" id="p1_birth" inputmode="numeric" maxlength="8" placeholder="YYYYMMDD">
-        </div>
-        <div class="field">
-          <label for="p1_calendar">달력</label>
-          <select id="p1_calendar">
-            <option value="solar">양력</option>
-            <option value="lunar">음력</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="p1_leap">윤달</label>
-          <select id="p1_leap">
-            <option value="false">평달</option>
-            <option value="true">윤달</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="p1_time">생시</label>
-          <input type="text" id="p1_time" inputmode="numeric" maxlength="4" placeholder="HHMM">
-        </div>
-        <div class="field or-field">
-          <span class="or-text">또는</span>
-        </div>
-        <div class="field">
-          <label for="p1_ganjiSelect">간지선택</label>
-          <select id="p1_ganjiSelect">
-            <option value="선택안함">선택안함</option>
-            <option value="자시(子時) 23:30~01:30">자시(子時) 23:30~01:30</option>
-            <option value="축시(丑時) 01:30~03:30">축시(丑時) 01:30~03:30</option>
-            <option value="인시(寅時) 03:30~05:30">인시(寅時) 03:30~05:30</option>
-            <option value="묘시(卯時) 05:30~07:30">묘시(卯時) 05:30~07:30</option>
-            <option value="진시(辰時) 07:30~09:30">진시(辰時) 07:30~09:30</option>
-            <option value="사시(巳時) 09:30~11:30">사시(巳時) 09:30~11:30</option>
-            <option value="오시(午時) 11:30~13:30">오시(午時) 11:30~13:30</option>
-            <option value="미시(未時) 13:30~15:30">미시(未時) 13:30~15:30</option>
-            <option value="신시(申時) 15:30~17:30">신시(申時) 15:30~17:30</option>
-            <option value="유시(酉時) 17:30~19:30">유시(酉時) 17:30~19:30</option>
-            <option value="술시(戌時) 19:30~21:30">술시(戌時) 19:30~21:30</option>
-            <option value="해시(亥時) 21:30~23:30">해시(亥時) 21:30~23:30</option>
-          </select>
-        </div>
-        <div class="field checkbox-field">
-          <input type="checkbox" id="p1_hourUnknown">
-          <label for="p1_hourUnknown">생시모름</label>
-        </div>
-        <div class="field">
-          <label for="p1_birthRegionSearch">출생지역</label>
-          <input type="text" id="p1_birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
-          <div class="region-suggest" id="p1_birthRegionSuggest"></div>
-          <div class="region-warning" id="p1_birthRegionWarning">목록에서 지역을 선택하세요</div>
-        </div>
-        <div class="field">
-          <label for="p1_birthCorrectionManual">보정(분)</label>
-          <input type="number" id="p1_birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
-        </div>
-      </div>
-    </div>
-
-    <div class="gunghap-person-block gunghap-block-b">
-      <div class="gunghap-person-title">상대방</div>
-      <div class="row">
-        <div class="field">
-          <label for="p2_name">이름</label>
-          <input type="text" id="p2_name" placeholder="이름">
-        </div>
-        <div class="field">
-          <label for="p2_gender">성별</label>
-          <select id="p2_gender">
-            <option value="male">남자</option>
-            <option value="female">여자</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="p2_birth">생일</label>
-          <input type="text" id="p2_birth" inputmode="numeric" maxlength="8" placeholder="YYYYMMDD">
-        </div>
-        <div class="field">
-          <label for="p2_calendar">달력</label>
-          <select id="p2_calendar">
-            <option value="solar">양력</option>
-            <option value="lunar">음력</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="p2_leap">윤달</label>
-          <select id="p2_leap">
-            <option value="false">평달</option>
-            <option value="true">윤달</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="p2_time">생시</label>
-          <input type="text" id="p2_time" inputmode="numeric" maxlength="4" placeholder="HHMM">
-        </div>
-        <div class="field or-field">
-          <span class="or-text">또는</span>
-        </div>
-        <div class="field">
-          <label for="p2_ganjiSelect">간지선택</label>
-          <select id="p2_ganjiSelect">
-            <option value="선택안함">선택안함</option>
-            <option value="자시(子時) 23:30~01:30">자시(子時) 23:30~01:30</option>
-            <option value="축시(丑時) 01:30~03:30">축시(丑時) 01:30~03:30</option>
-            <option value="인시(寅時) 03:30~05:30">인시(寅時) 03:30~05:30</option>
-            <option value="묘시(卯時) 05:30~07:30">묘시(卯時) 05:30~07:30</option>
-            <option value="진시(辰時) 07:30~09:30">진시(辰時) 07:30~09:30</option>
-            <option value="사시(巳時) 09:30~11:30">사시(巳時) 09:30~11:30</option>
-            <option value="오시(午時) 11:30~13:30">오시(午時) 11:30~13:30</option>
-            <option value="미시(未時) 13:30~15:30">미시(未時) 13:30~15:30</option>
-            <option value="신시(申時) 15:30~17:30">신시(申時) 15:30~17:30</option>
-            <option value="유시(酉時) 17:30~19:30">유시(酉時) 17:30~19:30</option>
-            <option value="술시(戌時) 19:30~21:30">술시(戌時) 19:30~21:30</option>
-            <option value="해시(亥時) 21:30~23:30">해시(亥時) 21:30~23:30</option>
-          </select>
-        </div>
-        <div class="field checkbox-field">
-          <input type="checkbox" id="p2_hourUnknown">
-          <label for="p2_hourUnknown">생시모름</label>
-        </div>
-        <div class="field">
-          <label for="p2_birthRegionSearch">출생지역</label>
-          <input type="text" id="p2_birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
-          <div class="region-suggest" id="p2_birthRegionSuggest"></div>
-          <div class="region-warning" id="p2_birthRegionWarning">목록에서 지역을 선택하세요</div>
-        </div>
-        <div class="field">
-          <label for="p2_birthCorrectionManual">보정(분)</label>
-          <input type="number" id="p2_birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="relationType">관계 유형</label>
-        <select id="relationType">
-          <option value="모자">모자</option>
-          <option value="모녀">모녀</option>
-          <option value="부자">부자</option>
-          <option value="부녀">부녀</option>
-          <option value="연인">연인</option>
-          <option value="부부">부부</option>
-          <option value="재회상대">재회상대</option>
-          <option value="동업·동료">동업·동료</option>
-          <option value="친구">친구</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="field concern-field">
-      <label for="gConcern">고민</label>
-      <textarea id="gConcern" rows="3" placeholder="고민 내용을 입력하세요 (선택)"></textarea>
-    </div>
-
-    <div id="gFormError" class="form-error" style="display:none;"></div>
-
-    <div class="actions">
-      <button type="button" class="btn-jeong" id="gBtnJeong">궁합분석 (정)</button>
-      <button type="button" class="btn-ya" id="gBtnYa">궁합분석 (야)</button>
-      <button type="button" class="secondary" id="gSaveBtn">저장하기</button>
-    </div>
-  </form>
   </div>
+</section>
 
-  <aside class="saved-side">
-    <h2 class="saved-side-title">저장된 사주</h2>
-    <input type="text" id="savedSearch" class="saved-search-input" placeholder="이름 검색">
-    <div class="saved-list" id="savedList"></div>
-    <div class="saved-pagination" id="savedPagination"></div>
-  </aside>
+<!-- COMPARE (핵심 차별점) -->
+<section id="compare">
+  <div class="wrap">
+    <span class="kick">기초 전자책 vs 루월당 수강</span>
+    <h2 class="st">'혼자 배우기'와 <span class="hl">'시스템으로 돈 벌기'</span>의 차이</h2>
+    <p class="lead">기초 전자책은 사주 부업의 기본기를 혼자 익히는 입문서입니다. 루월당 수강은 전용 자동화 프로그램과 평생 피드백으로 <strong>수익화까지 함께 만드는</strong> 컨설팅입니다.</p>
+    <div class="cmp">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>기초 실전가이드 전자책</th>
+            <th class="hi">루월당 수강<span>AI 자동화 컨설팅</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="rk">누구를 위한 것</td><td class="base">일단 혼자 기초부터 배우고 싶은 입문자</td><td class="pro">실제로 실행하고 수익화까지 하고 싶은 분</td></tr>
+          <tr><td class="rk">사주 계산</td><td class="base">무료 만세력(포스텔러) 직접 조회</td><td class="pro"><span class="o">실제 명리학자가 만든</span> 전용 만세력 엔진 내장</td></tr>
+          <tr><td class="rk">리포트 제작</td><td class="base">GPT에 직접 복붙해서 생성</td><td class="pro">만세력만 넣으면 <span class="o">프롬프트 없이 PDF·상담 답변까지</span> 정리</td></tr>
+          <tr><td class="rk">나만의 웹사이트</td><td class="base"><span class="x">없음 (직접 구축)</span></td><td class="pro"><span class="o">개인 사주 웹사이트</span> 제공 (신청 접수·통계)</td></tr>
+          <tr><td class="rk">발송·응대</td><td class="base"><span class="x">수동</span></td><td class="pro">이메일 발송 + 추가질문 <span class="o">AI 응대</span></td></tr>
+          <tr><td class="rk">마케팅·유입</td><td class="base">기본 개념 안내</td><td class="pro"><span class="o">SNS 실전 유입 구조</span></td></tr>
+          <tr><td class="rk">운영·수익화</td><td class="base">기본 팁</td><td class="pro">상담 흐름·재구매·단골화 <span class="o">전 과정 코칭</span></td></tr>
+          <tr><td class="rk">피드백</td><td class="base"><span class="x">없음 (혼자 진행)</span></td><td class="pro"><span class="o">직접 찾아가는 끊임없는 · 평생 피드백</span></td></tr>
+          <tr><td class="rk">업데이트</td><td class="base">해당 없음</td><td class="pro">프로그램 <span class="o">계속 업데이트 · 평생 사용</span></td></tr>
+          <tr><td class="rk">가격</td><td class="base">1~2만원 (입문가)</td><td class="pro"><span class="o">80만원</span> (3기 · 프로그램 포함, 추가비용 0원)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="lead center" style="margin:22px auto 0;">전자책으로 '할 수 있는지' 감을 잡았다면, 루월당은 <em>실제로 돈이 되는 시스템</em>을 손에 쥐여드립니다.</p>
   </div>
+</section>
 
-  <div class="result-toolbar">
-    <button type="button" class="secondary" id="copyBtnTop" disabled>복사하기</button>
-    <button type="button" class="secondary" id="downloadBtn" disabled>텍스트 파일 저장</button>
-    <button type="button" class="secondary" id="pdfCopyImgBtn" disabled>이미지 복사</button>
-    <button type="button" class="secondary" id="pdfSaveImgBtn" disabled>이미지 저장</button>
-    <label class="hangul-toggle">
-      <input type="checkbox" id="showHangulSub" checked>
-      한글 발음 표시
-    </label>
+<!-- PROGRAM FEATURES -->
+<section style="background:#fff; border-top:1px solid var(--line);">
+  <div class="wrap">
+    <span class="kick">루월당 전용 프로그램</span>
+    <h2 class="st">아무 AI나 쓰면 안 됩니다.<br><span class="hl">전용 프로그램</span>이 다릅니다</h2>
+    <p class="lead">일반 ChatGPT·Gemini는 수만 가지 명리학 경우의 수를 담지 못해 오류가 심합니다. 루월당은 실제 명리학자와 함께 만든 전용 엔진과 프로그램을 제공합니다.</p>
+    <div class="grid">
+      <div class="fcard"><div class="ic">🧮</div><h3>만세력 엔진 내장 (핵심)</h3><p>별도 프롬프트가 필요 없습니다. 채팅창에 만세력만 넣으면, 실제 명리학자가 만든 엔진이 어려운 용어까지 풀어 <strong>사주 풀이·PDF·상담 답변</strong>을 알아서 쭉 만들어 줍니다.</p></div>
+      <div class="fcard"><div class="ic">📄</div><h3>7종 사주 리포트 PDF</h3><p>내담자 정보만 넣으면 엔진이 다양한 리포트를 만들어 줍니다. 만세력 이미지까지 깔끔하게 포함.</p></div>
+      <div class="fcard"><div class="ic">💬</div><h3>실제 채팅 상담 정리</h3><p>PDF뿐 아니라 실제 채팅 상담에 쓸 답변까지 정리해 줍니다. 만세력만 넣으면 상담 내용이 이어서 나와요.</p></div>
+      <div class="fcard"><div class="ic">🌐</div><h3>개인 사주 웹사이트</h3><p>무료사주→카톡 유도 방식과 바로 신청 방식 모두 구현. 텍스트·색상·이미지까지 내 스타일로.</p></div>
+      <div class="fcard"><div class="ic">📧</div><h3>이메일 발송</h3><p>신청자 목록 관리 + 내 사주 이름으로 리포트 메일 발송. 발송 기록까지 한눈에.</p></div>
+      <div class="fcard"><div class="ic">🙋</div><h3>내담자 추가질문 AI</h3><p>리포트 내용을 파악한 AI가 추가질문에 응대. 복붙만 하면 상담이 이어집니다.</p></div>
+      <div class="fcard"><div class="ic">🎨</div><h3>PDF 표지·디자인 커스텀</h3><p>남들과 겹치지 않는 나만의 표지·웹 디자인. 표지는 계속 추가 업데이트됩니다.</p></div>
+      <div class="fcard"><div class="ic">📊</div><h3>방문·전환 통계 대시보드</h3><p>방문 → 신청 → 유료 전환율을 한눈에. 어디를 개선할지 숫자로 보입니다.</p></div>
+      <div class="fcard"><div class="soon">추후 배포 예정</div><div class="ic">🧵</div><h3>스레드 자동화</h3><p>스레드 콘텐츠 자동화 기능이 곧 추가됩니다. 업데이트되면 <strong>추가 결제 없이</strong> 바로 사용 가능합니다.</p></div>
+    </div>
   </div>
+</section>
 
-  <div id="result"></div>
+<!-- HOW IT WORKS -->
+<section>
+  <div class="wrap">
+    <span class="kick">어떻게 사용하나요</span>
+    <h2 class="st">몇 단계면, 쉽고 빠르게 상담이 됩니다</h2>
+    <p class="lead">완전 자동은 아닙니다. 대신 복잡한 과정을 <em>가장 쉽고 빠른 루트</em>로 만들어 둔 구조예요.</p>
+    <div class="steps">
+      <div class="stp"><div class="no">1</div><h4>웹사이트 만들기</h4><p>내 사주 랜딩페이지를 꾸미고 링크를 공유합니다.</p></div>
+      <div class="stp"><div class="no">2</div><h4>신청 접수</h4><p>방문자가 무료사주·상담을 신청하면 신청자 목록에 정리됩니다.</p></div>
+      <div class="stp"><div class="no">3</div><h4>리포트 제작</h4><p>목록에서 만세력만 넣으면 7종 PDF를 쉽고 빠르게 만듭니다.</p></div>
+      <div class="stp"><div class="no">4</div><h4>발송 & 추가상담</h4><p>이메일로 발송하고, 추가질문은 AI가 이어서 응대합니다.</p></div>
+    </div>
+  </div>
+</section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- INCLUDED IN COURSE -->
+<section style="background:#fff; border-top:1px solid var(--line);">
+  <div class="wrap">
+    <span class="kick">수강에 포함된 것</span>
+    <h2 class="st">프로그램 + 실전 노하우 + <span class="hl">평생 피드백</span></h2>
+    <div class="incl">
+      <div class="item"><span class="ck">✓</span><div><b>실제 상담용 AI 프롬프트</b><span>첫 멘트, 고객 유형별 응답, 연애·재회·금전·인간관계 상담 흐름, 추가 결제 유도까지.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>상담 중 대처·대응법</b><span>곤란하거나 민감한 질문, 까다로운 고객, 예상 못 한 상황에서 어떻게 답하고 넘길지 실전 대응.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>SNS 실전 유입 구조</b><span>사람을 모으는 SNS 운영·유입 흐름을 실전 기준으로 공유합니다.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>상담 운영 & 수익화 흐름</b><span>상담 진행 순서, 응대 방식, 신뢰 쌓기, 재구매 유도, 단골 만드는 구조.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>손이 덜 가는 반자동 구조</b><span>PDF 제작·발송·추가응대를 가장 쉽고 빠른 루트로. 완전 자동은 아니지만 부담이 확 줄어듭니다.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>직접 찾아가는 평생 피드백</b><span>막히는 지점마다 끊임없이 피드백. 한 번 수강하면 평생 이어집니다.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEEDBACK HIGHLIGHT -->
+<section>
+  <div class="wrap">
+    <div class="fb">
+      <span class="kick">루월당만의 차별점</span>
+      <h2>혼자 두지 않습니다.<br>직접 찾아가는 <u>평생 피드백</u></h2>
+      <p>전자책은 사서 읽고 끝입니다. 루월당은 다릅니다. 막히는 지점마다 직접 찾아가 끊임없이 피드백하고, 실제 수익이 날 때까지 함께 갑니다. 한 번 수강하면 <strong>평생</strong> 이어집니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COST TRANSPARENCY -->
+<section style="background:#fff; border-top:1px solid var(--line);">
+  <div class="wrap">
+    <span class="kick">비용, 투명하게</span>
+    <h2 class="st">루월당에 <span class="hl">추가로 내는 돈은 없습니다</span></h2>
+    <div class="cost">
+      <h3>💡 루월당에 내는 건 수강료 하나뿐입니다</h3>
+      <div class="row"><span class="ck">✓</span><div><b>프로그램 비용 별도 없음</b> — 전용 프로그램은 교육 수강료에 <strong>전부 포함</strong>되어 있습니다.</div></div>
+      <div class="row"><span class="ck">✓</span><div><b>평생 사용 · 계속 업데이트</b> — 한 번 수강하면 평생 사용하고, 새 기능이 추가돼도 <strong>추가 결제 없이</strong> 그대로.</div></div>
+      <div class="row"><span class="ck">✓</span><div><b>PDF, 무료·유료 둘 다 가능</b> — GPT로 <strong>무료</strong> 제작할 수도 있고, 원하면 API로 <strong>자동 제작</strong>할 수도 있습니다.</div></div>
+    </div>
+    <div class="cost" style="border-color:var(--line); border-width:1px; margin-top:14px; background:var(--cream);">
+      <div class="row" style="padding-top:0;"><span class="ck">ℹ️</span><div><b>참고 · API 비용은 외부 사이트 결제입니다</b> — PDF를 API로 자동 제작하거나 스레드 자동화(추후)를 쓸 때 API가 필요할 수 있어요. 이 API 비용은 <strong>OpenAI 등 외부 사이트에 내는 것</strong>이지, 루월당에 결제하는 비용이 아닙니다. 무료 방식만 쓰면 이마저도 들지 않습니다.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section>
+  <div class="wrap center">
+    <span class="kick">수강생 후기</span>
+    <h2 class="st">이미 시작한 분들의 이야기</h2>
+    <div class="revwrap" style="text-align:left;">
+      <div class="rev"><div class="stars">★★★★★</div><p>"막힐 때마다 바로 피드백을 받을 수 있어서 포기를 안 하게 돼요. 이게 제일 큰 차이 같아요."</p><div class="who">— 부업 준비 수강생</div></div>
+      <div class="rev" style="display:flex; align-items:center; justify-content:center; min-height:150px; border-style:dashed; color:var(--muted);">🖼️ 후기 이미지 자리</div>
+      <div class="rev" style="display:flex; align-items:center; justify-content:center; min-height:150px; border-style:dashed; color:var(--muted);">🖼️ 후기 이미지 자리</div>
+    </div>
+    <div class="rev-note">📌 실제 카톡 후기 사진을 보내주시면 이 자리에 넣어드릴게요.</div>
+  </div>
+</section>
+
+<!-- EBOOK ENTRY -->
+<section id="ebook" style="background:#fff; border-top:1px solid var(--line);">
+  <div class="wrap">
+    <span class="kick">먼저 가볍게 시작하고 싶다면</span>
+    <h2 class="st">AI 사주 <span class="hl">기초 전자책</span></h2>
+    <p class="lead">"수강은 아직 부담돼요." 그런 분을 위한 입문서. 사주 부업의 기본기와 GPT 활용법을 혼자 익힐 수 있습니다.</p>
+    <div class="ebookcard">
+      <div class="eb-left">
+        <div class="eb-title">📘 AI 사주상담 실전 가이드 · 기초편</div>
+        <ul class="eb-list">
+          <li>사주 최소 원리 + 일간·오행·십성 해석 사전</li>
+          <li>만세력으로 사주 뽑는 법</li>
+          <li>상품별 리포트를 뽑는 GPT 프롬프트</li>
+          <li>상담방 세팅 · 유료 전환 대본</li>
+        </ul>
+      </div>
+      <div class="eb-right">
+        <div class="eb-price"><small>입문가</small> 23,000<small>원</small></div>
+        <div style="font-size:12.5px; color:var(--accent-2); font-weight:700; margin:-8px 0 12px;">⏫ 추후 금액 인상 예정 · 지금이 가장 저렴합니다</div>
+        <div class="eb-pay">
+          <a class="btn big pay-open" href="#" data-item="AI 사주 기초 전자책" data-amount="23000" data-card="카드 결제 · 23,000원" data-bank="계좌이체 · 23,000원" data-hint="카드·계좌이체 모두 23,000원입니다">💳 결제하기</a>
+        </div>
+        <div class="eb-up">더 깊이 배우고 싶다면 → <a href="#apply">루월당 수강 보기</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="apply" style="background:var(--cream); border-top:1px solid var(--line);">
+  <div class="wrap center">
+    <span class="kick">3기 모집</span>
+    <h2 class="st">지금이 가장 저렴할 때입니다</h2>
+    <div class="price-ladder">
+      <s>1기 30만</s><span class="arrow">→</span><s>50만</s><span class="arrow">→</span><s>2기 60만</s><span class="arrow">→</span><span class="now">3기 80만</span><span class="arrow">→</span><s>4기 110만 예정</s>
+    </div>
+    <div class="pricecard">
+      <span class="tag">3기 · 프로그램 포함</span>
+      <div class="amt">80<small>만원~</small></div>
+      <p class="note">전용 프로그램 + 실전 노하우 + 평생 피드백까지 전부 포함 · 루월당 추가비용 0원</p>
+      <div class="meta">
+        <span>모집 인원 <b>10명</b></span>
+        <span>신청 마감 <b>2026년 11월</b></span>
+        <span>정원 마감 시 <b>조기 종료</b></span>
+      </div>
+      <div class="pay-opts">
+        <a class="btn big pay-open" href="#" data-item="루월당 3기 수강 신청" data-amount="900000" data-card="카드 결제 · 90만원" data-bank="계좌이체 · 80만원" data-hint="카드 결제는 수수료로 10만원이 추가됩니다 (계좌이체 80만 / 카드 90만)">💳 신청·결제하기</a>
+      </div>
+      <p class="pay-note">계좌이체 80만원 / 카드 90만원 · 버튼을 누르면 선택할 수 있어요</p>
+      <p class="warnline">⚠️ 4기부터 110만원으로 인상 예정 · 내부 사정에 따라 추가 인상될 수 있습니다</p>
+    </div>
+    <p class="lead center" style="margin:22px auto 0;">11월 <strong>사전 예약</strong>도 가능합니다. 링크로 <em>"참여 희망합니다"</em>라고 보내주세요.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="wrap">
+    <span class="kick">자주 묻는 질문</span>
+    <h2 class="st">궁금한 점, 미리 풀어드릴게요</h2>
+    <div class="faq">
+      <details open><summary>사주를 하나도 몰라도 되나요?</summary><p>네, 괜찮습니다. 실제 명리학자가 만든 전용 엔진이 사주를 계산·해석하고, AI가 리포트를 작성합니다. 알려드리는 순서대로만 따라오시면 됩니다.</p></details>
+      <details><summary>프로그램 사용에 추가 비용이 드나요?</summary><p>루월당에 추가로 내는 비용은 없습니다. 전용 프로그램은 수강료에 전부 포함되어 있고, 평생 사용·계속 업데이트되며 추가 결제가 없습니다. 다만 PDF를 API로 자동 제작하거나 스레드 자동화(추후)를 쓸 경우 API 비용이 들 수 있는데, 이는 OpenAI 등 외부 사이트에 내는 것으로 루월당 결제가 아닙니다. 무료(GPT) 방식만 쓰면 이 비용도 들지 않습니다.</p></details>
+      <details><summary>결제는 어떻게 하나요? (카드 / 계좌이체)</summary><p>카드 결제와 계좌이체 모두 가능합니다. 계좌이체는 80만원, 카드 결제는 결제 수수료로 10만원이 추가되어 90만원입니다. 버튼을 눌러 안내에 따라 진행해 주세요.</p></details>
+      <details><summary>기초 전자책만으로는 안 되나요?</summary><p>전자책은 '사주 부업이 뭔지, 나도 할 수 있는지' 기본기를 혼자 익히는 입문서입니다. 루월당 수강은 여기에 자동화 프로그램, 웹사이트, 마케팅·운영 실전 구조, 그리고 평생 피드백을 더해 '실제 수익화'까지 함께 만드는 과정입니다.</p></details>
+      <details><summary>스레드 자동화 기능은 지금 쓸 수 있나요?</summary><p>스레드 자동화는 현재 준비 중으로, 추후 배포 예정입니다. 배포되면 수강생은 추가 비용 없이 바로 사용하실 수 있습니다.</p></details>
+      <details><summary>피드백은 얼마나 받을 수 있나요?</summary><p>직접 찾아가는 끊임없는 피드백을 제공합니다. 한 번 수강하시면 평생 이어지므로, 막히는 지점이 생길 때마다 언제든 도움을 받으실 수 있습니다.</p></details>
+      <details><summary>정원이 정해져 있나요?</summary><p>3기는 10명으로 제한 모집합니다. 정원이 마감되면 조기 종료되며, 4기부터는 110만원으로 인상될 예정입니다.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <h2>AI + 사주 + 반자동으로<br>혼자서도 돌아가는 수익 구조를</h2>
+    <p>단순 호기심이 아니라, 실제로 실행하고 수익화까지 해보고 싶은 분들을 위한 자리입니다. 지금 3기 자리에서 함께 만들어봐요. 🚀</p>
+    <div class="ctarow">
+      <a class="btn big" href="#apply">💳 3기 수강 신청하기</a>
+      <a class="btn big light" href="#ebook">📘 전자책 구매하기</a>
+      <a class="btn big outline" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">💬 문의하기</a>
+    </div>
+    <p style="font-size:13.5px; color:#c9bdb0; margin-top:6px;">전자책 23,000원 · 3기 수강 계좌이체 80만 / 카드 90만</p>
+  </div>
+</section>
+
+<footer>
+  © 루월당 · AI 사주 자동화 컨설팅 · 무단 복제·배포 금지
+</footer>
+
+<div class="mobicta">
+  <a class="btn" href="#ebook">📘 전자책 구매하기</a>
+  <a class="btn ghost" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">💬 문의하기</a>
+</div>
+
+<!-- 1) 결제 방법 선택 -->
+<div id="payModal" class="pay-modal">
+  <div class="pay-box">
+    <button class="pay-close" type="button" aria-label="닫기">&times;</button>
+    <div class="pay-title">결제 방법 선택</div>
+    <div class="pay-sub" id="payItem"></div>
+    <button class="btn big" id="payCard" type="button">💳 <span id="payCardPrice">카드 결제</span></button>
+    <button class="btn big ghost" id="payBank" type="button">🏦 <span id="payBankPrice">계좌이체</span></button>
+    <p class="pay-hint" id="payHint"></p>
+  </div>
+</div>
+
+<!-- 2) 토스 카드 결제 위젯 -->
+<div id="tossModal" class="pay-modal">
+  <div class="pay-box toss-box">
+    <button class="pay-close" type="button" aria-label="닫기">&times;</button>
+    <div class="pay-title" style="text-align:center;">카드 결제</div>
+    <div class="pay-sub" id="tossItem" style="text-align:center;"></div>
+    <div id="payment-method"></div>
+    <div id="agreement"></div>
+    <button class="btn big" id="tossPayBtn" type="button" style="width:100%; justify-content:center; margin-top:16px;">결제하기</button>
+    <p class="pay-hint">테스트 결제 환경입니다. 실제 결제·입금이 되려면 라이브 키와 결제 승인(서버) 연동이 필요해요.</p>
+  </div>
+</div>
+
+<!-- 3) 계좌이체 안내 -->
+<div id="bankModal" class="pay-modal">
+  <div class="pay-box">
+    <button class="pay-close" type="button" aria-label="닫기">&times;</button>
+    <div class="pay-title">계좌이체 안내</div>
+    <div class="pay-sub" id="bankItem"></div>
+    <div class="bank-acc">
+      <span class="lbl">입금 계좌</span>
+      <b id="bankAccount">○○은행 000-0000-0000 (예금주명)</b>
+    </div>
+    <p class="pay-hint">위 계좌로 입금 후, 아래 버튼으로 입금자명과 상품을 알려주시면 확인해 드려요.</p>
+    <a class="btn big" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener" style="width:100%; justify-content:center; margin-top:6px;">💬 입금 확인 요청 (카톡)</a>
+  </div>
+</div>
+
 <script>
-document.getElementById('refreshBtn').addEventListener('click', () => {
-  window.location.replace(window.location.pathname + '?_=' + Date.now());
-});
+(function(){
+  var CLIENT_KEY="test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm"; // 토스 테스트 키 — 계약 후 라이브 키로 교체
+  var payModal=document.getElementById('payModal');
+  var tossModal=document.getElementById('tossModal');
+  var bankModal=document.getElementById('bankModal');
+  var cur={};
+  function lock(){document.body.style.overflow='hidden';}
+  function closeAll(){ [payModal,tossModal,bankModal].forEach(function(m){m.classList.remove('open');}); document.body.style.overflow=''; }
 
-const resultDiv = document.getElementById('result');
-const downloadBtn = document.getElementById('downloadBtn');
-const copyBtnTop = document.getElementById('copyBtnTop');
-const pdfCopyImgBtn = document.getElementById('pdfCopyImgBtn');
-const pdfSaveImgBtn = document.getElementById('pdfSaveImgBtn');
-const formErrorDiv = document.getElementById('formError');
-const timeInput = document.getElementById('time');
-const hourUnknownCheckbox = document.getElementById('hourUnknown');
-const ganjiSelect = document.getElementById('ganjiSelect');
-let lastText = '';
-let lastName = '';
-let lastBirth = '';
-let resultReady = false;
-
-// 각 시진(2시간 구간)의 중간 시각 (엔진에 전달할 hour/minute)
-const GANJI_TIME_MAP = {
-  '자시(子時) 23:30~01:30': [0, 30],
-  '축시(丑時) 01:30~03:30': [2, 30],
-  '인시(寅時) 03:30~05:30': [4, 30],
-  '묘시(卯時) 05:30~07:30': [6, 30],
-  '진시(辰時) 07:30~09:30': [8, 30],
-  '사시(巳時) 09:30~11:30': [10, 30],
-  '오시(午時) 11:30~13:30': [12, 30],
-  '미시(未時) 13:30~15:30': [14, 30],
-  '신시(申時) 15:30~17:30': [16, 30],
-  '유시(酉時) 17:30~19:30': [18, 30],
-  '술시(戌時) 19:30~21:30': [20, 30],
-  '해시(亥時) 21:30~23:30': [22, 30],
-};
-
-hourUnknownCheckbox.addEventListener('change', () => {
-  const checked = hourUnknownCheckbox.checked;
-  timeInput.disabled = checked;
-  ganjiSelect.disabled = checked;
-  if (checked) {
-    timeInput.value = '';
-    ganjiSelect.value = '선택안함';
-  }
-});
-
-ganjiSelect.addEventListener('change', () => {
-  const active = ganjiSelect.value !== '선택안함';
-  timeInput.disabled = active;
-  if (active) timeInput.value = '';
-});
-
-timeInput.addEventListener('input', () => {
-  if (timeInput.value.trim() && ganjiSelect.value !== '선택안함') {
-    ganjiSelect.value = '선택안함';
-  }
-});
-
-// ── 출생지역 검색 자동완성 (외부 지도 API 없이 서버가 내려주는 내장 regions.ts 데이터만 사용) ──
-let REGIONS = [];
-async function loadRegions() {
-  try {
-    const res = await fetch('/api/regions');
-    const data = await res.json();
-    REGIONS = data.regions || [];
-  } catch (err) {
-    REGIONS = [];
-  }
-}
-function formatCorrection(n) {
-  return (n > 0 ? '+' : '') + n + '분';
-}
-
-// 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 출생지역 검색/보정(분) 위젯.
-// 계산에 쓰이는 값은 오직 보정(분) 칸뿐이다. 출생지역 칸은 표시·기록용이며, 목록에서 항목을
-// 클릭하면 보정(분) 칸에 그 값을 자동으로 채워줄 뿐이다(그 뒤에도 보정(분) 칸은 자유롭게 고칠 수 있고,
-// 그렇게 고친 값이 그대로 우선 적용된다). 지역 칸에 글자만 있고 보정(분)이 비어 있으면(=선택을 안 한 것으로
-// 간주) 보정이 적용되지 않으므로, 착각을 막기 위해 노란 테두리와 안내 문구로 표시한다.
-function wireBirthRegion(prefix) {
-  const searchEl = document.getElementById(prefix + 'birthRegionSearch');
-  const suggestEl = document.getElementById(prefix + 'birthRegionSuggest');
-  const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
-  const warnEl = document.getElementById(prefix + 'birthRegionWarning');
-
-  const closeSuggest = () => { suggestEl.innerHTML = ''; suggestEl.classList.remove('open'); };
-
-  const updateWarning = () => {
-    const needsSelection = searchEl.value.trim() !== '' && manualEl.value.trim() === '';
-    searchEl.classList.toggle('warn', needsSelection);
-    if (warnEl) warnEl.classList.toggle('show', needsSelection);
-  };
-
-  const selectRegion = (region) => {
-    searchEl.value = region.name;
-    manualEl.value = String(region.correctionMinutes);
-    closeSuggest();
-    updateWarning();
-  };
-
-  const renderSuggestions = (query) => {
-    const q = query.trim();
-    if (!q) { closeSuggest(); return; }
-    const matches = REGIONS.filter(r => r.name.includes(q)).slice(0, 20);
-    if (!matches.length) { closeSuggest(); return; }
-    suggestEl.innerHTML = '';
-    matches.forEach(r => {
-      const row = document.createElement('div');
-      row.className = 'region-suggest-row';
-      row.textContent = `${r.name} (${formatCorrection(r.correctionMinutes)})`;
-      row.addEventListener('mousedown', (e) => { e.preventDefault(); selectRegion(r); });
-      suggestEl.appendChild(row);
+  document.querySelectorAll('.pay-open').forEach(function(b){
+    b.addEventListener('click',function(e){
+      e.preventDefault();
+      cur={ item:b.getAttribute('data-item')||'', amount:parseInt(b.getAttribute('data-amount')||'0',10),
+            cardLabel:b.getAttribute('data-card')||'카드 결제', bankLabel:b.getAttribute('data-bank')||'계좌이체',
+            hint:b.getAttribute('data-hint')||'' };
+      document.getElementById('payItem').textContent=cur.item;
+      document.getElementById('payCardPrice').textContent=cur.cardLabel;
+      document.getElementById('payBankPrice').textContent=cur.bankLabel;
+      document.getElementById('payHint').textContent=cur.hint;
+      payModal.classList.add('open'); lock();
     });
-    suggestEl.classList.add('open');
-  };
-
-  searchEl.addEventListener('input', () => {
-    renderSuggestions(searchEl.value);
-    updateWarning();
-  });
-  searchEl.addEventListener('focus', () => { if (searchEl.value.trim()) renderSuggestions(searchEl.value); });
-  searchEl.addEventListener('blur', () => setTimeout(closeSuggest, 150));
-
-  manualEl.addEventListener('input', updateWarning);
-}
-
-// 저장/전송용: 계산에는 보정(분) 칸의 값만 쓰고, 지역명은 그 값과 함께 표시·기록용으로만 실어 보낸다.
-// 보정(분)이 비어있거나 0이면(기본값) undefined를 돌려줘 보정 없음으로 처리된다.
-function getBirthRegionData(prefix) {
-  const searchEl = document.getElementById(prefix + 'birthRegionSearch');
-  const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
-  const manualVal = manualEl.value.trim();
-  if (manualVal === '' || Number.isNaN(Number(manualVal)) || Number(manualVal) === 0) {
-    return { correctionMinutes: undefined, birthRegionLabel: undefined };
-  }
-  return { correctionMinutes: Math.round(Number(manualVal)), birthRegionLabel: searchEl.value.trim() || undefined };
-}
-
-// 저장된 사주 불러오기용: p.correctionMinutes/birthRegionLabel로 두 칸을 그대로 복원한다.
-function setBirthRegionFields(prefix, p) {
-  const searchEl = document.getElementById(prefix + 'birthRegionSearch');
-  const manualEl = document.getElementById(prefix + 'birthCorrectionManual');
-  const warnEl = document.getElementById(prefix + 'birthRegionWarning');
-  searchEl.value = p.birthRegionLabel || '';
-  manualEl.value = (typeof p.correctionMinutes === 'number' && p.correctionMinutes !== 0) ? String(p.correctionMinutes) : '';
-  searchEl.classList.remove('warn');
-  if (warnEl) warnEl.classList.remove('show');
-}
-
-loadRegions();
-wireBirthRegion('');
-wireBirthRegion('p1_');
-wireBirthRegion('p2_');
-
-function showFormError(msg) {
-  formErrorDiv.textContent = msg;
-  formErrorDiv.style.display = 'block';
-}
-function clearFormError() {
-  formErrorDiv.style.display = 'none';
-  formErrorDiv.textContent = '';
-}
-
-// 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 생일·생시 파싱.
-function parseBirthAndTime(prefix, showErrorFn) {
-  const birthEl = document.getElementById(prefix + 'birth');
-  const timeEl = document.getElementById(prefix + 'time');
-  const hourUnknownEl = document.getElementById(prefix + 'hourUnknown');
-  const ganjiEl = document.getElementById(prefix + 'ganjiSelect');
-
-  const birth = birthEl.value.trim();
-  if (!/^\d{8}$/.test(birth)) {
-    showErrorFn('생일은 8자리 숫자로 입력해주세요 (예: 19740426)');
-    return null;
-  }
-  const year = parseInt(birth.slice(0, 4), 10);
-  const month = parseInt(birth.slice(4, 6), 10);
-  const day = parseInt(birth.slice(6, 8), 10);
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
-    showErrorFn('생일 숫자가 올바르지 않습니다 (예: 19740426)');
-    return null;
-  }
-
-  const hourUnknown = hourUnknownEl.checked;
-  let hour = 0, minute = 0;
-  const ganji = ganjiEl.value !== '선택안함' ? ganjiEl.value : '';
-  if (!hourUnknown && ganji) {
-    [hour, minute] = GANJI_TIME_MAP[ganji];
-  } else if (!hourUnknown) {
-    const time = timeEl.value.trim();
-    if (!/^\d{4}$/.test(time)) {
-      showErrorFn('생시는 4자리 숫자로 입력해주세요 (예: 1000), 모르면 "생시모름"을 체크하거나 간지선택을 이용하세요');
-      return null;
-    }
-    hour = parseInt(time.slice(0, 2), 10);
-    minute = parseInt(time.slice(2, 4), 10);
-    if (hour > 23 || minute > 59) {
-      showErrorFn('생시 숫자가 올바르지 않습니다 (00:00~23:59, 예: 1000)');
-      return null;
-    }
-  }
-
-  return { year, month, day, hour, minute, hourUnknown, ganjiSelect: hourUnknown ? '' : ganji };
-}
-
-function collectFormData() {
-  clearFormError();
-  const bt = parseBirthAndTime('', showFormError);
-  if (!bt) return null;
-
-  return {
-    name: document.getElementById('name').value,
-    ...bt,
-    isLunar: document.getElementById('calendar').value === 'lunar',
-    isLeapMonth: document.getElementById('leap').value === 'true',
-    gender: document.getElementById('gender').value,
-    concern: document.getElementById('concern').value,
-    ...getBirthRegionData(''),
-    세운년수: parseInt(document.getElementById('seyunRange').value, 10),
-    월운개월수: parseInt(document.getElementById('wolunRange').value, 10),
-    연애상태: document.getElementById('loveStatus').value,
-  };
-}
-
-function buildPayload(jasi) {
-  const data = collectFormData();
-  if (!data) return null;
-  return { ...data, jasi };
-}
-
-// 궁합 모드: 본인(p1_)/상대(p2_) 필드셋 공용 수집. 세운/월운/연애상태는 궁합 모드에 없다.
-function collectPersonFields(prefix, showErrorFn) {
-  const bt = parseBirthAndTime(prefix, showErrorFn);
-  if (!bt) return null;
-  return {
-    name: document.getElementById(prefix + 'name').value,
-    ...bt,
-    isLunar: document.getElementById(prefix + 'calendar').value === 'lunar',
-    isLeapMonth: document.getElementById(prefix + 'leap').value === 'true',
-    gender: document.getElementById(prefix + 'gender').value,
-    ...getBirthRegionData(prefix),
-  };
-}
-
-function wireTimeControls(prefix) {
-  const timeEl = document.getElementById(prefix + 'time');
-  const hourUnknownEl = document.getElementById(prefix + 'hourUnknown');
-  const ganjiEl = document.getElementById(prefix + 'ganjiSelect');
-  hourUnknownEl.addEventListener('change', () => {
-    const checked = hourUnknownEl.checked;
-    timeEl.disabled = checked;
-    ganjiEl.disabled = checked;
-    if (checked) { timeEl.value = ''; ganjiEl.value = '선택안함'; }
-  });
-  ganjiEl.addEventListener('change', () => {
-    const active = ganjiEl.value !== '선택안함';
-    timeEl.disabled = active;
-    if (active) timeEl.value = '';
-  });
-  timeEl.addEventListener('input', () => {
-    if (timeEl.value.trim() && ganjiEl.value !== '선택안함') ganjiEl.value = '선택안함';
-  });
-}
-wireTimeControls('p1_');
-wireTimeControls('p2_');
-
-const gFormErrorDiv = document.getElementById('gFormError');
-function showGFormError(msg) {
-  gFormErrorDiv.textContent = msg;
-  gFormErrorDiv.style.display = 'block';
-}
-function clearGFormError() {
-  gFormErrorDiv.style.display = 'none';
-  gFormErrorDiv.textContent = '';
-}
-
-function updatePdfImgButtonsEnabled() {
-  const enabled = resultReady && (activeResultTab === 'pdf' || activeResultTab === 'color');
-  pdfCopyImgBtn.disabled = !enabled;
-  pdfSaveImgBtn.disabled = !enabled;
-}
-
-function setResultButtonsEnabled(enabled) {
-  copyBtnTop.disabled = !enabled;
-  downloadBtn.disabled = !enabled;
-  resultReady = enabled;
-  updatePdfImgButtonsEnabled();
-}
-
-// 결과 보기 탭: "LLM용 텍스트"(복사하기/텍스트 파일 저장 대상) / "PDF용 표"·"컬러 표"(캡처용, 이미지 버튼은 이 두 탭에서만 활성)
-let activeResultTab = 'llm';
-function setActiveResultTab(tab) {
-  activeResultTab = tab;
-  updatePdfImgButtonsEnabled();
-  const tabLlm = document.getElementById('tabLlm');
-  const tabPdf = document.getElementById('tabPdf');
-  const tabColor = document.getElementById('tabColor');
-  const viewLlm = document.getElementById('viewLlm');
-  const viewPdf = document.getElementById('viewPdf');
-  const viewColor = document.getElementById('viewColor');
-  if (!tabLlm) return;
-  tabLlm.classList.toggle('active', tab === 'llm');
-  tabPdf.classList.toggle('active', tab === 'pdf');
-  tabColor.classList.toggle('active', tab === 'color');
-  viewLlm.style.display = tab === 'llm' ? 'block' : 'none';
-  viewPdf.style.display = tab === 'pdf' ? 'block' : 'none';
-  viewColor.style.display = tab === 'color' ? 'block' : 'none';
-}
-
-// 개인 모드/궁합 모드 공용: 계산 결과(text/pdfHtml/colorHtml)를 결과 탭 3개로 렌더링한다.
-function renderResultTabs(data) {
-  resultDiv.innerHTML =
-    '<div class="result-tabs">' +
-      '<button type="button" class="tab-btn" id="tabLlm">LLM용 텍스트</button>' +
-      '<button type="button" class="tab-btn" id="tabPdf">PDF용 표</button>' +
-      '<button type="button" class="tab-btn" id="tabColor">컬러 표</button>' +
-    '</div>' +
-    '<div class="result-box" id="viewLlm">' +
-      '<pre></pre>' +
-      '<div class="result-bottom-actions">' +
-        '<button type="button" class="secondary" id="copyBtnBottom">복사하기</button>' +
-      '</div>' +
-    '</div>' +
-    '<div class="pdf-view" id="viewPdf">' +
-      '<div id="pdfCaptureArea">' + data.pdfHtml + '</div>' +
-    '</div>' +
-    '<div class="pdf-view" id="viewColor">' +
-      '<div id="colorCaptureArea">' + data.colorHtml + '</div>' +
-    '</div>';
-  resultDiv.querySelector('pre').textContent = data.text;
-  document.getElementById('copyBtnBottom').addEventListener('click', (e) => copyToButton(e.currentTarget));
-  document.getElementById('tabLlm').addEventListener('click', () => setActiveResultTab('llm'));
-  document.getElementById('tabPdf').addEventListener('click', () => setActiveResultTab('pdf'));
-  document.getElementById('tabColor').addEventListener('click', () => setActiveResultTab('color'));
-  setActiveResultTab(activeResultTab);
-  setResultButtonsEnabled(true);
-  applyHangulVisibility();
-}
-
-// PDF용 표·컬러 표 천간·지지 칸의 한자 아래 한글 발음(pdf-hanja-sub) 표시 토글.
-// 결과가 새로 렌더링될 때마다 캡처 영역이 통째로 다시 만들어지므로 그때마다 다시 적용해야 하고,
-// 화면 토글일 뿐 저장 대상은 아니므로 서버로는 전송하지 않는다.
-const hangulToggle = document.getElementById('showHangulSub');
-function applyHangulVisibility() {
-  const hide = !hangulToggle.checked;
-  ['pdfCaptureArea', 'colorCaptureArea'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle('hide-hangul-sub', hide);
-  });
-}
-hangulToggle.addEventListener('change', applyHangulVisibility);
-
-// ── 모드 전환: 개인 사주 / 궁합 ──
-let currentMode = 'individual';
-function setMode(mode) {
-  if (mode === currentMode) return;
-  currentMode = mode;
-  document.getElementById('modeIndividual').classList.toggle('active', mode === 'individual');
-  document.getElementById('modeGunghap').classList.toggle('active', mode === 'gunghap');
-  document.getElementById('form').style.display = mode === 'individual' ? 'block' : 'none';
-  document.getElementById('gunghapForm').style.display = mode === 'gunghap' ? 'block' : 'none';
-  document.getElementById('quickBox').style.display = mode === 'individual' ? 'block' : 'none';
-  resultDiv.innerHTML = '';
-  lastText = ''; lastName = ''; lastBirth = '';
-  setResultButtonsEnabled(false);
-  savedSearchQuery = ''; savedSearchEl.value = ''; savedCurrentPage = 1;
-  renderSavedSide();
-}
-document.getElementById('modeIndividual').addEventListener('click', () => setMode('individual'));
-document.getElementById('modeGunghap').addEventListener('click', () => setMode('gunghap'));
-
-async function runAnalysis(jasi) {
-  const payload = buildPayload(jasi);
-  if (!payload) return;
-
-  resultDiv.innerHTML = '<p>계산 중...</p>';
-  setResultButtonsEnabled(false);
-  try {
-    const res = await fetch('/api/myeongsik', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || '알 수 없는 오류');
-    lastText = data.text;
-    lastName = data.name || '';
-    lastBirth = String(payload.year) + String(payload.month).padStart(2, '0') + String(payload.day).padStart(2, '0');
-    renderResultTabs(data);
-  } catch (err) {
-    resultDiv.innerHTML = '<p class="error">오류: ' + err.message + '</p>';
-    setResultButtonsEnabled(false);
-  }
-}
-
-document.getElementById('btnJeong').addEventListener('click', () => runAnalysis('normal'));
-document.getElementById('btnYa').addEventListener('click', () => runAnalysis('split'));
-
-// ── 궁합 모드 ──
-function collectGunghapFormData() {
-  clearGFormError();
-
-  const person1 = collectPersonFields('p1_', showGFormError);
-  if (!person1) return null;
-  const person2 = collectPersonFields('p2_', showGFormError);
-  if (!person2) return null;
-
-  return {
-    relationType: document.getElementById('relationType').value,
-    concern: document.getElementById('gConcern').value,
-    person1, person2,
-  };
-}
-
-function buildGunghapPayload(jasi) {
-  const data = collectGunghapFormData();
-  if (!data) return null;
-  return { ...data, jasi };
-}
-
-async function runGunghapAnalysis(jasi) {
-  const payload = buildGunghapPayload(jasi);
-  if (!payload) return;
-
-  resultDiv.innerHTML = '<p>계산 중...</p>';
-  setResultButtonsEnabled(false);
-  try {
-    const res = await fetch('/api/gunghap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || '알 수 없는 오류');
-    lastText = data.text;
-    lastName = [...[data.person1Name, data.person2Name].filter(Boolean), '궁합'].join('_');
-    lastBirth = '';
-    renderResultTabs(data);
-  } catch (err) {
-    resultDiv.innerHTML = '<p class="error">오류: ' + err.message + '</p>';
-    setResultButtonsEnabled(false);
-  }
-}
-
-document.getElementById('gBtnJeong').addEventListener('click', () => runGunghapAnalysis('normal'));
-document.getElementById('gBtnYa').addEventListener('click', () => runGunghapAnalysis('split'));
-
-function flashBtnMessage(btn, msg, ms) {
-  const original = btn.dataset.label || btn.textContent;
-  btn.dataset.label = original;
-  btn.textContent = msg;
-  clearTimeout(btn._resetTimer);
-  btn._resetTimer = setTimeout(() => { btn.textContent = original; }, ms || 1500);
-}
-
-async function copyToButton(btn) {
-  if (!lastText || btn.disabled) return;
-  try {
-    await navigator.clipboard.writeText(lastText);
-  } catch (err) {
-    const ta = document.createElement('textarea');
-    ta.value = lastText;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  }
-  flashBtnMessage(btn, '복사됐습니다');
-}
-
-copyBtnTop.addEventListener('click', () => copyToButton(copyBtnTop));
-
-downloadBtn.addEventListener('click', () => {
-  if (!lastText || downloadBtn.disabled) return;
-  const blob = new Blob([lastText], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = lastName ? ('명식표_' + lastName + '.txt') : '명식표.txt';
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-// ── PDF용 표 / 컬러 표 이미지 내보내기 (현재 활성 탭 기준) ──
-function buildImageFilename() {
-  const parts = [];
-  if (lastName) parts.push(lastName);
-  if (lastBirth) parts.push(lastBirth);
-  parts.push(activeResultTab === 'color' ? '컬러명식표' : '명식표');
-  return parts.join('_') + '.png';
-}
-
-function renderPdfCanvas() {
-  const targetId = activeResultTab === 'color' ? 'colorCaptureArea' : 'pdfCaptureArea';
-  const target = document.getElementById(targetId);
-  return html2canvas(target, { backgroundColor: '#ffffff', scale: 2 });
-}
-
-function canvasToPngBlob(canvas) {
-  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-}
-
-async function copyPdfImage(btn) {
-  if (btn.disabled) return;
-  if (!(navigator.clipboard && window.ClipboardItem)) {
-    flashBtnMessage(btn, '복사가 지원되지 않아요. 이미지 저장을 이용해주세요', 2500);
-    return;
-  }
-  try {
-    const canvas = await renderPdfCanvas();
-    const blob = await canvasToPngBlob(canvas);
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    flashBtnMessage(btn, '이미지가 복사됐습니다');
-  } catch (err) {
-    flashBtnMessage(btn, '복사가 지원되지 않아요. 이미지 저장을 이용해주세요', 2500);
-  }
-}
-
-async function savePdfImage(btn) {
-  if (btn.disabled) return;
-  try {
-    const canvas = await renderPdfCanvas();
-    const blob = await canvasToPngBlob(canvas);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = buildImageFilename();
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    alert('이미지 저장 중 오류: ' + err.message);
-  }
-}
-
-pdfCopyImgBtn.addEventListener('click', () => copyPdfImage(pdfCopyImgBtn));
-pdfSaveImgBtn.addEventListener('click', () => savePdfImage(pdfSaveImgBtn));
-
-// ── 저장된 사주: 사이드 목록 패널 (모드별 분리 + 검색 + 페이지네이션) ──
-const savedListEl = document.getElementById('savedList');
-const savedPaginationEl = document.getElementById('savedPagination');
-const savedSearchEl = document.getElementById('savedSearch');
-const SAVED_PAGE_SIZE = 10;
-
-let allSavedProfiles = [];
-let savedSearchQuery = '';
-let savedCurrentPage = 1;
-
-function formatBirth(p) {
-  return String(p.year) + String(p.month).padStart(2, '0') + String(p.day).padStart(2, '0');
-}
-function formatSavedAt(savedAt) {
-  return savedAt.slice(0, 2) + '.' + savedAt.slice(2, 4) + '.' + savedAt.slice(4, 6);
-}
-
-// 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 필드 채우기.
-function loadPersonIntoFields(prefix, p) {
-  document.getElementById(prefix + 'name').value = p.name || '';
-  document.getElementById(prefix + 'gender').value = p.gender || 'male';
-  document.getElementById(prefix + 'birth').value = formatBirth(p);
-  document.getElementById(prefix + 'calendar').value = p.isLunar ? 'lunar' : 'solar';
-  document.getElementById(prefix + 'leap').value = p.isLeapMonth ? 'true' : 'false';
-  const hourUnknownEl = document.getElementById(prefix + 'hourUnknown');
-  const ganjiEl = document.getElementById(prefix + 'ganjiSelect');
-  const timeEl = document.getElementById(prefix + 'time');
-  hourUnknownEl.checked = !!p.hourUnknown;
-  const ganji = !p.hourUnknown && p.ganjiSelect ? p.ganjiSelect : '선택안함';
-  ganjiEl.value = ganji;
-  ganjiEl.disabled = !!p.hourUnknown;
-  timeEl.disabled = !!p.hourUnknown || ganji !== '선택안함';
-  timeEl.value = (p.hourUnknown || ganji !== '선택안함')
-    ? ''
-    : (String(p.hour).padStart(2, '0') + String(p.minute).padStart(2, '0'));
-  setBirthRegionFields(prefix, p);
-}
-
-function loadProfileIntoForm(p) {
-  loadPersonIntoFields('', p);
-  document.getElementById('concern').value = p.concern || '';
-  document.getElementById('seyunRange').value = String(p.세운년수 || 5);
-  document.getElementById('wolunRange').value = String(p.월운개월수 || 12);
-  document.getElementById('loveStatus').value = p.연애상태 || '선택안함';
-  clearFormError();
-}
-
-function loadGunghapProfileIntoForm(p) {
-  loadPersonIntoFields('p1_', p.person1 || {});
-  loadPersonIntoFields('p2_', p.person2 || {});
-  document.getElementById('relationType').value = p.relationType || '모자';
-  document.getElementById('gConcern').value = p.concern || '';
-  clearGFormError();
-}
-
-// 개인 모드에서는 type==='개인' 항목만, 궁합 모드에서는 type==='궁합' 항목만 보이도록 완전히 분리한다.
-function currentSavedType() {
-  return currentMode === 'gunghap' ? '궁합' : '개인';
-}
-
-function savedItemLabel(p) {
-  if (p.type === '궁합') {
-    const n1 = (p.person1 && p.person1.name) || '이름없음';
-    const n2 = (p.person2 && p.person2.name) || '이름없음';
-    return n1 + ' × ' + n2 + ' [' + (p.relationType || '') + '] · ' + formatSavedAt(p.savedAt);
-  }
-  return (p.name || '이름없음') + ' (' + formatBirth(p) + ') · ' + formatSavedAt(p.savedAt);
-}
-
-function filteredSavedProfiles() {
-  const type = currentSavedType();
-  const q = savedSearchQuery.trim();
-  return allSavedProfiles.filter(p => {
-    if (p.type !== type) return false;
-    if (!q) return true;
-    if (type === '궁합') {
-      const n1 = (p.person1 && p.person1.name) || '';
-      const n2 = (p.person2 && p.person2.name) || '';
-      return n1.includes(q) || n2.includes(q);
-    }
-    return (p.name || '').includes(q);
-  });
-}
-
-function renderSavedSide() {
-  const list = filteredSavedProfiles();
-  const totalPages = Math.max(1, Math.ceil(list.length / SAVED_PAGE_SIZE));
-  if (savedCurrentPage > totalPages) savedCurrentPage = totalPages;
-  const startIdx = (savedCurrentPage - 1) * SAVED_PAGE_SIZE;
-  const pageItems = list.slice(startIdx, startIdx + SAVED_PAGE_SIZE);
-
-  savedListEl.innerHTML = '';
-  if (!pageItems.length) {
-    const msg = allSavedProfiles.length === 0 ? '저장된 사주가 없습니다' : (list.length === 0 ? '검색 결과가 없습니다' : '해당 페이지에 항목이 없습니다');
-    savedListEl.innerHTML = '<div class="saved-empty">' + msg + '</div>';
-    renderSavedPagination(0);
-    return;
-  }
-
-  pageItems.forEach(p => {
-    const row = document.createElement('div');
-    row.className = 'saved-item';
-
-    const label = document.createElement('span');
-    label.className = 'saved-item-label';
-    label.textContent = savedItemLabel(p);
-    label.addEventListener('click', () => {
-      if (p.type === '궁합') loadGunghapProfileIntoForm(p);
-      else loadProfileIntoForm(p);
-    });
-
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'saved-item-delete';
-    delBtn.title = '삭제';
-    delBtn.textContent = '🗑';
-    delBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!confirm(savedItemLabel(p) + ' 항목을 삭제할까요?')) return;
-      await fetch('/api/saved?filename=' + encodeURIComponent(p.filename), { method: 'DELETE' });
-      await loadSavedList();
-    });
-
-    row.appendChild(label);
-    row.appendChild(delBtn);
-    savedListEl.appendChild(row);
   });
 
-  renderSavedPagination(totalPages);
-}
-
-function renderSavedPagination(totalPages) {
-  savedPaginationEl.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const mkBtn = (label, page, opts) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'saved-page-btn' + ((opts && opts.active) ? ' active' : '');
-    btn.textContent = label;
-    btn.disabled = !!(opts && opts.disabled);
-    btn.addEventListener('click', () => { savedCurrentPage = page; renderSavedSide(); });
-    return btn;
-  };
-
-  savedPaginationEl.appendChild(mkBtn('이전', savedCurrentPage - 1, { disabled: savedCurrentPage <= 1 }));
-  for (let i = 1; i <= totalPages; i++) savedPaginationEl.appendChild(mkBtn(String(i), i, { active: i === savedCurrentPage }));
-  savedPaginationEl.appendChild(mkBtn('다음', savedCurrentPage + 1, { disabled: savedCurrentPage >= totalPages }));
-}
-
-savedSearchEl.addEventListener('input', () => {
-  savedSearchQuery = savedSearchEl.value;
-  savedCurrentPage = 1;
-  renderSavedSide();
-});
-
-async function loadSavedList() {
-  try {
-    const res = await fetch('/api/saved');
-    const data = await res.json();
-    allSavedProfiles = data.profiles || [];
-    renderSavedSide();
-  } catch (err) {
-    savedListEl.innerHTML = '<div class="saved-empty">목록을 불러오지 못했습니다</div>';
-  }
-}
-
-async function postSaveRequest(data, overwrite) {
-  const res = await fetch('/api/saved', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...data, overwrite }),
-  });
-  return res.json();
-}
-
-document.getElementById('saveBtn').addEventListener('click', async () => {
-  const data = collectFormData();
-  if (!data) return;
-  try {
-    const result = await postSaveRequest(data, false);
-    if (!result.ok) { alert('저장 실패: ' + (result.error || '알 수 없는 오류')); return; }
-    if (result.needsConfirm) {
-      if (!confirm('오늘 이미 저장된 파일이 있습니다. 덮어쓸까요?\n' + result.filename)) return;
-      const overwritten = await postSaveRequest(data, true);
-      if (!overwritten.ok) { alert('저장 실패: ' + (overwritten.error || '알 수 없는 오류')); return; }
-      alert('덮어썼습니다: ' + overwritten.filename);
-    } else {
-      alert('저장했습니다: ' + result.filename);
-    }
-    loadSavedList();
-  } catch (err) {
-    alert('저장 중 오류: ' + err.message);
-  }
-});
-
-document.getElementById('gSaveBtn').addEventListener('click', async () => {
-  const data = collectGunghapFormData();
-  if (!data) return;
-  const payload = { kind: 'gunghap', ...data };
-  try {
-    const result = await postSaveRequest(payload, false);
-    if (!result.ok) { alert('저장 실패: ' + (result.error || '알 수 없는 오류')); return; }
-    if (result.needsConfirm) {
-      if (!confirm('오늘 이미 저장된 파일이 있습니다. 덮어쓸까요?\n' + result.filename)) return;
-      const overwritten = await postSaveRequest(payload, true);
-      if (!overwritten.ok) { alert('저장 실패: ' + (overwritten.error || '알 수 없는 오류')); return; }
-      alert('덮어썼습니다: ' + overwritten.filename);
-    } else {
-      alert('저장했습니다: ' + result.filename);
-    }
-    loadSavedList();
-  } catch (err) {
-    alert('저장 중 오류: ' + err.message);
-  }
-});
-
-// ── 빠른 입력 파서: 스레드/DM 문의글 원문 → 폼 값 자동 분해 ──
-const QUICK_GANJI_CHARS = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-
-function quickParse(raw) {
-  let rest = ' ' + String(raw).replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
-  const out = { warnings: [] };
-
-  const blank = (m) => {
-    if (!m) return;
-    rest = rest.slice(0, m.index) + ' '.repeat(m[0].length) + rest.slice(m.index + m[0].length);
-  };
-  const blankRange = (idx, len) => {
-    rest = rest.slice(0, idx) + ' '.repeat(len) + rest.slice(idx + len);
-  };
-
-  // ── 1. 생년월일 ──
-  const nowYY = new Date().getFullYear() % 100;
-  const dateForms = [
-    { re: /(\d{4})\s*[년.\-\/]\s*(\d{1,2})\s*[월.\-\/]\s*(\d{1,2})\s*(?:일)?\s*(?:생)?/, four: true },
-    { re: /(\d{2})\s*[년.\-\/]\s*(\d{1,2})\s*[월.\-\/]\s*(\d{1,2})\s*(?:일)?\s*(?:생)?/, four: false },
-    { re: /(?:^|\D)(\d{4})(\d{2})(\d{2})(?:\D|$)/, four: true, offset: true },
-    { re: /(?:^|\D)(\d{2})(\d{2})(\d{2})(?:\D|$)/, four: false, offset: true },
-  ];
-  for (const f of dateForms) {
-    const m = rest.match(f.re);
-    if (!m) continue;
-    let y = Number(m[1]);
-    const mo = Number(m[2]);
-    const d = Number(m[3]);
-    if (!f.four) y = y <= nowYY ? 2000 + y : 1900 + y;
-    if (y < 1900 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) continue;
-    out.year = y; out.month = mo; out.day = d;
-    out.birth = String(y) + String(mo).padStart(2, '0') + String(d).padStart(2, '0');
-    // 앞뒤 경계 문자는 지우지 않도록 실제 숫자 구간만 blank 처리
-    const inner = m[0].replace(/^\D+/, '');
-    blankRange(m.index + (m[0].length - inner.length), inner.length);
-    break;
-  }
-
-  // ── 2. 달력(양/음) · 윤달 ──
-  const leapM = rest.match(/윤\s*달/);
-  const lunarM = rest.match(/음\s*력/);
-  const solarM = rest.match(/양\s*력/);
-  if (lunarM || leapM) {
-    out.calendar = 'lunar';
-    blank(lunarM); blank(leapM); blank(solarM);
-    out.leap = !!leapM;
-  } else if (solarM) {
-    out.calendar = 'solar';
-    out.leap = false;
-    blank(solarM);
-  } else {
-    out.calendar = 'solar';
-    out.leap = false;
-    out.warnings.push('양력/음력 표기가 없어 <b>양력</b>으로 넣었어요. 음력이면 직접 바꿔주세요.');
-  }
-
-  // ── 3. 성별 ──
-  let gm = rest.match(/(여자|여성|여아|남자|남성|남아)/);
-  if (gm) {
-    out.gender = gm[1][0] === '여' ? 'female' : 'male';
-    blank(gm);
-  } else {
-    gm = rest.match(/(?:^|[\s,\/(\[])([남여])(?=[\s,\/)\]]|$)/);
-    if (gm) {
-      out.gender = gm[1] === '여' ? 'female' : 'male';
-      blankRange(rest.indexOf(gm[1], gm.index), 1);
-    } else {
-      out.warnings.push('성별을 못 찾아서 <b>남자</b>로 뒀어요. 확인해주세요.');
-      out.gender = 'male';
-    }
-  }
-
-  // ── 4. 생시 ──
-  const noonM = rest.match(/(정오|자정)/);
-  const timeM = rest.match(/(오전|오후|새벽|아침|낮|저녁|밤)?\s*(\d{1,2})\s*(?:시(?!간)|:)\s*(?:(\d{1,2})\s*분?|(반))?/);
-  if (noonM && !timeM) {
-    out.hour = noonM[1] === '정오' ? 12 : 0;
-    out.minute = 0;
-    blank(noonM);
-  } else if (timeM) {
-    let h = Number(timeM[2]);
-    let mi = timeM[4] ? 30 : (timeM[3] ? Number(timeM[3]) : 0);
-    const mark = timeM[1] || '';
-    if (h <= 24 && mi <= 59) {
-      if (mark === '오후' || mark === '저녁') { if (h < 12) h += 12; }
-      else if (mark === '밤') { h = h === 12 ? 0 : (h < 12 ? h + 12 : h); }
-      else if (mark === '낮') { if (h < 8) h += 12; }
-      else if (mark === '오전' || mark === '새벽' || mark === '아침') { if (h === 12) h = 0; }
-      if (h === 24) h = 0;
-      if (h <= 23) {
-        out.hour = h; out.minute = mi;
-        if (!mark && h < 12) out.warnings.push('오전/오후 표기가 없어 <b>' + String(h).padStart(2,'0') + ':' + String(mi).padStart(2,'0') + '</b>(24시 기준)로 넣었어요.');
-        blank(timeM);
+  // 카드 → 토스 결제위젯
+  var widgets=null, rendered=false;
+  document.getElementById('payCard').addEventListener('click', async function(){
+    payModal.classList.remove('open');
+    document.getElementById('tossItem').textContent=cur.item+' · '+cur.amount.toLocaleString()+'원';
+    tossModal.classList.add('open'); lock();
+    try{
+      if(typeof TossPayments==='undefined'){ alert('결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'); return; }
+      if(!widgets){ widgets=TossPayments(CLIENT_KEY).widgets({ customerKey: TossPayments.ANONYMOUS }); }
+      await widgets.setAmount({currency:"KRW", value:cur.amount});
+      if(!rendered){
+        await Promise.all([
+          widgets.renderPaymentMethods({selector:"#payment-method", variantKey:"DEFAULT"}),
+          widgets.renderAgreement({selector:"#agreement", variantKey:"AGREEMENT"})
+        ]);
+        rendered=true;
       }
-    }
-  }
-  if (out.hour === undefined) {
-    // 시진(간지) 표기
-    const gj = rest.match(/(?:^|[\s,(\[])([자축인묘진사오미신유술해])\s*시(?!간)/);
-    if (gj && QUICK_GANJI_CHARS.includes(gj[1])) {
-      out.ganjiChar = gj[1];
-      blankRange(rest.indexOf(gj[1], gj.index), gj[0].length - (gj[0].indexOf(gj[1])));
-    } else if (/(시간|생시|시)\s*(?:은|는|을|를)?\s*(?:모름|모릅|모르|미상|불명|몰라)/.test(rest) || /(모름|미상|몰라요|모릅니다|모르겠)/.test(rest)) {
-      out.hourUnknown = true;
-      const um = rest.match(/(?:출생\s*)?(?:시간|생시|태어난\s*시간?)?\s*(?:은|는|을|를)?\s*(?:모름|모릅니다|모르겠어요|모르겠음|모르겠습니다|몰라요|미상|불명)/);
-      blank(um);
-    } else {
-      out.hourUnknown = true;
-      out.warnings.push('생시를 못 찾아서 <b>생시모름</b>으로 뒀어요.');
-    }
-  }
+    }catch(err){ console.error(err); }
+  });
 
-  // ── 5. 출생지역 (진태양시 보정) ──
-  if (REGIONS.length) {
-    const cands = REGIONS.map(r => ({
-      r,
-      alias: r.name.replace(/(특별자치시|특별자치도|특별시|광역시|자치시|자치도|시|군|도)$/, '')
-    })).filter(x => x.alias.length >= 2).sort((a, b) => b.alias.length - a.alias.length);
-    const isHangul = (ch) => !!ch && /[가-힣]/.test(ch);
-    const OK_NEXT = '시군도특광에서출생태어';
-    for (const c of cands) {
-      const idx = rest.indexOf(c.alias);
-      if (idx < 0) continue;
-      const prev = rest[idx - 1];
-      const next = rest[idx + c.alias.length];
-      if (isHangul(prev)) continue;
-      if (isHangul(next) && OK_NEXT.indexOf(next) < 0) continue;
-      out.region = c.r;
-      blankRange(idx, c.alias.length);
-      break;
-    }
-  }
+  document.getElementById('tossPayBtn').addEventListener('click', async function(){
+    if(!widgets) return;
+    try{
+      await widgets.requestPayment({
+        orderId: "order_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),
+        orderName: cur.item,
+        successUrl: location.origin+location.pathname+"?pay=success",
+        failUrl: location.origin+location.pathname+"?pay=fail"
+      });
+    }catch(err){ console.error(err); }
+  });
 
-  // ── 6. 이름 ──
-  let nm = rest.match(/(?:이름|성함)\s*[:：]?\s*([가-힣]{2,4})/);
-  if (nm) { out.name = nm[1]; blank(nm); }
-  else {
-    nm = rest.match(/^\s*([가-힣]{2,4})\s*(?:님|씨)(?![가-힣])/);
-    if (nm) { out.name = nm[1]; blank(nm); }
-  }
+  // 계좌이체 안내
+  document.getElementById('payBank').addEventListener('click', function(){
+    payModal.classList.remove('open');
+    document.getElementById('bankItem').textContent=cur.item+' · '+cur.bankLabel;
+    bankModal.classList.add('open'); lock();
+  });
 
-  // ── 7. 남은 텍스트 = 고민 내용 ──
-  out.concern = rest
-    .replace(/\s+/g, ' ')
-    .replace(/^[\s,.\/·\-|()\[\]]+/, '')
-    .replace(/[\s,·\-|]+$/, '')
-    .trim();
+  [payModal,tossModal,bankModal].forEach(function(m){
+    m.addEventListener('click',function(e){ if(e.target===m||e.target.classList.contains('pay-close')) closeAll(); });
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeAll(); });
 
-  return out;
-}
-
-
-// ── 빠른 입력: 파싱 결과를 실제 폼에 반영 ──
-const quickInputEl = document.getElementById('quickInput');
-const quickSummaryEl = document.getElementById('quickSummary');
-
-function quickShow(html, isError) {
-  quickSummaryEl.innerHTML = html;
-  quickSummaryEl.className = 'quick-summary' + (isError ? ' error' : '');
-  quickSummaryEl.style.display = 'block';
-}
-
-function quickApply() {
-  const raw = quickInputEl.value.trim();
-  if (!raw) { quickShow('붙여넣은 내용이 없습니다.', true); return false; }
-
-  const p = quickParse(raw);
-  if (!p.birth) {
-    quickShow('생년월일을 찾지 못했습니다. (인식 가능한 형식: 1989년 8월 10일 / 1989.8.10 / 19890810 / 89년 8월 10일)', true);
-    return false;
-  }
-
-  document.getElementById('name').value = p.name || '';
-  document.getElementById('gender').value = p.gender;
-  document.getElementById('birth').value = p.birth;
-  document.getElementById('calendar').value = p.calendar;
-  document.getElementById('leap').value = p.leap ? 'true' : 'false';
-  document.getElementById('concern').value = p.concern || '';
-
-  // 생시: 모름 → 간지 → 숫자 순서로 초기화 후 반영
-  hourUnknownCheckbox.checked = false;
-  hourUnknownCheckbox.dispatchEvent(new Event('change'));
-  ganjiSelect.value = '선택안함';
-  ganjiSelect.dispatchEvent(new Event('change'));
-  timeInput.value = '';
-
-  let timeLabel = '';
-  if (p.hourUnknown) {
-    hourUnknownCheckbox.checked = true;
-    hourUnknownCheckbox.dispatchEvent(new Event('change'));
-    timeLabel = '생시모름';
-  } else if (p.ganjiChar) {
-    const opt = Array.from(ganjiSelect.options).find(o => o.value.startsWith(p.ganjiChar + '시'));
-    if (opt) {
-      ganjiSelect.value = opt.value;
-      ganjiSelect.dispatchEvent(new Event('change'));
-      timeLabel = opt.value;
-    }
-  } else if (p.hour !== undefined) {
-    timeInput.value = String(p.hour).padStart(2, '0') + String(p.minute).padStart(2, '0');
-    timeInput.dispatchEvent(new Event('input'));
-    timeLabel = String(p.hour).padStart(2, '0') + ':' + String(p.minute).padStart(2, '0');
-  }
-
-  // 출생지역(진태양시 보정)
-  let regionLabel = '없음';
-  const rSearch = document.getElementById('birthRegionSearch');
-  const rManual = document.getElementById('birthCorrectionManual');
-  rSearch.value = '';
-  rManual.value = '';
-  rManual.dispatchEvent(new Event('input'));
-  if (p.region) {
-    rSearch.value = p.region.name;
-    rManual.value = String(p.region.correctionMinutes);
-    rManual.dispatchEvent(new Event('input'));
-    regionLabel = p.region.name + ' (' + formatCorrection(p.region.correctionMinutes) + ')';
-  }
-
-  const rows = [
-    '생년월일: <b>' + p.year + '년 ' + p.month + '월 ' + p.day + '일</b> (' + (p.calendar === 'lunar' ? '음력' + (p.leap ? ' 윤달' : '') : '양력') + ')',
-    '성별: <b>' + (p.gender === 'female' ? '여자' : '남자') + '</b>',
-    '생시: <b>' + (timeLabel || '없음') + '</b>',
-    '출생지역: <b>' + regionLabel + '</b>',
-    '고민: <b>' + (p.concern ? p.concern.replace(/</g, '&lt;') : '(없음)') + '</b>',
-  ];
-  const warns = p.warnings.map(w => '<div class="qs-warn">※ ' + w + '</div>').join('');
-  quickShow(rows.join('<br>') + warns, false);
-  clearFormError();
-  return true;
-}
-
-document.getElementById('quickFillBtn').addEventListener('click', () => { quickApply(); });
-document.getElementById('quickFillRunBtn').addEventListener('click', () => {
-  if (quickApply()) runAnalysis('normal');
-});
-document.getElementById('quickClearBtn').addEventListener('click', () => {
-  quickInputEl.value = '';
-  quickSummaryEl.style.display = 'none';
-  quickInputEl.focus();
-});
-// Ctrl+Enter = 자동입력 + 바로 분석
-quickInputEl.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-    e.preventDefault();
-    if (quickApply()) runAnalysis('normal');
-  }
-});
-
-
-loadSavedList();
+  var q=new URLSearchParams(location.search);
+  if(q.get('pay')==='success'){ setTimeout(function(){alert('결제 요청이 완료됐습니다 (테스트). 실제 승인은 서버 연동이 필요해요.');},300); }
+  else if(q.get('pay')==='fail'){ setTimeout(function(){alert('결제가 취소되었거나 실패했습니다.');},300); }
+})();
 </script>
+
 </body>
 </html>
