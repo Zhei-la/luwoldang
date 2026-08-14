@@ -54,6 +54,19 @@
   .btn.light:hover{box-shadow:0 8px 20px rgba(0,0,0,.18);}
   .btn.outline{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.55); box-shadow:none;}
   .btn.outline:hover{border-color:#fff; background:rgba(255,255,255,.08);}
+
+  /* 수익 숫자 카드 */
+  .numrow{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 auto 30px; max-width:760px;}
+  .numcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 14px; text-align:center;}
+  .numcard b{display:block; font-size:30px; font-weight:800; color:var(--accent); letter-spacing:-.03em; line-height:1.2;}
+  .numcard b span{font-size:16px; margin-left:2px;}
+  .numcard .cap{display:block; font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.5; word-break:keep-all;}
+  @media (max-width:640px){
+    .numrow{grid-template-columns:1fr; gap:10px; margin-bottom:24px;}
+    .numcard{padding:18px 14px; display:flex; align-items:center; justify-content:space-between; text-align:left;}
+    .numcard b{font-size:26px;}
+    .numcard .cap{margin-top:0; text-align:right; max-width:52%;}
+  }
   .pay-opts{display:flex; flex-direction:column; gap:10px; max-width:380px; margin:0 auto;}
   .pay-opts .btn{width:100%; justify-content:center;}
   .pay-note{color:#e0a06a; font-size:13px; margin-top:12px;}
@@ -383,6 +396,14 @@
   <div class="wrap center">
     <span class="kick">수강생 후기</span>
     <h2 class="st">이미 시작한 분들의 이야기</h2>
+    <p class="lead center" style="margin-bottom:24px;">1기 수강생분들이 <strong>7월에 시작해 첫 달에 만든 수익</strong>입니다.</p>
+
+    <div class="numrow">
+      <div class="numcard"><b>175,000<span>원</span></b><span class="cap">7월 11일 시작 · 24일 첫 수익</span></div>
+      <div class="numcard"><b>223,000<span>원</span></b><span class="cap">게시글 하나에 1~2건 전환</span></div>
+      <div class="numcard"><b>300,000<span>원</span></b><span class="cap">7월 한 달 · 카페 인증</span></div>
+    </div>
+
     <div class="revwrap" style="text-align:left;">
       <div class="rev">
         <div class="stars">★★★★★</div>
@@ -422,7 +443,7 @@
     </div>
 
     <div style="margin-top:26px;">
-      <a class="btn big outline" href="https://cafe.naver.com/f-e/cafes/30688236/menus/4?viewType=L" target="_blank" rel="noopener">더 많은 후기 보러 가기 →</a>
+      <a class="btn big" href="https://cafe.naver.com/f-e/cafes/30688236/menus/4?viewType=L" target="_blank" rel="noopener">더 많은 후기 보러 가기 →</a>
       <p style="font-size:13px; color:var(--muted); margin-top:10px;">수강생분들이 직접 올려주신 인증글과 후기를 카페에서 확인하실 수 있어요.</p>
     </div>
 
