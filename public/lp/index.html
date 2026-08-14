@@ -172,8 +172,36 @@
   .cost .row b{font-weight:750;}
 
   /* reviews */
-  .revwrap{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:24px;}
-  .rev{background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px 22px;}
+  /* 후기 슬라이드 — 옆으로 넘겨서 본다 */
+  .revslider{position:relative; margin-top:24px;}
+  .revwrap{display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+    scroll-behavior:smooth; -webkit-overflow-scrolling:touch; padding:4px 2px 10px;
+    scrollbar-width:none;}
+  .revwrap::-webkit-scrollbar{display:none;}
+  .rev{background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px 22px;
+    flex:0 0 calc(33.333% - 10px); scroll-snap-align:start; min-width:0;
+    display:flex; flex-direction:column;}
+  .rev p{flex:0 0 auto;}
+  /* 좌우 화살표 */
+  .revnav{position:absolute; top:50%; transform:translateY(-50%); z-index:5;
+    width:42px; height:42px; border-radius:50%; border:1px solid var(--line);
+    background:#fff; color:var(--ink); font-size:19px; cursor:pointer; font-family:inherit;
+    box-shadow:0 3px 12px rgba(43,37,33,.13); display:flex; align-items:center; justify-content:center;}
+  .revnav:hover{border-color:var(--accent); color:var(--accent);}
+  .revnav.prev{left:-14px;} .revnav.next{right:-14px;}
+  .revnav[disabled]{opacity:.3; cursor:default;}
+  /* 점 표시 */
+  .revdots{display:flex; gap:6px; justify-content:center; margin-top:6px;}
+  .revdots i{width:7px; height:7px; border-radius:50%; background:var(--line); display:block;
+    transition:background .2s, width .2s;}
+  .revdots i.on{background:var(--accent); width:20px; border-radius:4px;}
+  @media (max-width:900px){
+    .rev{flex:0 0 calc(50% - 7px);}
+    .revnav{display:none;}
+  }
+  @media (max-width:640px){
+    .rev{flex:0 0 86%;}
+  }
   .rev .stars{color:var(--accent); font-size:14px; letter-spacing:2px; margin-bottom:8px;}
   .rev p{font-size:14.5px; color:#43392f; line-height:1.65;}
   .rev .who{font-size:13px; color:var(--muted); margin-top:12px; font-weight:600;}
@@ -214,7 +242,7 @@
 
   @media (max-width:760px){
     section{padding:52px 0;} h2.st{font-size:25px;} .hero h1{font-size:33px;}
-    .stats,.grid,.steps,.incl,.revwrap{grid-template-columns:1fr;}
+    .stats,.grid,.steps,.incl{grid-template-columns:1fr;}
     .steps{grid-template-columns:1fr 1fr;}
     .cmp table{font-size:12.5px;} .cmp th,.cmp td{padding:11px 9px;}
     header .btn{padding:7px 11px; font-size:12px;}
@@ -414,7 +442,10 @@
       <div class="numcard"><b>300,000<span>원</span></b><span class="cap">7월 한 달 · 카페 인증</span></div>
     </div>
 
-    <div class="revwrap" style="text-align:left;">
+    <div class="revslider">
+    <button class="revnav prev" type="button" aria-label="이전 후기">‹</button>
+    <button class="revnav next" type="button" aria-label="다음 후기">›</button>
+    <div class="revwrap" id="revwrap" style="text-align:left;">
       <div class="rev">
         <div class="stars">★★★★★</div>
         <p>"7월 11일에 시작했는데 처음엔 생각보다 쉽지 않았어요. 중간에 포기하고 싶은 마음도 있었지만, 1:1 피드백을 받으면서 하나씩 방향을 잡아갈 수 있었습니다.<br><br>
@@ -454,6 +485,8 @@
         <div class="who">— 수강생 카톡 대화 중</div>
       </div>
 
+    </div>
+    <div class="revdots" id="revdots"></div>
     </div>
 
     <div style="margin-top:26px;">
@@ -674,6 +707,52 @@
   });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeAll(); });
 
+
+
+  /* 후기 슬라이드 — 화살표로 넘기고, 점으로 위치를 보여준다.
+     손가락으로 옆으로 밀어도 되고, 그때 점이 따라 움직인다. */
+  (function(){
+    var wrap = document.getElementById('revwrap');
+    if(!wrap) return;
+    var cards = wrap.querySelectorAll('.rev');
+    var prev  = document.querySelector('.revnav.prev');
+    var next  = document.querySelector('.revnav.next');
+    var dots  = document.getElementById('revdots');
+    if(!cards.length) return;
+
+    /* 한 번에 넘길 거리 = 카드 하나 + 사이 여백 */
+    function step(){
+      if(cards.length < 2) return wrap.clientWidth;
+      return cards[1].offsetLeft - cards[0].offsetLeft;
+    }
+
+    /* 점 만들기 */
+    for(var i=0;i<cards.length;i++){
+      var d=document.createElement('i');
+      d.addEventListener('click', (function(n){
+        return function(){ wrap.scrollTo({left:n*step(), behavior:'smooth'}); };
+      })(i));
+      dots.appendChild(d);
+    }
+
+    function sync(){
+      var idx = Math.round(wrap.scrollLeft / step());
+      var list = dots.querySelectorAll('i');
+      for(var i=0;i<list.length;i++) list[i].classList.toggle('on', i===idx);
+      /* 끝에 닿으면 화살표를 흐리게 */
+      var max = wrap.scrollWidth - wrap.clientWidth - 2;
+      if(prev) prev.disabled = wrap.scrollLeft <= 2;
+      if(next) next.disabled = wrap.scrollLeft >= max;
+    }
+
+    if(prev) prev.addEventListener('click', function(){ wrap.scrollBy({left:-step(), behavior:'smooth'}); });
+    if(next) next.addEventListener('click', function(){ wrap.scrollBy({left: step(), behavior:'smooth'}); });
+
+    var t=null;
+    wrap.addEventListener('scroll', function(){ clearTimeout(t); t=setTimeout(sync,80); });
+    window.addEventListener('resize', sync);
+    sync();
+  })();
 
   // 계좌번호 복사
   var accBtn=document.getElementById('copyAcc');
