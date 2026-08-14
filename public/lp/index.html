@@ -55,6 +55,16 @@
   .btn.outline{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.55); box-shadow:none;}
   .btn.outline:hover{border-color:#fff; background:rgba(255,255,255,.08);}
 
+
+
+  /* 계좌번호 복사 버튼 — 손으로 옮겨 적다 틀리는 일을 막는다 */
+  .copy-acc{margin-top:10px; width:100%; padding:11px; border:1px solid var(--accent);
+    background:#fff; color:var(--accent); border-radius:10px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:inherit;}
+  .copy-acc:active{background:var(--accent-soft);}
+  /* 후기 인증 이미지 */
+  .revimg{display:block; width:100%; height:auto; border-radius:10px; border:1px solid var(--line);
+    margin-top:12px; background:#fff; cursor:zoom-in;}
   /* 수익 숫자 카드 */
   .numrow{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 auto 30px; max-width:760px;}
   .numcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 14px; text-align:center;}
@@ -407,16 +417,16 @@
     <div class="revwrap" style="text-align:left;">
       <div class="rev">
         <div class="stars">★★★★★</div>
-        <p>"7월 11일에 시작했는데 처음엔 생각보다 쉽지 않았어요. 익숙하지 않은 분야라 무엇부터 해야 할지 막막했고, 손에 익기까지 시간이 조금 걸렸습니다.<br><br>
-        중간에 포기하고 싶은 마음도 있었지만, 1:1 피드백을 받으면서 하나씩 방향을 잡아갈 수 있었어요. 막히는 부분이 생길 때마다 질문도 정말 많이 드렸는데, 그때마다 귀찮은 내색 없이 하나하나 알려주시고 계속 피드백을 해주셔서 큰 힘이 됐습니다.<br><br>
-        그 결과 <em>24일부터 첫 수익이 발생했고, 현재까지 총 175,000원</em>의 수익을 만들었습니다. 큰 금액은 아닐 수도 있지만, 저에게는 '정말 되는구나'라는 확신을 갖게 해준 의미 있는 첫 결과였습니다."</p>
+        <p>"7월 11일에 시작했는데 처음엔 생각보다 쉽지 않았어요. 중간에 포기하고 싶은 마음도 있었지만, 1:1 피드백을 받으면서 하나씩 방향을 잡아갈 수 있었습니다.<br><br>
+        그 결과 <em>24일부터 첫 수익이 발생했고, 현재까지 총 175,000원</em>의 수익을 만들었습니다. 저에게는 '정말 되는구나'라는 확신을 갖게 해준 첫 결과였어요."</p>
+        <a href="/lp/img/rev-letter.jpg" target="_blank" rel="noopener"><img class="revimg" src="/lp/img/rev-letter.jpg" alt="1기 수강생 후기 전문" loading="lazy"></a>
         <div class="who">— 1기 수강생</div>
       </div>
 
       <div class="rev">
         <div class="stars">★★★★★</div>
-        <p>"7월 시작하고 총 <em>30만원</em> 정도 벌었네요! 인증합니다 :)<br>
-        7월 11일 시작으로 수익이 나기 시작했어요."</p>
+        <p>"7월 시작하고 총 <em>30만원</em> 정도 벌었네요! 인증합니다 :)"</p>
+        <a href="/lp/img/rev-cafe.jpg" target="_blank" rel="noopener"><img class="revimg" src="/lp/img/rev-cafe.jpg" alt="카페 수익 인증글" loading="lazy"></a>
         <div class="who">— 1기 수강생 · 카페 인증글</div>
       </div>
 
@@ -424,22 +434,26 @@
         <div class="stars">★★★★★</div>
         <p>"저녁에 게시글 하나 올릴 때마다 1~2개씩 전환이 이루어져서 다행입니다 ^^<br>
         총 <em>223,000원</em>. 얼른 수강비 벌러 떠나보시죠!!"</p>
+        <a href="/lp/img/rev-bank1.jpg" target="_blank" rel="noopener"><img class="revimg" src="/lp/img/rev-bank1.jpg" alt="입금 내역 인증" loading="lazy"></a>
         <div class="who">— 1기 수강생</div>
+      </div>
+
+      <div class="rev">
+        <div class="stars">★★★★★</div>
+        <p>"어제 첫 수익으로 5천원 벌고 오늘 4만원 벌었어요 😊<br>
+        <em>4만 5천원으로 정정하겠습니다</em> ㅋㅋㅋ"</p>
+        <a href="/lp/img/rev-bank2.jpg" target="_blank" rel="noopener"><img class="revimg" src="/lp/img/rev-bank2.jpg" alt="첫 수익 인증" loading="lazy"></a>
+        <div class="who">— 수강 시작 직후 수강생</div>
       </div>
 
       <div class="rev">
         <div class="stars">★★★★★</div>
         <p>"하나하나 물어보고 해야겠어요 ㅋㅋㅋㅋㅋ<br>
         <em>바로바로 피드백 오니 이리 든든할 수가 없어요~~!!!</em>"</p>
+        <a href="/lp/img/rev-kakao.jpg" target="_blank" rel="noopener"><img class="revimg" src="/lp/img/rev-kakao.jpg" alt="피드백 카톡" loading="lazy"></a>
         <div class="who">— 수강생 카톡 대화 중</div>
       </div>
 
-      <div class="rev">
-        <div class="stars">★★★★★</div>
-        <p>"어제 첫 수익으로 5천원 벌고 오늘 4만원 벌었다고요 😊<br>
-        정신 없긴 없었는지 5만 5천원이라고 하네요 ㅋㅋㅋ <em>4만 5천원으로 정정하겠습니다</em>"</p>
-        <div class="who">— 수강 시작 직후 수강생</div>
-      </div>
     </div>
 
     <div style="margin-top:26px;">
@@ -584,8 +598,8 @@
     <div class="pay-sub" id="bankItem"></div>
     <div class="bank-acc">
       <span class="lbl">입금 계좌</span>
-      <!-- ⚠️ 아래 계좌번호를 실제 정보로 바꾸세요. 안 바꾸면 손님이 이 화면을 그대로 보게 됩니다. -->
-      <b id="bankAccount">○○은행 000-0000-0000 (예금주명)</b>
+      <b id="bankAccount">카카오뱅크 3333-37-4237436<br><span style="font-size:14px; font-weight:600;">예금주 : 김가영 (바이란미디어)</span></b>
+      <button type="button" id="copyAcc" class="copy-acc">계좌번호 복사</button>
     </div>
     <p class="pay-hint">위 계좌로 입금 후, 아래 버튼으로 입금자명과 상품을 알려주시면 확인해 드려요.</p>
     <a class="btn big" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener" style="width:100%; justify-content:center; margin-top:6px;">💬 입금 확인 요청 (카톡)</a>
@@ -659,6 +673,35 @@
     m.addEventListener('click',function(e){ if(e.target===m||e.target.classList.contains('pay-close')) closeAll(); });
   });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeAll(); });
+
+
+  // 계좌번호 복사
+  var accBtn=document.getElementById('copyAcc');
+  if(accBtn){
+    accBtn.addEventListener('click', async function(){
+      var txt='3333374237436';
+      var done=false;
+      if(navigator.clipboard && window.isSecureContext){
+        try{ await navigator.clipboard.writeText(txt); done=true; }catch(e){}
+      }
+      if(!done){
+        try{
+          var ta=document.createElement('textarea');
+          ta.value=txt; ta.setAttribute('readonly','');
+          ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+          document.body.appendChild(ta);
+          ta.contentEditable='true'; ta.readOnly=false;
+          var r=document.createRange(); r.selectNodeContents(ta);
+          var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+          ta.setSelectionRange(0,txt.length); ta.focus();
+          done=document.execCommand('copy');
+          ta.remove();
+        }catch(e){}
+      }
+      accBtn.textContent = done ? '복사됐어요 ✓' : '길게 눌러 복사해 주세요';
+      setTimeout(function(){ accBtn.textContent='계좌번호 복사'; }, 2000);
+    });
+  }
 
   var q=new URLSearchParams(location.search);
   if(q.get('pay')==='success'){ setTimeout(function(){alert('결제 요청이 완료됐습니다 (테스트). 실제 승인은 서버 연동이 필요해요.');},300); }
