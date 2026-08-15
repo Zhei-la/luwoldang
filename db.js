@@ -212,6 +212,22 @@ async function initDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  /* 공지 분류 — 자료집과 같은 방식으로 관리자가 직접 만들고 고친다 */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notice_cats (
+      id   SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      sort INTEGER DEFAULT 0
+    );
+  `);
+  await pool.query(`ALTER TABLE notices ADD COLUMN IF NOT EXISTS cat_id INTEGER REFERENCES notice_cats(id) ON DELETE SET NULL;`);
+  const nc = await pool.query('SELECT COUNT(*)::int AS n FROM notice_cats');
+  if (!nc.rows[0].n) {
+    await pool.query(
+      `INSERT INTO notice_cats (name, sort) VALUES ('일반',10),('업데이트',20),('일정 안내',30)`
+    );
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS notice_images (
       id        SERIAL PRIMARY KEY,

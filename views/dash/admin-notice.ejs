@@ -19,12 +19,42 @@
     border-radius:9px; font-size:13px; font-weight:600; color:#6B6656; text-decoration:none;
     cursor:pointer; font-family:inherit; }
   .an-row .btn.del { color:#A8332B; }
+  .an-top button { padding:11px 18px; border:1px solid var(--beige); background:#fff;
+    border-radius:10px; font-size:14px; font-weight:700; color:#4A4438;
+    cursor:pointer; font-family:inherit; }
+
+  .an-cats { display:none; background:#fff; border:1px solid var(--beige); border-radius:12px;
+    padding:18px 20px; margin-bottom:18px; max-width:560px; }
+  .an-cats.on { display:block; }
+  .an-cats h3 { margin:0 0 12px; font-size:16px; font-weight:800; }
+  .ac-row { display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--beige); }
+  .ac-row:last-of-type { border-bottom:0; }
+  .ac-row .nm { flex:1; font-size:15px; font-weight:600; }
+  .ac-row .n { font-size:11.5px; color:#9A9384; }
+  .ac-row button { padding:6px 11px; border:1px solid var(--beige); background:#FBF8F1;
+    border-radius:8px; font-size:12.5px; color:#6B6656; cursor:pointer; font-family:inherit; }
+  .ac-add { display:flex; gap:8px; margin-top:14px; }
+  .ac-add input { flex:1; padding:10px 12px; border:1px solid var(--beige); border-radius:9px;
+    font-size:14px; font-family:inherit; outline:none; }
+  .ac-add button { padding:10px 16px; background:var(--navy); color:#fff; border:0;
+    border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+
   .an-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
 </style>
 
 <div class="an-top">
   <a href="/admin/notice/edit" class="new">+ 새 공지 쓰기</a>
+  <button type="button" id="btnCats">분류 관리</button>
   <a href="/notice">교육생 화면으로 보기</a>
+</div>
+
+<div class="an-cats" id="anCats">
+  <h3>공지 분류 관리</h3>
+  <div id="acList"></div>
+  <div class="ac-add">
+    <input type="text" id="acNew" placeholder="새 분류 이름">
+    <button type="button" id="acAdd">추가</button>
+  </div>
 </div>
 
 <% if (!posts.length) { %>
@@ -41,7 +71,8 @@
           <%= p.title %>
         </a>
         <div class="meta">
-          <% if (live) { %><span class="an-tag">홈에 뜨는 중</span><% } %>
+          <% if (p.cat_name) { %><span class="an-tag"><%= p.cat_name %></span><% } %>
+          <% if (live) { %><span class="an-tag" style="background:#E8F3ED;color:#2E7D5B">홈에 뜨는 중</span><% } %>
           <span><%= new Date(p.created_at).toLocaleDateString('ko-KR') %></span>
           <span>팝업 <%= p.popup ? p.popup_days + '일' : '안 함' %></span>
           <span><%= p.views %>번 읽음</span>
@@ -54,6 +85,72 @@
 <% } %>
 
 <script>
+(function () {
+  var cats = <%- JSON.stringify(catList) %>;
+  var box = document.getElementById('anCats');
+
+  document.getElementById('btnCats').addEventListener('click', function () {
+    box.classList.toggle('on');
+    if (box.classList.contains('on')) draw();
+  });
+
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function draw() {
+    document.getElementById('acList').innerHTML = cats.map(function (c, i) {
+      return '<div class="ac-row">' +
+        '<span class="nm">' + esc(c.name) + '</span>' +
+        '<span class="n">' + c.n + '개</span>' +
+        '<button data-act="up" data-id="' + c.id + '"' + (i === 0 ? ' disabled style="opacity:.3"' : '') + '>↑</button>' +
+        '<button data-act="down" data-id="' + c.id + '"' + (i === cats.length - 1 ? ' disabled style="opacity:.3"' : '') + '>↓</button>' +
+        '<button data-act="rename" data-id="' + c.id + '">이름</button>' +
+        '<button data-act="del" data-id="' + c.id + '">삭제</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function send(payload) {
+    return fetch('/admin/notice/cat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error(d.error || '실패');
+        cats = d.cats; draw();
+      })
+      .catch(function (e) { alert('실패: ' + e.message); });
+  }
+
+  document.getElementById('acList').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var id = Number(b.dataset.id), act = b.dataset.act;
+    var cur = cats.find(function (c) { return c.id === id; }) || {};
+    if (act === 'rename') {
+      var v = prompt('분류 이름', cur.name);
+      if (v && v.trim()) send({ act: 'rename', id: id, name: v.trim() });
+    } else if (act === 'del') {
+      var msg = cur.n
+        ? '"' + cur.name + '" 분류를 지울까요?\n안에 있는 공지 ' + cur.n + '개는 남고 분류만 없어집니다.'
+        : '"' + cur.name + '" 분류를 지울까요?';
+      if (confirm(msg)) send({ act: 'del', id: id });
+    } else {
+      send({ act: 'move', id: id, dir: act });
+    }
+  });
+
+  document.getElementById('acAdd').addEventListener('click', function () {
+    var v = document.getElementById('acNew').value.trim();
+    if (!v) return;
+    send({ act: 'add', name: v }).then(function () {
+      document.getElementById('acNew').value = '';
+    });
+  });
+})();
+
 document.addEventListener('click', function (e) {
   var b = e.target.closest('.an-row .del');
   if (!b) return;

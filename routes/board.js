@@ -23,6 +23,18 @@ function plain(t) {
     .replace(/\r\n?/g, '\n');
 }
 
+/* 공지 분류 목록 (글 개수까지) */
+async function noticeCats() {
+  const { rows } = await pool.query(`
+    SELECT c.id, c.name, c.sort,
+           (SELECT COUNT(*)::int FROM notices n
+             WHERE n.cat_id = c.id AND n.published) AS n
+      FROM notice_cats c
+     ORDER BY c.sort, c.id
+  `);
+  return rows;
+}
+
 /* ══════════════════════════════════
    공지사항
    ══════════════════════════════════ */
@@ -30,21 +42,33 @@ function plain(t) {
 /* 목록 */
 router.get('/notice', requireAuth, requireApproved, async (req, res, next) => {
   try {
+    const catId = req.query.cat ? Number(req.query.cat) : null;
+    const args = [];
+    let where = 'n.published';
+    if (catId) { args.push(catId); where += ` AND n.cat_id = $${args.length}`; }
+
     const { rows } = await pool.query(`
-      SELECT id, title, views, created_at, popup, popup_days
-        FROM notices
-       WHERE published
-       ORDER BY created_at DESC
+      SELECT n.id, n.title, n.views, n.created_at, n.popup, n.popup_days, c.name AS cat_name
+        FROM notices n
+        LEFT JOIN notice_cats c ON c.id = n.cat_id
+       WHERE ${where}
+       ORDER BY n.created_at DESC
        LIMIT 100
-    `);
-    res.render('dash/notice', { user: req.user, active: 'notice', posts: rows });
+    `, args);
+    res.render('dash/notice', {
+      user: req.user, active: 'notice',
+      posts: rows, catList: await noticeCats(), catId,
+    });
   } catch (e) { next(e); }
 });
 
 /* 보기 */
 router.get('/notice/:id(\\d+)', requireAuth, requireApproved, async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM notices WHERE id = $1', [req.params.id]);
+    const { rows } = await pool.query(`
+      SELECT n.*, c.name AS cat_name FROM notices n
+        LEFT JOIN notice_cats c ON c.id = n.cat_id
+       WHERE n.id = $1`, [req.params.id]);
     const post = rows[0];
     if (!post || (!post.published && req.user.role !== 'admin')) return res.status(404).send('없는 공지입니다.');
     if (req.user.role !== 'admin') {
@@ -90,10 +114,15 @@ router.get('/api/notice/popup', requireAuth, requireApproved, async (req, res) =
 router.get('/admin/notice', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
-      SELECT id, title, published, popup, popup_days, views, created_at
-        FROM notices ORDER BY created_at DESC
+      SELECT n.id, n.title, n.published, n.popup, n.popup_days, n.views, n.created_at,
+             c.name AS cat_name
+        FROM notices n
+        LEFT JOIN notice_cats c ON c.id = n.cat_id
+       ORDER BY n.created_at DESC
     `);
-    res.render('dash/admin-notice', { user: req.user, active: 'admin-notice', posts: rows });
+    res.render('dash/admin-notice', {
+      user: req.user, active: 'admin-notice', posts: rows, catList: await noticeCats(),
+    });
   } catch (e) { next(e); }
 });
 
@@ -106,7 +135,8 @@ router.get('/admin/notice/edit/:id?', requireAuth, requireAdmin, async (req, res
       post = rows[0];
     }
     res.render('dash/admin-notice-edit', {
-      user: req.user, active: 'admin-notice', post, editHtml: gh.sanitize(post.body || ''),
+      user: req.user, active: 'admin-notice', post,
+      editHtml: gh.sanitize(post.body || ''), catList: await noticeCats(),
     });
   } catch (e) { next(e); }
 });
@@ -122,19 +152,21 @@ router.post('/admin/notice/save', requireAuth, requireAdmin, async (req, res) =>
     const days = Math.min(Math.max(Number(b.popup_days) || 7, 1), 60);
     const published = b.published !== false && b.published !== 'false';
 
+    const catId = b.cat_id ? Number(b.cat_id) : null;
     let id = b.id ? Number(b.id) : null;
     const isNew = !id;
     if (id) {
       await pool.query(
-        `UPDATE notices SET title=$2, body=$3, popup=$4, popup_days=$5, published=$6, updated_at=NOW()
+        `UPDATE notices SET title=$2, body=$3, popup=$4, popup_days=$5, published=$6,
+                            cat_id=$7, updated_at=NOW()
           WHERE id=$1`,
-        [id, title, body, popup, days, published]
+        [id, title, body, popup, days, published, catId]
       );
     } else {
       const { rows } = await pool.query(
-        `INSERT INTO notices (title, body, popup, popup_days, published)
-         VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-        [title, body, popup, days, published]
+        `INSERT INTO notices (title, body, popup, popup_days, published, cat_id)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+        [title, body, popup, days, published, catId]
       );
       id = rows[0].id;
     }
@@ -179,6 +211,42 @@ router.post('/admin/notice/delete', requireAuth, requireAdmin, async (req, res) 
   try {
     await pool.query('DELETE FROM notices WHERE id = $1', [Number(req.body.id)]);
     res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* ── 공지 분류 관리 ── */
+router.post('/admin/notice/cat', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (b.act === 'add') {
+      const name = String(b.name || '').trim();
+      if (!name) return res.status(400).json({ ok: false, error: '이름을 적어주세요.' });
+      const { rows } = await pool.query('SELECT COALESCE(MAX(sort),0)+10 AS s FROM notice_cats');
+      await pool.query('INSERT INTO notice_cats (name, sort) VALUES ($1,$2)', [name, rows[0].s]);
+    } else if (b.act === 'rename') {
+      await pool.query('UPDATE notice_cats SET name=$2 WHERE id=$1',
+        [Number(b.id), String(b.name || '').trim()]);
+    } else if (b.act === 'move') {
+      /* 옆 분류와 순서를 맞바꾼다 */
+      const dir = b.dir === 'up' ? 'DESC' : 'ASC';
+      const cmp = b.dir === 'up' ? '<' : '>';
+      const cur = await pool.query('SELECT id, sort FROM notice_cats WHERE id=$1', [Number(b.id)]);
+      if (!cur.rows[0]) return res.json({ ok: true, cats: await noticeCats() });
+      const nb = await pool.query(
+        `SELECT id, sort FROM notice_cats WHERE sort ${cmp} $1 ORDER BY sort ${dir} LIMIT 1`,
+        [cur.rows[0].sort]
+      );
+      if (nb.rows[0]) {
+        await pool.query('UPDATE notice_cats SET sort=$2 WHERE id=$1', [cur.rows[0].id, nb.rows[0].sort]);
+        await pool.query('UPDATE notice_cats SET sort=$2 WHERE id=$1', [nb.rows[0].id, cur.rows[0].sort]);
+      }
+    } else if (b.act === 'del') {
+      /* 분류만 지우고 공지는 남긴다 */
+      await pool.query('DELETE FROM notice_cats WHERE id=$1', [Number(b.id)]);
+    }
+    res.json({ ok: true, cats: await noticeCats() });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
