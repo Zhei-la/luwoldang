@@ -444,7 +444,14 @@
     if (a === 'save') {
       var who = item.querySelector('.e-who').value.trim();
       var body = item.querySelector('.e-body').value.trim();
-      if (!who && !body && !item.newImg) { alert('내용을 적어주세요.'); return; }
+      /* 이미 올라간 사진이 있으면 글이 비어도 저장할 수 있다.
+         (사진만 있는 후기를 고칠 때 막히지 않게) */
+      var hasOld = !!item.querySelector('.th .tw');
+      var hasNew = !!(item.newImgs && item.newImgs.length);
+      if (!who && !body && !hasOld && !hasNew) {
+        alert('사진이나 글 중 하나는 넣어주세요.');
+        return;
+      }
 
       b.disabled = true; b.textContent = '저장 중...';
       var data = { id: id, who: who, body: body };
