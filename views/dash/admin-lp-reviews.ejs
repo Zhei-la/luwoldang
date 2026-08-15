@@ -1,0 +1,292 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '판매 페이지 후기' }) %>
+
+<style>
+  .lr-note { background:var(--card); border:1px solid var(--beige); border-left:3px solid var(--gold);
+    border-radius:0 12px 12px 0; padding:14px 17px; margin-bottom:18px;
+    font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
+  .lr-note b { color:var(--ink); }
+  .lr-note a { color:#8A6F3C; font-weight:700; }
+
+  .lr-set { background:var(--card); border:1px solid var(--beige); border-radius:14px;
+    padding:20px; margin-bottom:18px; }
+  .lr-set h3 { margin:0 0 6px; font-size:16px; font-weight:800; }
+  .lr-set .hint { margin:0 0 14px; font-size:13px; color:#6B6656; line-height:1.7; }
+  .lr-set .hint b { color:var(--ink); }
+  .lr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+  .lr-grid label { display:block; font-size:11.5px; letter-spacing:.06em; color:#9A9384; }
+  .lr-grid label.wide { grid-column:1/-1; }
+  .lr-grid input { width:100%; margin-top:5px; padding:10px 12px; border:1px solid var(--beige);
+    border-radius:9px; font-size:15px; font-family:inherit; background:#fff;
+    color:var(--ink); outline:none; }
+  .lr-grid input:focus { border-color:var(--gold); }
+  .lr-preview { margin:14px 0; padding:13px 15px; background:#fff; border:1px solid var(--beige);
+    border-radius:10px; font-size:13.5px; line-height:1.9; color:#4A4438; word-break:keep-all; }
+  .lr-preview b { color:var(--ink); }
+
+  .lr-new { background:var(--card); border:1px solid var(--beige); border-radius:14px;
+    padding:20px; margin-bottom:22px; }
+  .lr-new h3 { margin:0 0 12px; font-size:16px; font-weight:800; }
+
+  .lr-drop { border:2px dashed var(--beige); border-radius:12px; background:#fff;
+    padding:26px 18px; text-align:center; cursor:pointer; margin-bottom:12px; }
+  .lr-drop:hover, .lr-drop.over { border-color:var(--gold); }
+  .lr-drop .ic { font-size:26px; }
+  .lr-drop .t { font-size:14px; font-weight:700; margin-top:7px; }
+  .lr-drop .d { font-size:12.5px; color:#9A9384; margin-top:4px; }
+  .lr-drop img { max-width:100%; max-height:220px; border-radius:10px; display:block; margin:0 auto; }
+
+  .lr-new input[type=text], .lr-new textarea {
+    width:100%; padding:11px 13px; border:1px solid var(--beige); border-radius:10px;
+    font-size:15px; font-family:inherit; background:#fff; color:var(--ink);
+    outline:none; margin-bottom:9px; line-height:1.7; }
+  .lr-new textarea { min-height:110px; resize:vertical; }
+  .lr-new .add { padding:13px 24px; background:var(--navy); color:#fff; border:0;
+    border-radius:11px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .lr-new .add:disabled { opacity:.5; cursor:default; }
+
+  .lr-item { display:flex; gap:14px; background:var(--card); border:1px solid var(--beige);
+    border-radius:14px; padding:15px 17px; margin-bottom:9px; align-items:flex-start; }
+  .lr-item.off { opacity:.5; }
+  .lr-item .th { flex:0 0 90px; }
+  .lr-item .th img { width:90px; height:110px; object-fit:cover; border-radius:9px;
+    border:1px solid var(--beige); background:#fff; display:block; }
+  .lr-item .th .no { width:90px; height:110px; border-radius:9px; border:1px dashed var(--beige);
+    display:flex; align-items:center; justify-content:center; font-size:11.5px; color:#9A9384; }
+  .lr-item .bd { flex:1; min-width:0; }
+  .lr-item .who { font-size:12px; color:#8A6F3C; font-weight:700; margin-bottom:5px; }
+  .lr-item .tx { font-size:14px; line-height:1.7; color:#4A4438; white-space:pre-wrap;
+    word-break:keep-all; max-height:110px; overflow:hidden; }
+  .lr-item .acts { display:flex; gap:5px; margin-top:10px; flex-wrap:wrap; }
+  .lr-item .acts button { padding:7px 12px; border:1px solid var(--beige); background:#fff;
+    border-radius:8px; font-size:12.5px; font-weight:600; color:#6B6656;
+    cursor:pointer; font-family:inherit; }
+  .lr-item .acts .del { color:#A8332B; }
+
+  .lr-empty { text-align:center; padding:44px 20px; color:#9A9384; font-size:14px; }
+  .toast { position:fixed; left:50%; bottom:40px; transform:translateX(-50%); background:var(--navy);
+    color:#fff; padding:12px 20px; border-radius:100px; font-size:14px; font-weight:700; z-index:200; }
+</style>
+
+<div class="lr-note">
+  여기서 올린 후기가 <b>판매 페이지</b>에 바로 나옵니다.
+  <a href="/lp/" target="_blank" rel="noopener">판매 페이지 열어보기 →</a><br>
+  <b>실제 후기만 올려주세요.</b> 지어낸 후기는 표시광고법상 문제가 될 수 있습니다.
+  카톡·계좌 캡처를 올리실 때는 <b>상대방 이름이 가려졌는지</b> 확인해 주세요.
+</div>
+
+<div class="lr-set">
+  <h3>기수 · 금액 설정</h3>
+  <p class="hint">여기서 바꾸면 판매 페이지의 기수·금액이 <b>모든 자리에서 한 번에</b> 바뀝니다.</p>
+  <div class="lr-grid">
+    <label>기수<input type="text" id="sCohort" value="<%= set.cohort %>" placeholder="3기"></label>
+    <label>계좌이체가 (만원)<input type="number" id="sPrice" value="<%= set.price %>"></label>
+    <label>정가 (만원)<input type="number" id="sListPrice" value="<%= set.list_price %>"></label>
+    <label>모집 인원 (명)<input type="number" id="sSeats" value="<%= set.seats %>"></label>
+    <label>신청 마감<input type="text" id="sDeadline" value="<%= set.deadline %>" placeholder="2026년 11월"></label>
+    <label>다음 기수<input type="text" id="sNextCohort" value="<%= set.next_cohort %>" placeholder="4기"></label>
+    <label>다음 기수 금액 (만원)<input type="number" id="sNextPrice" value="<%= set.next_price %>"></label>
+    <label class="wide">지나간 가격 (/ 로 구분)
+      <input type="text" id="sLadder" value="<%= set.ladder %>" placeholder="1기 30만 / 50만 / 2기 60만"></label>
+  </div>
+  <div class="lr-preview" id="setPrev"></div>
+  <button type="button" class="add" id="btnSet">설정 저장</button>
+</div>
+
+<div class="lr-new">
+  <h3>새 후기 추가</h3>
+  <div class="lr-drop" id="drop">
+    <div id="dropIn">
+      <div class="ic">📷</div>
+      <div class="t">후기 사진 올리기</div>
+      <div class="d">여기를 누르거나 사진을 끌어다 놓으세요 · 글만 올려도 됩니다</div>
+    </div>
+  </div>
+  <input type="file" id="file" accept="image/*" hidden>
+
+  <input type="text" id="who" placeholder="누구의 후기인가요 — 예: 1기 수강생, 30대 직장인 수강생">
+  <textarea id="body" placeholder="후기 내용을 적어주세요.&#10;사진만 올리고 비워두셔도 됩니다."></textarea>
+  <button type="button" class="add" id="btnAdd">후기 추가하기</button>
+</div>
+
+<h3 style="font-size:15px; font-weight:800; margin:24px 0 12px;">
+  올린 후기 <%= items.length %>개
+</h3>
+
+<% if (!items.length) { %>
+  <div class="lr-empty">아직 올린 후기가 없습니다.</div>
+<% } else { %>
+  <% items.forEach(function (it, i) { %>
+    <div class="lr-item <%= it.published ? '' : 'off' %>" data-id="<%= it.id %>">
+      <div class="th">
+        <% if (it.url) { %>
+          <img src="<%= it.url %>" alt="">
+        <% } else { %>
+          <div class="no">사진 없음</div>
+        <% } %>
+      </div>
+      <div class="bd">
+        <div class="who"><%= it.who || '(작성자 없음)' %><%= it.published ? '' : ' · 숨김' %></div>
+        <div class="tx"><%= it.body %></div>
+        <div class="acts">
+          <button type="button" data-a="up" <%= i === 0 ? 'disabled style="opacity:.35"' : '' %>>↑ 위로</button>
+          <button type="button" data-a="down" <%= i === items.length - 1 ? 'disabled style="opacity:.35"' : '' %>>↓ 아래로</button>
+          <button type="button" data-a="edit">글 고치기</button>
+          <button type="button" data-a="toggle"><%= it.published ? '숨기기' : '보이기' %></button>
+          <button type="button" data-a="del" class="del">삭제</button>
+        </div>
+      </div>
+    </div>
+  <% }); %>
+<% } %>
+
+<script>
+(function () {
+  /* ── 기수 · 금액 설정 ── */
+  var F = ['sCohort','sPrice','sListPrice','sSeats','sDeadline','sNextCohort','sNextPrice','sLadder'];
+  function val(id) { return document.getElementById(id).value.trim(); }
+
+  function drawPrev() {
+    var p = Number(val('sPrice')) || 0, l = Number(val('sListPrice')) || 0;
+    var dc = Math.max(0, l - p);
+    document.getElementById('setPrev').innerHTML =
+      '판매 페이지에 이렇게 나옵니다<br>' +
+      '<b>' + val('sCohort') + '</b> 모집 <b>' + val('sSeats') + '명</b> · 신청 마감 <b>' + val('sDeadline') + '</b><br>' +
+      '<b>' + p + '만원</b> (정가 ' + l + '만원 · 계좌이체 시 <b>' + dc + '만원 할인</b>)<br>' +
+      '<b>' + val('sNextCohort') + '</b>부터 <b>' + val('sNextPrice') + '만원</b>으로 인상 예정' +
+      (dc <= 0 ? '<br><span style="color:#A8332B">※ 정가가 계좌이체가보다 크지 않아 할인이 0원으로 나옵니다.</span>' : '');
+  }
+  F.forEach(function (id) {
+    document.getElementById(id).addEventListener('input', drawPrev);
+  });
+  drawPrev();
+
+  document.getElementById('btnSet').addEventListener('click', function () {
+    var b = this;
+    b.disabled = true; b.textContent = '저장 중...';
+    fetch('/admin/lp-settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cohort: val('sCohort'), price: val('sPrice'), listPrice: val('sListPrice'),
+        seats: val('sSeats'), deadline: val('sDeadline'),
+        nextCohort: val('sNextCohort'), nextPrice: val('sNextPrice'), ladder: val('sLadder')
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) throw new Error(d.error || '실패');
+      b.textContent = '저장했어요 ✓';
+      setTimeout(function () { b.disabled = false; b.textContent = '설정 저장'; }, 1600);
+    })
+    .catch(function (err) {
+      alert('저장하지 못했습니다: ' + err.message);
+      b.disabled = false; b.textContent = '설정 저장';
+    });
+  });
+
+  var drop = document.getElementById('drop');
+  var dropIn = document.getElementById('dropIn');
+  var file = document.getElementById('file');
+  var imgData = null;
+
+  function toast(m) {
+    var e = document.createElement('div');
+    e.className = 'toast'; e.textContent = m;
+    document.body.appendChild(e);
+    setTimeout(function () { e.remove(); }, 1800);
+  }
+
+  function readImg(f) {
+    if (!f || !/^image\//.test(f.type)) { alert('이미지 파일만 올릴 수 있습니다.'); return; }
+    if (f.size > 3 * 1024 * 1024) { alert('사진이 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
+    var fr = new FileReader();
+    fr.onload = function () {
+      imgData = fr.result;
+      dropIn.innerHTML = '<img src="' + imgData + '" alt=""><div class="d" style="margin-top:8px">다시 누르면 바꿀 수 있어요</div>';
+    };
+    fr.readAsDataURL(f);
+  }
+
+  drop.addEventListener('click', function () { file.click(); });
+  drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault(); drop.classList.remove('over');
+    readImg(e.dataTransfer.files[0]);
+  });
+  file.addEventListener('change', function () { readImg(file.files[0]); file.value = ''; });
+
+  /* 캡처를 복사해 붙여넣어도 된다 */
+  document.addEventListener('paste', function (e) {
+    var items = (e.clipboardData || {}).items || [];
+    for (var i = 0; i < items.length; i++) {
+      if (/^image\//.test(items[i].type)) { readImg(items[i].getAsFile()); break; }
+    }
+  });
+
+  var add = document.getElementById('btnAdd');
+  add.addEventListener('click', function () {
+    var body = document.getElementById('body').value.trim();
+    var who = document.getElementById('who').value.trim();
+    if (!imgData && !body) { alert('사진이나 글 중 하나는 넣어주세요.'); return; }
+
+    add.disabled = true; add.textContent = '올리는 중...';
+    fetch('/admin/lp-reviews/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ img: imgData, body: body, who: who })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) throw new Error(d.error || '실패');
+      location.reload();
+    })
+    .catch(function (err) {
+      alert('올리지 못했습니다: ' + err.message);
+      add.disabled = false; add.textContent = '후기 추가하기';
+    });
+  });
+
+  /* 목록에서 고치기 · 순서 · 숨기기 · 삭제 */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.lr-item .acts button[data-a]');
+    if (!b) return;
+    var item = b.closest('.lr-item');
+    var id = item.dataset.id;
+    var a = b.dataset.a;
+
+    function post(url, data) {
+      return fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(function (r) { return r.json(); });
+    }
+
+    if (a === 'del') {
+      if (!confirm('이 후기를 지울까요? 되돌릴 수 없습니다.')) return;
+      post('/admin/lp-reviews/delete', { id: id }).then(function () { item.remove(); });
+      return;
+    }
+    if (a === 'toggle') {
+      post('/admin/lp-reviews/toggle', { id: id }).then(function () { location.reload(); });
+      return;
+    }
+    if (a === 'up' || a === 'down') {
+      post('/admin/lp-reviews/move', { id: id, dir: a }).then(function () { location.reload(); });
+      return;
+    }
+    if (a === 'edit') {
+      var who = prompt('누구의 후기인가요', item.querySelector('.who').textContent.split(' · ')[0]);
+      if (who === null) return;
+      var body = prompt('후기 내용', item.querySelector('.tx').textContent);
+      if (body === null) return;
+      post('/admin/lp-reviews/save', { id: id, who: who, body: body })
+        .then(function (d) {
+          if (!d.ok) throw new Error(d.error || '실패');
+          location.reload();
+        })
+        .catch(function (err) { alert('고치지 못했습니다: ' + err.message); });
+    }
+  });
+})();
+</script>
+
+<%- include('../partials/dash-bottom') %>

@@ -197,6 +197,67 @@ async function initDb() {
   /* 글쓰기 화면이 블로그 방식으로 바뀌면서 본문이 HTML 로 저장된다.
      예전에 쓴 글은 그대로 두고, 이 값으로 어느 방식인지 구분한다. */
   await pool.query(`ALTER TABLE guide_posts ADD COLUMN IF NOT EXISTS format TEXT DEFAULT 'html';`);
+  /* ── 판매 페이지 설정 ──
+     기수·금액·모집 인원처럼 자주 바뀌는 값을 한곳에 둔다.
+     판매 페이지가 이 값을 읽어가 화면을 채운다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lp_settings (
+      id           INTEGER PRIMARY KEY DEFAULT 1,
+      cohort       TEXT    DEFAULT '3기',
+      price        INTEGER DEFAULT 70,      -- 계좌이체가 (만원)
+      list_price   INTEGER DEFAULT 80,      -- 정가 (만원)
+      next_cohort  TEXT    DEFAULT '4기',
+      next_price   INTEGER DEFAULT 110,
+      seats        INTEGER DEFAULT 10,
+      deadline     TEXT    DEFAULT '2026년 11월',
+      ladder       TEXT    DEFAULT '1기 30만 / 50만 / 2기 60만',
+      updated_at   TIMESTAMPTZ DEFAULT NOW(),
+      CONSTRAINT lp_settings_one CHECK (id = 1)
+    );
+  `);
+  await pool.query(`INSERT INTO lp_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;`);
+
+  /* ── 판매 페이지 후기 ──
+     관리자가 직접 사진과 글을 올려 관리한다.
+     판매 페이지(/lp/)는 여기서 읽어와 보여준다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lp_reviews (
+      id        SERIAL PRIMARY KEY,
+      img       TEXT,            -- 올린 사진 (없으면 글만 나온다)
+      img_url   TEXT,            -- 이미 파일로 있는 사진을 가리킬 때
+      body      TEXT NOT NULL DEFAULT '',
+      who       TEXT,            -- 예: 1기 수강생
+      sort      INTEGER DEFAULT 0,
+      published BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  /* 처음 한 번만 — 지금 판매 페이지에 있는 후기를 그대로 옮겨둔다 */
+  const lr = await pool.query('SELECT COUNT(*)::int AS n FROM lp_reviews');
+  if (!lr.rows[0].n) {
+    await pool.query(`
+      INSERT INTO lp_reviews (img_url, body, who, sort) VALUES
+      ('/lp/img/rev-letter.jpg',
+       '7월 11일에 시작했는데 처음엔 생각보다 쉽지 않았어요. 중간에 포기하고 싶은 마음도 있었지만, 1:1 피드백을 받으면서 하나씩 방향을 잡아갈 수 있었습니다.
+
+그 결과 24일부터 첫 수익이 발생했고, 현재까지 총 175,000원의 수익을 만들었습니다. 저에게는 ''정말 되는구나''라는 확신을 갖게 해준 첫 결과였어요.',
+       '1기 수강생', 10),
+      ('/lp/img/rev-cafe.jpg', '7월 시작하고 총 30만원 정도 벌었네요! 인증합니다 :)', '1기 수강생 · 카페 인증글', 20),
+      ('/lp/img/rev-bank1.jpg',
+       '저녁에 게시글 하나 올릴 때마다 1~2개씩 전환이 이루어져서 다행입니다 ^^
+총 223,000원. 얼른 수강비 벌러 떠나보시죠!!',
+       '1기 수강생', 30),
+      ('/lp/img/rev-bank2.jpg',
+       '어제 첫 수익으로 5천원 벌고 오늘 4만원 벌었어요 😊
+4만 5천원으로 정정하겠습니다 ㅋㅋㅋ',
+       '수강 시작 직후 수강생', 40),
+      ('/lp/img/rev-kakao.jpg',
+       '하나하나 물어보고 해야겠어요 ㅋㅋㅋㅋㅋ
+바로바로 피드백 오니 이리 든든할 수가 없어요~~!!!',
+       '수강생 카톡 대화 중', 50)
+    `);
+  }
+
   /* ── 공지사항 ──
      관리자가 올리면 교육생 홈에 일정 기간 팝업으로 뜬다. */
   await pool.query(`
