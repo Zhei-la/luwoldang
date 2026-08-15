@@ -336,25 +336,9 @@
     <div class="card-t">교육생 자료집</div>
     <div class="card-d">순서대로 따라 하는 사용법 · 상담 응대 자료</div>
   </a>
-  <a class="card" href="/pdf/create">
-    <div class="card-t">PDF 만들기</div>
-    <div class="card-d">내담자 정보 입력 → 7종 사주 리포트 제작</div>
-  </a>
-  <a class="card" href="/leads">
-    <div class="card-t">사주 신청자</div>
-    <div class="card-d">신청 확인 → 리포트 제작 → 발송</div>
-  </a>
-  <a class="card" href="/builder">
-    <div class="card-t">내 웹사이트 만들기</div>
-    <div class="card-d">랜딩 페이지를 꾸미고 링크 공유</div>
-  </a>
-  <a class="card" href="/records">
-    <div class="card-t">발송 기록</div>
-    <div class="card-d">리포트 · 이메일 발송 내역 확인</div>
-  </a>
-  <a class="card" href="/chat">
-    <div class="card-t">내담자 추가질문</div>
-    <div class="card-d">리포트 기반 AI 추가 상담</div>
+  <a class="card" href="/notice">
+    <div class="card-t">공지사항</div>
+    <div class="card-d">업데이트 · 일정 안내를 확인하세요</div>
   </a>
   <a class="card" href="/free-saju-settings">
     <div class="card-t">무료사주 · API 설정</div>
@@ -431,12 +415,6 @@
   .stat-unit { font-size:15px; font-weight:600; color:#8a8372; margin-left:2px; }
 </style>
 
-<h2 class="section-h">최근 작업 현황</h2>
-<div class="recent">
-  <div class="recent-row"><span>제작한 리포트</span><em><%= stats.pdfs %>건</em></div>
-  <div class="recent-row"><span>이메일 발송</span><em><%= stats.sent %>건</em></div>
-  <div class="recent-row"><span>사주 신청자</span><em><%= stats.leads %>명</em></div>
-  <div class="recent-row"><span>무료사주 조회</span><em><%= stats.free %>건</em></div>
 </div>
 
 <%- include('../partials/dash-bottom') %>
