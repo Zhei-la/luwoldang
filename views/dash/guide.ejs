@@ -11,6 +11,11 @@
   .gd-search button { padding:11px 16px; border:1px solid var(--beige); background:#fff;
     border-radius:10px; font-size:14px; font-weight:600; color:#6B6656; cursor:pointer; font-family:inherit; }
 
+  .gd-note { background:#FBF8F1; border:1px solid var(--beige); border-left:3px solid var(--gold);
+    border-radius:0 12px 12px 0; padding:14px 17px; margin-bottom:16px;
+    font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
+  .gd-note b { color:var(--ink); }
+
   .gd-cats { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:18px; }
   .gd-cats::-webkit-scrollbar { display:none; }
   .gd-cat { flex:0 0 auto; padding:9px 15px; border-radius:100px; border:1px solid var(--beige);
@@ -28,10 +33,7 @@
     display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
   .gd-pin { font-size:11px; font-weight:700; color:#fff; background:var(--gold);
     padding:2px 8px; border-radius:100px; }
-  .gd-item .pv { margin-top:6px; font-size:13.5px; color:#6B6656; line-height:1.55;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-    word-break:keep-all; white-space:pre-wrap; }
-  .gd-item .meta { margin-top:10px; font-size:11.5px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; }
+  .gd-item .meta { margin-top:7px; font-size:11.5px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; }
   .gd-tag { background:#F4EFE3; color:#8A6F3C; padding:2px 8px; border-radius:5px; font-weight:600; }
 
   .gd-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.8; }
@@ -47,6 +49,12 @@
   <% if (user.role === 'admin') { %>
     <a href="/admin/guide" class="gd-write">자료집 관리</a>
   <% } %>
+</div>
+
+<div class="gd-note">
+  <b>맨 아래 자료부터 하나씩 읽어주세요.</b>
+  순서대로 따라 하시도록 만든 자료입니다. 한 번에 몰아 보지 마시고,
+  하나를 읽고 직접 해본 뒤 다음 자료로 넘어가시면 훨씬 빨리 익힐 수 있습니다.
 </div>
 
 <div class="gd-cats">
@@ -73,9 +81,6 @@
         <% if (p.pinned) { %><span class="gd-pin">중요</span><% } %>
         <%= p.title %>
       </div>
-      <% if (p.preview && p.preview.trim()) { %>
-        <div class="pv"><%= p.preview.replace(/[#*>`\-]/g, ' ').trim() %></div>
-      <% } %>
       <div class="meta">
         <% if (p.cat_name) { %><span class="gd-tag"><%= p.cat_name %></span><% } %>
         <span><%= new Date(p.created_at).toLocaleDateString('ko-KR') %></span>

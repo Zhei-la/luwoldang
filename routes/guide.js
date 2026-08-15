@@ -50,7 +50,7 @@ router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
 
     const { rows } = await pool.query(`
       SELECT p.id, p.title, p.pinned, p.views, p.created_at, c.name AS cat_name,
-             LEFT(p.body, 600) AS preview, p.format
+             p.format
         FROM guide_posts p
         LEFT JOIN guide_cats c ON c.id = p.cat_id
        WHERE ${where.join(' AND ')}
@@ -58,17 +58,9 @@ router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
        LIMIT 200
     `, args);
 
-    /* 목록에 보여줄 한 줄 요약 — 태그와 서식 기호를 걷어낸다 */
-    const posts = rows.map((p) => ({
-      ...p,
-      preview: p.format === 'md'
-        ? String(p.preview || '').replace(/[#*>`\-]|!\[[^\]]*\]\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
-        : gh.toText(p.preview),
-    }));
-
     res.render('dash/guide', {
       user: req.user, active: 'guide',
-      posts, catList: await cats(), catId, q,
+      posts: rows, catList: await cats(), catId, q,
     });
   } catch (e) { next(e); }
 });
