@@ -38,6 +38,13 @@
   .gv-body figure.sz-s img { max-width:min(240px, 55%); }
   .gv-body figure.sz-m img { max-width:min(420px, 80%); }
   .gv-body figure.sz-l img { max-width:100%; }
+
+  /* 정렬 */
+  .gv-body .al-c { text-align:center; }
+  .gv-body .al-r { text-align:right; }
+  .gv-body .al-l { text-align:left; }
+  .gv-body figure.al-c img { margin-left:auto; margin-right:auto; }
+  .gv-body figure.al-r img { margin-left:auto; margin-right:0; }
   .gv-body strong { font-weight:800; }
 
   .gv-foot { max-width:760px; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
@@ -61,11 +68,26 @@
   }
   .print-warn { display:none; }
 
-  /* ── 화면에 옅게 깔리는 이름 ──
-     캡처가 돌아다니면 누구 계정에서 나갔는지 바로 드러난다. */
+  /* ── 화면에 남는 이름 ──
+     캡처가 돌아다니면 누구 계정에서 나갔는지 바로 드러난다.
+     위·오른쪽·아래 세 곳에 두어 일부만 잘라내도 남도록 한다. */
   .gv-stage { position:relative; }
-  .gv-mark { position:absolute; inset:0; pointer-events:none; z-index:5;
-    background-repeat:repeat; }
+  .gv-mark {
+    position:absolute; z-index:5; pointer-events:none; user-select:none;
+    white-space:nowrap; font-size:13px; font-weight:700; letter-spacing:.02em;
+    color:rgba(80,70,50,.30);              /* ← 진하기는 이 값으로 조절 */
+    text-shadow:0 1px 0 rgba(255,255,255,.55);
+  }
+  .gv-mark.top { top:2px;    right:0; }
+  .gv-mark.mid { top:46%;    right:0; transform:rotate(-90deg) translateX(-50%); transform-origin:right center; }
+  .gv-mark.bot { bottom:2px; right:0; }
+
+  @media (max-width:900px) {
+    /* 좁은 화면에는 오른쪽 여백이 없으므로 글 위에 옅게 얹는다 */
+    .gv-mark { font-size:11.5px; color:rgba(80,70,50,.26); }
+    .gv-mark.mid { top:48%; right:auto; left:50%;
+      transform:translate(-50%,-50%) rotate(-16deg); transform-origin:center; }
+  }
 
   .gv-copyright { max-width:760px; margin-top:26px; padding:14px 16px; background:#FBF8F1;
     border:1px solid var(--beige); border-radius:10px; font-size:12.5px; color:#6B6656;
@@ -78,25 +100,6 @@
 <script>
 (function () {
   document.body.classList.add('lock');
-
-  /* ── 화면에 옅게 깔 이름 만들기 ──
-     글자를 그림으로 만들어 배경에 반복해서 깐다. */
-  var mark = <%- JSON.stringify(mark) %>;
-  var safe = mark.replace(/[<>&"]/g, '');
-  /* '루월당 · 이름' 과 '아이디 · 날짜' 를 두 줄로 나눠 잘리지 않게 한다 */
-  var parts = safe.split(' · ');
-  var line1 = parts.slice(0, 2).join(' · ');
-  var line2 = parts.slice(2).join(' · ');
-
-  var svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="170">' +
-      '<g transform="rotate(-24 150 85)" font-family="sans-serif" fill="rgba(80,70,50,0.17)">' +
-        '<text x="10" y="80" font-size="16" font-weight="700">' + line1 + '</text>' +
-        '<text x="10" y="103" font-size="13">' + line2 + '</text>' +
-      '</g>' +
-    '</svg>';
-  var el = document.getElementById('gvMark');
-  if (el) el.style.backgroundImage = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '")';
 
   /* ── 복사·저장 막기 ── */
   var body = document.querySelector('.gv-body');
@@ -138,9 +141,9 @@
   <div class="gv-body">
     <%- bodyHtml %>
   </div>
-  <% if (lock) { %>
-    <div class="gv-mark" id="gvMark"></div>
-  <% } %>
+  <div class="gv-mark top"><%= mark %></div>
+  <div class="gv-mark mid"><%= mark %></div>
+  <div class="gv-mark bot"><%= mark %></div>
 </div>
 
 <div class="print-warn">이 자료는 인쇄할 수 없습니다.</div>

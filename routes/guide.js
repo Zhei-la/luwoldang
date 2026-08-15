@@ -93,7 +93,8 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
         [post.id, req.user.id]).catch(() => {});
     }
 
-    /* 화면에 옅게 깔 문구 — 캡처가 돌아다니면 누구 계정에서 나갔는지 알 수 있다 */
+    /* 화면에 남길 문구 — 캡처가 돌아다니면 누구 계정에서 나갔는지 알 수 있다.
+       관리자에게도 보여준다. 그래야 실제로 어떻게 찍히는지 확인할 수 있다. */
     const mark = [
       '루월당',
       req.user.name || '교육생',
