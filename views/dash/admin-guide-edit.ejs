@@ -430,6 +430,9 @@
   });
 
   /* 붙여넣기 — 캡처는 바로 올리고, 노션 글은 필요한 서식만 남긴다 */
+  var BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  var seen = [], skipped = [];
+
   var KEEP = { H1:'H2', H2:'H2', H3:'H3', H4:'H3', P:1, BR:1, STRONG:1, B:'STRONG', EM:1, I:'EM',
                U:1, S:1, STRIKE:'S', UL:1, OL:1, LI:1, BLOCKQUOTE:1, PRE:1, CODE:1, HR:1, A:1, DIV:'P' };
 
@@ -442,15 +445,34 @@
       if (tag === 'SCRIPT' || tag === 'STYLE') return;
 
       /* 바깥 사진은 브라우저가 직접 읽을 수 없다.
-         자리만 만들어 두고, 붙여넣은 뒤 서버가 대신 받아온다. */
+         자리만 만들어 두고, 붙여넣은 뒤 서버가 대신 받아온다.
+         노션이 주소를 여러 형태로 주기 때문에 넓게 받는다. */
       if (tag === 'IMG') {
-        var src = c.getAttribute('src') || '';
-        if (!/^https:\/\//i.test(src)) return;
+        var src = (c.getAttribute('src') || c.getAttribute('data-src') || '').trim();
+        seen.push(src.slice(0, 60));
+
+        if (/^data:image\//i.test(src)) {
+          /* 사진이 통째로 들어온 경우 — 그대로 올린다 */
+          var fg = document.createElement('figure');
+          fg.className = 'sz-m loading';
+          var i2 = document.createElement('img');
+          i2.setAttribute('data-inline', src);
+          i2.src = BLANK;
+          fg.appendChild(i2);
+          out.appendChild(fg);
+          return;
+        }
+
+        var abs = src;
+        if (/^\/\//.test(src)) abs = 'https:' + src;             // //host/path
+        else if (/^\//.test(src)) abs = 'https://www.notion.so' + src;  // /image/... 형태
+        if (!/^https?:\/\//i.test(abs)) { skipped.push(src.slice(0, 40)); return; }
+
         var fig = document.createElement('figure');
         fig.className = 'sz-m loading';
         var im = document.createElement('img');
-        im.setAttribute('data-remote', src);
-        im.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        im.setAttribute('data-remote', abs);
+        im.src = BLANK;
         fig.appendChild(im);
         out.appendChild(fig);
         return;
@@ -481,6 +503,7 @@
     var html = dt.getData('text/html');
     if (html) {
       e.preventDefault();
+      seen = []; skipped = [];
       var box = document.createElement('div');
       box.innerHTML = html;
       var frag = clean(box);
@@ -499,9 +522,34 @@
 
   /* 붙여넣은 바깥 사진을 서버가 대신 받아온다 */
   function fetchRemote(fromPaste) {
+    /* 통째로 들어온 사진은 서버를 거치지 않고 바로 올린다 */
+    var inline = [].slice.call(ed.querySelectorAll('img[data-inline]'));
+    inline.forEach(function (im) {
+      fetch('/admin/guide/img', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ img: im.getAttribute('data-inline'), post_id: postId.value || null })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error(d.error || '실패');
+        im.src = d.url;
+        im.removeAttribute('data-inline');
+        if (im.parentNode) im.parentNode.classList.remove('loading');
+      })
+      .catch(function () { var f = im.closest('figure'); if (f) f.remove(); });
+    });
+
     var list = [].slice.call(ed.querySelectorAll('img[data-remote]'));
     if (!list.length) {
-      if (fromPaste) toast('사진 없이 글만 붙여넣었습니다');
+      if (fromPaste && !inline.length) {
+        if (seen.length) {
+          alert('붙여넣은 글에 사진 ' + seen.length + '개가 있었지만 가져오지 못했습니다.\n\n' +
+                '사진 주소 형태:\n' + seen.slice(0, 3).join('\n') + '\n\n' +
+                '이 내용을 그대로 알려주시면 맞춰 드리겠습니다.');
+        } else {
+          toast('사진 없이 글만 붙여넣었습니다');
+        }
+      }
       return;
     }
     toast('사진 ' + list.length + '장 가져오는 중...');
@@ -650,7 +698,7 @@
     tmp.innerHTML = ed.innerHTML;
     tmp.querySelectorAll('figure.sel').forEach(function (f) { f.classList.remove('sel'); });
     /* 아직 못 받아온 사진은 빈칸으로 남으므로 빼고 저장한다 */
-    tmp.querySelectorAll('img[data-remote]').forEach(function (im) {
+    tmp.querySelectorAll('img[data-remote], img[data-inline]').forEach(function (im) {
       var f = im.closest('figure'); if (f) f.remove(); else im.remove();
     });
     tmp.querySelectorAll('figure.loading').forEach(function (f) { f.classList.remove('loading'); });
