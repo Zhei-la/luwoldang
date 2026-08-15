@@ -12,11 +12,11 @@
 
 /* 허용 태그 → 남길 속성 */
 const ALLOW = {
-  h2: [], h3: [], h4: [],
-  p: [], br: [], hr: [],
+  h2: ['class'], h3: ['class'], h4: ['class'],
+  p: ['class'], br: [], hr: [],
   strong: [], b: [], em: [], i: [], u: [], s: [], del: [],
-  ul: [], ol: [], li: [],
-  blockquote: [], pre: [], code: [],
+  ul: [], ol: [], li: ['class'],
+  blockquote: ['class'], pre: ['class'], code: [],
   figure: ['class'], figcaption: [],
   img: ['src', 'alt'],
   a: ['href'],
@@ -58,13 +58,18 @@ function openTag(name, attrRaw) {
       if (!/^\/guide\/img\/\d+$/.test(v)) return '';
       out.push(`src="${escAttr(v)}"`);
     } else if (k === 'class') {
-      /* 사진 크기 지정만 허용한다. 그 밖의 class 는 화면을 망가뜨릴 수 있다. */
-      const ok = String(v).split(/\s+/).filter((c) => /^sz-[sml]$/.test(c));
+      /* 사진 크기(sz-)와 정렬(al-)만 허용한다. 그 밖의 class 는 화면을 망가뜨릴 수 있다. */
+      const ok = String(v).split(/\s+/).filter((c) => /^(sz-[sml]|al-[lcr])$/.test(c));
       if (!ok.length) continue;
       out.push(`class="${ok.join(' ')}"`);
     } else if (name === 'a' && k === 'href') {
-      if (!/^https?:\/\//i.test(v)) continue;          // javascript: 등 차단
-      out.push(`href="${escAttr(v)}" target="_blank" rel="noopener"`);
+      if (/^\/guide\/\d+$/.test(v)) {
+        out.push(`href="${escAttr(v)}"`);              // 자료집 안에서 서로 연결
+      } else if (/^https?:\/\//i.test(v)) {
+        out.push(`href="${escAttr(v)}" target="_blank" rel="noopener"`);
+      } else {
+        continue;                                       // javascript: 등 차단
+      }
     } else {
       out.push(`${k}="${escAttr(v)}"`);
     }

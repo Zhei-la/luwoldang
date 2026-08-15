@@ -21,6 +21,7 @@
     cursor:pointer; font-family:inherit; white-space:nowrap; }
   .ge-bar button:hover { border-color:var(--gold); color:#8A6F3C; }
   .ge-bar button.photo { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .ge-bar button.save2 { background:var(--gold); border-color:var(--gold); color:#fff; font-weight:800; }
   .ge-bar .sep { flex:0 0 auto; width:1px; background:var(--beige); margin:4px 3px; }
 
   /* 글 쓰는 곳 — 실제 보이는 모습 그대로 */
@@ -91,6 +92,25 @@
     border-radius:11px; font-size:13px; color:#6B6656; line-height:1.95; word-break:keep-all; }
   .ge-help b { color:#4A4438; }
 
+  /* 연결할 자료 고르는 창 */
+  .pick { display:none; position:fixed; inset:0; z-index:200; background:rgba(24,34,52,.4);
+    align-items:center; justify-content:center; padding:20px; }
+  .pick.on { display:flex; }
+  .pick-in { background:#fff; border-radius:16px; padding:20px; width:100%; max-width:460px;
+    max-height:76vh; display:flex; flex-direction:column; }
+  .pick-h { font-size:16px; font-weight:800; margin-bottom:12px; }
+  .pick-in input { width:100%; padding:11px 13px; border:1px solid var(--beige); border-radius:10px;
+    font-size:15px; font-family:inherit; outline:none; margin-bottom:10px; }
+  .pick-list { flex:1; overflow-y:auto; margin-bottom:12px; }
+  .pick-list button { display:block; width:100%; text-align:left; padding:12px 14px;
+    border:1px solid var(--beige); background:#fff; border-radius:10px; margin-bottom:6px;
+    font-size:14.5px; font-family:inherit; color:var(--ink); cursor:pointer; }
+  .pick-list button:hover { border-color:var(--gold); }
+  .pick-list button span { display:block; font-size:11.5px; color:#9A9384; margin-top:3px; }
+  .pick-list .none { padding:24px; text-align:center; color:#9A9384; font-size:13.5px; }
+  #pickClose { padding:11px; border:1px solid var(--beige); background:#FBF8F1; border-radius:10px;
+    font-size:14px; font-weight:700; color:#6B6656; cursor:pointer; font-family:inherit; }
+
   .toast { position:fixed; left:50%; bottom:40px; transform:translateX(-50%); background:var(--navy);
     color:#fff; padding:12px 20px; border-radius:100px; font-size:14px; font-weight:700; z-index:200; }
 
@@ -121,6 +141,7 @@
 
   <div class="ge-bar">
     <div class="ge-bar-in">
+      <button type="button" class="save2" id="btnSaveTop">저장</button>
       <button type="button" class="photo" id="btnPhoto">📷 사진</button>
       <span class="sep"></span>
       <button type="button" data-cmd="formatBlock" data-val="h2">중제목</button>
@@ -141,12 +162,22 @@
       <button type="button" id="btnHr">가로줄</button>
       <span class="sep"></span>
       <button type="button" id="btnLink">링크</button>
+      <button type="button" id="btnPostLink">자료 연결</button>
       <button type="button" id="btnClear">서식 지우기</button>
     </div>
   </div>
 
   <div id="geBody" contenteditable="true" data-ph="여기에 자료를 적어주세요. 캡처를 복사해서 그대로 붙여넣어도 사진이 올라갑니다."><%- editHtml %></div>
   <input type="file" id="geFile" accept="image/*" multiple hidden>
+
+  <div class="pick" id="pickBox">
+    <div class="pick-in">
+      <div class="pick-h">연결할 자료 고르기</div>
+      <input type="search" id="pickQ" placeholder="제목으로 찾기">
+      <div class="pick-list" id="pickList"></div>
+      <button type="button" id="pickClose">닫기</button>
+    </div>
+  </div>
 
   <div class="imgbar" id="imgBar">
     <button type="button" data-sz="sz-s">작게</button>
@@ -176,6 +207,7 @@
     <b>사진 넣기</b> — 사진을 넣고 싶은 자리를 클릭한 뒤 <b>📷 사진</b>을 누르세요. 여러 장을 한 번에 고를 수도 있습니다.<br>
     <b>더 빠른 방법</b> — 캡처를 복사한 뒤 글에 그대로 붙여넣으면 사진이 그 자리에 올라갑니다. 사진 파일을 끌어다 놓아도 됩니다.<br>
     <b>노션에서 가져오기</b> — 노션 글을 <b>사진까지 통째로 복사해</b> 붙여넣으면 서식과 사진이 함께 들어옵니다. 노션 사진 주소는 5분 뒤 만료되니 복사한 뒤 바로 붙여넣어 주세요.<br>
+    <b>자료 연결</b> — 다른 자료집 글로 이어지는 링크를 넣습니다. 순서대로 읽게 안내할 때 쓰세요.<br>
     <b>사진 크기</b> — 사진을 한 번 누르면 <b>작게 · 중간 · 크게</b>를 고를 수 있습니다. 휴대폰 캡처처럼 세로로 긴 사진은 자동으로 작게 들어갑니다.<br>
     <b>복사상자</b> — 교육생이 그대로 복사해 쓸 문구에 쓰세요. 회색 상자로 나옵니다.<br>
     <b>저장하지 않고 나가면</b> 쓰던 글이 사라집니다. 중간중간 저장해 주세요.
@@ -252,11 +284,88 @@
     document.execCommand('formatBlock', false, '<p>');
     dirty = true;
   });
+  /* 글자를 고르지 않고 눌러도 되게 — 고른 글자가 없으면 주소를 그대로 넣는다 */
+  function putLink(url, text) {
+    ed.focus();
+    var sel = window.getSelection();
+    var has = sel.rangeCount && !sel.getRangeAt(0).collapsed && ed.contains(sel.anchorNode);
+    if (has) {
+      document.execCommand('createLink', false, url);
+    } else {
+      var a = document.createElement('a');
+      a.href = url;
+      a.textContent = text || url;
+      insertNode(a);
+    }
+    dirty = true;
+  }
+
   document.getElementById('btnLink').addEventListener('click', function () {
     var url = prompt('링크 주소 (https:// 로 시작)');
     if (!url) return;
+    url = url.trim();
     if (!/^https?:\/\//i.test(url)) { alert('https:// 로 시작하는 주소만 넣을 수 있습니다.'); return; }
-    ed.focus(); document.execCommand('createLink', false, url); dirty = true;
+    putLink(url);
+  });
+
+  /* ── 다른 자료로 연결 ── */
+  var pick = document.getElementById('pickBox');
+  var pickList = document.getElementById('pickList');
+  var pickQ = document.getElementById('pickQ');
+  var allPosts = null;
+  var savedRange = null;
+
+  function drawPicks() {
+    var q = (pickQ.value || '').trim().toLowerCase();
+    var list = (allPosts || []).filter(function (p) {
+      return String(p.id) !== String(postId.value) &&
+             (!q || p.title.toLowerCase().indexOf(q) > -1);
+    });
+    if (!list.length) {
+      pickList.innerHTML = '<div class="none">' +
+        (allPosts && allPosts.length ? '찾는 자료가 없습니다.' : '아직 다른 자료가 없습니다.') + '</div>';
+      return;
+    }
+    pickList.innerHTML = list.map(function (p) {
+      return '<button type="button" data-id="' + p.id + '" data-t="' + esc(p.title) + '">' +
+        esc(p.title) + (p.cat_name ? '<span>' + esc(p.cat_name) + '</span>' : '') + '</button>';
+    }).join('');
+  }
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  document.getElementById('btnPostLink').addEventListener('click', function () {
+    /* 창을 열면 커서 자리를 잃으므로 기억해 둔다 */
+    var sel = window.getSelection();
+    savedRange = (sel.rangeCount && ed.contains(sel.anchorNode)) ? sel.getRangeAt(0).cloneRange() : null;
+
+    pick.classList.add('on');
+    pickQ.value = '';
+    pickList.innerHTML = '<div class="none">불러오는 중...</div>';
+    fetch('/admin/guide/list')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { allPosts = d.posts || []; drawPicks(); })
+      .catch(function () { pickList.innerHTML = '<div class="none">목록을 불러오지 못했습니다.</div>'; });
+  });
+
+  pickQ.addEventListener('input', drawPicks);
+  document.getElementById('pickClose').addEventListener('click', function () { pick.classList.remove('on'); });
+  pick.addEventListener('click', function (e) { if (e.target === pick) pick.classList.remove('on'); });
+
+  pickList.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-id]');
+    if (!b) return;
+    pick.classList.remove('on');
+    /* 기억해 둔 커서 자리로 돌아간다 */
+    if (savedRange) {
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    putLink('/guide/' + b.dataset.id, b.dataset.t);
   });
 
   /* 사진 올리기 */
@@ -550,7 +659,7 @@
   }
 
   /* 저장 */
-  document.getElementById('btnSave').addEventListener('click', function () {
+  function doSave() {
     var title = document.getElementById('geTitle').value.trim();
     if (!title) { alert('제목을 적어주세요.'); return; }
     fetch('/admin/guide/save', {
@@ -571,7 +680,9 @@
       location.href = '/guide/' + d.id;
     })
     .catch(function (err) { alert('저장 실패: ' + err.message); });
-  });
+  }
+  document.getElementById('btnSave').addEventListener('click', doSave);
+  document.getElementById('btnSaveTop').addEventListener('click', doSave);
 
   /* 삭제 */
   var del = document.getElementById('btnDel');

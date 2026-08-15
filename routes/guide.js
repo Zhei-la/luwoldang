@@ -95,16 +95,17 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
 
     /* 화면에 남길 문구 — 캡처가 돌아다니면 누구 계정에서 나갔는지 알 수 있다.
        관리자에게도 보여준다. 그래야 실제로 어떻게 찍히는지 확인할 수 있다. */
-    const mark = [
-      '루월당',
-      req.user.name || '교육생',
-      String(req.user.email || '').split('@')[0],
-      new Date().toLocaleDateString('ko-KR'),
-    ].filter(Boolean).join(' · ');
+    const who = req.user.name || '교육생';
+    const day = new Date().toLocaleDateString('ko-KR');
+    const mark = ['루월당', who, String(req.user.email || '').split('@')[0], day]
+      .filter(Boolean).join(' · ');
+    /* 좁은 화면에서는 짧게 — 길면 글 위로 넘어온다 */
+    const markShort = '루월당 · ' + who;
     res.render('dash/guide-view', {
       user: req.user, active: 'guide', post,
       bodyHtml: post.format === 'md' ? render(post.body) : gh.sanitize(post.body),
       mark,
+      markShort,
       lock: req.user.role !== 'admin',   // 관리자는 자기 글이라 막지 않는다
     });
   } catch (e) { next(e); }
@@ -210,6 +211,22 @@ router.post('/admin/guide/img', requireAuth, requireAdmin, async (req, res) => {
     res.json({ ok: true, url: '/guide/img/' + rows[0].id });
   } catch (e) {
     console.error('[자료집] 사진 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 글 안에서 다른 자료로 연결할 때 고를 목록 */
+router.get('/admin/guide/list', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT p.id, p.title, c.name AS cat_name
+        FROM guide_posts p
+        LEFT JOIN guide_cats c ON c.id = p.cat_id
+       ORDER BY c.sort NULLS LAST, p.created_at
+       LIMIT 300
+    `);
+    res.json({ ok: true, posts: rows });
+  } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
