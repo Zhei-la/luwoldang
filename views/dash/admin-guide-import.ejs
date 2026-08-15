@@ -1,0 +1,284 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '노션에서 가져오기' }) %>
+
+<style>
+  .im-wrap { max-width:760px; }
+  .im-back { display:inline-block; color:#6B6656; font-size:13.5px; text-decoration:none; margin-bottom:16px; }
+  .im-back:hover { color:var(--gold); }
+
+  .im-how { background:#FBF8F1; border:1px solid var(--beige); border-radius:12px;
+    padding:18px 20px; margin-bottom:20px; font-size:14px; line-height:1.95; color:#4A4438;
+    word-break:keep-all; }
+  .im-how b { color:var(--ink); }
+  .im-how ol { margin:10px 0 0; padding-left:20px; }
+  .im-how li { margin-bottom:5px; }
+  .im-how code { background:#F0E9DA; padding:2px 7px; border-radius:5px; font-size:13px; }
+
+  .im-drop { border:2px dashed var(--beige); border-radius:14px; background:#fff;
+    padding:38px 20px; text-align:center; cursor:pointer; transition:border-color .15s; }
+  .im-drop:hover, .im-drop.over { border-color:var(--gold); background:#FEFCF8; }
+  .im-drop .ic { font-size:34px; }
+  .im-drop .t { font-size:16px; font-weight:800; margin-top:10px; }
+  .im-drop .d { font-size:13px; color:#9A9384; margin-top:6px; }
+
+  .im-fld { margin:18px 0; }
+  .im-fld label { display:block; font-size:11.5px; letter-spacing:.1em; color:#9A9384; margin-bottom:6px; }
+  .im-fld select { width:100%; max-width:280px; padding:11px 13px; border:1px solid var(--beige);
+    border-radius:10px; font-size:15px; font-family:inherit; background:#fff; outline:none; }
+
+  .im-list { margin-top:18px; display:none; }
+  .im-list.on { display:block; }
+  .im-row { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--beige);
+    border-radius:11px; padding:12px 15px; margin-bottom:7px; font-size:14px; }
+  .im-row .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .im-row .st { font-size:12px; font-weight:700; white-space:nowrap; }
+  .im-row .st.wait { color:#9A9384; }
+  .im-row .st.work { color:#8A6F3C; }
+  .im-row .st.done { color:#2E7D5B; }
+  .im-row .st.fail { color:#A8332B; }
+  .im-row input[type=checkbox] { flex:0 0 auto; }
+
+  .im-acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; }
+  .im-acts button { padding:13px 24px; border:1px solid var(--beige); background:#fff;
+    border-radius:11px; font-size:15px; font-weight:700; color:#4A4438; cursor:pointer; font-family:inherit; }
+  .im-acts .go { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .im-acts button:disabled { opacity:.45; cursor:default; }
+
+  .im-log { margin-top:16px; padding:14px 16px; background:#F4EFE3; border-radius:11px;
+    font-size:13px; line-height:1.8; color:#4A4438; display:none; max-height:220px; overflow-y:auto; }
+  .im-log.on { display:block; }
+</style>
+
+<div class="im-wrap">
+  <a href="/admin/guide" class="im-back">← 자료집 관리</a>
+
+  <div class="im-how">
+    <b>노션 글을 사진까지 통째로 옮깁니다.</b>
+    노션에서 복사해 붙여넣으면 사진이 따라오지 않습니다. 노션이 사진을 주소가 아닌 내부 이름표로만 넘기기 때문입니다.
+    아래처럼 내려받은 파일을 올리시면 글과 사진이 한 번에 들어갑니다.
+    <ol>
+      <li>노션에서 옮길 페이지를 엽니다</li>
+      <li>오른쪽 위 <code>⋯</code> → <b>내보내기</b></li>
+      <li>형식 <b>Markdown &amp; CSV</b> · 하위 페이지 포함 <b>켜기</b> → 내보내기</li>
+      <li>내려받은 <code>.zip</code> 파일을 아래에 올려주세요</li>
+    </ol>
+  </div>
+
+  <div class="im-drop" id="drop">
+    <div class="ic">📦</div>
+    <div class="t">노션에서 내려받은 zip 파일 올리기</div>
+    <div class="d">여기를 누르거나 파일을 끌어다 놓으세요</div>
+  </div>
+  <input type="file" id="zipFile" accept=".zip" hidden>
+
+  <div class="im-fld">
+    <label>어느 분류에 넣을까요</label>
+    <select id="imCat">
+      <option value="">분류 없음</option>
+      <% catList.forEach(function (c) { %>
+        <option value="<%= c.id %>"><%= c.name %></option>
+      <% }); %>
+    </select>
+  </div>
+
+  <div class="im-list" id="imList"></div>
+
+  <div class="im-acts" id="imActs" style="display:none">
+    <button type="button" class="go" id="btnGo">고른 자료 가져오기</button>
+    <button type="button" id="btnAll">전체 고르기</button>
+  </div>
+
+  <div class="im-log" id="imLog"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  var drop = document.getElementById('drop');
+  var fileEl = document.getElementById('zipFile');
+  var listEl = document.getElementById('imList');
+  var actsEl = document.getElementById('imActs');
+  var logEl = document.getElementById('imLog');
+  var pages = [];      // { name, title, md, dir }
+  var zip = null;
+
+  function log(t) {
+    logEl.classList.add('on');
+    logEl.innerHTML += t + '<br>';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  /* 노션이 파일 이름 끝에 붙이는 긴 번호를 떼어낸다 */
+  function cleanTitle(name) {
+    return name.replace(/\.md$/i, '')
+               .replace(/\s+[0-9a-f]{32}$/i, '')
+               .replace(/\s+[0-9a-f]{8}-[0-9a-f-]{27,}$/i, '')
+               .trim();
+  }
+
+  drop.addEventListener('click', function () { fileEl.click(); });
+  drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault(); drop.classList.remove('over');
+    if (e.dataTransfer.files[0]) readZip(e.dataTransfer.files[0]);
+  });
+  fileEl.addEventListener('change', function () {
+    if (fileEl.files[0]) readZip(fileEl.files[0]);
+  });
+
+  function readZip(f) {
+    if (typeof JSZip === 'undefined') {
+      alert('압축 파일을 읽는 기능을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.');
+      return;
+    }
+    logEl.innerHTML = ''; logEl.classList.remove('on');
+    log('파일을 읽는 중...');
+
+    JSZip.loadAsync(f).then(function (z) {
+      zip = z;
+      pages = [];
+      var jobs = [];
+      z.forEach(function (path, entry) {
+        if (entry.dir || !/\.md$/i.test(path)) return;
+        jobs.push(entry.async('string').then(function (md) {
+          pages.push({
+            path: path,
+            dir: path.replace(/[^/]*$/, ''),
+            title: cleanTitle(path.split('/').pop()),
+            md: md,
+          });
+        }));
+      });
+      return Promise.all(jobs);
+    }).then(function () {
+      if (!pages.length) {
+        log('글 파일(.md)을 찾지 못했습니다. 내보내기 형식이 <b>Markdown &amp; CSV</b> 인지 확인해 주세요.');
+        return;
+      }
+      pages.sort(function (a, b) { return a.title.localeCompare(b.title, 'ko'); });
+      drawList();
+      log('자료 ' + pages.length + '개를 찾았습니다. 가져올 것을 고르고 아래 버튼을 눌러주세요.');
+    }).catch(function (e) {
+      log('읽지 못했습니다: ' + esc(e.message));
+    });
+  }
+
+  function drawList() {
+    listEl.innerHTML = pages.map(function (p, i) {
+      var imgs = (p.md.match(/!\[[^\]]*\]\([^)]+\)/g) || []).length;
+      return '<div class="im-row" data-i="' + i + '">' +
+        '<input type="checkbox" checked>' +
+        '<span class="nm">' + esc(p.title) + '</span>' +
+        '<span class="st wait">사진 ' + imgs + '장</span>' +
+      '</div>';
+    }).join('');
+    listEl.classList.add('on');
+    actsEl.style.display = 'flex';
+  }
+
+  document.getElementById('btnAll').addEventListener('click', function () {
+    var boxes = listEl.querySelectorAll('input[type=checkbox]');
+    var allOn = [].every.call(boxes, function (b) { return b.checked; });
+    [].forEach.call(boxes, function (b) { b.checked = !allOn; });
+  });
+
+  /* 한 자료를 가져온다 */
+  async function importOne(p, row, catId) {
+    var st = row.querySelector('.st');
+    st.className = 'st work'; st.textContent = '사진 올리는 중...';
+
+    var md = p.md;
+    /* 노션은 첫 줄에 제목을 넣는다. 자료집에서는 제목을 따로 쓰므로 뺀다. */
+    md = md.replace(/^#\s+.*\n+/, '');
+
+    /* 사진을 하나씩 올리고 주소를 바꿔 넣는다 */
+    var refs = [];
+    md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function (m, alt, src) {
+      refs.push({ whole: m, src: src }); return m;
+    });
+
+    var okImg = 0;
+    for (var i = 0; i < refs.length; i++) {
+      var src = refs[i].src.split(' ')[0].replace(/^<|>$/g, '');
+      if (/^https?:/i.test(src)) continue;                  // 바깥 주소는 건너뛴다
+      var full = p.dir + decodeURIComponent(src);
+      var entry = zip.file(full) || zip.file(decodeURIComponent(full));
+      if (!entry) continue;
+
+      st.textContent = '사진 ' + (i + 1) + '/' + refs.length;
+      try {
+        var b64 = await entry.async('base64');
+        var ext = (full.split('.').pop() || 'png').toLowerCase();
+        var mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+                 : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : 'image/png';
+        var r = await fetch('/admin/guide/img', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ img: 'data:' + mime + ';base64,' + b64 })
+        }).then(function (x) { return x.json(); });
+        if (!r.ok) throw new Error(r.error || '실패');
+        md = md.split(refs[i].whole).join('![](' + r.url + ')');
+        okImg++;
+      } catch (e) { /* 못 올린 사진은 건너뛴다 */ }
+    }
+
+    st.textContent = '글 만드는 중...';
+    var h = await fetch('/admin/guide/md2html', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ md: md })
+    }).then(function (x) { return x.json(); });
+    if (!h.ok) throw new Error(h.error || '변환 실패');
+
+    var sv = await fetch('/admin/guide/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: p.title, cat_id: catId || null, body: h.html,
+        pinned: false, published: true
+      })
+    }).then(function (x) { return x.json(); });
+    if (!sv.ok) throw new Error(sv.error || '저장 실패');
+
+    st.className = 'st done';
+    st.textContent = '완료 (사진 ' + okImg + '장)';
+    return sv.id;
+  }
+
+  document.getElementById('btnGo').addEventListener('click', async function () {
+    var btn = this;
+    var rows = [].filter.call(listEl.querySelectorAll('.im-row'), function (r) {
+      return r.querySelector('input').checked;
+    });
+    if (!rows.length) { alert('가져올 자료를 하나 이상 골라주세요.'); return; }
+    if (!confirm(rows.length + '개 자료를 가져옵니다.\n사진이 많으면 몇 분 걸릴 수 있어요.\n이 창을 닫지 말아주세요.')) return;
+
+    btn.disabled = true;
+    var catId = document.getElementById('imCat').value;
+    var done = 0, fail = 0;
+
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var p = pages[Number(row.dataset.i)];
+      try {
+        await importOne(p, row, catId);
+        done++;
+      } catch (e) {
+        fail++;
+        var st = row.querySelector('.st');
+        st.className = 'st fail';
+        st.textContent = '실패';
+        log('<b>' + esc(p.title) + '</b> 실패: ' + esc(e.message));
+      }
+    }
+
+    btn.disabled = false;
+    log('끝났습니다. 성공 ' + done + '개' + (fail ? ' / 실패 ' + fail + '개' : ''));
+    if (done) log('<a href="/admin/guide">자료집 관리로 가서 확인하기 →</a>');
+  });
+})();
+</script>
+
+<%- include('../partials/dash-bottom') %>

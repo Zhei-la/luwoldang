@@ -215,6 +215,27 @@ router.post('/admin/guide/img', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+/* ── 노션 내보내기 파일 가져오기 ──
+   노션이 붙여넣기에서 사진을 'attachment:...' 라는 내부 이름표로만 주기 때문에
+   붙여넣기로는 사진을 가져올 수 없다.
+   대신 노션에서 내려받은 zip 을 브라우저에서 풀어 하나씩 올린다. */
+router.get('/admin/guide/import', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    res.render('dash/admin-guide-import', {
+      user: req.user, active: 'admin-guide', catList: await cats(),
+    });
+  } catch (e) { next(e); }
+});
+
+/* 노션 글(마크다운)을 자료집 화면용으로 바꿔준다 */
+router.post('/admin/guide/md2html', requireAuth, requireAdmin, (req, res) => {
+  try {
+    res.json({ ok: true, html: gh.sanitize(render(String((req.body || {}).md || ''))) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /* 글 안에서 다른 자료로 연결할 때 고를 목록 */
 router.get('/admin/guide/list', requireAuth, requireAdmin, async (req, res) => {
   try {
