@@ -275,6 +275,22 @@ async function initDb() {
     `);
   }
 
+  /* 나중에 늘어난 화면 항목은 제목으로 확인해 하나씩 넣는다
+     (앞의 6개가 이미 있어도 새 것만 들어간다) */
+  for (const [t, b, so] of [
+    ['프로그램 안에 정리된 교육생 자료집',
+     '스레드 글쓰기부터 상담까지, 화면을 하나하나 캡처해 순서대로 정리해 두었습니다. 궁금한 게 생기면 프로그램 안에서 바로 찾아보실 수 있습니다.', 70],
+    ['상담 응대 · 대처법 매뉴얼',
+     '"이거 AI 돌린 거 아니에요?" "안 맞는 것 같아요" 같은 곤란한 질문부터 환불 요청·폭언까지, 실제로 어떻게 답할지 상황별로 정리해 두었습니다.', 80],
+  ]) {
+    await pool.query(
+      `INSERT INTO lp_reviews (kind, title, body, sort)
+       SELECT 'shot', $1, $2, $3
+        WHERE NOT EXISTS (SELECT 1 FROM lp_reviews WHERE kind='shot' AND title=$1)`,
+      [t, b, so]
+    );
+  }
+
   /* 후기 한 건에 사진을 여러 장 넣을 수 있게 따로 보관한다 */
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lp_review_imgs (

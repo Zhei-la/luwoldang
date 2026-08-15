@@ -197,7 +197,25 @@
     transition:background .2s, width .2s;}
   .revdots i.on{background:var(--accent); width:20px; border-radius:4px;}
   @media (max-width:900px){ .revwrap{columns:2;} }
-  @media (max-width:640px){ .revwrap{columns:1;} }
+
+  /* 폰에서는 옆으로 넘겨서 본다 — 세로로 길게 늘어지지 않게 */
+  @media (max-width:640px){
+    .revwrap{
+      columns:auto; display:flex; gap:12px;
+      overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
+      -webkit-overflow-scrolling:touch; padding:4px 2px 10px; scrollbar-width:none;
+    }
+    .revwrap::-webkit-scrollbar{display:none;}
+    .rev{
+      flex:0 0 84%; margin:0; scroll-snap-align:start; display:block;
+      /* 기본 크기를 정해두고, 내용이 길면 그만큼만 늘어난다 */
+      min-height:280px;
+    }
+    /* 사진이 카드를 다 차지하지 않게 */
+    .rev .revimg{max-height:340px;}
+    .rev.one .revimg{max-width:100%;}
+    .revdots{display:flex !important;}
+  }
   .rev .stars{color:var(--accent); font-size:14px; letter-spacing:2px; margin-bottom:8px;}
   .rev p{font-size:14.5px; color:#43392f; line-height:1.65;}
   .rev .who{font-size:13px; color:var(--muted); margin-top:12px; font-weight:600;}
@@ -218,6 +236,16 @@
     .shot .imgs.one img{max-width:440px; margin:0 auto;}
   }
   @media (max-width:640px){ .shot{padding:18px;} .shot h3{font-size:17px;} }
+
+  /* 프로그램 안 자료집 */
+  .guidebox{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:12px; margin-top:26px; text-align:left;}
+  .gitem{background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:22px; word-break:keep-all;}
+  .gitem .gi{font-size:26px; line-height:1; margin-bottom:10px;}
+  .gitem b{display:block; font-size:16.5px; margin-bottom:7px;}
+  .gitem span{font-size:14.5px; color:var(--muted); line-height:1.75;}
+  .gitem span b{display:inline; font-size:inherit; color:var(--ink);}
 
   /* 상담 운영 흐름 */
   .flowlist{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
@@ -452,6 +480,7 @@
       <div class="item"><span class="ck">✓</span><div><b>SNS 실전 유입 구조</b><span>사람을 모으는 SNS 운영·유입 흐름을 실전 기준으로 공유합니다.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>상담 운영 & 수익화 흐름</b><span>상담 진행 순서, 응대 방식, 신뢰 쌓기, 재구매 유도, 단골 만드는 구조.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>손이 덜 가는 반자동 구조</b><span>PDF 제작·발송·추가응대를 가장 쉽고 빠른 루트로. 완전 자동은 아니지만 부담이 확 줄어듭니다.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>프로그램 안 교육생 자료집</b><span>순서대로 따라 하는 사용법 + 상담 응대·대처법까지. 궁금할 때 프로그램 안에서 바로 찾아볼 수 있습니다.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>직접 찾아가는 평생 피드백</b><span>막히는 지점마다 끊임없이 피드백. 한 번 수강하면 평생 이어집니다.</span></div></div>
     </div>
   </div>
@@ -505,6 +534,43 @@
     <h2 class="st">말로만 하지 않습니다.<br><span class="hl">실제 화면</span>입니다</h2>
     <p class="lead center">수강하시면 바로 쓰시게 될 프로그램의 실제 모습입니다.</p>
     <div class="shotlist" id="shotlist"></div>
+  </div>
+</section>
+
+<!-- 프로그램 안 자료집 -->
+<section>
+  <div class="wrap">
+    <span class="kick">막혀도 혼자 헤매지 않게</span>
+    <h2 class="st">궁금한 게 생기면<br><span class="hl">프로그램 안에서 바로</span> 찾아보세요</h2>
+    <p class="lead center">따로 파일을 받거나 링크를 뒤질 필요가 없습니다.
+      프로그램 안에 자료집이 순서대로 정리되어 있습니다.</p>
+
+    <div class="guidebox">
+      <div class="gitem">
+        <div class="gi">📚</div>
+        <b>순서대로 따라만 하면 됩니다</b>
+        <span>스레드 계정 만들기부터 첫 글 쓰기, 사주 리포트 만들기, 발송까지.
+          화면을 하나하나 캡처해 순서대로 정리해 두었습니다.</span>
+      </div>
+      <div class="gitem">
+        <div class="gi">🔎</div>
+        <b>궁금할 때 바로 찾아보기</b>
+        <span>분류로 나뉘어 있고 검색도 됩니다.
+          "이거 어떻게 했더라?" 싶을 때 프로그램 안에서 바로 찾으실 수 있습니다.</span>
+      </div>
+      <div class="gitem">
+        <div class="gi">💬</div>
+        <b>상담 응대 · 대처법까지</b>
+        <span>"이거 AI 돌린 거 아니에요?" "안 맞는 것 같은데요" 같은 곤란한 질문부터
+          환불 요청, 무리한 요구까지. <b>어떻게 답할지 상황별로 정리</b>해 두었습니다.</span>
+      </div>
+      <div class="gitem">
+        <div class="gi">🔄</div>
+        <b>계속 채워집니다</b>
+        <span>수강생분들이 실제로 막혔던 지점이 생길 때마다 자료집에 더해집니다.
+          추가 비용 없이 계속 보실 수 있습니다.</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -899,13 +965,41 @@
           '</div>';
         }).join('');
 
-        /* 쌓기 배치라 따로 준비할 것이 없다 */
+        /* 폰에서는 옆으로 넘기므로 위치를 알려주는 점을 붙인다 */
+        initRevDots();
       })
       .catch(function () {
         var sec = wrap.closest('section');
         if (sec) sec.style.display = 'none';
       });
   })();
+
+  /* 폰에서 옆으로 넘길 때 지금 어디쯤인지 점으로 보여준다 */
+  function initRevDots() {
+    var wrap = document.getElementById('revwrap');
+    var dots = document.getElementById('revdots');
+    if (!wrap || !dots) return;
+
+    function build() {
+      /* 폰이 아닐 때는 점이 필요 없다 */
+      if (!window.matchMedia('(max-width:640px)').matches) { dots.innerHTML = ''; return; }
+      var cards = wrap.querySelectorAll('.rev');
+      dots.innerHTML = Array.from(cards).map(function () { return '<i></i>'; }).join('');
+      sync();
+    }
+    function sync() {
+      var cards = wrap.querySelectorAll('.rev');
+      if (!cards.length) return;
+      var step = cards[0].offsetWidth + 12;
+      var i = Math.round(wrap.scrollLeft / step);
+      Array.from(dots.children).forEach(function (d, k) { d.classList.toggle('on', k === i); });
+    }
+    wrap.addEventListener('scroll', function () {
+      clearTimeout(wrap._t); wrap._t = setTimeout(sync, 60);
+    });
+    window.addEventListener('resize', build);
+    build();
+  }
 
   /* 후기 슬라이드 — 화살표로 넘기고, 점으로 위치를 보여준다.
      손가락으로 옆으로 밀어도 되고, 그때 점이 따라 움직인다. */
