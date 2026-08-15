@@ -69,6 +69,22 @@
     margin-top:12px; background:#fff; cursor:zoom-in;}
   .rev a + a .revimg{margin-top:8px;}
   /* 수익 숫자 카드 */
+  /* 무료 설명회 라이브 */
+  .livebar{display:inline-flex; align-items:center; gap:12px; flex-wrap:wrap;
+    justify-content:center; margin:20px auto 6px; padding:13px 20px;
+    background:rgba(226,102,26,.14); border:1px solid rgba(226,102,26,.45);
+    border-radius:100px; text-decoration:none; color:inherit; max-width:100%;}
+  .livebar:hover{background:rgba(226,102,26,.22);}
+  .livebar .badge{background:var(--accent); color:#fff; font-size:11.5px; font-weight:800;
+    padding:4px 11px; border-radius:100px; white-space:nowrap;}
+  .livebar .txt{font-size:14px; color:#e6dccf; word-break:keep-all;}
+  .livebar .txt b{color:#fff; margin-right:5px;}
+  .livebar .go{font-size:13.5px; font-weight:800; color:#ffb066; white-space:nowrap;}
+  @media (max-width:560px){
+    .livebar{border-radius:16px; padding:14px 16px; flex-direction:column; gap:8px;}
+    .livebar .txt{text-align:center; font-size:13.5px;}
+  }
+
   .numrow{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 auto 30px; max-width:760px;}
   .numcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 14px; text-align:center;}
   .numcard b{display:block; font-size:30px; font-weight:800; color:var(--accent); letter-spacing:-.03em; line-height:1.2;}
@@ -296,6 +312,27 @@
   .pricecard .dc{display:inline-block; margin-top:12px; padding:7px 15px; border-radius:100px;
     background:rgba(226,102,26,.18); color:#ffb066; font-size:14px; font-weight:700;}
   .pricecard .dc b{color:#fff;}
+
+  /* 가격 단계 */
+  .stagebox{display:flex; align-items:stretch; justify-content:center; gap:8px;
+    flex-wrap:wrap; margin:20px 0 4px;}
+  .stage{flex:1 1 150px; max-width:190px; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:13px 12px;
+    display:flex; flex-direction:column; gap:4px; align-items:center;}
+  .stage.now{background:rgba(226,102,26,.18); border-color:rgba(226,102,26,.5);}
+  .stage.off{opacity:.5;}
+  .stage .when{font-size:12px; color:#c9bdb0;}
+  .stage .amt2{font-size:22px; font-weight:850; color:#fff; letter-spacing:-.02em;}
+  .stage.now .amt2{color:#ffb066;}
+  .stage .tag2{font-size:11.5px; color:#c9bdb0;}
+  .stage.now .tag2{color:#ffb066; font-weight:700;}
+  .arrow2{display:flex; align-items:center; color:#7a6f63; font-size:15px;}
+  @media (max-width:560px){
+    .stagebox{flex-direction:column; align-items:stretch;}
+    .stage{max-width:none; flex-direction:row; justify-content:space-between; align-items:center;}
+    .stage .amt2{font-size:19px;}
+    .arrow2{display:none;}
+  }
   .pricecard .dc s{color:#9a8f80; font-weight:600; margin-right:5px;}
   .paybox{margin-top:16px; padding:14px 16px; border-radius:12px; background:rgba(255,255,255,.07);
     text-align:left; font-size:13.5px; line-height:1.75; color:#e6dccf;}
@@ -368,6 +405,12 @@
       <a class="btn big" href="#apply"><span data-lp="cohort">3기</span> 수강 신청하기</a>
       <a class="btn big ghost" href="#compare">전자책과 뭐가 다른가요?</a>
     </div>
+    <a class="livebar" href="https://open.kakao.com/o/gdlttwDi" data-lp-href="liveUrl" target="_blank" rel="noopener">
+      <span class="badge">무료 설명회</span>
+      <span class="txt"><b><span data-lp="liveDate">9월 19일</span> 라이브</b>
+        어떻게 진행되는지 직접 보고 결정하세요</span>
+      <span class="go">대기방 입장 →</span>
+    </a>
     <p class="micro"><span data-lp="cohort">3기</span> 모집 <span data-lp="seats">10</span>명 · 신청 마감 <span data-lp="deadline">2026년 11월</span> · 이후 참여비 인상 예정</p>
   </div>
 </section>
@@ -692,7 +735,27 @@
     <div class="pricecard">
       <span class="tag"><span data-lp="cohort">3기</span> · 계좌이체 할인가</span>
       <div class="amt"><span data-lp="price">70</span><small>만원</small></div>
-      <div class="dc"><s>정가 <span data-lp="listPrice">80</span>만원</s> <b>계좌이체 시 <span data-lp="discount">10</span>만원 할인</b></div>
+      <div class="dc"><s>정가 <span data-lp="listPrice">80</span>만원</s> <b>사전예약 <span data-lp="discount">10</span>만원 할인</b></div>
+
+      <div class="stagebox">
+        <div class="stage now">
+          <span class="when">~ <span data-lp="earlyUntil">9월 30일</span></span>
+          <span class="amt2"><span data-lp="price">70</span>만원</span>
+          <span class="tag2">사전예약가 · 지금</span>
+        </div>
+        <div class="arrow2">→</div>
+        <div class="stage">
+          <span class="when">10월 1일 ~ <span data-lp="deadline">10월 31일</span></span>
+          <span class="amt2"><span data-lp="latePrice">80</span>만원</span>
+          <span class="tag2">정가</span>
+        </div>
+        <div class="arrow2">→</div>
+        <div class="stage off">
+          <span class="when"><span data-lp="deadline">10월 31일</span> 이후</span>
+          <span class="amt2">마감</span>
+          <span class="tag2"><span data-lp="nextCohort">4기</span> <span data-lp="nextPrice">110</span>만원</span>
+        </div>
+      </div>
       <p class="note">전용 프로그램 + 실전 노하우 + 평생 피드백까지 전부 포함 · 루월당 추가비용 0원</p>
       <div class="meta">
         <span>모집 인원 <b><span data-lp="seats">10</span>명</b></span>
@@ -704,10 +767,13 @@
       </div>
       <div class="paybox">
         <b>🏦 지금은 계좌이체로만 신청받습니다</b><br>
-        버튼을 누르면 입금 계좌를 안내해 드려요. 계좌이체로 신청하시면 <b><span data-lp="discount">10</span>만원 할인된 <span data-lp="price">70</span>만원</b>입니다.
+        버튼을 누르면 입금 계좌를 안내해 드려요.
+        <b><span data-lp="earlyUntil">9월 30일</span>까지 사전예약하시면 <span data-lp="discount">10</span>만원 할인된 <span data-lp="price">70</span>만원</b>,
+        10월부터는 <b><span data-lp="latePrice">80</span>만원</b>이 됩니다.
         <span class="card">💳 카드 결제는 현재 <b>승인 심사 중</b>입니다. <span data-lp="nextCohort">4기</span>부터 가능할 것으로 보이며, 카드 결제 시에는 할인이 적용되지 않습니다.</span>
       </div>
-      <p class="warnline">⚠️ <span data-lp="nextCohort">4기</span>부터 <span data-lp="nextPrice">110</span>만원으로 인상 예정 · 내부 사정에 따라 추가 인상될 수 있습니다</p>
+      <p class="warnline">⚠️ <span data-lp="deadline">10월 31일</span> 신청 마감 · 정원 마감 시 조기 종료<br>
+        <span data-lp="nextCohort">4기</span>부터 <span data-lp="nextPrice">110</span>만원으로 인상 예정입니다</p>
     </div>
     <p class="lead center" style="margin:22px auto 0;">11월 <strong>사전 예약</strong>도 가능합니다. 링크로 <em>"참여 희망합니다"</em>라고 보내주세요.</p>
   </div>
@@ -721,7 +787,7 @@
     <div class="faq">
       <details open><summary>사주를 하나도 몰라도 되나요?</summary><p>네, 괜찮습니다. 실제 명리학자가 만든 전용 엔진이 사주를 계산·해석하고, AI가 리포트를 작성합니다. 알려드리는 순서대로만 따라오시면 됩니다.</p></details>
       <details><summary>프로그램 사용에 추가 비용이 드나요?</summary><p>루월당에 추가로 내는 비용은 없습니다. 전용 프로그램은 수강료에 전부 포함되어 있고, 평생 사용·계속 업데이트되며 추가 결제가 없습니다. 다만 PDF를 API로 자동 제작하거나 스레드 자동화(추후)를 쓸 경우 API 비용이 들 수 있는데, 이는 OpenAI 등 외부 사이트에 내는 것으로 루월당 결제가 아닙니다. 무료(GPT) 방식만 쓰면 이 비용도 들지 않습니다.</p></details>
-      <details><summary>결제는 어떻게 하나요? (계좌이체 · 카드)</summary><p><b>현재는 계좌이체로만 신청받고 있습니다.</b> 신청 버튼을 누르시면 입금 계좌를 안내해 드리고, 입금 후 카카오톡으로 알려주시면 확인해 드립니다.<br><br>계좌이체로 신청하시면 <b><span data-lp="discount">10</span>만원을 할인해 <span data-lp="price">70</span>만원</b>에 참여하실 수 있습니다.<br><br>카드 결제는 현재 <b>승인 심사 중</b>이라 이용하실 수 없습니다. <span data-lp="nextCohort">4기</span>부터 가능할 것으로 보이며, 카드 결제 시에는 할인이 적용되지 않는 점 참고해 주세요.</p></details>
+      <details><summary>결제는 어떻게 하나요? (계좌이체 · 카드)</summary><p><b>현재는 계좌이체로만 신청받고 있습니다.</b> 신청 버튼을 누르시면 입금 계좌를 안내해 드리고, 입금 후 카카오톡으로 알려주시면 확인해 드립니다.<br><br><span data-lp="earlyUntil">9월 30일</span>까지 <b>사전예약</b>으로 신청하시면 <b><span data-lp="discount">10</span>만원을 할인해 <span data-lp="price">70</span>만원</b>에 참여하실 수 있습니다. 10월 1일부터는 <b><span data-lp="latePrice">80</span>만원</b>이며, <b><span data-lp="deadline">10월 31일</span>에 신청이 마감</b>됩니다.<br><br>카드 결제는 현재 <b>승인 심사 중</b>이라 이용하실 수 없습니다. <span data-lp="nextCohort">4기</span>부터 가능할 것으로 보이며, 카드 결제 시에는 할인이 적용되지 않는 점 참고해 주세요.</p></details>
       <details><summary>기초 전자책만으로는 안 되나요?</summary><p>전자책은 '사주 부업이 뭔지, 나도 할 수 있는지' 기본기를 혼자 익히는 입문서입니다. 루월당 수강은 여기에 자동화 프로그램, 웹사이트, 마케팅·운영 실전 구조, 그리고 평생 피드백을 더해 '실제 수익화'까지 함께 만드는 과정입니다.</p></details>
       <details><summary>스레드 자동화 기능은 지금 쓸 수 있나요?</summary><p>스레드 자동화는 현재 준비 중으로, 추후 배포 예정입니다. 배포되면 수강생은 추가 비용 없이 바로 사용하실 수 있습니다.</p></details>
       <details><summary>피드백은 얼마나 받을 수 있나요?</summary><p>직접 찾아가는 끊임없는 피드백을 제공합니다. 한 번 수강하시면 평생 이어지므로, 막히는 지점이 생길 때마다 언제든 도움을 받으실 수 있습니다.</p></details>
@@ -887,6 +953,12 @@
             return;
           }
           if (s[k] !== undefined && s[k] !== null) el.textContent = s[k];
+        });
+
+        /* 링크 주소도 설정한 값으로 */
+        document.querySelectorAll('[data-lp-href]').forEach(function (a) {
+          var v = s[a.getAttribute('data-lp-href')];
+          if (v) a.setAttribute('href', v);
         });
 
         /* 신청 버튼에 넘길 값도 맞춘다 */

@@ -114,7 +114,12 @@
     <label>계좌이체가 (만원)<input type="number" id="sPrice" value="<%= set.price %>"></label>
     <label>정가 (만원)<input type="number" id="sListPrice" value="<%= set.list_price %>"></label>
     <label>모집 인원 (명)<input type="number" id="sSeats" value="<%= set.seats %>"></label>
-    <label>신청 마감<input type="text" id="sDeadline" value="<%= set.deadline %>" placeholder="2026년 11월"></label>
+    <label>사전예약 마감일<input type="text" id="sEarlyUntil" value="<%= set.early_until || '' %>" placeholder="9월 30일"></label>
+    <label>사전예약 뒤 금액 (만원)<input type="number" id="sLatePrice" value="<%= set.late_price || '' %>"></label>
+    <label>신청 마감<input type="text" id="sDeadline" value="<%= set.deadline %>" placeholder="10월 31일"></label>
+    <label>설명회 라이브 날짜<input type="text" id="sLiveDate" value="<%= set.live_date || '' %>" placeholder="9월 19일"></label>
+    <label class="wide">라이브 대기방 주소 (카카오 오픈채팅만)
+      <input type="text" id="sLiveUrl" value="<%= set.live_url || '' %>" placeholder="https://open.kakao.com/o/..."></label>
     <label>다음 기수<input type="text" id="sNextCohort" value="<%= set.next_cohort %>" placeholder="4기"></label>
     <label>다음 기수 금액 (만원)<input type="number" id="sNextPrice" value="<%= set.next_price %>"></label>
     <label class="wide">지나간 가격 (/ 로 구분)
@@ -251,18 +256,23 @@
 <script>
 (function () {
   /* ── 기수 · 금액 설정 ── */
-  var F = ['sCohort','sPrice','sListPrice','sSeats','sDeadline','sNextCohort','sNextPrice','sLadder'];
+  var F = ['sCohort','sPrice','sListPrice','sSeats','sDeadline','sNextCohort','sNextPrice','sLadder',
+           'sEarlyUntil','sLatePrice','sLiveDate','sLiveUrl'];
   function val(id) { return document.getElementById(id).value.trim(); }
 
   function drawPrev() {
     var p = Number(val('sPrice')) || 0, l = Number(val('sListPrice')) || 0;
     var dc = Math.max(0, l - p);
+    var ok = /^https:\/\/open\.kakao\.com\//.test(val('sLiveUrl'));
     document.getElementById('setPrev').innerHTML =
       '판매 페이지에 이렇게 나옵니다<br>' +
-      '<b>' + val('sCohort') + '</b> 모집 <b>' + val('sSeats') + '명</b> · 신청 마감 <b>' + val('sDeadline') + '</b><br>' +
-      '<b>' + p + '만원</b> (정가 ' + l + '만원 · 계좌이체 시 <b>' + dc + '만원 할인</b>)<br>' +
-      '<b>' + val('sNextCohort') + '</b>부터 <b>' + val('sNextPrice') + '만원</b>으로 인상 예정' +
-      (dc <= 0 ? '<br><span style="color:#A8332B">※ 정가가 계좌이체가보다 크지 않아 할인이 0원으로 나옵니다.</span>' : '');
+      '<b>' + val('sCohort') + '</b> 모집 <b>' + val('sSeats') + '명</b><br>' +
+      '~ <b>' + val('sEarlyUntil') + '</b> : <b>' + p + '만원</b> (사전예약 ' + dc + '만원 할인)<br>' +
+      '10월 1일 ~ <b>' + val('sDeadline') + '</b> : <b>' + val('sLatePrice') + '만원</b><br>' +
+      '<b>' + val('sDeadline') + '</b> 이후 마감 · <b>' + val('sNextCohort') + '</b> ' + val('sNextPrice') + '만원<br>' +
+      '무료 설명회 라이브 <b>' + val('sLiveDate') + '</b>' +
+      (dc <= 0 ? '<br><span style="color:#A8332B">※ 정가가 사전예약가보다 크지 않아 할인이 0원으로 나옵니다.</span>' : '') +
+      (ok ? '' : '<br><span style="color:#A8332B">※ 대기방 주소가 카카오 오픈채팅 주소가 아니라 저장되지 않습니다.</span>');
   }
   F.forEach(function (id) {
     document.getElementById(id).addEventListener('input', drawPrev);
@@ -277,7 +287,9 @@
       body: JSON.stringify({
         cohort: val('sCohort'), price: val('sPrice'), listPrice: val('sListPrice'),
         seats: val('sSeats'), deadline: val('sDeadline'),
-        nextCohort: val('sNextCohort'), nextPrice: val('sNextPrice'), ladder: val('sLadder')
+        nextCohort: val('sNextCohort'), nextPrice: val('sNextPrice'), ladder: val('sLadder'),
+        earlyUntil: val('sEarlyUntil'), latePrice: val('sLatePrice'),
+        liveDate: val('sLiveDate'), liveUrl: val('sLiveUrl')
       })
     })
     .then(function (r) { return r.json(); })

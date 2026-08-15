@@ -211,11 +211,26 @@ async function initDb() {
       seats        INTEGER DEFAULT 10,
       deadline     TEXT    DEFAULT '2026년 11월',
       ladder       TEXT    DEFAULT '1기 30만 / 50만 / 2기 60만',
+      early_until  TEXT    DEFAULT '9월 30일',    -- 이때까지가 사전예약가
+      late_price   INTEGER DEFAULT 80,            -- 그 뒤 금액 (만원)
+      live_date    TEXT    DEFAULT '9월 19일',    -- 무료 설명회 라이브
+      live_url     TEXT    DEFAULT 'https://open.kakao.com/o/gdlttwDi',
       updated_at   TIMESTAMPTZ DEFAULT NOW(),
       CONSTRAINT lp_settings_one CHECK (id = 1)
     );
   `);
+  /* 나중에 늘어난 칸은 하나씩 더한다 (이미 표가 있는 경우) */
+  for (const [col, def] of [
+    ['early_until', "TEXT DEFAULT '9월 30일'"],
+    ['late_price',  'INTEGER DEFAULT 80'],
+    ['live_date',   "TEXT DEFAULT '9월 19일'"],
+    ['live_url',    "TEXT DEFAULT 'https://open.kakao.com/o/gdlttwDi'"],
+  ]) {
+    await pool.query(`ALTER TABLE lp_settings ADD COLUMN IF NOT EXISTS ${col} ${def};`);
+  }
   await pool.query(`INSERT INTO lp_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;`);
+  /* 신청 마감 기본값을 10월 31일로 */
+  await pool.query(`UPDATE lp_settings SET deadline='10월 31일' WHERE id=1 AND deadline='2026년 11월';`);
 
   /* ── 판매 페이지 후기 ──
      관리자가 직접 사진과 글을 올려 관리한다.

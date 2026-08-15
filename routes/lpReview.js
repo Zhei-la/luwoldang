@@ -116,7 +116,9 @@ router.get('/lp/review-img/:id(\\d+)', async (req, res) => {
 const DEFAULT_SET = {
   cohort: '3기', price: 70, list_price: 80,
   next_cohort: '4기', next_price: 110,
-  seats: 10, deadline: '2026년 11월', ladder: '1기 30만 / 50만 / 2기 60만',
+  seats: 10, deadline: '10월 31일', ladder: '1기 30만 / 50만 / 2기 60만',
+  early_until: '9월 30일', late_price: 80,
+  live_date: '9월 19일', live_url: 'https://open.kakao.com/o/gdlttwDi',
 };
 
 async function getSettings() {
@@ -137,6 +139,8 @@ router.get('/api/lp/settings', async (req, res) => {
       discount: Math.max(0, (st.list_price || 0) - (st.price || 0)),
       nextCohort: st.next_cohort, nextPrice: st.next_price,
       seats: st.seats, deadline: st.deadline, ladder: st.ladder,
+      earlyUntil: st.early_until, latePrice: st.late_price,
+      liveDate: st.live_date, liveUrl: st.live_url,
     },
   });
 });
@@ -161,10 +165,18 @@ router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) =>
     };
     const cur = await getSettings();
 
+    /* 라이브 대기방 주소는 카카오 오픈채팅만 받는다 */
+    const url = (v, d) => {
+      const t = String(v == null ? '' : v).trim();
+      return /^https:\/\/open\.kakao\.com\/[\w/-]+$/.test(t) ? t : d;
+    };
+
     await pool.query(`
       UPDATE lp_settings SET
         cohort=$1, price=$2, list_price=$3, next_cohort=$4, next_price=$5,
-        seats=$6, deadline=$7, ladder=$8, updated_at=NOW()
+        seats=$6, deadline=$7, ladder=$8,
+        early_until=$9, late_price=$10, live_date=$11, live_url=$12,
+        updated_at=NOW()
       WHERE id=1
     `, [
       txt(b.cohort, cur.cohort, 20),
@@ -175,6 +187,10 @@ router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) =>
       num(b.seats, cur.seats),
       txt(b.deadline, cur.deadline, 40),
       txt(b.ladder, cur.ladder, 120),
+      txt(b.earlyUntil, cur.early_until, 40),
+      num(b.latePrice, cur.late_price),
+      txt(b.liveDate, cur.live_date, 40),
+      url(b.liveUrl, cur.live_url),
     ]);
     res.json({ ok: true });
   } catch (e) {
