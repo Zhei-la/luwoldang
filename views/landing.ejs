@@ -17,7 +17,9 @@
     --paper:#FBF8F1; --beige:#ECE4D9; --muted:#6B6656;
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--paper); color:var(--ink);
+  /* base.css 가 body 를 가운데 정렬 상자로 잡아두어 되돌린다 */
+  body { margin:0; padding:0; display:block; min-height:auto;
+    background:var(--paper); color:var(--ink);
     font-family:"Pretendard","Apple SD Gothic Neo","맑은 고딕",sans-serif;
     line-height:1.75; -webkit-font-smoothing:antialiased; }
   .wrap { max-width:760px; margin:0 auto; padding:0 22px; }
@@ -30,20 +32,21 @@
     letter-spacing:-.01em; }
   .hero h1 .han { font-size:20px; color:var(--gold); margin-left:6px; }
   .hero .line { width:44px; height:1px; background:var(--gold); margin:16px auto; }
+  .hero .sub { margin-bottom:0; }
   .hero .sub { font-size:17px; color:var(--muted); margin:0 0 8px; word-break:keep-all; }
   .hero .sub b { color:var(--ink); font-weight:700; }
 
   .btns { display:flex; gap:9px; justify-content:center; flex-wrap:wrap; margin-top:26px; }
   /* 글자 길이가 달라도 버튼 크기는 같게 맞춘다 */
-  .btn {
+  .btns .btn {
     display:inline-flex; align-items:center; justify-content:center;
-    flex:0 1 210px; min-height:52px; padding:0 20px;
+    flex:0 1 210px; min-height:52px; padding:0 20px; margin:0;
     border-radius:12px; font-size:15.5px; font-weight:700; line-height:1.2;
     text-decoration:none; border:1px solid var(--beige); background:#fff;
     color:var(--ink); text-align:center; box-sizing:border-box;
   }
-  .btn.kakao { background:#FEE500; border-color:#FEE500; color:#191600; }
-  .btn.ghost { background:transparent; }
+  .btns .btn.kakao { background:#FEE500; border-color:#FEE500; color:#191600; }
+  .btns .btn.line2 { background:transparent; }
   .note { margin-top:14px; font-size:13px; color:#9A9384; }
 
   /* 설명 */
@@ -78,7 +81,7 @@
     .hero { padding:52px 0 40px; }
     .hero h1 { font-size:28px; }
     .hero .sub { font-size:15.5px; }
-    .btn { flex:1 1 100%; }
+    .btns .btn { flex:1 1 100%; }
   }
 </style>
 </head>
@@ -94,7 +97,7 @@
       만세력 계산부터 사주 리포트 제작, 발송, 추가상담까지<br>한곳에서 끝내는 프로그램입니다.</p>
     <div class="btns">
       <a class="btn kakao" href="/auth/kakao">카카오로 로그인</a>
-      <a class="btn ghost" href="#about">어떤 곳인가요?</a>
+      <a class="btn line2" href="#about">어떤 곳인가요?</a>
     </div>
     <p class="note">루월당 수강생 전용 프로그램입니다.</p>
   </div>
@@ -149,7 +152,7 @@
     </div>
     <div class="btns" style="justify-content:flex-start">
       <a class="btn" href="/lp/">수강 안내 보기</a>
-      <a class="btn ghost" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">카카오톡 문의</a>
+      <a class="btn line2" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">카카오톡 문의</a>
     </div>
   </section>
 
