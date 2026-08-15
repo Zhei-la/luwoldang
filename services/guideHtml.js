@@ -17,7 +17,7 @@ const ALLOW = {
   strong: [], b: [], em: [], i: [], u: [], s: [], del: [],
   ul: [], ol: [], li: [],
   blockquote: [], pre: [], code: [],
-  figure: [], figcaption: [],
+  figure: ['class'], figcaption: [],
   img: ['src', 'alt'],
   a: ['href'],
 };
@@ -57,6 +57,11 @@ function openTag(name, attrRaw) {
       /* 우리 서버에 올린 사진만 허용한다. 바깥 주소는 만료되거나 추적에 쓰일 수 있다. */
       if (!/^\/guide\/img\/\d+$/.test(v)) return '';
       out.push(`src="${escAttr(v)}"`);
+    } else if (k === 'class') {
+      /* 사진 크기 지정만 허용한다. 그 밖의 class 는 화면을 망가뜨릴 수 있다. */
+      const ok = String(v).split(/\s+/).filter((c) => /^sz-[sml]$/.test(c));
+      if (!ok.length) continue;
+      out.push(`class="${ok.join(' ')}"`);
     } else if (name === 'a' && k === 'href') {
       if (!/^https?:\/\//i.test(v)) continue;          // javascript: 등 차단
       out.push(`href="${escAttr(v)}" target="_blank" rel="noopener"`);

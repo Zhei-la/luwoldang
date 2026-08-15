@@ -31,6 +31,11 @@
   .gv-body figure { margin:0 0 18px; }
   .gv-body img { max-width:100%; height:auto; display:block; border-radius:10px;
     border:1px solid var(--beige); }
+  /* 사진 크기 — 세로로 긴 휴대폰 캡처가 화면을 다 차지하지 않도록 기본을 중간으로 둔다 */
+    .gv-body figure img { max-width:420px; }
+    .gv-body figure.sz-s img { max-width:240px; }
+    .gv-body figure.sz-m img { max-width:420px; }
+    .gv-body figure.sz-l img { max-width:100%; }
   .gv-body strong { font-weight:800; }
 
   .gv-foot { max-width:760px; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
