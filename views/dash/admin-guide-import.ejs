@@ -141,6 +141,7 @@
 
     JSZip.loadAsync(f).then(function (z) {
       zip = z;
+      byName = null;
       pages = [];
       var jobs = [];
       z.forEach(function (path, entry) {
@@ -187,6 +188,41 @@
     [].forEach.call(boxes, function (b) { b.checked = !allOn; });
   });
 
+  /* 압축 안에서 사진 파일을 찾는다.
+     노션 내보내기 구조가 경우에 따라 달라서 여러 방법으로 시도한다. */
+  var byName = null;
+  function buildIndex() {
+    byName = {};
+    zip.forEach(function (path, entry) {
+      if (entry.dir) return;
+      var base = path.split('/').pop();
+      if (!byName[base]) byName[base] = entry;
+      var dec = decodeURIComponent(base);
+      if (!byName[dec]) byName[dec] = entry;
+    });
+  }
+
+  function findFile(p, src) {
+    if (!byName) buildIndex();
+    var dec = decodeURIComponent(src);
+    var mdFolder = p.path.replace(/\.md$/i, '') + '/';
+
+    var tries = [
+      p.dir + dec,                 // 글과 같은 폴더
+      p.dir + src,
+      dec,                         // 압축 맨 위
+      src,
+      mdFolder + dec,              // 글 이름과 같은 폴더 안
+      mdFolder + src,
+    ];
+    for (var i = 0; i < tries.length; i++) {
+      var f = zip.file(tries[i]);
+      if (f) return f;
+    }
+    /* 그래도 없으면 파일 이름만 같은 것을 찾는다 */
+    return byName[dec] || byName[src] || null;
+  }
+
   /* 한 자료를 가져온다 */
   async function importOne(p, row, catId) {
     var st = row.querySelector('.st');
@@ -202,13 +238,12 @@
       refs.push({ whole: m, src: src }); return m;
     });
 
-    var okImg = 0;
+    var okImg = 0, missing = [];
     for (var i = 0; i < refs.length; i++) {
       var src = refs[i].src.split(' ')[0].replace(/^<|>$/g, '');
       if (/^https?:/i.test(src)) continue;                  // 바깥 주소는 건너뛴다
-      var full = p.dir + decodeURIComponent(src);
-      var entry = zip.file(full) || zip.file(decodeURIComponent(full));
-      if (!entry) continue;
+      var entry = findFile(p, src);
+      if (!entry) { missing.push(src); continue; }
 
       st.textContent = '사진 ' + (i + 1) + '/' + refs.length;
       try {
@@ -243,7 +278,11 @@
     if (!sv.ok) throw new Error(sv.error || '저장 실패');
 
     st.className = 'st done';
-    st.textContent = '완료 (사진 ' + okImg + '장)';
+    st.textContent = '완료 (사진 ' + okImg + '장'
+      + (missing.length ? ', ' + missing.length + '장 못 찾음' : '') + ')';
+    if (missing.length) {
+      log('<b>' + esc(p.title) + '</b> — 못 찾은 사진: ' + esc(missing.slice(0, 3).join(', ')));
+    }
     return sv.id;
   }
 

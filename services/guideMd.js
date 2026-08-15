@@ -36,12 +36,24 @@ function inline(t) {
     .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
 }
 
+/* 표를 화면용으로 그린다. 첫 줄을 머리줄로 본다. */
+function renderTable(rows) {
+  if (!rows.length) return '';
+  const cell = (c, tag) => `<${tag}>${inline(esc(c))}</${tag}>`;
+  const head = '<tr>' + rows[0].map((c) => cell(c, 'th')).join('') + '</tr>';
+  const body = rows.slice(1).map(
+    (r) => '<tr>' + r.map((c) => cell(c, 'td')).join('') + '</tr>'
+  ).join('');
+  return '<table>' + head + body + '</table>';
+}
+
 function render(src) {
   const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
   const out = [];
   let list = null;      // 'ul' | 'ol'
   let quote = false;
   let code = false;
+  let table = null;
   let buf = [];
 
   const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
@@ -66,9 +78,11 @@ function render(src) {
     if (!raw.trim()) { flushP(); closeList(); closeQuote(); continue; }
 
     let m;
-    if ((m = /^(#{1,3})\s+(.*)$/.exec(line))) {
+    if ((m = /^(#{1,6})\s+(.*)$/.exec(line))) {
       flushP(); closeList(); closeQuote();
-      const lv = m[1].length + 1;     // 글 제목이 h1 이므로 h2 부터
+      /* 글 제목이 h1 이므로 h2 부터 시작하고, 더 깊은 단계는 h4 로 모은다.
+         노션은 #### 까지 자주 쓴다. */
+      const lv = Math.min(m[1].length + 1, 4);
       out.push(`<h${lv}>${inline(m[2])}</h${lv}>`);
       continue;
     }
@@ -84,7 +98,9 @@ function render(src) {
     if ((m = /^[-*]\s+(.*)$/.exec(line))) {
       flushP(); closeQuote();
       if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; }
-      out.push('<li>' + inline(m[1]) + '</li>');
+      /* 노션 할 일 목록의 [ ] · [x] 를 눈에 보이는 기호로 바꾼다 */
+      const li = m[1].replace(/^\[( |x|X)\]\s*/, (mm, c) => (c === ' ' ? '☐ ' : '☑ '));
+      out.push('<li>' + inline(li) + '</li>');
       continue;
     }
     if ((m = /^\d+\.\s+(.*)$/.exec(line))) {
@@ -93,6 +109,17 @@ function render(src) {
       out.push('<li>' + inline(m[1]) + '</li>');
       continue;
     }
+    /* 표 — | 가 | 나 | 형태 */
+    if (/^\|.*\|\s*$/.test(line.trim())) {
+      flushP(); closeList(); closeQuote();
+      if (!table) { table = []; }
+      const cells = line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+      /* | --- | --- | 는 머리줄 구분선이라 화면에 넣지 않는다 */
+      if (!cells.every((c) => /^:?-{2,}:?$/.test(c))) table.push(cells);
+      continue;
+    }
+    if (table) { out.push(renderTable(table)); table = null; }
+
     /* 사진만 있는 줄은 문단으로 감싸지 않고 그대로 */
     if (/^!\[[^\]]*\]\(\/guide\/img\/\d+\)$/.test(raw.trim())) {
       flushP(); closeList(); closeQuote();
@@ -103,6 +130,7 @@ function render(src) {
     buf.push(line);
   }
   flushP(); closeList(); closeQuote();
+  if (table) out.push(renderTable(table));
   if (code) out.push('</pre>');
   return out.join('\n');
 }

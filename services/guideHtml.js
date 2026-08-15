@@ -17,6 +17,7 @@ const ALLOW = {
   strong: [], b: [], em: [], i: [], u: [], s: [], del: [],
   ul: [], ol: [], li: ['class'],
   blockquote: ['class'], pre: ['class'], code: [],
+  table: [], thead: [], tbody: [], tr: [], th: [], td: [],
   figure: ['class'], figcaption: [],
   img: ['src', 'alt'],
   a: ['href'],
