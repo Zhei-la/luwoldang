@@ -20,6 +20,7 @@ const { router: shareRoutes } = require('./routes/share');
 const pushRouter = require('./routes/push');
 const manseRouter = require('./routes/manse');   // 만세력(명리) 계산기
 const threadsRouter = require('./routes/threads'); // 스레드 도구
+const guideRouter = require('./routes/guide');     // 사주 자료집
 const { router: reviewRoutes } = require('./routes/reviews');
 const { requireAuth } = require('./middleware/auth');
 const app = express();
@@ -110,6 +111,8 @@ app.use(chatRoutes);
 app.use('/', manseRouter);
 // 스레드 도구 (교육생용) — /threads
 app.use('/', threadsRouter);
+// 사주 자료집 (관리자 작성 · 교육생 열람) — /guide, /admin/guide
+app.use('/', guideRouter);
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', coversRouter);   // 교육생: 내 PDF 표지
 app.use('/', pagesRouter);

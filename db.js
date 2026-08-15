@@ -162,6 +162,51 @@ async function initDb() {
      본문(이미 써서 저장된 글)과 서로 안 맞게 된다. */
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS saju_meta JSONB;`);
 
+  /* ── 사주 자료집 ──
+     관리자가 글과 사진을 올리면 로그인한 교육생이 읽는다.
+     노션 링크와 달리 계정으로 막혀 있어, 수강이 끝난 사람은 자동으로 접근이 끊긴다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_cats (
+      id    SERIAL PRIMARY KEY,
+      name  TEXT NOT NULL,
+      sort  INTEGER DEFAULT 0
+    );
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_posts (
+      id         SERIAL PRIMARY KEY,
+      cat_id     INTEGER REFERENCES guide_cats(id) ON DELETE SET NULL,
+      title      TEXT NOT NULL,
+      body       TEXT NOT NULL DEFAULT '',
+      pinned     BOOLEAN DEFAULT FALSE,
+      published  BOOLEAN DEFAULT TRUE,
+      views      INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  /* 사진은 파일이 아니라 DB 에 담는다. Railway 는 배포할 때마다 파일이 지워지기 때문이다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_images (
+      id         SERIAL PRIMARY KEY,
+      post_id    INTEGER REFERENCES guide_posts(id) ON DELETE CASCADE,
+      img        TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  /* 글쓰기 화면이 블로그 방식으로 바뀌면서 본문이 HTML 로 저장된다.
+     예전에 쓴 글은 그대로 두고, 이 값으로 어느 방식인지 구분한다. */
+  await pool.query(`ALTER TABLE guide_posts ADD COLUMN IF NOT EXISTS format TEXT DEFAULT 'html';`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_guide_posts_cat ON guide_posts(cat_id, pinned DESC, created_at DESC);`);
+
+  /* 처음 한 번만 기본 분류를 넣어준다 */
+  const gc = await pool.query('SELECT COUNT(*)::int AS n FROM guide_cats');
+  if (!gc.rows[0].n) {
+    await pool.query(
+      `INSERT INTO guide_cats (name, sort) VALUES ('기초',10),('실전',20),('상담 응대',30),('마케팅',40)`
+    );
+  }
+
   /* 만세력 계산기에서 저장한 사주.
      예전에는 교육생 브라우저 안에만 저장돼서 PC 에서 저장한 것이 폰에서 안 보였다.
      계정에 묶어 두면 어느 기기에서 열어도 같은 목록이 나온다. */

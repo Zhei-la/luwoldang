@@ -72,6 +72,7 @@
           { key: 'home',    href: '/home',               label: '홈' },
           { key: 'manse',   href: '/manse',              label: '만세력 계산기' },
           { key: 'threads', href: '/threads',            label: '스레드 자동화' },
+          { key: 'guide',   href: '/guide',              label: '사주 자료집' },
           { key: 'free',    href: '/builder',            label: '내 웹사이트 만들기' },
           { key: 'leads',   href: '/leads',              label: '사주 신청자' },
           { key: 'pdf',     href: '/pdf/create',         label: 'PDF 만들기' },
@@ -91,6 +92,7 @@
         <div class="nav-sep">관리자</div>
         <a href="/admin/approvals" class="nav-item <%= active === 'admin' ? 'active' : '' %>">회원 승인 · 관리</a>
         <a href="/admin/covers" class="nav-item <%= active === 'admin-covers' ? 'active' : '' %>">기본 표지 관리</a>
+        <a href="/admin/guide" class="nav-item <%= active === 'admin-guide' ? 'active' : '' %>">자료집 관리</a>
         <a href="/admin/accounts" class="nav-item <%= active === 'admin-accounts' ? 'active' : '' %>">계정 전환</a>
       <% } %>
     </nav>

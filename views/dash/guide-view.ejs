@@ -1,0 +1,76 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '사주 자료집' }) %>
+
+<style>
+  .gv-back { display:inline-block; color:#6B6656; font-size:13.5px; text-decoration:none; margin-bottom:14px; }
+  .gv-back:hover { color:var(--gold); }
+
+  .gv-head { border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
+  .gv-head h1 { font-family:"Nanum Myeongjo", serif; font-size:25px; line-height:1.4;
+    margin:0 0 10px; word-break:keep-all; }
+  .gv-meta { font-size:12px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .gv-tag { background:#F4EFE3; color:#8A6F3C; padding:3px 9px; border-radius:5px; font-weight:600; }
+
+  /* 본문 — 읽기 편한 폭과 줄간격 */
+  .gv-body { max-width:760px; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all; }
+  .gv-body h2 { font-family:"Nanum Myeongjo", serif; font-size:21px; margin:34px 0 12px;
+    padding-bottom:8px; border-bottom:1px solid var(--beige); }
+  .gv-body h3 { font-size:17.5px; margin:26px 0 10px; color:#8A6F3C; }
+  .gv-body h4 { font-size:16px; margin:20px 0 8px; }
+  .gv-body p { margin:0 0 15px; }
+  .gv-body ul, .gv-body ol { margin:0 0 15px; padding-left:22px; }
+  .gv-body li { margin-bottom:6px; }
+  .gv-body blockquote { margin:0 0 16px; padding:13px 16px; background:#FBF8F1;
+    border-left:3px solid var(--gold); border-radius:0 8px 8px 0; }
+  .gv-body blockquote p { margin:0; font-size:15px; color:#4A4438; }
+  .gv-body pre { background:#F4EFE3; border:1px solid var(--beige); border-radius:10px;
+    padding:14px 16px; margin:0 0 16px; white-space:pre-wrap; word-break:break-all;
+    font-size:14.5px; line-height:1.75; font-family:inherit; color:#252522; }
+  .gv-body code { background:#F4EFE3; padding:2px 6px; border-radius:4px; font-size:14px; }
+  .gv-body hr { border:0; border-top:1px solid var(--beige); margin:28px 0; }
+  .gv-body a { color:#3B6EA5; }
+  .gv-body figure { margin:0 0 18px; }
+  .gv-body img { max-width:100%; height:auto; display:block; border-radius:10px;
+    border:1px solid var(--beige); }
+  .gv-body strong { font-weight:800; }
+
+  .gv-foot { max-width:760px; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
+    display:flex; gap:8px; flex-wrap:wrap; }
+  .gv-btn { padding:11px 18px; border:1px solid var(--beige); background:#fff; border-radius:10px;
+    font-size:14px; font-weight:600; color:#6B6656; text-decoration:none; }
+  .gv-btn.main { background:var(--navy); border-color:var(--navy); color:#fff; }
+
+  .gv-copyright { max-width:760px; margin-top:26px; padding:14px 16px; background:#FBF8F1;
+    border:1px solid var(--beige); border-radius:10px; font-size:12.5px; color:#6B6656;
+    line-height:1.75; word-break:keep-all; }
+</style>
+
+<a href="/guide" class="gv-back">← 자료집 목록</a>
+
+<div class="gv-head">
+  <h1><%= post.title %></h1>
+  <div class="gv-meta">
+    <% if (post.cat_name) { %><span class="gv-tag"><%= post.cat_name %></span><% } %>
+    <span><%= new Date(post.created_at).toLocaleDateString('ko-KR') %></span>
+    <span><%= post.views %>번 읽음</span>
+    <% if (!post.published) { %><span style="color:#A8332B;font-weight:700">비공개</span><% } %>
+  </div>
+</div>
+
+<div class="gv-body">
+  <%- bodyHtml %>
+</div>
+
+<div class="gv-copyright">
+  이 자료의 저작권은 루월당에 있습니다. 정식 등록된 교육생 본인만 이용하실 수 있으며,
+  캡처·복사·공유·재배포·2차 가공을 금합니다.
+  위반 시 저작권법 제136조에 따라 5년 이하의 징역 또는 5천만원 이하의 벌금에 처해질 수 있습니다.
+</div>
+
+<div class="gv-foot">
+  <a href="/guide" class="gv-btn">목록으로</a>
+  <% if (user.role === 'admin') { %>
+    <a href="/admin/guide/edit/<%= post.id %>" class="gv-btn main">이 글 고치기</a>
+  <% } %>
+</div>
+
+<%- include('../partials/dash-bottom') %>
