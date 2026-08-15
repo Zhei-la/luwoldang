@@ -248,7 +248,8 @@
       st.textContent = '사진 ' + (i + 1) + '/' + refs.length;
       try {
         var b64 = await entry.async('base64');
-        var ext = (full.split('.').pop() || 'png').toLowerCase();
+        /* 파일 종류는 실제로 찾아낸 파일 이름에서 본다 */
+        var ext = (entry.name.split('.').pop() || 'png').toLowerCase();
         var mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
                  : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : 'image/png';
         var r = await fetch('/admin/guide/img', {
@@ -258,7 +259,11 @@
         if (!r.ok) throw new Error(r.error || '실패');
         md = md.split(refs[i].whole).join('![](' + r.url + ')');
         okImg++;
-      } catch (e) { /* 못 올린 사진은 건너뛴다 */ }
+      } catch (e) {
+        /* 조용히 넘어가면 원인을 알 수 없다. 무엇이 잘못됐는지 남긴다. */
+        missing.push(src);
+        log('사진 올리기 실패 (' + esc(src) + '): ' + esc(e.message));
+      }
     }
 
     st.textContent = '글 만드는 중...';
