@@ -198,6 +198,8 @@
     <b>홈 팝업</b> — 켜두면 교육생이 홈에 들어올 때 이 공지가 뜹니다. 정한 기간이 지나면 저절로 사라집니다.<br>
     <b>알림</b> — 새 공지를 저장하면 교육생 모두에게 알림이 갑니다. (알림을 켜둔 분에게만)<br>
     <b>사진</b> — 넣고 싶은 자리를 클릭한 뒤 📷 사진을 누르세요. 캡처를 복사해 붙여넣어도 됩니다.<br>
+    <b>상자에서 빠져나오기</b> — 복사상자나 인용 안에서 <b>Shift + Enter</b> 를 누르면 상자 아래에 새 줄이 생깁니다.<br>
+    <b>서식 끄기</b> — 중제목·소제목·인용·복사상자·목록은 <b>한 번 더 누르면</b> 원래 글로 돌아갑니다.<br>
     <b>저장하지 않고 나가면</b> 쓰던 글이 사라집니다.
   </div>
 </div>
@@ -229,13 +231,64 @@
   })();
 
   /* 도구 버튼 */
+  /* 커서가 지금 어떤 덩어리(문단·제목·인용·복사상자) 안에 있는지.
+     인용은 안쪽에 문단이 또 들어있어서, 문단을 찾았더라도
+     그 바깥이 인용·복사상자면 그쪽을 돌려준다. */
+  function curBlock() {
+    var sel = window.getSelection();
+    if (!sel.rangeCount) return null;
+    var n = sel.anchorNode;
+    if (n && n.nodeType === 3) n = n.parentNode;
+    while (n && n !== ed && !/^(P|H2|H3|H4|BLOCKQUOTE|PRE|LI)$/.test(n.tagName || '')) n = n.parentNode;
+    if (!n || n === ed) return null;
+
+    var wrap = n.parentNode;
+    while (wrap && wrap !== ed) {
+      if (/^(BLOCKQUOTE|PRE)$/.test(wrap.tagName || '')) return wrap;
+      wrap = wrap.parentNode;
+    }
+    return n;
+  }
+
+  /* 덩어리 바로 아래에 새 문단을 만들고 커서를 옮긴다 */
+  function newLineAfter(block) {
+    var p = document.createElement('p');
+    p.innerHTML = '<br>';
+    block.parentNode.insertBefore(p, block.nextSibling);
+    var r = document.createRange();
+    r.setStart(p, 0); r.collapse(true);
+    var s = window.getSelection();
+    s.removeAllRanges(); s.addRange(r);
+    ed.focus();
+    dirty = true;
+  }
+
   document.querySelectorAll('.ge-bar button[data-cmd]').forEach(function (b) {
     b.addEventListener('mousedown', function (e) { e.preventDefault(); });   // 커서를 잃지 않게
     b.addEventListener('click', function () {
       ed.focus();
-      document.execCommand(b.dataset.cmd, false, b.dataset.val ? '<' + b.dataset.val + '>' : null);
+      var cmd = b.dataset.cmd, val = b.dataset.val;
+      if (cmd === 'formatBlock' && val) {
+        /* 이미 그 모양이면 한 번 더 눌러 본문으로 되돌린다 */
+        var cur = curBlock();
+        if (cur && cur.tagName === val.toUpperCase()) val = 'p';
+        document.execCommand('formatBlock', false, '<' + val + '>');
+      } else {
+        /* 목록·번호는 브라우저가 알아서 켜고 끈다 */
+        document.execCommand(cmd, false, null);
+      }
       dirty = true;
     });
+  });
+
+  /* 복사상자·인용 안에서 Shift+Enter 를 누르면 상자 밖으로 빠져나온다.
+     그러지 않으면 상자에서 나올 방법이 없다. */
+  ed.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.shiftKey) return;
+    var b = curBlock();
+    if (!b || !/^(PRE|BLOCKQUOTE)$/.test(b.tagName)) return;
+    e.preventDefault();
+    newLineAfter(b);
   });
 
   /* 커서 자리에 넣기 */
@@ -261,7 +314,11 @@
   }
 
   document.getElementById('btnPre').addEventListener('click', function () {
-    ed.focus(); document.execCommand('formatBlock', false, '<pre>'); dirty = true;
+    ed.focus();
+    var cur = curBlock();
+    /* 이미 복사상자면 한 번 더 눌러 해제한다 */
+    document.execCommand('formatBlock', false, cur && cur.tagName === 'PRE' ? '<p>' : '<pre>');
+    dirty = true;
   });
   document.getElementById('btnHr').addEventListener('click', function () {
     ed.focus(); document.execCommand('insertHorizontalRule'); dirty = true;
