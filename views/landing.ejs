@@ -34,9 +34,14 @@
   .hero .sub b { color:var(--ink); font-weight:700; }
 
   .btns { display:flex; gap:9px; justify-content:center; flex-wrap:wrap; margin-top:26px; }
-  .btn { display:inline-block; padding:15px 26px; border-radius:12px; font-size:15.5px;
-    font-weight:700; text-decoration:none; border:1px solid var(--beige); background:#fff;
-    color:var(--ink); }
+  /* 글자 길이가 달라도 버튼 크기는 같게 맞춘다 */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    flex:0 1 210px; min-height:52px; padding:0 20px;
+    border-radius:12px; font-size:15.5px; font-weight:700; line-height:1.2;
+    text-decoration:none; border:1px solid var(--beige); background:#fff;
+    color:var(--ink); text-align:center; box-sizing:border-box;
+  }
   .btn.kakao { background:#FEE500; border-color:#FEE500; color:#191600; }
   .btn.ghost { background:transparent; }
   .note { margin-top:14px; font-size:13px; color:#9A9384; }
@@ -73,7 +78,7 @@
     .hero { padding:52px 0 40px; }
     .hero h1 { font-size:28px; }
     .hero .sub { font-size:15.5px; }
-    .btn { width:100%; text-align:center; }
+    .btn { flex:1 1 100%; }
   }
 </style>
 </head>
