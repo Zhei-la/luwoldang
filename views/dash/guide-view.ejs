@@ -65,7 +65,7 @@
      캡처가 돌아다니면 누구 계정에서 나갔는지 바로 드러난다. */
   .gv-stage { position:relative; }
   .gv-mark { position:absolute; inset:0; pointer-events:none; z-index:5;
-    background-repeat:repeat; opacity:.5; }
+    background-repeat:repeat; }
 
   .gv-copyright { max-width:760px; margin-top:26px; padding:14px 16px; background:#FBF8F1;
     border:1px solid var(--beige); border-radius:10px; font-size:12.5px; color:#6B6656;
@@ -82,12 +82,18 @@
   /* ── 화면에 옅게 깔 이름 만들기 ──
      글자를 그림으로 만들어 배경에 반복해서 깐다. */
   var mark = <%- JSON.stringify(mark) %>;
+  var safe = mark.replace(/[<>&"]/g, '');
+  /* '루월당 · 이름' 과 '아이디 · 날짜' 를 두 줄로 나눠 잘리지 않게 한다 */
+  var parts = safe.split(' · ');
+  var line1 = parts.slice(0, 2).join(' · ');
+  var line2 = parts.slice(2).join(' · ');
+
   var svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="330" height="180">' +
-      '<text x="0" y="100" transform="rotate(-24 0 100)" ' +
-        'font-family="sans-serif" font-size="15" fill="rgba(90,80,60,0.13)">' +
-        mark.replace(/[<>&]/g, '') +
-      '</text>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="170">' +
+      '<g transform="rotate(-24 150 85)" font-family="sans-serif" fill="rgba(80,70,50,0.17)">' +
+        '<text x="10" y="80" font-size="16" font-weight="700">' + line1 + '</text>' +
+        '<text x="10" y="103" font-size="13">' + line2 + '</text>' +
+      '</g>' +
     '</svg>';
   var el = document.getElementById('gvMark');
   if (el) el.style.backgroundImage = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '")';

@@ -95,6 +95,7 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
 
     /* 화면에 옅게 깔 문구 — 캡처가 돌아다니면 누구 계정에서 나갔는지 알 수 있다 */
     const mark = [
+      '루월당',
       req.user.name || '교육생',
       String(req.user.email || '').split('@')[0],
       new Date().toLocaleDateString('ko-KR'),
