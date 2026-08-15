@@ -187,7 +187,44 @@
 })();
 </script>
 
+<!-- 교육생 자료집 — 처음 오는 분이 제일 먼저 봐야 할 곳이라 눈에 띄게 둔다 -->
+<a class="guide-banner" href="/guide">
+  <div class="gb-icon">📚</div>
+  <div class="gb-txt">
+    <div class="gb-t">교육생 자료집</div>
+    <div class="gb-d">스레드 · 프로그램 사용법 · 상담 응대까지 순서대로 정리해 두었습니다</div>
+  </div>
+  <div class="gb-go">보러 가기 →</div>
+</a>
+
+<style>
+  .guide-banner {
+    display:flex; align-items:center; gap:16px;
+    background:linear-gradient(135deg, #182234 0%, #24344e 100%);
+    border-radius:16px; padding:20px 22px; margin-bottom:24px;
+    text-decoration:none; color:#fff;
+    box-shadow:0 6px 20px rgba(24,34,52,.18);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .guide-banner:hover { transform:translateY(-2px); box-shadow:0 10px 26px rgba(24,34,52,.26); }
+  .gb-icon { font-size:30px; flex:0 0 auto; line-height:1; }
+  .gb-txt { flex:1; min-width:0; }
+  .gb-t { font-size:17px; font-weight:800; letter-spacing:-.01em; margin-bottom:5px; }
+  .gb-d { font-size:13.5px; color:#C9BDA8; line-height:1.55; word-break:keep-all; }
+  .gb-go { flex:0 0 auto; font-size:14px; font-weight:700; color:#E8D3A8;
+           border:1px solid rgba(232,211,168,.45); border-radius:100px; padding:9px 16px; white-space:nowrap; }
+  @media (max-width:640px) {
+    .guide-banner { flex-wrap:wrap; gap:12px; padding:18px; }
+    .gb-icon { font-size:26px; }
+    .gb-go { width:100%; text-align:center; }
+  }
+</style>
+
 <div class="card-grid">
+  <a class="card" href="/guide">
+    <div class="card-t">교육생 자료집</div>
+    <div class="card-d">순서대로 따라 하는 사용법 · 상담 응대 자료</div>
+  </a>
   <a class="card" href="/pdf/create">
     <div class="card-t">PDF 만들기</div>
     <div class="card-d">내담자 정보 입력 → 7종 사주 리포트 제작</div>
