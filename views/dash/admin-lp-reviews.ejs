@@ -140,7 +140,59 @@
   <button type="button" class="add" id="btnAdd">후기 추가하기</button>
 </div>
 
-<h3 style="font-size:15px; font-weight:800; margin:24px 0 12px;">
+<h3 style="font-size:15px; font-weight:800; margin:28px 0 12px;">
+  프로그램 실제 화면 <span style="font-weight:600;color:#9A9384;font-size:13px">— 사진을 올리면 판매 페이지에 나옵니다</span>
+</h3>
+<div class="lr-note" style="margin-bottom:14px">
+  프로그램을 쓰는 <b>실제 화면을 캡처해서</b> 올려주세요. 사진을 올린 항목만 판매 페이지에 나옵니다.
+</div>
+
+<% shots.forEach(function (it, i) { %>
+  <div class="lr-item <%= it.published ? '' : 'off' %>" data-id="<%= it.id %>">
+    <div class="th">
+      <% if (it.imgs && it.imgs.length) { %>
+        <div class="thumbs">
+          <% it.imgs.forEach(function (im) { %>
+            <div class="tw"><img src="<%= im.url %>" alt=""><button type="button" class="x" data-img="<%= im.id %>">×</button></div>
+          <% }); %>
+        </div>
+        <div class="cnt">사진 <%= it.imgs.length %>장</div>
+      <% } else { %>
+        <div class="no">사진 없음<br>(안 보임)</div>
+      <% } %>
+    </div>
+    <div class="bd">
+      <div class="view">
+        <div class="who"><%= it.title || '(제목 없음)' %><%= it.published ? '' : ' · 숨김' %></div>
+        <div class="tx"><%= it.body %></div>
+        <div class="acts">
+          <button type="button" data-a="up" <%= i === 0 ? 'disabled style="opacity:.35"' : '' %>>↑ 위로</button>
+          <button type="button" data-a="down" <%= i === shots.length - 1 ? 'disabled style="opacity:.35"' : '' %>>↓ 아래로</button>
+          <button type="button" data-a="edit">수정</button>
+          <button type="button" data-a="toggle"><%= it.published ? '숨기기' : '보이기' %></button>
+        </div>
+      </div>
+      <div class="edit">
+        <label class="lb">제목</label>
+        <input type="text" class="e-who" value="<%= it.title || '' %>" placeholder="예: PDF 생성기">
+        <label class="lb">설명</label>
+        <textarea class="e-body"><%= it.body %></textarea>
+        <label class="lb">화면 사진 넣기</label>
+        <div class="e-drop">
+          <span class="e-drop-t">📷 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>
+          <span class="e-drop-d">여러 장 한 번에 고를 수 있어요</span>
+        </div>
+        <input type="file" class="e-file" accept="image/*" multiple hidden>
+        <div class="acts">
+          <button type="button" data-a="save" class="save">저장</button>
+          <button type="button" data-a="cancel">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% }); %>
+
+<h3 style="font-size:15px; font-weight:800; margin:32px 0 12px;">
   올린 후기 <%= items.length %>개
 </h3>
 
@@ -454,7 +506,8 @@
       }
 
       b.disabled = true; b.textContent = '저장 중...';
-      var data = { id: id, who: who, body: body };
+      var isShot = !!item.querySelector('.e-who[placeholder^="예: PDF"]');
+      var data = isShot ? { id: id, title: who, body: body } : { id: id, who: who, body: body };
       if (item.newImgs && item.newImgs.length) data.imgs = item.newImgs;   /* 있으면 뒤에 더한다 */
 
       post('/admin/lp-reviews/save', data)

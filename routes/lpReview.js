@@ -42,7 +42,8 @@ async function imagesOf(ids) {
 router.get('/api/lp/reviews', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, body, who FROM lp_reviews WHERE published ORDER BY sort, id`
+      `SELECT id, body, who FROM lp_reviews
+        WHERE published AND COALESCE(kind,'review')='review' ORDER BY sort, id`
     );
     const imgs = await imagesOf(rows.map((r) => r.id));
     res.set('Cache-Control', 'public, max-age=60');
@@ -59,6 +60,26 @@ router.get('/api/lp/reviews', async (req, res) => {
   } catch (e) {
     /* 표가 아직 없어도 판매 페이지가 깨지지 않게 한다 */
     res.json({ ok: true, reviews: [] });
+  }
+});
+
+/* 프로그램 실제 화면 (로그인 없이) */
+router.get('/api/lp/shots', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, title, body FROM lp_reviews
+        WHERE published AND kind='shot' ORDER BY sort, id`
+    );
+    const imgs = await imagesOf(rows.map((r) => r.id));
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({
+      ok: true,
+      shots: rows
+        .map((r) => ({ id: r.id, title: r.title, body: r.body, imgs: (imgs[r.id] || []).map((x) => x.url) }))
+        .filter((r) => r.imgs.length),      /* 사진이 없는 건 아직 안 보여준다 */
+    });
+  } catch (e) {
+    res.json({ ok: true, shots: [] });
   }
 });
 
@@ -168,7 +189,8 @@ router.get('/admin/lp-reviews', requireAuth, requireAdmin, async (req, res, next
     let items = [];
     try {
       const { rows } = await pool.query(
-        `SELECT id, body, who, sort, published FROM lp_reviews ORDER BY sort, id`
+        `SELECT id, body, who, title, COALESCE(kind,'review') AS kind, sort, published
+           FROM lp_reviews ORDER BY sort, id`
       );
       const imgs = await imagesOf(rows.map((r) => r.id));
       items = rows.map((r) => ({ ...r, imgs: imgs[r.id] || [] }));
@@ -177,7 +199,10 @@ router.get('/admin/lp-reviews', requireAuth, requireAdmin, async (req, res, next
       console.error('[판매 후기] 불러오기 실패:', dbErr.message);
     }
     res.render('dash/admin-lp-reviews', {
-      user: req.user, active: 'admin-lp', items, set: await getSettings(),
+      user: req.user, active: 'admin-lp',
+      items: items.filter((r) => r.kind !== 'shot'),
+      shots: items.filter((r) => r.kind === 'shot'),
+      set: await getSettings(),
     });
   } catch (e) { next(e); }
 });
@@ -187,6 +212,7 @@ router.post('/admin/lp-reviews/save', requireAuth, requireAdmin, async (req, res
     const b = req.body || {};
     const body = plain(b.body).trim();
     const who = plain(b.who).trim().slice(0, 60) || null;
+    const title = plain(b.title).trim().slice(0, 80) || null;
     const hasNew = (Array.isArray(b.imgs) && b.imgs.length) || b.img;
     if (!body && !hasNew && !b.id) {
       return res.status(400).json({ ok: false, error: '사진이나 글 중 하나는 있어야 합니다.' });
@@ -202,7 +228,10 @@ router.post('/admin/lp-reviews/save', requireAuth, requireAdmin, async (req, res
 
     let id = b.id ? Number(b.id) : null;
     if (id) {
-      await pool.query('UPDATE lp_reviews SET body=$2, who=$3 WHERE id=$1', [id, body, who]);
+      await pool.query(
+        'UPDATE lp_reviews SET body=$2, who=$3, title=COALESCE($4, title) WHERE id=$1',
+        [id, body, who, title]
+      );
     } else {
       const { rows } = await pool.query('SELECT COALESCE(MAX(sort),0)+10 AS s FROM lp_reviews');
       const ins = await pool.query(

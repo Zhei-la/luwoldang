@@ -258,6 +258,23 @@ async function initDb() {
     `);
   }
 
+  /* 후기 말고 '프로그램 실제 화면'도 같은 표에 담는다 (kind 로 구분) */
+  await pool.query(`ALTER TABLE lp_reviews ADD COLUMN IF NOT EXISTS kind TEXT DEFAULT 'review';`);
+  await pool.query(`ALTER TABLE lp_reviews ADD COLUMN IF NOT EXISTS title TEXT;`);
+  const sh = await pool.query("SELECT COUNT(*)::int AS n FROM lp_reviews WHERE kind='shot'");
+  if (!sh.rows[0].n) {
+    /* 노션 안내에 있던 화면 설명을 그대로 옮겨둔다. 사진은 관리자가 올린다. */
+    await pool.query(`
+      INSERT INTO lp_reviews (kind, title, body, sort) VALUES
+      ('shot','개인 사주 웹사이트','금액·문구·디자인을 바꿀 수 있는 내 사주 사이트. 무료사주로 카톡 유도하는 방식과 바로 신청받는 방식 모두 들어 있습니다.',10),
+      ('shot','PDF 생성기 · 메일 자동 발송','신청자 목록에서 바로 여러 종류의 리포트를 만들고, 내 사주 이름으로 메일까지 보냅니다.',20),
+      ('shot','내담자 추가질문 응대','리포트를 읽은 AI가 추가 질문에 답을 정리해 줍니다. 내담자 질문을 복사해 넣기만 하면 됩니다.',30),
+      ('shot','나만의 웹사이트 꾸미기','글은 기본, 사진도 넣을 수 있습니다. 원하는 색과 모양으로 바꿔 보세요.',40),
+      ('shot','PDF 표지 고르기 · 직접 만들기','다른 분과 겹치지 않게 표지를 고를 수 있고, 내 표지를 직접 넣을 수도 있습니다.',50),
+      ('shot','실제 명리학자가 만든 만세력 계산기','루월당에서만 쓰는 사주 명식 엔진입니다. 어려운 사주 용어까지 풀어서 나옵니다.',60)
+    `);
+  }
+
   /* 후기 한 건에 사진을 여러 장 넣을 수 있게 따로 보관한다 */
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lp_review_imgs (
