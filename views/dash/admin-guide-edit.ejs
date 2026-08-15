@@ -14,8 +14,8 @@
   /* 도구 막대 — 화면을 내려도 따라온다 */
   .ge-bar { position:sticky; top:0; z-index:30; background:var(--bg);
     padding:8px 0; border-bottom:1px solid var(--beige); }
-  .ge-bar-in { display:flex; gap:5px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
-  .ge-bar-in::-webkit-scrollbar { display:none; }
+  /* 옆으로 스크롤하면 끝에 있는 버튼이 안 보인다. 줄을 바꿔 전부 보이게 한다. */
+  .ge-bar-in { display:flex; gap:5px; flex-wrap:wrap; row-gap:5px; }
   .ge-bar button { flex:0 0 auto; min-height:38px; padding:0 12px; border:1px solid var(--beige);
     background:#fff; border-radius:9px; font-size:13.5px; font-weight:600; color:#4A4438;
     cursor:pointer; font-family:inherit; white-space:nowrap; }
@@ -26,7 +26,7 @@
     padding:0 12px; border:1px solid var(--beige); background:#fff; border-radius:9px;
     font-size:13.5px; font-weight:600; color:#4A4438; text-decoration:none; white-space:nowrap; }
   .ge-bar .listlink:hover { border-color:var(--gold); color:#8A6F3C; }
-  .ge-bar .sep { flex:0 0 auto; width:1px; background:var(--beige); margin:4px 3px; }
+  .ge-bar .sep { flex:0 0 auto; width:1px; background:var(--beige); margin:4px 3px; align-self:stretch; }
 
   /* 글 쓰는 곳 — 실제 보이는 모습 그대로 */
   #geBody { position:relative; min-height:480px; padding:26px 28px; border:1px solid var(--beige); border-top:0;
@@ -120,7 +120,9 @@
 
   @media (max-width:640px) {
     #geBody { padding:18px 16px; min-height:400px; font-size:15.5px; }
-    .ge-bar button { padding:0 10px; font-size:13px; }
+    .ge-bar button, .ge-bar .listlink { padding:0 10px; font-size:12.5px; min-height:36px; }
+    .ge-bar .sep { display:none; }        /* 좁은 화면에서는 구분선을 빼 자리를 아낀다 */
+    .ge-bar-in { gap:4px; row-gap:4px; }
   }
 </style>
 
