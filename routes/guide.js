@@ -247,9 +247,11 @@ router.post('/admin/guide/preview', requireAuth, requireAdmin, (req, res) => {
    ⚠️ 아무 주소나 받아오면 내부망을 들여다보는 통로가 될 수 있어,
       노션이 사진을 두는 곳으로만 제한한다. */
 const IMG_HOSTS = [
-  /\.amazonaws\.com$/i,          // 노션 사진 저장소
-  /(^|\.)notion\.so$/i,
+  /\.amazonaws\.com$/i,               // 노션 사진 저장소 (서명된 주소)
+  /(^|\.)notion\.so$/i,               // 노션 중계 주소
   /(^|\.)notion-static\.com$/i,
+  /(^|\.)notionusercontent\.com$/i,   // 노션 새 사진 주소
+  /(^|\.)notion\.site$/i,
 ];
 
 router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, res) => {
@@ -259,7 +261,17 @@ router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, 
     try { u = new URL(raw); } catch { return res.status(400).json({ ok: false, error: '주소가 올바르지 않습니다.' }); }
     if (u.protocol !== 'https:') return res.status(400).json({ ok: false, error: 'https 주소만 받아옵니다.' });
     if (!IMG_HOSTS.some((re) => re.test(u.hostname))) {
-      return res.status(400).json({ ok: false, error: '노션 사진만 자동으로 가져올 수 있습니다.' });
+      return res.status(400).json({ ok: false, error: '아직 모르는 사진 주소입니다: ' + u.hostname, host: u.hostname });
+    }
+
+    /* 노션 중계 주소(.../image/https%3A%2F%2F...)는 안쪽 진짜 주소를 꺼내 쓴다.
+       중계 주소는 로그인이 필요해 서버에서 그대로 받으면 막히기 때문이다. */
+    const inner = /\/image\/(https?%3A%2F%2F[^?]+)/i.exec(u.pathname + u.search);
+    if (inner) {
+      try {
+        const dec = new URL(decodeURIComponent(inner[1]));
+        if (IMG_HOSTS.some((re) => re.test(dec.hostname))) u = dec;
+      } catch { /* 못 꺼내면 원래 주소로 시도한다 */ }
     }
 
     /* 오래 기다리지 않게 10초로 끊는다 */
@@ -270,7 +282,13 @@ router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, 
       r = await fetch(u.href, { signal: ac.signal, redirect: 'follow' });
     } finally { clearTimeout(timer); }
 
-    if (!r.ok) return res.status(400).json({ ok: false, error: '사진을 받아오지 못했습니다 (' + r.status + ')' });
+    if (!r.ok) {
+      const why = r.status === 401 || r.status === 403
+        ? '노션이 접근을 막았습니다 (주소 만료 또는 로그인 필요)'
+        : r.status === 404 ? '사진을 찾을 수 없습니다'
+        : '받아오기 실패 (' + r.status + ')';
+      return res.status(400).json({ ok: false, error: why, host: u.hostname });
+    }
 
     const type = String(r.headers.get('content-type') || '').split(';')[0].trim();
     if (!/^image\//.test(type)) return res.status(400).json({ ok: false, error: '사진이 아닙니다.' });

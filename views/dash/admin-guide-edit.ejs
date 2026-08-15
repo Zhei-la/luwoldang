@@ -493,17 +493,20 @@
         if (last) { r.setStartAfter(last); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
       }
       dirty = true;
-      fetchRemote();
+      fetchRemote(true);
     }
   });
 
   /* 붙여넣은 바깥 사진을 서버가 대신 받아온다 */
-  function fetchRemote() {
+  function fetchRemote(fromPaste) {
     var list = [].slice.call(ed.querySelectorAll('img[data-remote]'));
-    if (!list.length) return;
+    if (!list.length) {
+      if (fromPaste) toast('사진 없이 글만 붙여넣었습니다');
+      return;
+    }
     toast('사진 ' + list.length + '장 가져오는 중...');
 
-    var done = 0, failed = 0;
+    var done = 0, failed = 0, reasons = [];
     list.reduce(function (chain, im) {
       return chain.then(function () {
         return fetch('/admin/guide/img/from-url', {
@@ -518,8 +521,9 @@
           if (im.parentNode) im.parentNode.classList.remove('loading');
           done++;
         })
-        .catch(function () {
+        .catch(function (err) {
           failed++;
+          if (reasons.indexOf(err.message) === -1) reasons.push(err.message);
           var f = im.closest('figure');
           if (f) f.remove(); else im.remove();
         });
@@ -529,6 +533,7 @@
       if (failed) {
         alert('사진 ' + done + '장을 가져왔습니다.\n' +
               failed + '장은 가져오지 못해 빠졌습니다.\n\n' +
+              '이유: ' + (reasons[0] || '알 수 없음') + '\n\n' +
               '노션 사진 주소는 5분 뒤 만료됩니다.\n' +
               '노션에서 다시 복사해 바로 붙여넣거나, 사진을 하나씩 복사해 넣어주세요.');
       } else {
