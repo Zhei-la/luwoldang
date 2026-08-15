@@ -20,6 +20,21 @@
   .ag-row .edit { flex:0 0 auto; padding:9px 14px; border:1px solid var(--beige); background:#fff;
     border-radius:9px; font-size:13px; font-weight:600; color:#6B6656; text-decoration:none; }
 
+  .ag-row .del { color:#A8332B; cursor:pointer; font-family:inherit; }
+  .ag-row .del:hover { border-color:#A8332B; }
+  .ag-ck { flex:0 0 auto; width:17px; height:17px; }
+
+  .ag-bulk { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:11px 16px; background:#FBF8F1; border:1px solid var(--beige);
+    border-radius:11px; margin-bottom:10px; font-size:14px; color:#4A4438; }
+  .ag-bulk label { display:flex; align-items:center; gap:7px; cursor:pointer; }
+  .ag-bulk input { width:17px; height:17px; }
+  .ag-bulk .cnt { flex:1; font-size:12.5px; color:#9A9384; }
+  .ag-bulk button { padding:8px 15px; border:1px solid var(--beige); background:#fff;
+    border-radius:9px; font-size:13.5px; font-weight:700; color:#A8332B;
+    cursor:pointer; font-family:inherit; }
+  .ag-bulk button:disabled { opacity:.4; cursor:default; color:#9A9384; }
+
   .ag-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
 
   /* 분류 관리 */
@@ -56,6 +71,14 @@
   </div>
 </div>
 
+<% if (posts.length) { %>
+  <div class="ag-bulk">
+    <label><input type="checkbox" id="ckAll"> 전체 고르기</label>
+    <span class="cnt" id="ckCnt"></span>
+    <button type="button" id="btnDelSel" disabled>고른 것 삭제</button>
+  </div>
+<% } %>
+
 <% if (!posts.length) { %>
   <div class="ag-empty">
     아직 올린 자료가 없습니다.<br>
@@ -63,7 +86,8 @@
   </div>
 <% } else { %>
   <% posts.forEach(function (p) { %>
-    <div class="ag-row">
+    <div class="ag-row" data-id="<%= p.id %>">
+      <input type="checkbox" class="ag-ck">
       <div class="t">
         <a href="/guide/<%= p.id %>">
           <% if (p.pinned) { %><span class="ag-pin">중요</span><% } %>
@@ -78,6 +102,7 @@
       </div>
       <a href="/admin/guide/views/<%= p.id %>" class="edit">읽은 사람</a>
       <a href="/admin/guide/edit/<%= p.id %>" class="edit">고치기</a>
+      <button type="button" class="edit del" data-t="<%= p.title %>">삭제</button>
     </div>
   <% }); %>
 <% } %>
@@ -137,6 +162,83 @@
       send({ act: 'move', id: id, dir: act });
     }
   });
+
+  /* ── 자료 지우기 ── */
+  function delOne(id) {
+    return fetch('/admin/guide/delete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id })
+    }).then(function (r) { return r.json(); });
+  }
+
+  /* 한 개 지우기 */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.ag-row .del');
+    if (!b) return;
+    var row = b.closest('.ag-row');
+    if (!confirm('"' + b.dataset.t + '"\n\n이 자료를 지울까요? 되돌릴 수 없습니다.')) return;
+    b.disabled = true; b.textContent = '지우는 중';
+    delOne(row.dataset.id).then(function (d) {
+      if (!d.ok) throw new Error(d.error || '실패');
+      row.remove();
+      refreshCnt();
+    }).catch(function (err) {
+      alert('지우지 못했습니다: ' + err.message);
+      b.disabled = false; b.textContent = '삭제';
+    });
+  });
+
+  /* 여러 개 한 번에 */
+  var ckAll = document.getElementById('ckAll');
+  var btnDelSel = document.getElementById('btnDelSel');
+  var ckCnt = document.getElementById('ckCnt');
+
+  function picked() {
+    return [].filter.call(document.querySelectorAll('.ag-row'), function (r) {
+      var c = r.querySelector('.ag-ck');
+      return c && c.checked;
+    });
+  }
+  function refreshCnt() {
+    if (!btnDelSel) return;
+    var n = picked().length;
+    btnDelSel.disabled = !n;
+    ckCnt.textContent = n ? n + '개 골랐습니다' : '';
+    var boxes = document.querySelectorAll('.ag-ck');
+    if (ckAll) ckAll.checked = boxes.length > 0 && n === boxes.length;
+  }
+
+  if (ckAll) {
+    ckAll.addEventListener('change', function () {
+      [].forEach.call(document.querySelectorAll('.ag-ck'), function (c) { c.checked = ckAll.checked; });
+      refreshCnt();
+    });
+  }
+  document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('ag-ck')) refreshCnt();
+  });
+
+  if (btnDelSel) {
+    btnDelSel.addEventListener('click', async function () {
+      var rows = picked();
+      if (!rows.length) return;
+      if (!confirm(rows.length + '개 자료를 지울까요?\n되돌릴 수 없습니다.')) return;
+
+      btnDelSel.disabled = true;
+      var fail = 0;
+      for (var i = 0; i < rows.length; i++) {
+        btnDelSel.textContent = '지우는 중 ' + (i + 1) + '/' + rows.length;
+        try {
+          var d = await delOne(rows[i].dataset.id);
+          if (!d.ok) throw new Error(d.error || '실패');
+          rows[i].remove();
+        } catch (e) { fail++; }
+      }
+      btnDelSel.textContent = '고른 것 삭제';
+      refreshCnt();
+      if (fail) alert(fail + '개는 지우지 못했습니다.');
+    });
+  }
 
   document.getElementById('acAdd').addEventListener('click', function () {
     var v = document.getElementById('acNew').value.trim();
