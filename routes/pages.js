@@ -21,7 +21,17 @@ router.get('/home', async (req, res, next) => {
     const { getStats } = require('../services/stats');
     const visit = await getStats(req.user.id);
     const visitAll = req.user.role === 'admin' ? await getStats(null) : null;
-    res.render('dash/home', { user: req.user, active: 'home', stats, visit, visitAll });
+    /* 홈에 보여줄 최근 공지 세 건 */
+    let notices = [];
+    try {
+      const r = await pool.query(
+        `SELECT id, title, created_at FROM notices
+          WHERE published ORDER BY created_at DESC LIMIT 3`
+      );
+      notices = r.rows;
+    } catch (e) { /* 표가 아직 없으면 그냥 넘어간다 */ }
+
+    res.render('dash/home', { user: req.user, active: 'home', stats, visit, visitAll, notices });
   } catch (e) {
     next(e);
   }

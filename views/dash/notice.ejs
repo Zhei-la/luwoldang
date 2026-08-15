@@ -1,0 +1,42 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '공지사항' }) %>
+
+<style>
+  .nt-item { display:block; text-decoration:none; color:inherit; background:#fff;
+    border:1px solid var(--beige); border-radius:14px; padding:16px 18px; margin-bottom:9px;
+    transition:border-color .15s, box-shadow .15s; }
+  .nt-item:hover { border-color:var(--gold); box-shadow:0 4px 14px rgba(24,34,52,.06); }
+  .nt-item .t { font-size:16px; font-weight:700; letter-spacing:-.01em;
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .nt-new { font-size:11px; font-weight:700; color:#fff; background:var(--gold);
+    padding:2px 8px; border-radius:100px; }
+  .nt-item .meta { margin-top:7px; font-size:11.5px; color:#9A9384; display:flex; gap:10px; }
+  .nt-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; }
+  .nt-top { display:flex; justify-content:flex-end; margin-bottom:14px; }
+  .nt-top a { padding:11px 18px; background:var(--navy); color:#fff; border-radius:10px;
+    font-size:14px; font-weight:700; text-decoration:none; }
+</style>
+
+<% if (user.role === 'admin') { %>
+  <div class="nt-top"><a href="/admin/notice">공지 관리</a></div>
+<% } %>
+
+<% if (!posts.length) { %>
+  <div class="nt-empty">아직 올라온 공지가 없습니다.</div>
+<% } else { %>
+  <% var now = Date.now(); %>
+  <% posts.forEach(function (p) { %>
+    <% var isNew = (now - new Date(p.created_at).getTime()) < 7 * 864e5; %>
+    <a href="/notice/<%= p.id %>" class="nt-item">
+      <div class="t">
+        <% if (isNew) { %><span class="nt-new">NEW</span><% } %>
+        <%= p.title %>
+      </div>
+      <div class="meta">
+        <span><%= new Date(p.created_at).toLocaleDateString('ko-KR') %></span>
+        <span><%= p.views %>번 읽음</span>
+      </div>
+    </a>
+  <% }); %>
+<% } %>
+
+<%- include('../partials/dash-bottom') %>

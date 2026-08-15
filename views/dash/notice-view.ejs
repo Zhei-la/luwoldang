@@ -1,0 +1,57 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '공지사항' }) %>
+
+<style>
+  .nv-bar { position:sticky; top:57px; z-index:25; display:flex; align-items:center; gap:8px;
+    margin:-28px -28px 18px; padding:10px 28px;
+    background:rgba(251,247,240,.96); backdrop-filter:blur(6px); border-bottom:1px solid var(--beige); }
+  .nv-bar a { padding:9px 16px; border:1px solid var(--beige); background:#fff; border-radius:9px;
+    font-size:13.5px; font-weight:700; color:#4A4438; text-decoration:none; white-space:nowrap; }
+  .nv-bar .edit { background:var(--navy); border-color:var(--navy); color:#fff; }
+  @media (max-width:760px) { .nv-bar { top:53px; margin:-18px -16px 14px; padding:9px 16px; } }
+
+  .nv-head { border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
+  .nv-head h1 { font-family:"Nanum Myeongjo", serif; font-size:25px; line-height:1.4;
+    margin:0 0 10px; word-break:keep-all; }
+  .nv-meta { font-size:12px; color:#9A9384; display:flex; gap:10px; }
+
+  .nv-body { max-width:760px; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all; }
+  .nv-body h2 { font-family:"Nanum Myeongjo",serif; font-size:21px; margin:32px 0 12px;
+    padding-bottom:8px; border-bottom:1px solid var(--beige); }
+  .nv-body h3 { font-size:17.5px; margin:24px 0 10px; color:#8A6F3C; }
+  .nv-body p { margin:0 0 15px; }
+  .nv-body ul, .nv-body ol { margin:0 0 15px; padding-left:22px; }
+  .nv-body li { margin-bottom:6px; }
+  .nv-body blockquote { margin:0 0 16px; padding:13px 16px; background:#FBF8F1;
+    border-left:3px solid var(--gold); border-radius:0 8px 8px 0; }
+  .nv-body pre { background:#F4EFE3; border:1px solid var(--beige); border-radius:10px;
+    padding:14px 16px; margin:0 0 16px; white-space:pre-wrap; font-family:inherit; font-size:14.5px; }
+  .nv-body hr { border:0; border-top:1px solid var(--beige); margin:28px 0; }
+  .nv-body a { color:#3B6EA5; }
+  .nv-body figure { margin:0 0 16px; }
+  .nv-body img { max-width:min(560px, 100%); height:auto; display:block;
+    border-radius:10px; border:1px solid var(--beige); }
+  .nv-body table { width:100%; border-collapse:collapse; margin:0 0 16px; font-size:14.5px; }
+  .nv-body th, .nv-body td { border:1px solid var(--beige); padding:9px 12px; text-align:left; }
+  .nv-body th { background:#F4EFE3; font-weight:700; }
+</style>
+
+<div class="nv-bar">
+  <a href="/notice">← 공지 목록</a>
+  <% if (user.role === 'admin') { %>
+    <a href="/admin/notice/edit/<%= post.id %>" class="edit">수정하기</a>
+    <a href="/admin/notice">관리</a>
+  <% } %>
+</div>
+
+<div class="nv-head">
+  <h1><%= post.title %></h1>
+  <div class="nv-meta">
+    <span><%= new Date(post.created_at).toLocaleDateString('ko-KR') %></span>
+    <span><%= post.views %>번 읽음</span>
+    <% if (!post.published) { %><span style="color:#A8332B;font-weight:700">비공개</span><% } %>
+  </div>
+</div>
+
+<div class="nv-body"><%- bodyHtml %></div>
+
+<%- include('../partials/dash-bottom') %>

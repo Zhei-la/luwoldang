@@ -187,6 +187,117 @@
 })();
 </script>
 
+<!-- 공지 팝업 — 정해둔 기간 동안만 뜬다 -->
+<div class="nt-pop" id="ntPop">
+  <div class="nt-box">
+    <div class="nt-lb">공지사항</div>
+    <div class="nt-ti" id="ntTi"></div>
+    <div class="nt-dt" id="ntDt"></div>
+    <a class="nt-go" id="ntGo" href="#">공지 보러 가기 →</a>
+    <div class="nt-btm">
+      <button type="button" id="ntToday">오늘 하루 안 보기</button>
+      <button type="button" id="ntClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .nt-pop { display:none; position:fixed; inset:0; z-index:150;
+    background:rgba(24,34,52,.45); align-items:center; justify-content:center; padding:20px; }
+  .nt-pop.on { display:flex; }
+  .nt-box { background:#fff; border-radius:18px; padding:26px 24px 20px; width:100%; max-width:400px;
+    box-shadow:0 20px 50px rgba(24,34,52,.3); }
+  .nt-lb { font-size:11.5px; font-weight:800; letter-spacing:.14em; color:#8A6F3C;
+    background:#F4EFE3; display:inline-block; padding:5px 12px; border-radius:100px; }
+  .nt-ti { font-family:"Nanum Myeongjo", serif; font-size:20px; line-height:1.45;
+    margin:14px 0 6px; word-break:keep-all; }
+  .nt-dt { font-size:12px; color:#9A9384; }
+  .nt-go { display:block; margin-top:18px; padding:14px; background:var(--navy); color:#fff;
+    border-radius:11px; font-size:15px; font-weight:700; text-align:center; text-decoration:none; }
+  .nt-btm { display:flex; gap:7px; margin-top:9px; }
+  .nt-btm button { flex:1; padding:11px; border:1px solid var(--beige); background:#fff;
+    border-radius:10px; font-size:13.5px; font-weight:600; color:#6B6656;
+    cursor:pointer; font-family:inherit; }
+  .nt-btm button:hover { border-color:var(--gold); color:#8A6F3C; }
+</style>
+
+<script>
+(function () {
+  /* 공지 팝업 — 오늘 하루 안 보기를 누르면 그날은 다시 뜨지 않는다 */
+  var pop = document.getElementById('ntPop');
+  var KEY = 'luwol_notice_hide';
+
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function hiddenFor(id) {
+    try {
+      var v = JSON.parse(localStorage.getItem(KEY) || '{}');
+      return v.id === id && v.day === today();
+    } catch (e) { return false; }
+  }
+  function hideToday(id) {
+    try { localStorage.setItem(KEY, JSON.stringify({ id: id, day: today() })); } catch (e) {}
+  }
+
+  fetch('/api/notice/popup')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var n = d && d.notice;
+      if (!n || hiddenFor(n.id)) return;
+      document.getElementById('ntTi').textContent = n.title;
+      document.getElementById('ntDt').textContent = new Date(n.created_at).toLocaleDateString('ko-KR');
+      document.getElementById('ntGo').href = '/notice/' + n.id;
+      pop.classList.add('on');
+
+      document.getElementById('ntToday').onclick = function () {
+        hideToday(n.id); pop.classList.remove('on');
+      };
+      document.getElementById('ntClose').onclick = function () { pop.classList.remove('on'); };
+      pop.onclick = function (e) { if (e.target === pop) pop.classList.remove('on'); };
+    })
+    .catch(function () {});
+})();
+</script>
+
+<!-- 공지사항 — 팝업을 닫아도 여기서 다시 볼 수 있게 -->
+<% if (typeof notices !== 'undefined' && notices && notices.length) { %>
+  <div class="nt-home">
+    <div class="nt-home-h">
+      <span class="lb">공지사항</span>
+      <a href="/notice">전체 보기 →</a>
+    </div>
+    <% var nowT = Date.now(); %>
+    <% notices.forEach(function (n) { %>
+      <a class="nt-home-row" href="/notice/<%= n.id %>">
+        <% if ((nowT - new Date(n.created_at).getTime()) < 7 * 864e5) { %>
+          <span class="new">NEW</span>
+        <% } %>
+        <span class="ti"><%= n.title %></span>
+        <span class="dt"><%= new Date(n.created_at).toLocaleDateString('ko-KR') %></span>
+      </a>
+    <% }); %>
+  </div>
+
+  <style>
+    .nt-home { background:#fff; border:1px solid var(--beige); border-radius:16px;
+      padding:16px 18px; margin-bottom:20px; }
+    .nt-home-h { display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:6px; }
+    .nt-home-h .lb { font-size:12px; font-weight:800; letter-spacing:.12em; color:#8A6F3C; }
+    .nt-home-h a { font-size:12.5px; color:#9A9384; text-decoration:none; }
+    .nt-home-h a:hover { color:#8A6F3C; }
+    .nt-home-row { display:flex; align-items:center; gap:8px; padding:9px 0;
+      border-top:1px solid #F4EFE3; text-decoration:none; color:inherit; }
+    .nt-home-row:first-of-type { border-top:0; }
+    .nt-home-row .new { flex:0 0 auto; font-size:10px; font-weight:800; color:#fff;
+      background:#8A6F3C; padding:2px 7px; border-radius:100px; }
+    .nt-home-row .ti { flex:1; min-width:0; font-size:14.5px; font-weight:600;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .nt-home-row:hover .ti { color:#8A6F3C; }
+    .nt-home-row .dt { flex:0 0 auto; font-size:11.5px; color:#9A9384; }
+    @media (max-width:520px) { .nt-home-row .dt { display:none; } }
+  </style>
+<% } %>
+
 <!-- 교육생 자료집 — 처음 오는 분이 제일 먼저 봐야 할 곳이라 눈에 띄게 둔다 -->
 <a class="guide-banner" href="/guide">
   <div class="gb-icon">📚</div>

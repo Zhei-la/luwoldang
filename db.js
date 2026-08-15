@@ -197,6 +197,48 @@ async function initDb() {
   /* 글쓰기 화면이 블로그 방식으로 바뀌면서 본문이 HTML 로 저장된다.
      예전에 쓴 글은 그대로 두고, 이 값으로 어느 방식인지 구분한다. */
   await pool.query(`ALTER TABLE guide_posts ADD COLUMN IF NOT EXISTS format TEXT DEFAULT 'html';`);
+  /* ── 공지사항 ──
+     관리자가 올리면 교육생 홈에 일정 기간 팝업으로 뜬다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notices (
+      id         SERIAL PRIMARY KEY,
+      title      TEXT NOT NULL,
+      body       TEXT NOT NULL DEFAULT '',
+      popup      BOOLEAN DEFAULT TRUE,      -- 홈에 팝업으로 띄울지
+      popup_days INTEGER DEFAULT 7,         -- 며칠 동안 띄울지
+      published  BOOLEAN DEFAULT TRUE,
+      views      INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notice_images (
+      id        SERIAL PRIMARY KEY,
+      notice_id INTEGER REFERENCES notices(id) ON DELETE CASCADE,
+      img       TEXT NOT NULL
+    );
+  `);
+
+  /* ── 문의하기 ──
+     교육생이 남기면 관리자에게 알림이 가고,
+     답변을 달면 남긴 사람에게 알림이 간다.
+     내가 쓴 것만 보이고 남의 글은 보이지 않는다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS inquiries (
+      id          SERIAL PRIMARY KEY,
+      teacher_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind        TEXT NOT NULL DEFAULT '기타',   -- 기능 요청 / 오류 / 문의 / 기타
+      title       TEXT NOT NULL,
+      body        TEXT NOT NULL DEFAULT '',
+      answer      TEXT,
+      answered_at TIMESTAMPTZ,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_teacher ON inquiries(teacher_id, created_at DESC);`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_open ON inquiries(answered_at NULLS FIRST, created_at DESC);`);
+
   /* 누가 어떤 자료를 언제 봤는지 남긴다.
      캡처가 돌아다닐 때 어느 계정에서 나갔는지 좁힐 수 있다. */
   await pool.query(`

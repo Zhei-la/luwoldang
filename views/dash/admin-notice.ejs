@@ -1,0 +1,75 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '공지 관리' }) %>
+
+<style>
+  .an-top { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .an-top a { padding:11px 18px; border:1px solid var(--beige); background:#fff;
+    border-radius:10px; font-size:14px; font-weight:700; color:#4A4438; text-decoration:none; }
+  .an-top .new { background:var(--navy); border-color:var(--navy); color:#fff; }
+
+  .an-row { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--beige);
+    border-radius:12px; padding:14px 16px; margin-bottom:8px; }
+  .an-row .t { flex:1; min-width:0; }
+  .an-row .t a { font-size:15.5px; font-weight:700; color:var(--ink); text-decoration:none;
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .an-row .t a:hover { color:var(--gold); }
+  .an-row .meta { margin-top:6px; font-size:11.5px; color:#9A9384; display:flex; gap:9px; flex-wrap:wrap; }
+  .an-tag { background:#F4EFE3; color:#8A6F3C; padding:2px 8px; border-radius:5px; font-weight:600; }
+  .an-off { font-size:11px; font-weight:700; color:#A8332B; background:#FBF1EF; padding:2px 8px; border-radius:100px; }
+  .an-row .btn { flex:0 0 auto; padding:9px 14px; border:1px solid var(--beige); background:#fff;
+    border-radius:9px; font-size:13px; font-weight:600; color:#6B6656; text-decoration:none;
+    cursor:pointer; font-family:inherit; }
+  .an-row .btn.del { color:#A8332B; }
+  .an-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
+</style>
+
+<div class="an-top">
+  <a href="/admin/notice/edit" class="new">+ 새 공지 쓰기</a>
+  <a href="/notice">교육생 화면으로 보기</a>
+</div>
+
+<% if (!posts.length) { %>
+  <div class="an-empty">아직 올린 공지가 없습니다.<br>위 <b>새 공지 쓰기</b>로 첫 공지를 올려보세요.</div>
+<% } else { %>
+  <% var now = Date.now(); %>
+  <% posts.forEach(function (p) { %>
+    <% var live = p.popup && p.published &&
+         (now - new Date(p.created_at).getTime()) < (p.popup_days || 7) * 864e5; %>
+    <div class="an-row" data-id="<%= p.id %>">
+      <div class="t">
+        <a href="/notice/<%= p.id %>">
+          <% if (!p.published) { %><span class="an-off">비공개</span><% } %>
+          <%= p.title %>
+        </a>
+        <div class="meta">
+          <% if (live) { %><span class="an-tag">홈에 뜨는 중</span><% } %>
+          <span><%= new Date(p.created_at).toLocaleDateString('ko-KR') %></span>
+          <span>팝업 <%= p.popup ? p.popup_days + '일' : '안 함' %></span>
+          <span><%= p.views %>번 읽음</span>
+        </div>
+      </div>
+      <a href="/admin/notice/edit/<%= p.id %>" class="btn">고치기</a>
+      <button type="button" class="btn del" data-t="<%= p.title %>">삭제</button>
+    </div>
+  <% }); %>
+<% } %>
+
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.an-row .del');
+  if (!b) return;
+  var row = b.closest('.an-row');
+  if (!confirm('"' + b.dataset.t + '"\n\n이 공지를 지울까요? 되돌릴 수 없습니다.')) return;
+  b.disabled = true; b.textContent = '지우는 중';
+  fetch('/admin/notice/delete', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: row.dataset.id })
+  }).then(function (r) { return r.json(); })
+    .then(function (d) { if (!d.ok) throw new Error(d.error || '실패'); row.remove(); })
+    .catch(function (err) {
+      alert('지우지 못했습니다: ' + err.message);
+      b.disabled = false; b.textContent = '삭제';
+    });
+});
+</script>
+
+<%- include('../partials/dash-bottom') %>
