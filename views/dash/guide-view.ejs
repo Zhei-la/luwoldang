@@ -92,33 +92,34 @@
   .print-warn { display:none; }
 
   /* ── 화면에 고정되는 이름 ──
-     확대하든 축소하든, 글을 내리든 늘 같은 자리에 남는다.
-     어떤 내용 위에도 가려지지 않도록 맨 앞에 두고
-     옅은 바탕을 깔아 사진 위에서도 읽히게 한다. */
+     화면 전체가 아니라 '본문 영역'을 기준으로 잡는다.
+     그러지 않으면 넓은 화면에서 창 맨 끝으로 밀려난다.
+     (사이드바 260px + 본문 최대 1000px) */
   .gv-marks {
-    position:fixed; inset:0; z-index:9999;
-    pointer-events:none; user-select:none; overflow:hidden;
+    position:fixed; top:0; bottom:0;
+    left:260px; width:min(1000px, calc(100vw - 260px));
+    z-index:9999; pointer-events:none; user-select:none; overflow:hidden;
   }
   .gv-marks .m {
     position:absolute; white-space:nowrap;
     font-size:12.5px; font-weight:800; letter-spacing:.02em;
-    color:rgba(70,60,42,.62);
-    background:rgba(255,255,255,.72);
-    padding:3px 9px; border-radius:100px;
+    color:rgba(70,60,42,.42);
+    text-shadow:0 0 3px rgba(255,255,255,.9), 0 1px 0 rgba(255,255,255,.9);
   }
-  /* 왼쪽 위 — 머리말 바로 아래 */
-  .gv-marks .mL { top:118px; left:10px; }
-  /* 오른쪽 — 세로로 */
+  /* 왼쪽 위 */
+  .gv-marks .mL { top:118px; left:16px; }
+  /* 오른쪽 세로 — 글자를 세로로 흐르게 해 잘리지 않는다 */
   .gv-marks .mR {
     top:50%; right:8px;
-    transform:rotate(-90deg) translateX(50%);
-    transform-origin:right center;
+    writing-mode:vertical-rl; transform:translateY(-50%) rotate(180deg);
   }
 
-  @media (max-width:900px) {
-    .gv-marks .m { font-size:10.5px; padding:2px 7px; }
-    .gv-marks .mL { top:106px; left:6px; }
-    .gv-marks .mR { right:2px; }
+  @media (max-width:768px) {
+    /* 사이드바가 숨으므로 화면 전체가 본문이다 */
+    .gv-marks { left:0; width:100vw; }
+    .gv-marks .m { font-size:11px; }
+    .gv-marks .mL { top:106px; left:10px; }
+    .gv-marks .mR { right:4px; }
   }
 
   .gv-copyright { max-width:760px; margin-top:26px; padding:14px 16px; background:#FBF8F1;
