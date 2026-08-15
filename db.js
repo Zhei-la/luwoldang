@@ -197,6 +197,17 @@ async function initDb() {
   /* 글쓰기 화면이 블로그 방식으로 바뀌면서 본문이 HTML 로 저장된다.
      예전에 쓴 글은 그대로 두고, 이 값으로 어느 방식인지 구분한다. */
   await pool.query(`ALTER TABLE guide_posts ADD COLUMN IF NOT EXISTS format TEXT DEFAULT 'html';`);
+  /* 누가 어떤 자료를 언제 봤는지 남긴다.
+     캡처가 돌아다닐 때 어느 계정에서 나갔는지 좁힐 수 있다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_views (
+      id         SERIAL PRIMARY KEY,
+      post_id    INTEGER REFERENCES guide_posts(id) ON DELETE CASCADE,
+      teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      viewed_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_guide_views ON guide_views(post_id, viewed_at DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_guide_posts_cat ON guide_posts(cat_id, pinned DESC, created_at DESC);`);
 
   /* 처음 한 번만 기본 분류를 넣어준다 */

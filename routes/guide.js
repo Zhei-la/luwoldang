@@ -86,13 +86,24 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
     if (!post || (!post.published && req.user.role !== 'admin')) {
       return res.status(404).send('없는 글입니다.');
     }
-    /* 조회수는 관리자가 볼 때는 올리지 않는다 */
+    /* 조회수와 열람 기록은 관리자가 볼 때는 남기지 않는다 */
     if (req.user.role !== 'admin') {
       pool.query('UPDATE guide_posts SET views = views + 1 WHERE id = $1', [post.id]).catch(() => {});
+      pool.query('INSERT INTO guide_views (post_id, teacher_id) VALUES ($1,$2)',
+        [post.id, req.user.id]).catch(() => {});
     }
+
+    /* 화면에 옅게 깔 문구 — 캡처가 돌아다니면 누구 계정에서 나갔는지 알 수 있다 */
+    const mark = [
+      req.user.name || '교육생',
+      String(req.user.email || '').split('@')[0],
+      new Date().toLocaleDateString('ko-KR'),
+    ].filter(Boolean).join(' · ');
     res.render('dash/guide-view', {
       user: req.user, active: 'guide', post,
       bodyHtml: post.format === 'md' ? render(post.body) : gh.sanitize(post.body),
+      mark,
+      lock: req.user.role !== 'admin',   // 관리자는 자기 글이라 막지 않는다
     });
   } catch (e) { next(e); }
 });
@@ -218,6 +229,25 @@ router.post('/admin/guide/delete', requireAuth, requireAdmin, async (req, res) =
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+/* 누가 읽었는지 — 유출 추적용 */
+router.get('/admin/guide/views/:id(\\d+)', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows: p } = await pool.query('SELECT id, title FROM guide_posts WHERE id=$1', [req.params.id]);
+    if (!p[0]) return res.redirect('/admin/guide');
+    const { rows } = await pool.query(`
+      SELECT u.name, u.email, COUNT(*)::int AS n, MAX(v.viewed_at) AS last_at
+        FROM guide_views v
+        JOIN users u ON u.id = v.teacher_id
+       WHERE v.post_id = $1
+       GROUP BY u.id, u.name, u.email
+       ORDER BY MAX(v.viewed_at) DESC
+    `, [req.params.id]);
+    res.render('dash/admin-guide-views', {
+      user: req.user, active: 'admin-guide', post: p[0], readers: rows,
+    });
+  } catch (e) { next(e); }
 });
 
 /* ── 분류 관리 ── */

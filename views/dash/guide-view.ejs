@@ -44,12 +44,77 @@
     font-size:14px; font-weight:600; color:#6B6656; text-decoration:none; }
   .gv-btn.main { background:var(--navy); border-color:var(--navy); color:#fff; }
 
+  /* ── 복사 막기 ──
+     완벽하지는 않지만 긁어가는 대부분을 막는다. */
+  .lock .gv-body {
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+    -webkit-touch-callout:none;   /* 폰에서 길게 눌러도 복사 메뉴가 안 뜨게 */
+  }
+  .lock .gv-body img { -webkit-user-drag:none; user-drag:none; pointer-events:none; }
+
+  /* 인쇄나 PDF 저장으로 빼가는 것도 막는다 */
+  @media print {
+    .lock .gv-body, .lock .gv-head { display:none !important; }
+    .lock .print-warn { display:block !important; font-size:18px; padding:40px; text-align:center; }
+  }
+  .print-warn { display:none; }
+
+  /* ── 화면에 옅게 깔리는 이름 ──
+     캡처가 돌아다니면 누구 계정에서 나갔는지 바로 드러난다. */
+  .gv-stage { position:relative; }
+  .gv-mark { position:absolute; inset:0; pointer-events:none; z-index:5;
+    background-repeat:repeat; opacity:.5; }
+
   .gv-copyright { max-width:760px; margin-top:26px; padding:14px 16px; background:#FBF8F1;
     border:1px solid var(--beige); border-radius:10px; font-size:12.5px; color:#6B6656;
     line-height:1.75; word-break:keep-all; }
 </style>
 
 <a href="/guide" class="gv-back">← 교육생 자료집</a>
+
+<% if (lock) { %>
+<script>
+(function () {
+  document.body.classList.add('lock');
+
+  /* ── 화면에 옅게 깔 이름 만들기 ──
+     글자를 그림으로 만들어 배경에 반복해서 깐다. */
+  var mark = <%- JSON.stringify(mark) %>;
+  var svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="330" height="180">' +
+      '<text x="0" y="100" transform="rotate(-24 0 100)" ' +
+        'font-family="sans-serif" font-size="15" fill="rgba(90,80,60,0.13)">' +
+        mark.replace(/[<>&]/g, '') +
+      '</text>' +
+    '</svg>';
+  var el = document.getElementById('gvMark');
+  if (el) el.style.backgroundImage = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '")';
+
+  /* ── 복사·저장 막기 ── */
+  var body = document.querySelector('.gv-body');
+
+  function stop(e) { e.preventDefault(); return false; }
+  if (body) {
+    body.addEventListener('copy', stop);
+    body.addEventListener('cut', stop);
+    body.addEventListener('dragstart', stop);
+    body.addEventListener('selectstart', stop);
+  }
+  document.addEventListener('contextmenu', function (e) {
+    if (e.target.closest('.gv-body')) stop(e);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    var k = (e.key || '').toLowerCase();
+    /* 복사·전체선택·저장·인쇄·소스보기 */
+    if ((e.ctrlKey || e.metaKey) && ['c', 'x', 'a', 's', 'p', 'u'].indexOf(k) > -1) return stop(e);
+    /* 개발자 도구 */
+    if (k === 'f12') return stop(e);
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c'].indexOf(k) > -1) return stop(e);
+  });
+})();
+</script>
+<% } %>
 
 <div class="gv-head">
   <h1><%= post.title %></h1>
@@ -61,14 +126,24 @@
   </div>
 </div>
 
-<div class="gv-body">
-  <%- bodyHtml %>
+<div class="gv-stage">
+  <div class="gv-body">
+    <%- bodyHtml %>
+  </div>
+  <% if (lock) { %>
+    <div class="gv-mark" id="gvMark"></div>
+  <% } %>
 </div>
+
+<div class="print-warn">이 자료는 인쇄할 수 없습니다.</div>
 
 <div class="gv-copyright">
   이 자료의 저작권은 루월당에 있습니다. 정식 등록된 교육생 본인만 이용하실 수 있으며,
   캡처·복사·공유·재배포·2차 가공을 금합니다.
   위반 시 저작권법 제136조에 따라 5년 이하의 징역 또는 5천만원 이하의 벌금에 처해질 수 있습니다.
+  <% if (lock) { %>
+    <br><b>이 화면에는 <%= user.name %> 님의 정보가 표시되어 있으며, 열람 기록이 남습니다.</b>
+  <% } %>
 </div>
 
 <div class="gv-foot">
