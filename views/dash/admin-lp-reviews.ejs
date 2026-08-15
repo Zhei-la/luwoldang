@@ -62,6 +62,24 @@
     cursor:pointer; font-family:inherit; }
   .lr-item .acts .del { color:#A8332B; }
 
+  .lr-item .edit { display:none; }
+  .lr-item.editing .view { display:none; }
+  .lr-item.editing .edit { display:block; }
+  .lr-item .edit .lb { display:block; font-size:11.5px; letter-spacing:.06em;
+    color:#9A9384; margin:0 0 5px; }
+  .lr-item .edit input[type=text], .lr-item .edit textarea {
+    width:100%; padding:10px 12px; border:1px solid var(--beige); border-radius:9px;
+    font-size:14.5px; font-family:inherit; background:#fff; color:var(--ink);
+    outline:none; margin-bottom:10px; line-height:1.7; }
+  .lr-item .edit textarea { min-height:100px; resize:vertical; }
+  .lr-item .edit .e-drop { border:1px dashed var(--beige); border-radius:9px; background:#fff;
+    padding:14px; text-align:center; cursor:pointer; margin-bottom:10px; }
+  .lr-item .edit .e-drop:hover, .lr-item .edit .e-drop.over { border-color:var(--gold); }
+  .lr-item .edit .e-drop-t { display:block; font-size:13px; font-weight:700; color:#4A4438; }
+  .lr-item .edit .e-drop-d { display:block; font-size:11.5px; color:#9A9384; margin-top:3px; }
+  .lr-item .edit .e-drop img { max-width:100%; max-height:180px; border-radius:8px; display:block; margin:0 auto; }
+  .lr-item .edit .save { background:var(--navy); border-color:var(--navy); color:#fff; }
+
   .lr-empty { text-align:center; padding:44px 20px; color:#9A9384; font-size:14px; }
   .toast { position:fixed; left:50%; bottom:40px; transform:translateX(-50%); background:var(--navy);
     color:#fff; padding:12px 20px; border-radius:100px; font-size:14px; font-weight:700; z-index:200; }
@@ -125,14 +143,34 @@
         <% } %>
       </div>
       <div class="bd">
-        <div class="who"><%= it.who || '(작성자 없음)' %><%= it.published ? '' : ' · 숨김' %></div>
-        <div class="tx"><%= it.body %></div>
-        <div class="acts">
-          <button type="button" data-a="up" <%= i === 0 ? 'disabled style="opacity:.35"' : '' %>>↑ 위로</button>
-          <button type="button" data-a="down" <%= i === items.length - 1 ? 'disabled style="opacity:.35"' : '' %>>↓ 아래로</button>
-          <button type="button" data-a="edit">글 고치기</button>
-          <button type="button" data-a="toggle"><%= it.published ? '숨기기' : '보이기' %></button>
-          <button type="button" data-a="del" class="del">삭제</button>
+        <div class="view">
+          <div class="who"><%= it.who || '(작성자 없음)' %><%= it.published ? '' : ' · 숨김' %></div>
+          <div class="tx"><%= it.body %></div>
+          <div class="acts">
+            <button type="button" data-a="up" <%= i === 0 ? 'disabled style="opacity:.35"' : '' %>>↑ 위로</button>
+            <button type="button" data-a="down" <%= i === items.length - 1 ? 'disabled style="opacity:.35"' : '' %>>↓ 아래로</button>
+            <button type="button" data-a="edit">수정</button>
+            <button type="button" data-a="toggle"><%= it.published ? '숨기기' : '보이기' %></button>
+            <button type="button" data-a="del" class="del">삭제</button>
+          </div>
+        </div>
+
+        <!-- 수정할 때만 열린다 -->
+        <div class="edit">
+          <label class="lb">작성자</label>
+          <input type="text" class="e-who" value="<%= it.who || '' %>" placeholder="예: 1기 수강생">
+          <label class="lb">후기 내용</label>
+          <textarea class="e-body" placeholder="후기 내용"><%= it.body %></textarea>
+          <label class="lb">사진 바꾸기</label>
+          <div class="e-drop">
+            <span class="e-drop-t">📷 새 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>
+            <span class="e-drop-d">그대로 두면 지금 사진이 유지됩니다</span>
+          </div>
+          <input type="file" class="e-file" accept="image/*" hidden>
+          <div class="acts">
+            <button type="button" data-a="save" class="save">저장</button>
+            <button type="button" data-a="cancel">취소</button>
+          </div>
         </div>
       </div>
     </div>
@@ -218,9 +256,14 @@
   /* 캡처를 복사해 붙여넣어도 된다 */
   document.addEventListener('paste', function (e) {
     var items = (e.clipboardData || {}).items || [];
+    var f = null;
     for (var i = 0; i < items.length; i++) {
-      if (/^image\//.test(items[i].type)) { readImg(items[i].getAsFile()); break; }
+      if (/^image\//.test(items[i].type)) { f = items[i].getAsFile(); break; }
     }
+    if (!f) return;
+    /* 수정 중인 후기가 있으면 그쪽 사진을 바꾼다 */
+    var editing = document.querySelector('.lr-item.editing');
+    if (editing) pickInto(editing, f); else readImg(f);
   });
 
   var add = document.getElementById('btnAdd');
@@ -243,6 +286,46 @@
       alert('올리지 못했습니다: ' + err.message);
       add.disabled = false; add.textContent = '후기 추가하기';
     });
+  });
+
+  /* ── 수정 칸에서 사진 바꾸기 ── */
+  function showPicked(item, dataUrl) {
+    item.newImg = dataUrl;
+    item.querySelector('.e-drop').innerHTML =
+      '<img src="' + dataUrl + '" alt=""><span class="e-drop-d">다시 누르면 바꿀 수 있어요</span>';
+  }
+  function pickInto(item, f) {
+    if (!f || !/^image\//.test(f.type)) { alert('이미지 파일만 올릴 수 있습니다.'); return; }
+    if (f.size > 3 * 1024 * 1024) { alert('사진이 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
+    var fr = new FileReader();
+    fr.onload = function () { showPicked(item, fr.result); };
+    fr.readAsDataURL(f);
+  }
+
+  document.addEventListener('click', function (e) {
+    var dz = e.target.closest('.lr-item .e-drop');
+    if (!dz) return;
+    dz.closest('.lr-item').querySelector('.e-file').click();
+  });
+  document.addEventListener('change', function (e) {
+    if (!e.target.classList.contains('e-file')) return;
+    var item = e.target.closest('.lr-item');
+    pickInto(item, e.target.files[0]);
+    e.target.value = '';
+  });
+  document.addEventListener('dragover', function (e) {
+    var dz = e.target.closest('.lr-item .e-drop');
+    if (dz) { e.preventDefault(); dz.classList.add('over'); }
+  });
+  document.addEventListener('dragleave', function (e) {
+    var dz = e.target.closest('.lr-item .e-drop');
+    if (dz) dz.classList.remove('over');
+  });
+  document.addEventListener('drop', function (e) {
+    var dz = e.target.closest('.lr-item .e-drop');
+    if (!dz) return;
+    e.preventDefault(); dz.classList.remove('over');
+    pickInto(dz.closest('.lr-item'), e.dataTransfer.files[0]);
   });
 
   /* 목록에서 고치기 · 순서 · 숨기기 · 삭제 */
@@ -273,17 +356,34 @@
       post('/admin/lp-reviews/move', { id: id, dir: a }).then(function () { location.reload(); });
       return;
     }
-    if (a === 'edit') {
-      var who = prompt('누구의 후기인가요', item.querySelector('.who').textContent.split(' · ')[0]);
-      if (who === null) return;
-      var body = prompt('후기 내용', item.querySelector('.tx').textContent);
-      if (body === null) return;
-      post('/admin/lp-reviews/save', { id: id, who: who, body: body })
+    if (a === 'edit') { item.classList.add('editing'); return; }
+    if (a === 'cancel') {
+      item.classList.remove('editing');
+      item.newImg = null;
+      var dz = item.querySelector('.e-drop');
+      dz.innerHTML = '<span class="e-drop-t">📷 새 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>' +
+                     '<span class="e-drop-d">그대로 두면 지금 사진이 유지됩니다</span>';
+      return;
+    }
+    if (a === 'save') {
+      var who = item.querySelector('.e-who').value.trim();
+      var body = item.querySelector('.e-body').value.trim();
+      if (!who && !body && !item.newImg) { alert('내용을 적어주세요.'); return; }
+
+      b.disabled = true; b.textContent = '저장 중...';
+      var data = { id: id, who: who, body: body };
+      if (item.newImg) data.img = item.newImg;      /* 새로 고른 사진이 있을 때만 바꾼다 */
+
+      post('/admin/lp-reviews/save', data)
         .then(function (d) {
           if (!d.ok) throw new Error(d.error || '실패');
           location.reload();
         })
-        .catch(function (err) { alert('고치지 못했습니다: ' + err.message); });
+        .catch(function (err) {
+          alert('저장하지 못했습니다: ' + err.message);
+          b.disabled = false; b.textContent = '저장';
+        });
+      return;
     }
   });
 })();

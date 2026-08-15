@@ -25,14 +25,16 @@ function plain(t) {
 
 /* 공지 분류 목록 (글 개수까지) */
 async function noticeCats() {
-  const { rows } = await pool.query(`
+  try {
+    const { rows } = await pool.query(`
     SELECT c.id, c.name, c.sort,
            (SELECT COUNT(*)::int FROM notices n
              WHERE n.cat_id = c.id AND n.published) AS n
-      FROM notice_cats c
-     ORDER BY c.sort, c.id
-  `);
-  return rows;
+        FROM notice_cats c
+       ORDER BY c.sort, c.id
+    `);
+    return rows;
+  } catch (e) { return []; }
 }
 
 /* ══════════════════════════════════
@@ -47,18 +49,22 @@ router.get('/notice', requireAuth, requireApproved, async (req, res, next) => {
     let where = 'n.published';
     if (catId) { args.push(catId); where += ` AND n.cat_id = $${args.length}`; }
 
-    const { rows } = await pool.query(`
-      SELECT n.id, n.title, n.views, n.created_at, n.popup, n.popup_days, c.name AS cat_name
-        FROM notices n
-        LEFT JOIN notice_cats c ON c.id = n.cat_id
-       WHERE ${where}
-       ORDER BY n.created_at DESC
-       LIMIT 100
-    `, args);
-    res.render('dash/notice', {
-      user: req.user, active: 'notice',
-      posts: rows, catList: await noticeCats(), catId,
-    });
+    let posts = [], catList = [];
+    try {
+      const { rows } = await pool.query(`
+        SELECT n.id, n.title, n.views, n.created_at, n.popup, n.popup_days, c.name AS cat_name
+          FROM notices n
+          LEFT JOIN notice_cats c ON c.id = n.cat_id
+         WHERE ${where}
+         ORDER BY n.created_at DESC
+         LIMIT 100
+      `, args);
+      posts = rows;
+      catList = await noticeCats();
+    } catch (dbErr) {
+      console.error('[공지] 불러오기 실패:', dbErr.message);
+    }
+    res.render('dash/notice', { user: req.user, active: 'notice', posts, catList, catId });
   } catch (e) { next(e); }
 });
 
@@ -113,15 +119,21 @@ router.get('/api/notice/popup', requireAuth, requireApproved, async (req, res) =
 /* ── 관리자 ── */
 router.get('/admin/notice', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT n.id, n.title, n.published, n.popup, n.popup_days, n.views, n.created_at,
-             c.name AS cat_name
-        FROM notices n
-        LEFT JOIN notice_cats c ON c.id = n.cat_id
-       ORDER BY n.created_at DESC
-    `);
+    let posts = [];
+    try {
+      const { rows } = await pool.query(`
+        SELECT n.id, n.title, n.published, n.popup, n.popup_days, n.views, n.created_at,
+               c.name AS cat_name
+          FROM notices n
+          LEFT JOIN notice_cats c ON c.id = n.cat_id
+         ORDER BY n.created_at DESC
+      `);
+      posts = rows;
+    } catch (dbErr) {
+      console.error('[공지 관리] 불러오기 실패:', dbErr.message);
+    }
     res.render('dash/admin-notice', {
-      user: req.user, active: 'admin-notice', posts: rows, catList: await noticeCats(),
+      user: req.user, active: 'admin-notice', posts, catList: await noticeCats(),
     });
   } catch (e) { next(e); }
 });
@@ -261,13 +273,19 @@ const KINDS = ['기능 요청', '오류 신고', '사용 문의', '기타'];
 /* 교육생 — 내가 남긴 것만 */
 router.get('/support', requireAuth, requireApproved, async (req, res, next) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT id, kind, title, body, answer, answered_at, created_at
-        FROM inquiries
-       WHERE teacher_id = $1
-       ORDER BY created_at DESC
-    `, [req.user.id]);
-    res.render('dash/support', { user: req.user, active: 'support', items: rows, kinds: KINDS });
+    let items = [];
+    try {
+      const { rows } = await pool.query(`
+        SELECT id, kind, title, body, answer, answered_at, created_at
+          FROM inquiries
+         WHERE teacher_id = $1
+         ORDER BY created_at DESC
+      `, [req.user.id]);
+      items = rows;
+    } catch (dbErr) {
+      console.error('[문의하기] 불러오기 실패:', dbErr.message);
+    }
+    res.render('dash/support', { user: req.user, active: 'support', items, kinds: KINDS });
   } catch (e) { next(e); }
 });
 
@@ -320,19 +338,28 @@ router.post('/support/delete', requireAuth, requireApproved, async (req, res) =>
 router.get('/admin/support', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const only = req.query.only === 'open' ? 'AND i.answered_at IS NULL' : '';
-    const { rows } = await pool.query(`
-      SELECT i.*, u.name AS who, u.email
-        FROM inquiries i
-        JOIN users u ON u.id = i.teacher_id
-       WHERE TRUE ${only}
-       ORDER BY (i.answered_at IS NULL) DESC, i.created_at DESC
-    `);
-    const { rows: cnt } = await pool.query(
-      'SELECT COUNT(*) FILTER (WHERE answered_at IS NULL)::int AS open, COUNT(*)::int AS all_n FROM inquiries'
-    );
+    let items = [];
+    let count = { open: 0, all_n: 0 };
+    try {
+      const { rows } = await pool.query(`
+        SELECT i.*, u.name AS who, u.email
+          FROM inquiries i
+          JOIN users u ON u.id = i.teacher_id
+         WHERE TRUE ${only}
+         ORDER BY (i.answered_at IS NULL) DESC, i.created_at DESC
+      `);
+      items = rows;
+      const { rows: cnt } = await pool.query(
+        'SELECT COUNT(*) FILTER (WHERE answered_at IS NULL)::int AS open, COUNT(*)::int AS all_n FROM inquiries'
+      );
+      count = cnt[0];
+    } catch (dbErr) {
+      /* 표가 아직 없을 수 있다. 그래도 화면은 떠야 한다. */
+      console.error('[문의 관리] 불러오기 실패:', dbErr.message);
+    }
     res.render('dash/admin-support', {
       user: req.user, active: 'admin-support',
-      items: rows, count: cnt[0], only: req.query.only || '',
+      items, count, only: req.query.only || '',
     });
   } catch (e) { next(e); }
 });

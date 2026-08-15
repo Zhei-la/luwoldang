@@ -22,7 +22,10 @@ function plain(t) {
 }
 
 function imgUrl(r) {
-  return r.img ? '/lp/review-img/' + r.id : (r.img_url || null);
+  /* 조회할 때 사진 내용(img)은 무거워서 안 가져오고
+     '있는지 여부(has_img)'만 가져온다. 그 값을 봐야 한다. */
+  const has = r.has_img !== undefined ? r.has_img : !!r.img;
+  return has ? '/lp/review-img/' + r.id : (r.img_url || null);
 }
 
 /* ── 판매 페이지가 읽어가는 곳 (로그인 없이) ── */
@@ -135,14 +138,19 @@ router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) =>
 /* ── 관리자 ── */
 router.get('/admin/lp-reviews', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, img IS NOT NULL AS has_img, img_url, body, who, sort, published
-         FROM lp_reviews ORDER BY sort, id`
-    );
+    let items = [];
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, img IS NOT NULL AS has_img, img_url, body, who, sort, published
+           FROM lp_reviews ORDER BY sort, id`
+      );
+      items = rows.map((r) => ({ ...r, url: imgUrl(r) }));
+    } catch (dbErr) {
+      /* 표가 아직 없어도 화면은 떠야 한다 */
+      console.error('[판매 후기] 불러오기 실패:', dbErr.message);
+    }
     res.render('dash/admin-lp-reviews', {
-      user: req.user, active: 'admin-lp',
-      items: rows.map((r) => ({ ...r, url: imgUrl(r) })),
-      set: await getSettings(),
+      user: req.user, active: 'admin-lp', items, set: await getSettings(),
     });
   } catch (e) { next(e); }
 });
