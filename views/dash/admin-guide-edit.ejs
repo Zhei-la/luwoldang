@@ -56,8 +56,8 @@
   #geBody figure.sel img { outline:3px solid var(--gold); outline-offset:2px; }
 
   /* 사진을 누르면 뜨는 크기 조절 막대 */
-  .imgbar { position:absolute; z-index:60; display:none; gap:4px; padding:5px;
-    background:var(--navy); border-radius:10px; box-shadow:0 6px 18px rgba(24,34,52,.28); }
+  .imgbar { position:fixed; z-index:120; display:none; gap:4px; padding:5px;
+    background:var(--navy); border-radius:10px; box-shadow:0 6px 18px rgba(24,34,52,.32); }
   .imgbar.on { display:flex; }
   .imgbar button { min-height:34px; padding:0 12px; border:0; border-radius:7px;
     background:rgba(255,255,255,.14); color:#fff; font-size:13px; font-weight:700;
@@ -362,14 +362,32 @@
       b.classList.toggle('on', b.dataset.sz === cur);
     });
 
-    /* 사진 바로 위에 띄운다. 화면 위로 넘어가면 아래에 띄운다. */
-    var wrap = ed.getBoundingClientRect();
-    var box = fig.getBoundingClientRect();
-    var top = box.top - wrap.top - 48;
-    bar.style.left = Math.max(4, box.left - wrap.left) + 'px';
-    bar.style.top = (top < 4 ? box.top - wrap.top + 8 : top) + 'px';
     bar.classList.add('on');
+    place();
   }
+
+  /* 사진 바로 옆(위)에 붙인다. 화면 기준이라 어디에 있든 정확히 따라간다. */
+  function place() {
+    if (!picked || !bar.classList.contains('on')) return;
+    var box = picked.getBoundingClientRect();
+    var bw = bar.offsetWidth || 240;
+    var bh = bar.offsetHeight || 44;
+
+    /* 사진 위에 자리가 있으면 위, 없으면 사진 안쪽 위에 겹쳐 띄운다 */
+    var top = box.top - bh - 8;
+    if (top < 8) top = Math.min(box.top + 8, window.innerHeight - bh - 8);
+
+    var left = box.left;
+    if (left + bw > window.innerWidth - 8) left = window.innerWidth - bw - 8;
+    if (left < 8) left = 8;
+
+    bar.style.top = Math.round(top) + 'px';
+    bar.style.left = Math.round(left) + 'px';
+  }
+
+  /* 화면을 움직이면 막대도 따라온다 */
+  window.addEventListener('scroll', place, true);
+  window.addEventListener('resize', place);
 
   ed.addEventListener('click', function (e) {
     var img = e.target.closest('img');
