@@ -73,6 +73,18 @@
   .gv-body figure.al-c img { margin-left:auto; margin-right:auto; }
   .gv-body figure.al-r img { margin-left:auto; margin-right:0; }
   .gv-body strong { font-weight:800; }
+  /* 복사상자 — 글 전체 복사는 막혀 있으므로 여기만 버튼으로 복사하게 한다 */
+    .gv-body .cbx { position:relative; }
+    .gv-body .cbx pre { margin:0; padding-top:40px; }
+    .gv-body .cbx-btn {
+    position:absolute; top:8px; right:8px; z-index:2;
+    padding:6px 13px; border:1px solid var(--beige); background:#fff;
+    border-radius:8px; font-size:12.5px; font-weight:700; color:#6B6656;
+    cursor:pointer; font-family:inherit;
+    -webkit-user-select:none; user-select:none;
+  }
+    .gv-body .cbx-btn:hover { border-color:var(--gold); color:#8A6F3C; }
+    .gv-body .cbx-btn.done { background:var(--gold); border-color:var(--gold); color:#fff; }
 
   .gv-foot { max-width:760px; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
     display:flex; gap:8px; flex-wrap:wrap; }
@@ -194,6 +206,63 @@
 </div>
 
 <div class="print-warn">이 자료는 인쇄할 수 없습니다.</div>
+
+<script>
+(function () {
+  /* 복사상자에 복사 버튼을 붙인다.
+     글 전체는 복사를 막아두었지만, 이 상자는 교육생이 그대로 쓰라고 만든 것이다. */
+  var box = document.querySelector('.gv-body');
+  if (!box) return;
+
+  [].forEach.call(box.querySelectorAll('pre'), function (pre) {
+    if (pre.parentNode.classList.contains('cbx')) return;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'cbx';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cbx-btn';
+    btn.textContent = '복사';
+    wrap.appendChild(btn);
+
+    btn.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      var txt = pre.innerText || pre.textContent || '';
+      var ok = false;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(txt); ok = true; } catch (err) {}
+      }
+      if (!ok) {
+        /* 옛 브라우저·아이폰 대비 — 글 영역 밖에 임시 칸을 만들어 복사한다 */
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = txt;
+          ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+          document.body.appendChild(ta);
+          ta.contentEditable = 'true'; ta.readOnly = false;
+          var r = document.createRange(); r.selectNodeContents(ta);
+          var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          ta.setSelectionRange(0, txt.length); ta.focus();
+          ok = document.execCommand('copy');
+          ta.remove();
+          window.getSelection().removeAllRanges();
+        } catch (err) {}
+      }
+
+      btn.textContent = ok ? '복사했어요 ✓' : '복사 실패';
+      btn.classList.toggle('done', ok);
+      setTimeout(function () {
+        btn.textContent = '복사'; btn.classList.remove('done');
+      }, 1600);
+    });
+  });
+})();
+</script>
 
 <div class="gv-copyright">
   이 자료의 저작권은 루월당에 있습니다. 정식 등록된 교육생 본인만 이용하실 수 있으며,

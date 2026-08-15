@@ -34,6 +34,18 @@
   .nv-body table { width:100%; border-collapse:collapse; margin:0 0 16px; font-size:14.5px; }
   .nv-body th, .nv-body td { border:1px solid var(--beige); padding:9px 12px; text-align:left; }
   .nv-body th { background:#F4EFE3; font-weight:700; }
+  /* 복사상자 — 글 전체 복사는 막혀 있으므로 여기만 버튼으로 복사하게 한다 */
+    .nv-body .cbx { position:relative; }
+    .nv-body .cbx pre { margin:0; padding-top:40px; }
+    .nv-body .cbx-btn {
+    position:absolute; top:8px; right:8px; z-index:2;
+    padding:6px 13px; border:1px solid var(--beige); background:#fff;
+    border-radius:8px; font-size:12.5px; font-weight:700; color:#6B6656;
+    cursor:pointer; font-family:inherit;
+    -webkit-user-select:none; user-select:none;
+  }
+    .nv-body .cbx-btn:hover { border-color:var(--gold); color:#8A6F3C; }
+    .nv-body .cbx-btn.done { background:var(--gold); border-color:var(--gold); color:#fff; }
 </style>
 
 <div class="nv-bar">
@@ -55,5 +67,62 @@
 </div>
 
 <div class="nv-body"><%- bodyHtml %></div>
+
+<script>
+(function () {
+  /* 복사상자에 복사 버튼을 붙인다.
+     글 전체는 복사를 막아두었지만, 이 상자는 교육생이 그대로 쓰라고 만든 것이다. */
+  var box = document.querySelector('.nv-body');
+  if (!box) return;
+
+  [].forEach.call(box.querySelectorAll('pre'), function (pre) {
+    if (pre.parentNode.classList.contains('cbx')) return;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'cbx';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cbx-btn';
+    btn.textContent = '복사';
+    wrap.appendChild(btn);
+
+    btn.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      var txt = pre.innerText || pre.textContent || '';
+      var ok = false;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(txt); ok = true; } catch (err) {}
+      }
+      if (!ok) {
+        /* 옛 브라우저·아이폰 대비 — 글 영역 밖에 임시 칸을 만들어 복사한다 */
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = txt;
+          ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+          document.body.appendChild(ta);
+          ta.contentEditable = 'true'; ta.readOnly = false;
+          var r = document.createRange(); r.selectNodeContents(ta);
+          var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          ta.setSelectionRange(0, txt.length); ta.focus();
+          ok = document.execCommand('copy');
+          ta.remove();
+          window.getSelection().removeAllRanges();
+        } catch (err) {}
+      }
+
+      btn.textContent = ok ? '복사했어요 ✓' : '복사 실패';
+      btn.classList.toggle('done', ok);
+      setTimeout(function () {
+        btn.textContent = '복사'; btn.classList.remove('done');
+      }, 1600);
+    });
+  });
+})();
+</script>
 
 <%- include('../partials/dash-bottom') %>
