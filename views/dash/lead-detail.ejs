@@ -131,18 +131,18 @@
   .pt-on b{color:#256b42}
   .pt-note{font-size:12.5px;color:#5d8a6f}
   .pt-off{font-size:13.5px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;border-radius:9px;padding:11px 13px;line-height:1.65}
-  .pt-toggle{margin-top:9px;padding:9px 15px;background:#fff;border:1px solid #ddd2b8;border-radius:8px;
+  .pt-toggle{margin-top:9px;padding:9px 15px;background:var(--card);border:1px solid #ddd2b8;border-radius:8px;
     font-size:13.5px;font-weight:700;color:#8a6f3c;cursor:pointer}
   .pt-toggle:hover{border-color:#B59A62;background:#fbf6ec}
   .pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
   .pt-f{display:flex;flex-direction:column;gap:5px}
   .pt-f.wide{grid-column:1/-1}
   .pt-f span{font-size:12.5px;color:#8a8372;font-weight:600}
-  .pt-f input,.pt-f select{border:1px solid #ddd2b8;border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;background:#fff;color:#3a3527}
+  .pt-f input,.pt-f select{border:1px solid #ddd2b8;border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;background:var(--card);color:#3a3527}
   .pt-f input:focus,.pt-f select:focus{outline:none;border-color:#B59A62}
   .pt-actions{display:flex;gap:8px;margin-top:12px}
   .pt-save{padding:10px 19px;background:#B59A62;color:#fff;border:0;border-radius:9px;font-weight:800;font-size:14px;cursor:pointer}
-  .pt-del{padding:10px 16px;background:#fff;border:1px solid #e0c4c4;border-radius:9px;font-weight:700;font-size:13.5px;color:#b1544a;cursor:pointer}
+  .pt-del{padding:10px 16px;background:var(--card);border:1px solid #e0c4c4;border-radius:9px;font-weight:700;font-size:13.5px;color:#b1544a;cursor:pointer}
   @media(max-width:600px){ .pt-grid{grid-template-columns:1fr} }
 </style>
 <script>
@@ -719,7 +719,7 @@
 
 <style>
   .section-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .edit-btn{padding:7px 14px;background:#fff;border:1px solid #ddd2b8;border-radius:8px;
+  .edit-btn{padding:7px 14px;background:var(--card);border:1px solid #ddd2b8;border-radius:8px;
     font-size:13px;font-weight:700;color:#8a6f3c;cursor:pointer}
   .edit-btn:hover{border-color:#B59A62;background:#fbf6ec}
   .ed-warn{font-size:13px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;
@@ -729,12 +729,12 @@
   .ed-f.wide{grid-column:1/-1}
   .ed-f span{font-size:12.5px;color:#8a8372;font-weight:600}
   .ed-f input,.ed-f select{border:1px solid #ddd2b8;border-radius:8px;padding:9px 11px;
-    font-size:14px;font-family:inherit;background:#fff;color:#3a3527}
+    font-size:14px;font-family:inherit;background:var(--card);color:#3a3527}
   .ed-f input:focus,.ed-f select:focus{outline:none;border-color:#B59A62}
   .ed-actions{display:flex;gap:8px;margin-top:15px}
   .ed-save{padding:11px 20px;background:#B59A62;color:#fff;border:0;border-radius:9px;
     font-weight:800;font-size:14px;cursor:pointer}
-  .ed-cancel{padding:11px 18px;background:#fff;border:1px solid #ddd2b8;border-radius:9px;
+  .ed-cancel{padding:11px 18px;background:var(--card);border:1px solid #ddd2b8;border-radius:9px;
     font-weight:700;font-size:14px;color:#8a8372;cursor:pointer}
   @media(max-width:600px){ .ed-grid{grid-template-columns:1fr} }
 </style>
@@ -787,7 +787,7 @@
 <style>
   .mk-mode { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
   .mk-mode-item { flex:1 1 220px; display:flex; flex-direction:column; gap:3px;
-    border:2px solid #ece6d8; border-radius:12px; padding:14px 16px; cursor:pointer; background:#fff; }
+    border:2px solid #ece6d8; border-radius:12px; padding:14px 16px; cursor:pointer; background:var(--card); }
   .mk-mode-item.on { border-color:#8a6f3c; background:#fbf6ec; }
   .mk-mode-item input { display:none; }
   .mk-mode-item b { font-size:15px; color:#4a4438; }
@@ -795,14 +795,14 @@
   .mk-fmt { background:#faf8f2; border:1px solid #ece6d8; border-radius:10px;
     padding:12px 14px; font-size:13px; color:#6b6656; margin-bottom:12px; }
   .mk-fmt code { background:#efe9dc; padding:1px 5px; border-radius:4px; font-size:12.5px; }
-  .mk-fmt pre { background:#fff; border:1px solid #ece6d8; border-radius:8px;
+  .mk-fmt pre { background:var(--card); border:1px solid #ece6d8; border-radius:8px;
     padding:10px 12px; margin:8px 0; font-size:12.5px; line-height:1.6; overflow-x:auto; white-space:pre; }
   .mk-text { width:100%; border:1px solid #ddd6c6; border-radius:10px; padding:12px;
     font-size:14px; line-height:1.65; font-family:inherit; resize:vertical; margin-bottom:14px; }
   .mk-text:focus { outline:none; border-color:#8a6f3c; }
   /* 리포트 만들기 취소 버튼 */
   .prog-cancel { margin-top:10px; padding:7px 16px; font-size:13px; border:1px solid #d9d2c2;
-    border-radius:8px; background:#fff; color:#6b6656; cursor:pointer; }
+    border-radius:8px; background:var(--card); color:#6b6656; cursor:pointer; }
   .prog-cancel:hover { background:#f5f1e8; }
   .prog-cancel:disabled { opacity:.5; cursor:default; }
 </style>

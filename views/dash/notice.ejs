@@ -1,7 +1,7 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: '공지사항' }) %>
 
 <style>
-  .nt-item { display:block; text-decoration:none; color:inherit; background:#fff;
+  .nt-item { display:block; text-decoration:none; color:inherit; background:var(--card);
     border:1px solid var(--beige); border-radius:14px; padding:16px 18px; margin-bottom:9px;
     transition:border-color .15s, box-shadow .15s; }
   .nt-item:hover { border-color:var(--gold); box-shadow:0 4px 14px rgba(24,34,52,.06); }
@@ -14,7 +14,7 @@
     scrollbar-width:none; }
   .nt-cats::-webkit-scrollbar { display:none; }
   .nt-cat { flex:0 0 auto; padding:9px 15px; border-radius:100px; border:1px solid var(--beige);
-    background:#fff; color:#6B6656; font-size:14px; font-weight:600; text-decoration:none;
+    background:var(--card); color:#6B6656; font-size:14px; font-weight:600; text-decoration:none;
     display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .nt-cat .n { font-size:11px; opacity:.6; font-weight:700; }
   .nt-cat.on { background:var(--navy); border-color:var(--navy); color:#fff; }

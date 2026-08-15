@@ -8,7 +8,7 @@
   .ge-fld label { display:block; font-size:11.5px; letter-spacing:.1em; color:#9A9384; margin-bottom:5px; }
   .ge-fld input[type=text], .ge-fld select {
     width:100%; padding:12px 13px; border:1px solid var(--beige); border-radius:10px;
-    font-size:16px; font-family:inherit; background:#fff; color:var(--ink); outline:none; }
+    font-size:16px; font-family:inherit; background:var(--card); color:var(--ink); outline:none; }
   .ge-fld input:focus, .ge-fld select:focus { border-color:var(--gold); }
 
   /* 도구 막대 — 화면을 내려도 따라온다 */
@@ -17,20 +17,20 @@
   /* 옆으로 스크롤하면 끝에 있는 버튼이 안 보인다. 줄을 바꿔 전부 보이게 한다. */
   .ge-bar-in { display:flex; gap:5px; flex-wrap:wrap; row-gap:5px; }
   .ge-bar button { flex:0 0 auto; min-height:38px; padding:0 12px; border:1px solid var(--beige);
-    background:#fff; border-radius:9px; font-size:13.5px; font-weight:600; color:#4A4438;
+    background:var(--card); border-radius:9px; font-size:13.5px; font-weight:600; color:#4A4438;
     cursor:pointer; font-family:inherit; white-space:nowrap; }
   .ge-bar button:hover { border-color:var(--gold); color:#8A6F3C; }
   .ge-bar button.photo { background:var(--navy); border-color:var(--navy); color:#fff; }
   .ge-bar button.save2 { background:var(--gold); border-color:var(--gold); color:#fff; font-weight:800; }
   .ge-bar .listlink { flex:0 0 auto; display:inline-flex; align-items:center; min-height:38px;
-    padding:0 12px; border:1px solid var(--beige); background:#fff; border-radius:9px;
+    padding:0 12px; border:1px solid var(--beige); background:var(--card); border-radius:9px;
     font-size:13.5px; font-weight:600; color:#4A4438; text-decoration:none; white-space:nowrap; }
   .ge-bar .listlink:hover { border-color:var(--gold); color:#8A6F3C; }
   .ge-bar .sep { flex:0 0 auto; width:1px; background:var(--beige); margin:4px 3px; align-self:stretch; }
 
   /* 글 쓰는 곳 — 실제 보이는 모습 그대로 */
   #geBody { position:relative; min-height:480px; padding:26px 28px; border:1px solid var(--beige); border-top:0;
-    border-radius:0 0 14px 14px; background:#fff; color:var(--ink);
+    border-radius:0 0 14px 14px; background:#fff; color:var(--ink);   /* 쓰는 곳도 흰 종이 */
     font-size:16px; line-height:1.85; outline:none; word-break:keep-all; }
   #geBody:focus { border-color:var(--gold); }
   #geBody:empty:before { content:attr(data-ph); color:#B8B1A0; }
@@ -90,7 +90,7 @@
   .ge-opts label { display:flex; align-items:center; gap:8px; cursor:pointer; }
 
   .ge-acts { display:flex; gap:8px; flex-wrap:wrap; }
-  .ge-acts button, .ge-acts a { padding:14px 24px; border:1px solid var(--beige); background:#fff;
+  .ge-acts button, .ge-acts a { padding:14px 24px; border:1px solid var(--beige); background:var(--card);
     border-radius:11px; font-size:15px; font-weight:700; color:#4A4438; cursor:pointer;
     font-family:inherit; text-decoration:none; display:inline-block; }
   .ge-acts .save { background:var(--navy); border-color:var(--navy); color:#fff; }

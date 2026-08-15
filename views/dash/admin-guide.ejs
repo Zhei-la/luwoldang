@@ -2,12 +2,12 @@
 
 <style>
   .ag-top { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
-  .ag-top a, .ag-top button { padding:11px 18px; border:1px solid var(--beige); background:#fff;
+  .ag-top a, .ag-top button { padding:11px 18px; border:1px solid var(--beige); background:var(--card);
     border-radius:10px; font-size:14px; font-weight:700; color:#4A4438; text-decoration:none;
     cursor:pointer; font-family:inherit; }
   .ag-top .new { background:var(--navy); border-color:var(--navy); color:#fff; }
 
-  .ag-row { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--beige);
+  .ag-row { display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--beige);
     border-radius:12px; padding:14px 16px; margin-bottom:8px; }
   .ag-row .t { flex:1; min-width:0; }
   .ag-row .t a { font-size:15.5px; font-weight:700; color:var(--ink); text-decoration:none;
@@ -17,7 +17,7 @@
   .ag-tag { background:#F4EFE3; color:#8A6F3C; padding:2px 8px; border-radius:5px; font-weight:600; }
   .ag-pin { font-size:11px; font-weight:700; color:#fff; background:var(--gold); padding:2px 8px; border-radius:100px; }
   .ag-hide { font-size:11px; font-weight:700; color:#A8332B; background:#FBF1EF; padding:2px 8px; border-radius:100px; }
-  .ag-row .edit { flex:0 0 auto; padding:9px 14px; border:1px solid var(--beige); background:#fff;
+  .ag-row .edit { flex:0 0 auto; padding:9px 14px; border:1px solid var(--beige); background:var(--card);
     border-radius:9px; font-size:13px; font-weight:600; color:#6B6656; text-decoration:none; }
 
   .ag-row .del { color:#A8332B; cursor:pointer; font-family:inherit; }
@@ -30,7 +30,7 @@
   .ag-bulk label { display:flex; align-items:center; gap:7px; cursor:pointer; }
   .ag-bulk input { width:17px; height:17px; }
   .ag-bulk .cnt { flex:1; font-size:12.5px; color:#9A9384; }
-  .ag-bulk button { padding:8px 15px; border:1px solid var(--beige); background:#fff;
+  .ag-bulk button { padding:8px 15px; border:1px solid var(--beige); background:var(--card);
     border-radius:9px; font-size:13.5px; font-weight:700; color:#A8332B;
     cursor:pointer; font-family:inherit; }
   .ag-bulk button:disabled { opacity:.4; cursor:default; color:#9A9384; }
@@ -38,7 +38,7 @@
   .ag-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
 
   /* 분류 관리 */
-  .ag-cats { display:none; background:#fff; border:1px solid var(--beige); border-radius:12px;
+  .ag-cats { display:none; background:var(--card); border:1px solid var(--beige); border-radius:12px;
     padding:18px 20px; margin-bottom:18px; max-width:560px; }
   .ag-cats.on { display:block; }
   .ag-cats h3 { margin:0 0 12px; font-size:16px; font-weight:800; }

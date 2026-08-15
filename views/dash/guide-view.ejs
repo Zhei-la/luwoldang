@@ -10,7 +10,7 @@
     border-bottom:1px solid var(--beige);
   }
   .gv-bar a, .gv-bar button {
-    padding:9px 16px; border:1px solid var(--beige); background:#fff; border-radius:9px;
+    padding:9px 16px; border:1px solid var(--beige); background:var(--card); border-radius:9px;
     font-size:13.5px; font-weight:700; color:#4A4438; text-decoration:none;
     cursor:pointer; font-family:inherit; white-space:nowrap;
   }
@@ -34,7 +34,15 @@
   .gv-tag { background:#F4EFE3; color:#8A6F3C; padding:3px 9px; border-radius:5px; font-weight:600; }
 
   /* 본문 — 읽기 편한 폭과 줄간격 */
-  .gv-body { max-width:760px; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all; }
+  /* 본문은 흰 종이처럼 — 베이지 배경 위에서는 캡처와 글이 잘 안 보인다 */
+  .gv-body {
+    max-width:860px; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all;
+    background:#fff; border:1px solid var(--beige); border-radius:16px;   /* 본문은 늘 흰 종이 */
+    padding:34px 38px; box-shadow:0 2px 10px rgba(24,34,52,.04);
+  }
+  @media (max-width:760px) {
+    .gv-body { padding:22px 18px; border-radius:12px; }
+  }
   .gv-body h2 { font-family:"Nanum Myeongjo", serif; font-size:21px; margin:34px 0 12px;
     padding-bottom:8px; border-bottom:1px solid var(--beige); }
   .gv-body h3 { font-size:17.5px; margin:26px 0 10px; color:#8A6F3C; }
@@ -78,7 +86,7 @@
     .gv-body .cbx pre { margin:0; padding-top:40px; }
     .gv-body .cbx-btn {
     position:absolute; top:8px; right:8px; z-index:2;
-    padding:6px 13px; border:1px solid var(--beige); background:#fff;
+    padding:6px 13px; border:1px solid var(--beige); background:var(--card);
     border-radius:8px; font-size:12.5px; font-weight:700; color:#6B6656;
     cursor:pointer; font-family:inherit;
     -webkit-user-select:none; user-select:none;
@@ -88,7 +96,7 @@
 
   .gv-foot { max-width:760px; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
     display:flex; gap:8px; flex-wrap:wrap; }
-  .gv-btn { padding:11px 18px; border:1px solid var(--beige); background:#fff; border-radius:10px;
+  .gv-btn { padding:11px 18px; border:1px solid var(--beige); background:var(--card); border-radius:10px;
     font-size:14px; font-weight:600; color:#6B6656; text-decoration:none; }
   .gv-btn.main { background:var(--navy); border-color:var(--navy); color:#fff; }
 

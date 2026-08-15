@@ -9,7 +9,7 @@
 #manse-app { font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; max-width: 1180px; margin: 40px auto; padding: 0 16px; background: #f5f5f7; color: #1d1d1f; }
 #manse-app h1 { font-size: 22px; margin-bottom: 4px; }
 #manse-app p.desc { color: #666; margin-top: 0; font-size: 14px; }
-#manse-app form { background: #fff; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+#manse-app form { background:var(--card); border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 #manse-app .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
 #manse-app .field { display: flex; flex-direction: column; gap: 4px; }
 #manse-app label { font-size: 12px; color: #444; font-weight: 600; white-space: nowrap; }
@@ -32,7 +32,7 @@
 #manse-app .region-search-input.warn { border-color: #d9a300; background: #fffbe8; }
 #manse-app .region-warning { display: none; font-size: 11px; color: #a66a00; }
 #manse-app .region-warning.show { display: block; }
-#manse-app .region-suggest { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 200px; max-height: 220px; overflow-y: auto; z-index: 20; }
+#manse-app .region-suggest { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; background:var(--card); border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 200px; max-height: 220px; overflow-y: auto; z-index: 20; }
 #manse-app .region-suggest.open { display: block; }
 #manse-app .region-suggest-row { padding: 7px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
 #manse-app .region-suggest-row:last-child { border-bottom: none; }
@@ -59,7 +59,7 @@
 #manse-app .layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
 #manse-app .form-panel { flex: 1 1 620px; min-width: 480px; }
 #manse-app .form-panel form:last-child { margin-bottom: 0; }
-#manse-app .saved-side { flex: 1 1 280px; min-width: 260px; max-width: 340px; background: #fff; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; flex-direction: column; max-height: 720px; }
+#manse-app .saved-side { flex: 1 1 280px; min-width: 260px; max-width: 340px; background:var(--card); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; flex-direction: column; max-height: 720px; }
 #manse-app .saved-side-title { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
 #manse-app .saved-search-input { width: 100%; margin-bottom: 10px; }
 #manse-app .saved-list { flex: 1 1 auto; overflow-y: auto; min-height: 80px; }
@@ -71,7 +71,7 @@
 #manse-app .saved-item-delete:hover { color: #c00; background: #fdeceb; }
 #manse-app .saved-empty { padding: 16px 4px; font-size: 13px; color: #888; text-align: center; }
 #manse-app .saved-pagination { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
-#manse-app .saved-page-btn { padding: 5px 10px; border: 1px solid #ccc; background: #fff; color: #444; border-radius: 6px; font-size: 12px; cursor: pointer; }
+#manse-app .saved-page-btn { padding: 5px 10px; border: 1px solid #ccc; background:var(--card); color: #444; border-radius: 6px; font-size: 12px; cursor: pointer; }
 #manse-app .saved-page-btn.active { background: #0071e3; color: #fff; border-color: #0071e3; }
 #manse-app .saved-page-btn:disabled { opacity: .4; cursor: not-allowed; }
 #manse-app .result-box { background: #111; color: #eee; padding: 20px; border-radius: 12px; font-size: 13.5px; line-height: 1.6; margin-top: 12px; }
@@ -79,10 +79,10 @@
 #manse-app .error { color: #c00; font-weight: 600; }
 #manse-app .result-tabs { display: flex; gap: 6px; margin-top: 24px; }
 #manse-app .tab-btn { padding: 8px 16px; border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0; background: #e4e4e7; color: #444; font-size: 13px; cursor: pointer; }
-#manse-app .tab-btn.active { background: #fff; color: #111; font-weight: 700; }
+#manse-app .tab-btn.active { background:var(--card); color: #111; font-weight: 700; }
 #manse-app .result-box, #manse-app .pdf-view { margin-top: 0; border-radius: 0 12px 12px 12px; }
 #manse-app .pdf-view { display: none; }
-#manse-app .pdf-card { background: #fff; color: #000; padding: 20px; border-radius: 0 12px 12px 12px; border: 1px solid #ccc; font-family: 'Malgun Gothic', sans-serif; margin-bottom: 16px; }
+#manse-app .pdf-card { background:var(--card); color: #000; padding: 20px; border-radius: 0 12px 12px 12px; border: 1px solid #ccc; font-family: 'Malgun Gothic', sans-serif; margin-bottom: 16px; }
 #manse-app .pdf-card:last-child { margin-bottom: 0; }
 #manse-app .pdf-header { padding: 0 2px 12px; margin-bottom: 14px; border-bottom: 1px solid #e4e4e7; }
 #manse-app .pdf-header-name { font-size: 19px; font-weight: 700; color: #000; }
@@ -95,7 +95,7 @@
 #manse-app .pdf-card-b .pdf-header { border-bottom-color: #f7d9cc; }
 #manse-app .pdf-table { border-collapse: collapse; width: 100%; margin-bottom: 22px; font-size: 13px; border: 1.5px solid #333; font-family: 'Malgun Gothic', sans-serif; }
 #manse-app .pdf-table caption { caption-side: top; text-align: left; font-weight: 700; font-size: 14px; margin-bottom: 6px; color: #000; }
-#manse-app .pdf-table th, #manse-app .pdf-table td { border: 0.5px solid #ccc; padding: 8px 10px; text-align: center; color: #000; background: #fff; }
+#manse-app .pdf-table th, #manse-app .pdf-table td { border: 0.5px solid #ccc; padding: 8px 10px; text-align: center; color: #000; background:var(--card); }
 #manse-app .pdf-table thead th { background: #f2f2f2; font-weight: 700; }
 #manse-app .pdf-wonguk-label { background: #f2f2f2; font-weight: 700; text-align: left; white-space: nowrap; width: 1%; }
 #manse-app .pdf-wonguk thead th:nth-child(3), #manse-app .pdf-wonguk tbody td:nth-child(3) { background: #fffbe8; }
@@ -108,7 +108,7 @@
 #manse-app .tile-mok { background: #2e9e4f; color: #fff; }
 #manse-app .tile-hwa { background: #d23c3c; color: #fff; }
 #manse-app .tile-to { background: #e0a92e; color: #fff; }
-#manse-app .tile-geum { background: #fff; color: #333; border-width: 2px; }
+#manse-app .tile-geum { background:var(--card); color: #333; border-width: 2px; }
 #manse-app .tile-su { background: #3a3a3a; color: #fff; }
 #manse-app .pdf-jijanggan-cell div { line-height: 1.5; }
 #manse-app .pdf-jijanggan-cell div:not(:last-child) { border-bottom: 1px dashed #ccc; padding-bottom: 2px; margin-bottom: 2px; }
@@ -127,10 +127,10 @@
 #manse-app .pdf-sal { color: #b71c1c; }
 #manse-app .pdf-gongmang { color: #000; font-weight: 700; }
 #manse-app .top-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-#manse-app #refreshBtn { background: #fff; color: #333; border: 1px solid #ccc; padding: 7px 14px; font-size: 13px; }
+#manse-app #refreshBtn { background:var(--card); color: #333; border: 1px solid #ccc; padding: 7px 14px; font-size: 13px; }
 #manse-app #refreshBtn:hover { background: #f2f2f2; }
 #manse-app .mode-tabs { display: flex; gap: 8px; margin: 14px 0; }
-#manse-app .mode-tab-btn { padding: 8px 18px; border: 1px solid #ccc; border-radius: 8px; background: #fff; color: #444; font-size: 14px; font-weight: 600; cursor: pointer; }
+#manse-app .mode-tab-btn { padding: 8px 18px; border: 1px solid #ccc; border-radius: 8px; background:var(--card); color: #444; font-size: 14px; font-weight: 600; cursor: pointer; }
 #manse-app .mode-tab-btn.active { background: #0071e3; color: #fff; border-color: #0071e3; }
 #manse-app .gunghap-person-block { border: 1px solid #e4e4e7; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
 #manse-app .gunghap-person-title { font-weight: 700; font-size: 13px; color: #333; margin-bottom: 8px; }
@@ -163,7 +163,7 @@
 #manse-app .saved-wrap { position: relative; }
 #manse-app .saved-pop {
   display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
-  width: 300px; max-height: 60vh; background: #fff; border: 1px solid #ddd;
+  width: 300px; max-height: 60vh; background:var(--card); border: 1px solid #ddd;
   border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.14);
   padding: 12px; flex-direction: column;
 }

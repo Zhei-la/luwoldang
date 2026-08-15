@@ -27,7 +27,7 @@
   .noti-r{display:flex;gap:8px;flex-shrink:0}
   .noti-btn{padding:10px 18px;background:#B59A62;color:#fff;border:0;border-radius:9px;
     font-weight:800;font-size:13.5px;cursor:pointer;white-space:nowrap}
-  .noti-btn.ghost{background:#fff;border:1px solid #ddd2b8;color:#8a6f3c;font-weight:700}
+  .noti-btn.ghost{background:var(--card);border:1px solid #ddd2b8;color:#8a6f3c;font-weight:700}
   .noti-btn:disabled{opacity:.5;cursor:default}
   @media(max-width:600px){ .noti-box{flex-direction:column;align-items:stretch} .noti-r{justify-content:flex-end} }
 </style>
@@ -205,7 +205,7 @@
   .nt-pop { display:none; position:fixed; inset:0; z-index:150;
     background:rgba(24,34,52,.45); align-items:center; justify-content:center; padding:20px; }
   .nt-pop.on { display:flex; }
-  .nt-box { background:#fff; border-radius:18px; padding:26px 24px 20px; width:100%; max-width:400px;
+  .nt-box { background:var(--card); border-radius:18px; padding:26px 24px 20px; width:100%; max-width:400px;
     box-shadow:0 20px 50px rgba(24,34,52,.3); }
   .nt-lb { font-size:11.5px; font-weight:800; letter-spacing:.14em; color:#8A6F3C;
     background:#F4EFE3; display:inline-block; padding:5px 12px; border-radius:100px; }
@@ -215,7 +215,7 @@
   .nt-go { display:block; margin-top:18px; padding:14px; background:var(--navy); color:#fff;
     border-radius:11px; font-size:15px; font-weight:700; text-align:center; text-decoration:none; }
   .nt-btm { display:flex; gap:7px; margin-top:9px; }
-  .nt-btm button { flex:1; padding:11px; border:1px solid var(--beige); background:#fff;
+  .nt-btm button { flex:1; padding:11px; border:1px solid var(--beige); background:var(--card);
     border-radius:10px; font-size:13.5px; font-weight:600; color:#6B6656;
     cursor:pointer; font-family:inherit; }
   .nt-btm button:hover { border-color:var(--gold); color:#8A6F3C; }
@@ -278,7 +278,7 @@
   </div>
 
   <style>
-    .nt-home { background:#fff; border:1px solid var(--beige); border-radius:16px;
+    .nt-home { background:var(--card); border:1px solid var(--beige); border-radius:16px;
       padding:16px 18px; margin-bottom:20px; }
     .nt-home-h { display:flex; align-items:center; justify-content:space-between;
       margin-bottom:6px; }
@@ -406,7 +406,7 @@
 
 <style>
   .stat-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-bottom:8px; }
-  .stat-card { background:#fff; border:1px solid #e6e0d2; border-radius:12px; padding:16px 14px; text-align:center; }
+  .stat-card { background:var(--card); border:1px solid #e6e0d2; border-radius:12px; padding:16px 14px; text-align:center; }
   .stat-card.accent { background:#fbf6ec; border-color:#e6d9b8; }
   .stat-card.admin { background:#f4f1ff; border-color:#ddd6f3; }
   .stat-card.admin.accent { background:#efeaff; }

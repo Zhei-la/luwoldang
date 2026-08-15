@@ -127,7 +127,7 @@
 <style>
   /* 세트 선택 */
   .set-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
-  .set-card { border:1px solid #e6e0d2; border-radius:12px; padding:12px; background:#fff; transition:.15s; }
+  .set-card { border:1px solid #e6e0d2; border-radius:12px; padding:12px; background:var(--card); transition:.15s; }
   .set-card.on { border-color:#B59A62; box-shadow:0 0 0 2px #e8d9b3; }
   .set-preview { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:10px; }
   .set-thumb { aspect-ratio:1/1.414; border-radius:5px; background:#f3efe4 center/cover no-repeat; border:1px solid #ece4d0; }
@@ -135,12 +135,12 @@
   .set-chk { color:#B59A62; font-size:12px; font-weight:800; }
   .set-btn { width:100%; padding:9px; border:0; border-radius:8px; background:#B59A62; color:#241a06;
     font-weight:800; font-size:13px; cursor:pointer; font-family:inherit; }
-  .set-btn.ghost { background:#fff; border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
+  .set-btn.ghost { background:var(--card); border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
   .set-btn:hover { opacity:.9; }
 
   /* 배경지 */
   .paper-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:14px; }
-  .paper-card { border:1px solid #e6e0d2; border-radius:10px; padding:10px; background:#fff; text-align:center; }
+  .paper-card { border:1px solid #e6e0d2; border-radius:10px; padding:10px; background:var(--card); text-align:center; }
   .paper-card.on { border-color:#B59A62; box-shadow:0 0 0 2px #e8d9b3; }
   .paper-thumb { aspect-ratio:1/1.414; border-radius:6px; background:#f3efe4 center/cover no-repeat;
     border:1px solid #ece4d0; margin-bottom:8px; }
@@ -148,13 +148,13 @@
   .paper-chk { color:#B59A62; font-weight:900; }
   .paper-btn { width:100%; padding:8px; border:0; border-radius:7px; background:#B59A62; color:#241a06;
     font-weight:800; font-size:12.5px; cursor:pointer; font-family:inherit; }
-  .paper-btn.ghost { background:#fff; border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
+  .paper-btn.ghost { background:var(--card); border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
   .paper-btn:hover { opacity:.9; }
 
 </style>
 <style>
   .cv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px; }
-  .cv-card { border:1px solid #e6e0d2; border-radius:12px; padding:12px; background:#fff; }
+  .cv-card { border:1px solid #e6e0d2; border-radius:12px; padding:12px; background:var(--card); }
   .cv-thumb { aspect-ratio:1/1.414; border-radius:8px; background:#f3efe4; border:1px dashed #d8cfb8;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
     position:relative; overflow:hidden; background-size:cover; background-position:center; }
@@ -162,7 +162,7 @@
   .cv-pos { display:flex; flex-direction:column; gap:6px; margin:8px 0 10px; }
   .cv-pos label { font-size:11.5px; color:#8a8574; display:flex; flex-direction:column; gap:3px; }
   .cv-sel { font-size:12.5px; padding:6px 8px; border:1px solid #e2dccd; border-radius:7px;
-            background:#fff; color:#4a4438; }
+            background:var(--card); color:#4a4438; }
   .cv-thumb-txt { font-size:12px; color:#8a6f3c; font-weight:700; }
   .cv-thumb-txt.muted { color:#b3ad9c; font-weight:500; }
   .cv-badge { position:absolute; top:8px; left:8px; background:#B59A62; color:#fff;
@@ -172,7 +172,7 @@
   .cv-btn { flex:1; text-align:center; padding:8px 4px; border-radius:7px; cursor:pointer;
     font-size:12.5px; font-weight:700; background:#B59A62; color:#241a06; border:0;
     font-family:inherit; display:inline-flex; align-items:center; justify-content:center; }
-  .cv-btn.ghost { background:#fff; border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
+  .cv-btn.ghost { background:var(--card); border:1px solid #d8cfb8; color:#6b6656; font-weight:600; }
   .cv-btn:hover { opacity:.9; }
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px); opacity:0;
     background:#2f9e5e; color:#fff; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700;
