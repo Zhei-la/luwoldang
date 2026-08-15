@@ -47,10 +47,16 @@
   .lr-item { display:flex; gap:14px; background:var(--card); border:1px solid var(--beige);
     border-radius:14px; padding:15px 17px; margin-bottom:9px; align-items:flex-start; }
   .lr-item.off { opacity:.5; }
-  .lr-item .th { flex:0 0 90px; }
-  .lr-item .th img { width:90px; height:110px; object-fit:cover; border-radius:9px;
+  .lr-item .th { flex:0 0 100px; }
+  .lr-item .thumbs { display:flex; flex-wrap:wrap; gap:5px; }
+  .lr-item .tw { position:relative; }
+  .lr-item .th img { width:46px; height:58px; object-fit:cover; border-radius:7px;
     border:1px solid var(--beige); background:#fff; display:block; }
-  .lr-item .th .no { width:90px; height:110px; border-radius:9px; border:1px dashed var(--beige);
+  .lr-item .tw .x { position:absolute; top:-5px; right:-5px; width:18px; height:18px;
+    border-radius:50%; border:0; background:#A8332B; color:#fff; font-size:12px;
+    line-height:1; cursor:pointer; padding:0; font-family:inherit; }
+  .lr-item .cnt { margin-top:6px; font-size:11px; color:#9A9384; }
+  .lr-item .th .no { width:100px; height:70px; border-radius:9px; border:1px dashed var(--beige);
     display:flex; align-items:center; justify-content:center; font-size:11.5px; color:#9A9384; }
   .lr-item .bd { flex:1; min-width:0; }
   .lr-item .who { font-size:12px; color:#8A6F3C; font-weight:700; margin-bottom:5px; }
@@ -79,6 +85,14 @@
   .lr-item .edit .e-drop-d { display:block; font-size:11.5px; color:#9A9384; margin-top:3px; }
   .lr-item .edit .e-drop img { max-width:100%; max-height:180px; border-radius:8px; display:block; margin:0 auto; }
   .lr-item .edit .save { background:var(--navy); border-color:var(--navy); color:#fff; }
+
+  .picked { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+  .pw { position:relative; }
+  .picked img { width:74px; height:92px; object-fit:cover; border-radius:8px;
+    border:1px solid var(--beige); background:#fff; display:block; }
+  .pw .x { position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%;
+    border:0; background:#A8332B; color:#fff; font-size:13px; line-height:1;
+    cursor:pointer; padding:0; font-family:inherit; }
 
   .lr-empty { text-align:center; padding:44px 20px; color:#9A9384; font-size:14px; }
   .toast { position:fixed; left:50%; bottom:40px; transform:translateX(-50%); background:var(--navy);
@@ -116,10 +130,10 @@
     <div id="dropIn">
       <div class="ic">📷</div>
       <div class="t">후기 사진 올리기</div>
-      <div class="d">여기를 누르거나 사진을 끌어다 놓으세요 · 글만 올려도 됩니다</div>
+      <div class="d">여러 장 한 번에 고를 수 있어요 · 글만 올려도 됩니다</div>
     </div>
   </div>
-  <input type="file" id="file" accept="image/*" hidden>
+  <input type="file" id="file" accept="image/*" multiple hidden>
 
   <input type="text" id="who" placeholder="누구의 후기인가요 — 예: 1기 수강생, 30대 직장인 수강생">
   <textarea id="body" placeholder="후기 내용을 적어주세요.&#10;사진만 올리고 비워두셔도 됩니다."></textarea>
@@ -136,8 +150,13 @@
   <% items.forEach(function (it, i) { %>
     <div class="lr-item <%= it.published ? '' : 'off' %>" data-id="<%= it.id %>">
       <div class="th">
-        <% if (it.url) { %>
-          <img src="<%= it.url %>" alt="">
+        <% if (it.imgs && it.imgs.length) { %>
+          <div class="thumbs">
+            <% it.imgs.forEach(function (im) { %>
+              <div class="tw"><img src="<%= im.url %>" alt=""><button type="button" class="x" data-img="<%= im.id %>">×</button></div>
+            <% }); %>
+          </div>
+          <div class="cnt">사진 <%= it.imgs.length %>장</div>
         <% } else { %>
           <div class="no">사진 없음</div>
         <% } %>
@@ -161,12 +180,12 @@
           <input type="text" class="e-who" value="<%= it.who || '' %>" placeholder="예: 1기 수강생">
           <label class="lb">후기 내용</label>
           <textarea class="e-body" placeholder="후기 내용"><%= it.body %></textarea>
-          <label class="lb">사진 바꾸기</label>
+          <label class="lb">사진 더 넣기</label>
           <div class="e-drop">
-            <span class="e-drop-t">📷 새 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>
-            <span class="e-drop-d">그대로 두면 지금 사진이 유지됩니다</span>
+            <span class="e-drop-t">📷 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>
+            <span class="e-drop-d">여러 장 한 번에 고를 수 있어요 · 지금 사진은 그대로 남습니다</span>
           </div>
-          <input type="file" class="e-file" accept="image/*" hidden>
+          <input type="file" class="e-file" accept="image/*" multiple hidden>
           <div class="acts">
             <button type="button" data-a="save" class="save">저장</button>
             <button type="button" data-a="cancel">취소</button>
@@ -224,7 +243,7 @@
   var drop = document.getElementById('drop');
   var dropIn = document.getElementById('dropIn');
   var file = document.getElementById('file');
-  var imgData = null;
+  var imgList = [];
 
   function toast(m) {
     var e = document.createElement('div');
@@ -233,15 +252,28 @@
     setTimeout(function () { e.remove(); }, 1800);
   }
 
-  function readImg(f) {
-    if (!f || !/^image\//.test(f.type)) { alert('이미지 파일만 올릴 수 있습니다.'); return; }
-    if (f.size > 3 * 1024 * 1024) { alert('사진이 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
-    var fr = new FileReader();
-    fr.onload = function () {
-      imgData = fr.result;
-      dropIn.innerHTML = '<img src="' + imgData + '" alt=""><div class="d" style="margin-top:8px">다시 누르면 바꿀 수 있어요</div>';
-    };
-    fr.readAsDataURL(f);
+  function drawNew() {
+    if (!imgList.length) {
+      dropIn.innerHTML = '<div class="ic">📷</div><div class="t">후기 사진 올리기</div>' +
+        '<div class="d">여러 장 한 번에 고를 수 있어요 · 글만 올려도 됩니다</div>';
+      return;
+    }
+    dropIn.innerHTML = '<div class="picked">' + imgList.map(function (u, i) {
+      return '<div class="pw"><img src="' + u + '" alt="">' +
+             '<button type="button" class="x" data-i="' + i + '">×</button></div>';
+    }).join('') + '</div><div class="d" style="margin-top:8px">사진 ' + imgList.length + '장 · 눌러서 더 넣기</div>';
+  }
+
+  function readImgs(files) {
+    var arr = [].slice.call(files || []).filter(function (f) { return f && /^image\//.test(f.type); });
+    if (!arr.length) return;
+    arr.forEach(function (f) {
+      if (f.size > 3 * 1024 * 1024) { alert('"' + f.name + '" 은 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
+      if (imgList.length >= 10) { alert('사진은 한 후기에 10장까지 넣을 수 있습니다.'); return; }
+      var fr = new FileReader();
+      fr.onload = function () { imgList.push(fr.result); drawNew(); };
+      fr.readAsDataURL(f);
+    });
   }
 
   drop.addEventListener('click', function () { file.click(); });
@@ -249,9 +281,18 @@
   drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
   drop.addEventListener('drop', function (e) {
     e.preventDefault(); drop.classList.remove('over');
-    readImg(e.dataTransfer.files[0]);
+    readImgs(e.dataTransfer.files);
   });
-  file.addEventListener('change', function () { readImg(file.files[0]); file.value = ''; });
+  file.addEventListener('change', function () { readImgs(file.files); file.value = ''; });
+
+  /* 고른 사진 하나 빼기 */
+  dropIn.addEventListener('click', function (e) {
+    var x = e.target.closest('.pw .x');
+    if (!x) return;
+    e.stopPropagation();
+    imgList.splice(Number(x.dataset.i), 1);
+    drawNew();
+  });
 
   /* 캡처를 복사해 붙여넣어도 된다 */
   document.addEventListener('paste', function (e) {
@@ -261,21 +302,21 @@
       if (/^image\//.test(items[i].type)) { f = items[i].getAsFile(); break; }
     }
     if (!f) return;
-    /* 수정 중인 후기가 있으면 그쪽 사진을 바꾼다 */
+    /* 수정 중인 후기가 있으면 그쪽에 넣는다 */
     var editing = document.querySelector('.lr-item.editing');
-    if (editing) pickInto(editing, f); else readImg(f);
+    if (editing) pickInto(editing, [f]); else readImgs([f]);
   });
 
   var add = document.getElementById('btnAdd');
   add.addEventListener('click', function () {
     var body = document.getElementById('body').value.trim();
     var who = document.getElementById('who').value.trim();
-    if (!imgData && !body) { alert('사진이나 글 중 하나는 넣어주세요.'); return; }
+    if (!imgList.length && !body) { alert('사진이나 글 중 하나는 넣어주세요.'); return; }
 
     add.disabled = true; add.textContent = '올리는 중...';
     fetch('/admin/lp-reviews/save', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ img: imgData, body: body, who: who })
+      body: JSON.stringify({ imgs: imgList, body: body, who: who })
     })
     .then(function (r) { return r.json(); })
     .then(function (d) {
@@ -289,17 +330,29 @@
   });
 
   /* ── 수정 칸에서 사진 바꾸기 ── */
-  function showPicked(item, dataUrl) {
-    item.newImg = dataUrl;
-    item.querySelector('.e-drop').innerHTML =
-      '<img src="' + dataUrl + '" alt=""><span class="e-drop-d">다시 누르면 바꿀 수 있어요</span>';
+  function drawEditPicked(item) {
+    var dz = item.querySelector('.e-drop');
+    var list = item.newImgs || [];
+    if (!list.length) {
+      dz.innerHTML = '<span class="e-drop-t">📷 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>' +
+        '<span class="e-drop-d">여러 장 한 번에 고를 수 있어요 · 지금 사진은 그대로 남습니다</span>';
+      return;
+    }
+    dz.innerHTML = '<div class="picked">' + list.map(function (u, i) {
+      return '<div class="pw"><img src="' + u + '" alt="">' +
+             '<button type="button" class="x" data-i="' + i + '">×</button></div>';
+    }).join('') + '</div><span class="e-drop-d">더 넣을 사진 ' + list.length + '장</span>';
   }
-  function pickInto(item, f) {
-    if (!f || !/^image\//.test(f.type)) { alert('이미지 파일만 올릴 수 있습니다.'); return; }
-    if (f.size > 3 * 1024 * 1024) { alert('사진이 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
-    var fr = new FileReader();
-    fr.onload = function () { showPicked(item, fr.result); };
-    fr.readAsDataURL(f);
+  function pickInto(item, files) {
+    var arr = [].slice.call(files || []).filter(function (f) { return f && /^image\//.test(f.type); });
+    if (!arr.length) { alert('이미지 파일만 올릴 수 있습니다.'); return; }
+    item.newImgs = item.newImgs || [];
+    arr.forEach(function (f) {
+      if (f.size > 3 * 1024 * 1024) { alert('"' + f.name + '" 은 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
+      var fr = new FileReader();
+      fr.onload = function () { item.newImgs.push(fr.result); drawEditPicked(item); };
+      fr.readAsDataURL(f);
+    });
   }
 
   document.addEventListener('click', function (e) {
@@ -310,7 +363,7 @@
   document.addEventListener('change', function (e) {
     if (!e.target.classList.contains('e-file')) return;
     var item = e.target.closest('.lr-item');
-    pickInto(item, e.target.files[0]);
+    pickInto(item, e.target.files);
     e.target.value = '';
   });
   document.addEventListener('dragover', function (e) {
@@ -325,7 +378,31 @@
     var dz = e.target.closest('.lr-item .e-drop');
     if (!dz) return;
     e.preventDefault(); dz.classList.remove('over');
-    pickInto(dz.closest('.lr-item'), e.dataTransfer.files[0]);
+    pickInto(dz.closest('.lr-item'), e.dataTransfer.files);
+  });
+
+  /* 이미 올라간 사진 한 장 지우기 */
+  document.addEventListener('click', function (e) {
+    var x = e.target.closest('.lr-item .th .x');
+    if (!x) return;
+    if (!confirm('이 사진을 지울까요?')) return;
+    var tw = x.closest('.tw');
+    fetch('/admin/lp-reviews/img-delete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imgId: x.dataset.img })
+    }).then(function (r) { return r.json(); })
+      .then(function () { location.reload(); })
+      .catch(function () { alert('지우지 못했습니다.'); });
+  });
+
+  /* 수정 칸에서 고른 사진 빼기 */
+  document.addEventListener('click', function (e) {
+    var x = e.target.closest('.lr-item .e-drop .pw .x');
+    if (!x) return;
+    e.stopPropagation();
+    var item = x.closest('.lr-item');
+    item.newImgs.splice(Number(x.dataset.i), 1);
+    drawEditPicked(item);
   });
 
   /* 목록에서 고치기 · 순서 · 숨기기 · 삭제 */
@@ -343,6 +420,7 @@
       }).then(function (r) { return r.json(); });
     }
 
+    if (a === 'imgdel') { return; }
     if (a === 'del') {
       if (!confirm('이 후기를 지울까요? 되돌릴 수 없습니다.')) return;
       post('/admin/lp-reviews/delete', { id: id }).then(function () { item.remove(); });
@@ -359,10 +437,8 @@
     if (a === 'edit') { item.classList.add('editing'); return; }
     if (a === 'cancel') {
       item.classList.remove('editing');
-      item.newImg = null;
-      var dz = item.querySelector('.e-drop');
-      dz.innerHTML = '<span class="e-drop-t">📷 새 사진 고르기 · 끌어다 놓기 · 붙여넣기</span>' +
-                     '<span class="e-drop-d">그대로 두면 지금 사진이 유지됩니다</span>';
+      item.newImgs = [];
+      drawEditPicked(item);
       return;
     }
     if (a === 'save') {
@@ -372,7 +448,7 @@
 
       b.disabled = true; b.textContent = '저장 중...';
       var data = { id: id, who: who, body: body };
-      if (item.newImg) data.img = item.newImg;      /* 새로 고른 사진이 있을 때만 바꾼다 */
+      if (item.newImgs && item.newImgs.length) data.imgs = item.newImgs;   /* 있으면 뒤에 더한다 */
 
       post('/admin/lp-reviews/save', data)
         .then(function (d) {

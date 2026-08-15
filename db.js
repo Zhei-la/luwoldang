@@ -258,6 +258,26 @@ async function initDb() {
     `);
   }
 
+  /* 후기 한 건에 사진을 여러 장 넣을 수 있게 따로 보관한다 */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lp_review_imgs (
+      id        SERIAL PRIMARY KEY,
+      review_id INTEGER REFERENCES lp_reviews(id) ON DELETE CASCADE,
+      img       TEXT,
+      img_url   TEXT,
+      sort      INTEGER DEFAULT 0
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_lp_rimg ON lp_review_imgs(review_id, sort, id);`);
+  /* 예전에 한 장씩 넣어둔 사진을 옮긴다 (한 번만 일어난다) */
+  await pool.query(`
+    INSERT INTO lp_review_imgs (review_id, img, img_url, sort)
+    SELECT r.id, r.img, r.img_url, 10
+      FROM lp_reviews r
+     WHERE (r.img IS NOT NULL OR r.img_url IS NOT NULL)
+       AND NOT EXISTS (SELECT 1 FROM lp_review_imgs i WHERE i.review_id = r.id);
+  `);
+
   /* ── 공지사항 ──
      관리자가 올리면 교육생 홈에 일정 기간 팝업으로 뜬다. */
   await pool.query(`

@@ -21,26 +21,37 @@ function plain(t) {
     .slice(0, 2000);
 }
 
-function imgUrl(r) {
-  /* 조회할 때 사진 내용(img)은 무거워서 안 가져오고
-     '있는지 여부(has_img)'만 가져온다. 그 값을 봐야 한다. */
-  const has = r.has_img !== undefined ? r.has_img : !!r.img;
-  return has ? '/lp/review-img/' + r.id : (r.img_url || null);
+/* 후기들의 사진을 한 번에 읽어와 후기별로 묶어준다 */
+async function imagesOf(ids) {
+  if (!ids.length) return {};
+  const { rows } = await pool.query(
+    `SELECT id, review_id, img IS NOT NULL AS has_img, img_url
+       FROM lp_review_imgs WHERE review_id = ANY($1) ORDER BY sort, id`,
+    [ids]
+  );
+  const map = {};
+  rows.forEach((r) => {
+    const url = r.has_img ? '/lp/rimg/' + r.id : (r.img_url || null);
+    if (!url) return;
+    (map[r.review_id] = map[r.review_id] || []).push({ id: r.id, url });
+  });
+  return map;
 }
 
 /* ── 판매 페이지가 읽어가는 곳 (로그인 없이) ── */
 router.get('/api/lp/reviews', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, img IS NOT NULL AS has_img, img_url, body, who
-         FROM lp_reviews WHERE published ORDER BY sort, id`
+      `SELECT id, body, who FROM lp_reviews WHERE published ORDER BY sort, id`
     );
+    const imgs = await imagesOf(rows.map((r) => r.id));
     res.set('Cache-Control', 'public, max-age=60');
     res.json({
       ok: true,
       reviews: rows.map((r) => ({
         id: r.id,
-        img: r.has_img ? '/lp/review-img/' + r.id : (r.img_url || null),
+        imgs: (imgs[r.id] || []).map((x) => x.url),
+        img: (imgs[r.id] || [])[0] ? imgs[r.id][0].url : null,   // 예전 방식도 계속 통하게
         body: r.body,
         who: r.who,
       })),
@@ -51,10 +62,26 @@ router.get('/api/lp/reviews', async (req, res) => {
   }
 });
 
-/* 후기 사진 (로그인 없이) */
+/* 후기 사진 — 여러 장 (로그인 없이) */
+router.get('/lp/rimg/:id(\\d+)', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT img FROM lp_review_imgs WHERE id = $1', [req.params.id]);
+    if (!rows[0] || !rows[0].img) return res.status(404).end();
+    const m = /^data:(image\/[a-zA-Z+]+);base64,(.+)$/.exec(rows[0].img);
+    if (!m) return res.status(404).end();
+    res.set('Content-Type', m[1]);
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(Buffer.from(m[2], 'base64'));
+  } catch (e) { res.status(404).end(); }
+});
+
+/* 예전 주소도 계속 통하게 — 그 후기의 첫 사진을 준다 */
 router.get('/lp/review-img/:id(\\d+)', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT img FROM lp_reviews WHERE id = $1', [req.params.id]);
+    const { rows } = await pool.query(
+      'SELECT img FROM lp_review_imgs WHERE review_id = $1 AND img IS NOT NULL ORDER BY sort, id LIMIT 1',
+      [req.params.id]
+    );
     if (!rows[0] || !rows[0].img) return res.status(404).end();
     const m = /^data:(image\/[a-zA-Z+]+);base64,(.+)$/.exec(rows[0].img);
     if (!m) return res.status(404).end();
@@ -141,10 +168,10 @@ router.get('/admin/lp-reviews', requireAuth, requireAdmin, async (req, res, next
     let items = [];
     try {
       const { rows } = await pool.query(
-        `SELECT id, img IS NOT NULL AS has_img, img_url, body, who, sort, published
-           FROM lp_reviews ORDER BY sort, id`
+        `SELECT id, body, who, sort, published FROM lp_reviews ORDER BY sort, id`
       );
-      items = rows.map((r) => ({ ...r, url: imgUrl(r) }));
+      const imgs = await imagesOf(rows.map((r) => r.id));
+      items = rows.map((r) => ({ ...r, imgs: imgs[r.id] || [] }));
     } catch (dbErr) {
       /* 표가 아직 없어도 화면은 떠야 한다 */
       console.error('[판매 후기] 불러오기 실패:', dbErr.message);
@@ -160,39 +187,53 @@ router.post('/admin/lp-reviews/save', requireAuth, requireAdmin, async (req, res
     const b = req.body || {};
     const body = plain(b.body).trim();
     const who = plain(b.who).trim().slice(0, 60) || null;
-    if (!body && !b.img) {
+    const hasNew = (Array.isArray(b.imgs) && b.imgs.length) || b.img;
+    if (!body && !hasNew && !b.id) {
       return res.status(400).json({ ok: false, error: '사진이나 글 중 하나는 있어야 합니다.' });
     }
 
-    /* 사진은 새로 올렸을 때만 바꾼다 */
-    let img = null;
-    if (b.img) {
-      img = String(b.img);
-      if (!/^data:image\//.test(img)) return res.status(400).json({ ok: false, error: '이미지 파일만 올릴 수 있습니다.' });
-      if (img.length > MAX_IMG * 1.4) return res.status(400).json({ ok: false, error: '사진이 너무 큽니다. 3MB 이하로 올려주세요.' });
+    /* 새로 올린 사진들 — 없으면 지금 사진을 그대로 둔다 */
+    const list = Array.isArray(b.imgs) ? b.imgs : (b.img ? [b.img] : []);
+    if (list.length > 10) return res.status(400).json({ ok: false, error: '사진은 한 후기에 10장까지 넣을 수 있습니다.' });
+    for (const im of list) {
+      if (!/^data:image\//.test(String(im))) return res.status(400).json({ ok: false, error: '이미지 파일만 올릴 수 있습니다.' });
+      if (String(im).length > MAX_IMG * 1.4) return res.status(400).json({ ok: false, error: '사진이 너무 큽니다. 3MB 이하로 올려주세요.' });
     }
 
-    const id = b.id ? Number(b.id) : null;
+    let id = b.id ? Number(b.id) : null;
     if (id) {
-      if (img) {
-        await pool.query(
-          'UPDATE lp_reviews SET body=$2, who=$3, img=$4, img_url=NULL WHERE id=$1',
-          [id, body, who, img]
-        );
-      } else {
-        await pool.query('UPDATE lp_reviews SET body=$2, who=$3 WHERE id=$1', [id, body, who]);
-      }
-      return res.json({ ok: true, id });
+      await pool.query('UPDATE lp_reviews SET body=$2, who=$3 WHERE id=$1', [id, body, who]);
+    } else {
+      const { rows } = await pool.query('SELECT COALESCE(MAX(sort),0)+10 AS s FROM lp_reviews');
+      const ins = await pool.query(
+        'INSERT INTO lp_reviews (body, who, sort) VALUES ($1,$2,$3) RETURNING id',
+        [body, who, rows[0].s]
+      );
+      id = ins.rows[0].id;
     }
 
-    const { rows } = await pool.query('SELECT COALESCE(MAX(sort),0)+10 AS s FROM lp_reviews');
-    const ins = await pool.query(
-      'INSERT INTO lp_reviews (img, body, who, sort) VALUES ($1,$2,$3,$4) RETURNING id',
-      [img, body, who, rows[0].s]
-    );
-    res.json({ ok: true, id: ins.rows[0].id });
+    /* 올린 사진을 뒤에 이어 붙인다 */
+    for (const im of list) {
+      const { rows: mx } = await pool.query(
+        'SELECT COALESCE(MAX(sort),0)+10 AS s FROM lp_review_imgs WHERE review_id=$1', [id]
+      );
+      await pool.query(
+        'INSERT INTO lp_review_imgs (review_id, img, sort) VALUES ($1,$2,$3)', [id, String(im), mx[0].s]
+      );
+    }
+    res.json({ ok: true, id });
   } catch (e) {
     console.error('[판매 후기] 저장 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* 사진 한 장만 지우기 */
+router.post('/admin/lp-reviews/img-delete', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM lp_review_imgs WHERE id = $1', [Number(req.body.imgId)]);
+    res.json({ ok: true });
+  } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });

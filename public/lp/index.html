@@ -65,6 +65,7 @@
   /* 후기 인증 이미지 */
   .revimg{display:block; width:100%; height:auto; border-radius:10px; border:1px solid var(--line);
     margin-top:12px; background:#fff; cursor:zoom-in;}
+  .rev a + a .revimg{margin-top:8px;}
   /* 수익 숫자 카드 */
   .numrow{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 auto 30px; max-width:760px;}
   .numcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 14px; text-align:center;}
@@ -745,8 +746,10 @@
           return '<div class="rev">' +
             '<div class="stars">★★★★★</div>' +
             (body ? '<p>' + body + '</p>' : '') +
-            (r.img ? '<a href="' + esc(r.img) + '" target="_blank" rel="noopener">' +
-                     '<img class="revimg" src="' + esc(r.img) + '" alt="후기" loading="lazy"></a>' : '') +
+            ((r.imgs && r.imgs.length ? r.imgs : (r.img ? [r.img] : [])).map(function (u) {
+              return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
+                     '<img class="revimg" src="' + esc(u) + '" alt="후기" loading="lazy"></a>';
+            }).join('')) +
             (r.who ? '<div class="who">— ' + esc(r.who) + '</div>' : '') +
           '</div>';
         }).join('');
