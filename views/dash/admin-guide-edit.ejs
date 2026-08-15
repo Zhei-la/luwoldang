@@ -45,6 +45,15 @@
   #geBody img { max-width:100%; height:auto; display:block; border-radius:10px;
     border:1px solid var(--beige); margin:6px 0; }
   #geBody figure { margin:0 0 16px; position:relative; }
+  #geBody figure.loading { min-height:60px; background:#F4EFE3; border-radius:10px; }
+  #geBody figure.loading:after { content:'사진 가져오는 중...'; position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:#8A6F3C; }
+  /* 정렬 */
+  #geBody .al-c { text-align:center; }
+  #geBody .al-r { text-align:right; }
+  #geBody .al-l { text-align:left; }
+  #geBody figure.al-c img { margin-left:auto; margin-right:auto; }
+  #geBody figure.al-r img { margin-left:auto; margin-right:0; }
   /* 사진 크기 — 세로로 긴 휴대폰 캡처가 화면을 다 차지하지 않도록 기본을 중간으로 둔다 */
   /* 사진 크기 — 화면 폭도 함께 따진다.
      px 만 쓰면 폰에서 화면 밖으로 넘쳐서 '중간'이 '크게'보다 커 보인다. */
@@ -65,6 +74,7 @@
   .imgbar button:hover { background:rgba(255,255,255,.28); }
   .imgbar button.on { background:var(--gold); }
   .imgbar button.del { background:rgba(200,90,80,.3); }
+  .imgbar .bsep { width:1px; background:rgba(255,255,255,.22); margin:5px 2px; }
   #geBody a { color:#3B6EA5; }
 
   .ge-opts { display:flex; gap:18px; flex-wrap:wrap; margin:16px 0; font-size:14.5px; color:#4A4438; }
@@ -123,6 +133,10 @@
       <button type="button" data-cmd="insertUnorderedList">목록</button>
       <button type="button" data-cmd="insertOrderedList">번호</button>
       <button type="button" data-cmd="formatBlock" data-val="blockquote">인용</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="justifyLeft">왼쪽</button>
+      <button type="button" data-cmd="justifyCenter">가운데</button>
+      <button type="button" data-cmd="justifyRight">오른쪽</button>
       <button type="button" id="btnPre">복사상자</button>
       <button type="button" id="btnHr">가로줄</button>
       <span class="sep"></span>
@@ -138,7 +152,11 @@
     <button type="button" data-sz="sz-s">작게</button>
     <button type="button" data-sz="sz-m">중간</button>
     <button type="button" data-sz="sz-l">크게</button>
-    <button type="button" class="del" data-sz="del">사진 삭제</button>
+    <span class="bsep"></span>
+    <button type="button" data-al="al-l">왼쪽</button>
+    <button type="button" data-al="al-c">가운데</button>
+    <span class="bsep"></span>
+    <button type="button" class="del" data-sz="del">삭제</button>
   </div>
 
   <div class="ge-opts">
@@ -157,7 +175,7 @@
   <div class="ge-help">
     <b>사진 넣기</b> — 사진을 넣고 싶은 자리를 클릭한 뒤 <b>📷 사진</b>을 누르세요. 여러 장을 한 번에 고를 수도 있습니다.<br>
     <b>더 빠른 방법</b> — 캡처를 복사한 뒤 글에 그대로 붙여넣으면 사진이 그 자리에 올라갑니다. 사진 파일을 끌어다 놓아도 됩니다.<br>
-    <b>노션에서 가져오기</b> — 노션 글을 복사해 붙여넣으면 제목·굵게·목록 같은 서식이 대부분 그대로 옵니다. 다만 사진은 따로 올려주세요.<br>
+    <b>노션에서 가져오기</b> — 노션 글을 <b>사진까지 통째로 복사해</b> 붙여넣으면 서식과 사진이 함께 들어옵니다. 노션 사진 주소는 5분 뒤 만료되니 복사한 뒤 바로 붙여넣어 주세요.<br>
     <b>사진 크기</b> — 사진을 한 번 누르면 <b>작게 · 중간 · 크게</b>를 고를 수 있습니다. 휴대폰 캡처처럼 세로로 긴 사진은 자동으로 작게 들어갑니다.<br>
     <b>복사상자</b> — 교육생이 그대로 복사해 쓸 문구에 쓰세요. 회색 상자로 나옵니다.<br>
     <b>저장하지 않고 나가면</b> 쓰던 글이 사라집니다. 중간중간 저장해 주세요.
@@ -179,6 +197,16 @@
   }
 
   ed.addEventListener('input', function () { dirty = true; });
+
+  /* 저장된 글을 다시 열면 정렬이 class 로 들어 있다.
+     브라우저 정렬 기능이 알아보도록 style 도 함께 붙여준다. */
+  (function restoreAlign() {
+    ed.querySelectorAll('.al-c, .al-r, .al-l').forEach(function (el) {
+      if (el.tagName === 'FIGURE') return;                 // 사진은 CSS 로 처리한다
+      el.style.textAlign = el.classList.contains('al-c') ? 'center'
+                         : el.classList.contains('al-r') ? 'right' : 'left';
+    });
+  })();
 
   /* 도구 버튼 */
   document.querySelectorAll('.ge-bar button[data-cmd]').forEach(function (b) {
@@ -296,8 +324,22 @@
       if (c.nodeType === 3) { out.appendChild(document.createTextNode(c.nodeValue)); return; }
       if (c.nodeType !== 1) return;
       var tag = c.tagName;
-      /* 바깥 사진은 주소가 만료되므로 가져오지 않는다 */
-      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IMG') return;
+      if (tag === 'SCRIPT' || tag === 'STYLE') return;
+
+      /* 바깥 사진은 브라우저가 직접 읽을 수 없다.
+         자리만 만들어 두고, 붙여넣은 뒤 서버가 대신 받아온다. */
+      if (tag === 'IMG') {
+        var src = c.getAttribute('src') || '';
+        if (!/^https:\/\//i.test(src)) return;
+        var fig = document.createElement('figure');
+        fig.className = 'sz-m loading';
+        var im = document.createElement('img');
+        im.setAttribute('data-remote', src);
+        im.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        fig.appendChild(im);
+        out.appendChild(fig);
+        return;
+      }
       var keep = KEEP[tag];
       if (!keep) { out.appendChild(clean(c)); return; }   // 껍데기만 버리고 속은 살린다
       var el = document.createElement(typeof keep === 'string' ? keep : tag);
@@ -336,8 +378,49 @@
         if (last) { r.setStartAfter(last); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
       }
       dirty = true;
+      fetchRemote();
     }
   });
+
+  /* 붙여넣은 바깥 사진을 서버가 대신 받아온다 */
+  function fetchRemote() {
+    var list = [].slice.call(ed.querySelectorAll('img[data-remote]'));
+    if (!list.length) return;
+    toast('사진 ' + list.length + '장 가져오는 중...');
+
+    var done = 0, failed = 0;
+    list.reduce(function (chain, im) {
+      return chain.then(function () {
+        return fetch('/admin/guide/img/from-url', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: im.getAttribute('data-remote'), post_id: postId.value || null })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.ok) throw new Error(d.error || '실패');
+          im.src = d.url;
+          im.removeAttribute('data-remote');
+          if (im.parentNode) im.parentNode.classList.remove('loading');
+          done++;
+        })
+        .catch(function () {
+          failed++;
+          var f = im.closest('figure');
+          if (f) f.remove(); else im.remove();
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      dirty = true;
+      if (failed) {
+        alert('사진 ' + done + '장을 가져왔습니다.\n' +
+              failed + '장은 가져오지 못해 빠졌습니다.\n\n' +
+              '노션 사진 주소는 5분 뒤 만료됩니다.\n' +
+              '노션에서 다시 복사해 바로 붙여넣거나, 사진을 하나씩 복사해 넣어주세요.');
+      } else {
+        toast('사진 ' + done + '장을 넣었습니다');
+      }
+    });
+  }
 
   /* ── 사진 크기 조절 ──
      사진을 누르면 위에 막대가 떠서 작게·중간·크게를 고를 수 있다.
@@ -360,6 +443,10 @@
     var cur = ['sz-s', 'sz-m', 'sz-l'].find(function (c) { return fig.classList.contains(c); }) || 'sz-m';
     bar.querySelectorAll('button[data-sz]').forEach(function (b) {
       b.classList.toggle('on', b.dataset.sz === cur);
+    });
+    var al = ['al-l', 'al-c', 'al-r'].find(function (c) { return fig.classList.contains(c); }) || 'al-l';
+    bar.querySelectorAll('button[data-al]').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.al === al);
     });
 
     bar.classList.add('on');
@@ -412,9 +499,23 @@
     picked.classList.remove('sz-s', 'sz-m', 'sz-l');
     picked.classList.add(b.dataset.sz);
     bar.querySelectorAll('button[data-sz]').forEach(function (x) {
+      x.classList.toggle('on', x === b && x.dataset.sz !== 'del');
+    });
+    dirty = true;
+    place();
+  });
+
+  /* 사진 정렬 */
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-al]');
+    if (!b || !picked) return;
+    picked.classList.remove('al-l', 'al-c', 'al-r');
+    picked.classList.add(b.dataset.al);
+    bar.querySelectorAll('button[data-al]').forEach(function (x) {
       x.classList.toggle('on', x === b);
     });
     dirty = true;
+    place();
   });
 
   /* 글을 쓰기 시작하거나 다른 곳을 누르면 막대를 감춘다 */
@@ -428,6 +529,23 @@
     var tmp = document.createElement('div');
     tmp.innerHTML = ed.innerHTML;
     tmp.querySelectorAll('figure.sel').forEach(function (f) { f.classList.remove('sel'); });
+    /* 아직 못 받아온 사진은 빈칸으로 남으므로 빼고 저장한다 */
+    tmp.querySelectorAll('img[data-remote]').forEach(function (im) {
+      var f = im.closest('figure'); if (f) f.remove(); else im.remove();
+    });
+    tmp.querySelectorAll('figure.loading').forEach(function (f) { f.classList.remove('loading'); });
+
+    /* 브라우저는 정렬을 style 로 넣는데, 저장할 때 style 은 걸러진다.
+       그래서 class 로 바꿔 둔다. */
+    tmp.querySelectorAll('[style]').forEach(function (el) {
+      var a = (el.style.textAlign || '').toLowerCase();
+      el.classList.remove('al-l', 'al-c', 'al-r');
+      if (a === 'center') el.classList.add('al-c');
+      else if (a === 'right') el.classList.add('al-r');
+      else if (a === 'left') el.classList.add('al-l');
+      el.removeAttribute('style');
+      if (!el.getAttribute('class')) el.removeAttribute('class');
+    });
     return tmp.innerHTML;
   }
 

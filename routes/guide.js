@@ -223,6 +223,58 @@ router.post('/admin/guide/preview', requireAuth, requireAdmin, (req, res) => {
   }
 });
 
+/* ── 주소로 된 사진을 받아와 저장한다 ──
+   노션 글을 통째로 복사해 붙여넣으면 사진이 파일이 아니라 주소로만 넘어온다.
+   브라우저는 다른 사이트의 사진을 직접 읽을 수 없으므로 서버가 대신 받아온다.
+
+   ⚠️ 아무 주소나 받아오면 내부망을 들여다보는 통로가 될 수 있어,
+      노션이 사진을 두는 곳으로만 제한한다. */
+const IMG_HOSTS = [
+  /\.amazonaws\.com$/i,          // 노션 사진 저장소
+  /(^|\.)notion\.so$/i,
+  /(^|\.)notion-static\.com$/i,
+];
+
+router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const raw = String((req.body || {}).url || '');
+    let u;
+    try { u = new URL(raw); } catch { return res.status(400).json({ ok: false, error: '주소가 올바르지 않습니다.' }); }
+    if (u.protocol !== 'https:') return res.status(400).json({ ok: false, error: 'https 주소만 받아옵니다.' });
+    if (!IMG_HOSTS.some((re) => re.test(u.hostname))) {
+      return res.status(400).json({ ok: false, error: '노션 사진만 자동으로 가져올 수 있습니다.' });
+    }
+
+    /* 오래 기다리지 않게 10초로 끊는다 */
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    let r;
+    try {
+      r = await fetch(u.href, { signal: ac.signal, redirect: 'follow' });
+    } finally { clearTimeout(timer); }
+
+    if (!r.ok) return res.status(400).json({ ok: false, error: '사진을 받아오지 못했습니다 (' + r.status + ')' });
+
+    const type = String(r.headers.get('content-type') || '').split(';')[0].trim();
+    if (!/^image\//.test(type)) return res.status(400).json({ ok: false, error: '사진이 아닙니다.' });
+
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > MAX_IMG) return res.status(400).json({ ok: false, error: '사진이 너무 큽니다 (3MB 초과).' });
+
+    const dataUrl = 'data:' + type + ';base64,' + buf.toString('base64');
+    const postId = req.body.post_id ? Number(req.body.post_id) : null;
+    const { rows } = await pool.query(
+      'INSERT INTO guide_images (post_id, img) VALUES ($1,$2) RETURNING id',
+      [postId, dataUrl]
+    );
+    res.json({ ok: true, url: '/guide/img/' + rows[0].id });
+  } catch (e) {
+    const msg = e.name === 'AbortError' ? '사진 받아오기가 너무 오래 걸립니다.' : e.message;
+    console.error('[자료집] 주소 사진 실패:', msg);
+    res.status(500).json({ ok: false, error: msg });
+  }
+});
+
 /* 삭제 */
 router.post('/admin/guide/delete', requireAuth, requireAdmin, async (req, res) => {
   try {
