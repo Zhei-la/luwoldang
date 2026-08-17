@@ -225,12 +225,19 @@ async function initDb() {
     ['late_price',  'INTEGER DEFAULT 80'],
     ['live_date',   "TEXT DEFAULT '9월 19일'"],
     ['live_url',    "TEXT DEFAULT 'https://open.kakao.com/o/gdlttwDi'"],
+    ['ebook_price', 'INTEGER DEFAULT 89000'],      /* 전자책 얼리버드가 */
+    ['ebook_step',  'INTEGER DEFAULT 30000'],      /* 몇 명마다 얼마 오르는지 */
+    ['ebook_seats', 'INTEGER DEFAULT 10'],
   ]) {
     await pool.query(`ALTER TABLE lp_settings ADD COLUMN IF NOT EXISTS ${col} ${def};`);
   }
   await pool.query(`INSERT INTO lp_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;`);
   /* 신청 마감 기본값을 10월 31일로 */
   await pool.query(`UPDATE lp_settings SET deadline='10월 31일' WHERE id=1 AND deadline='2026년 11월';`);
+  /* 일정 조정 — 라이브 당일까지 사전예약가, 이후 10월 10일 마감 */
+  await pool.query(`UPDATE lp_settings SET live_date='9월 30일' WHERE id=1 AND live_date='9월 19일';`);
+  await pool.query(`UPDATE lp_settings SET early_until='9월 30일' WHERE id=1 AND early_until='9월 30일';`);
+  await pool.query(`UPDATE lp_settings SET deadline='10월 10일' WHERE id=1 AND deadline='10월 31일';`);
 
   /* ── 판매 페이지 후기 ──
      관리자가 직접 사진과 글을 올려 관리한다.

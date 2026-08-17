@@ -116,9 +116,10 @@ router.get('/lp/review-img/:id(\\d+)', async (req, res) => {
 const DEFAULT_SET = {
   cohort: '3기', price: 70, list_price: 80,
   next_cohort: '4기', next_price: 110,
-  seats: 10, deadline: '10월 31일', ladder: '1기 30만 / 50만 / 2기 60만',
+  seats: 10, deadline: '10월 10일', ladder: '1기 30만 / 50만 / 2기 60만',
   early_until: '9월 30일', late_price: 80,
-  live_date: '9월 19일', live_url: 'https://open.kakao.com/o/gdlttwDi',
+  live_date: '9월 30일', live_url: 'https://open.kakao.com/o/gdlttwDi',
+  ebook_price: 89000, ebook_step: 30000, ebook_seats: 10,
 };
 
 async function getSettings() {
@@ -141,6 +142,8 @@ router.get('/api/lp/settings', async (req, res) => {
       seats: st.seats, deadline: st.deadline, ladder: st.ladder,
       earlyUntil: st.early_until, latePrice: st.late_price,
       liveDate: st.live_date, liveUrl: st.live_url,
+      ebookPrice: st.ebook_price, ebookStep: st.ebook_step, ebookSeats: st.ebook_seats,
+      ebookNext: (st.ebook_price || 0) + (st.ebook_step || 0),
     },
   });
 });
@@ -150,7 +153,7 @@ router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) =>
     const b = req.body || {};
     const num = (v, d) => {
       const n = Number(v);
-      return Number.isFinite(n) && n >= 0 && n < 100000 ? Math.round(n) : d;
+      return Number.isFinite(n) && n >= 0 && n <= 10000000 ? Math.round(n) : d;
     };
     const txt = (v, d, len) => {
       /* 판매 페이지에 그대로 들어가는 값이다.
@@ -176,6 +179,7 @@ router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) =>
         cohort=$1, price=$2, list_price=$3, next_cohort=$4, next_price=$5,
         seats=$6, deadline=$7, ladder=$8,
         early_until=$9, late_price=$10, live_date=$11, live_url=$12,
+        ebook_price=$13, ebook_step=$14, ebook_seats=$15,
         updated_at=NOW()
       WHERE id=1
     `, [
@@ -191,6 +195,9 @@ router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) =>
       num(b.latePrice, cur.late_price),
       txt(b.liveDate, cur.live_date, 40),
       url(b.liveUrl, cur.live_url),
+      num(b.ebookPrice, cur.ebook_price),
+      num(b.ebookStep, cur.ebook_step),
+      num(b.ebookSeats, cur.ebook_seats),
     ]);
     res.json({ ok: true });
   } catch (e) {

@@ -118,6 +118,9 @@
     <label>사전예약 뒤 금액 (만원)<input type="number" id="sLatePrice" value="<%= set.late_price || '' %>"></label>
     <label>신청 마감<input type="text" id="sDeadline" value="<%= set.deadline %>" placeholder="10월 31일"></label>
     <label>설명회 라이브 날짜<input type="text" id="sLiveDate" value="<%= set.live_date || '' %>" placeholder="9월 19일"></label>
+    <label>전자책 금액 (원)<input type="number" id="sEbookPrice" value="<%= set.ebook_price || '' %>"></label>
+    <label>몇 명마다 오를까요 (명)<input type="number" id="sEbookSeats" value="<%= set.ebook_seats || '' %>"></label>
+    <label>오르는 금액 (원)<input type="number" id="sEbookStep" value="<%= set.ebook_step || '' %>"></label>
     <label class="wide">라이브 대기방 주소 (카카오 오픈채팅만)
       <input type="text" id="sLiveUrl" value="<%= set.live_url || '' %>" placeholder="https://open.kakao.com/o/..."></label>
     <label>다음 기수<input type="text" id="sNextCohort" value="<%= set.next_cohort %>" placeholder="4기"></label>
@@ -257,7 +260,8 @@
 (function () {
   /* ── 기수 · 금액 설정 ── */
   var F = ['sCohort','sPrice','sListPrice','sSeats','sDeadline','sNextCohort','sNextPrice','sLadder',
-           'sEarlyUntil','sLatePrice','sLiveDate','sLiveUrl'];
+           'sEarlyUntil','sLatePrice','sLiveDate','sLiveUrl',
+           'sEbookPrice','sEbookSeats','sEbookStep'];
   function val(id) { return document.getElementById(id).value.trim(); }
 
   function drawPrev() {
@@ -270,7 +274,10 @@
       '~ <b>' + val('sEarlyUntil') + '</b> : <b>' + p + '만원</b> (사전예약 ' + dc + '만원 할인)<br>' +
       '10월 1일 ~ <b>' + val('sDeadline') + '</b> : <b>' + val('sLatePrice') + '만원</b><br>' +
       '<b>' + val('sDeadline') + '</b> 이후 마감 · <b>' + val('sNextCohort') + '</b> ' + val('sNextPrice') + '만원<br>' +
-      '무료 설명회 라이브 <b>' + val('sLiveDate') + '</b>' +
+      '무료 설명회 라이브 <b>' + val('sLiveDate') + '</b><br>' +
+      '전자책 <b>' + Number(val('sEbookPrice')||0).toLocaleString('ko-KR') + '원</b>' +
+      ' · ' + val('sEbookSeats') + '명마다 ' + Number(val('sEbookStep')||0).toLocaleString('ko-KR') + '원 인상' +
+      ' → 다음 <b>' + (Number(val('sEbookPrice')||0)+Number(val('sEbookStep')||0)).toLocaleString('ko-KR') + '원</b>' +
       (dc <= 0 ? '<br><span style="color:#A8332B">※ 정가가 사전예약가보다 크지 않아 할인이 0원으로 나옵니다.</span>' : '') +
       (ok ? '' : '<br><span style="color:#A8332B">※ 대기방 주소가 카카오 오픈채팅 주소가 아니라 저장되지 않습니다.</span>');
   }
@@ -289,7 +296,8 @@
         seats: val('sSeats'), deadline: val('sDeadline'),
         nextCohort: val('sNextCohort'), nextPrice: val('sNextPrice'), ladder: val('sLadder'),
         earlyUntil: val('sEarlyUntil'), latePrice: val('sLatePrice'),
-        liveDate: val('sLiveDate'), liveUrl: val('sLiveUrl')
+        liveDate: val('sLiveDate'), liveUrl: val('sLiveUrl'),
+        ebookPrice: val('sEbookPrice'), ebookSeats: val('sEbookSeats'), ebookStep: val('sEbookStep')
       })
     })
     .then(function (r) { return r.json(); })
