@@ -106,7 +106,22 @@
     -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
     -webkit-touch-callout:none;   /* 폰에서 길게 눌러도 복사 메뉴가 안 뜨게 */
   }
-  .lock .gv-body img { -webkit-user-drag:none; user-drag:none; pointer-events:none; }
+  .lock .gv-body img { -webkit-user-drag:none; user-drag:none; }
+  /* ── 사진 크게 보기 ──
+     워터마크(z-index 9999)보다 아래에 두어, 크게 봐도 이름이 계속 남는다. */
+    .gv-body figure img { cursor:zoom-in; }
+  .lbox { display:none; position:fixed; inset:0; z-index:9000;
+    background:rgba(20,16,10,.92); align-items:center; justify-content:center; padding:20px; }
+  .lbox.on { display:flex; }
+  .lbox img { max-width:100%; max-height:100%; width:auto; height:auto;
+    border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,.5);
+    -webkit-user-drag:none; user-drag:none; }
+  .lbox .x { position:fixed; top:16px; right:16px; width:44px; height:44px; border-radius:50%;
+    border:0; background:rgba(255,255,255,.16); color:#fff; font-size:24px; line-height:1;
+    cursor:pointer; font-family:inherit; }
+  .lbox .x:hover { background:rgba(255,255,255,.3); }
+  .lbox .hint { position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    font-size:12.5px; color:rgba(255,255,255,.6); }
 
   /* 인쇄나 PDF 저장으로 빼가는 것도 막는다 */
   @media print {
@@ -268,6 +283,45 @@
         btn.textContent = '복사'; btn.classList.remove('done');
       }, 1600);
     });
+  });
+})();
+</script>
+
+<script>
+(function () {
+  /* 사진을 누르면 크게 보여준다. 다시 누르면 닫힌다. */
+  var body = document.querySelector('.gv-body');
+  if (!body) return;
+
+  var box = document.createElement('div');
+  box.className = 'lbox';
+  box.innerHTML = '<img alt=""><button type="button" class="x" aria-label="닫기">&times;</button>' +
+                  '<span class="hint">아무 곳이나 누르면 닫힙니다</span>';
+  document.body.appendChild(box);
+  var big = box.querySelector('img');
+
+  function open(src) {
+    big.src = src;
+    box.classList.add('on');
+    document.body.style.overflow = 'hidden';
+  }
+  function close() {
+    box.classList.remove('on');
+    big.src = '';
+    document.body.style.overflow = '';
+  }
+
+  body.addEventListener('click', function (e) {
+    var img = e.target.closest('figure img');
+    if (!img || !img.getAttribute('src')) return;
+    e.preventDefault();
+    open(img.getAttribute('src'));
+  });
+
+  box.addEventListener('click', close);
+  box.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && box.classList.contains('on')) close();
   });
 })();
 </script>
