@@ -89,7 +89,7 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 28px;
+  padding: 16px 32px;
   background:var(--card);
   border-bottom: 1px solid var(--beige);
   position: sticky;
@@ -101,7 +101,9 @@ body {
 .hamburger:hover { background: var(--beige); }
 .page-title { font-family: "Nanum Myeongjo", serif; font-size: 18px; margin: 0; flex: 1; }
 .who { font-size: 13px; color: #8a8574; }
-.main { padding: 28px; max-width: 1000px; width: 100%; }
+/* 사이드바를 접으면서 왼쪽으로 쏠리던 것을 가운데로 모은다.
+   화면이 넓어졌으므로 본문 폭도 함께 넓힌다. */
+.main { padding: 28px 32px; max-width: 1240px; width: 100%; margin: 0 auto; }
 
 /* ===== 오버레이(모바일) ===== */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 30; }
@@ -187,7 +189,8 @@ body {
 .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(24,34,52,.22); }
 
 @media (max-width: 768px) {
-  .main { padding: 18px; }
+  .main { padding: 18px 16px; }
+  .topbar { padding: 14px 16px; }
 }
 
 /* ===== 관리자 승인 테이블 ===== */
