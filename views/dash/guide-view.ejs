@@ -2,29 +2,28 @@
 
 <style>
   /* 위쪽 버튼 줄 — 머리말 바로 아래에 붙어 화면을 내려도 계속 보인다 */
-  .gv-bar {
+  /* 머리말 바로 아래에 이어 붙는 줄 — 두 겹처럼 보이지 않게
+     머리말과 같은 바탕을 쓰고, 글씨만 있는 버튼으로 가볍게 둔다. */
+    .gv-bar {
     position:sticky; top:57px; z-index:25;
-    display:flex; align-items:center; gap:8px;
-    margin:-28px -28px 18px; padding:10px 28px;
-    background:rgba(251,247,240,.96); backdrop-filter:blur(6px);
-    border-bottom:1px solid var(--beige);
+    display:flex; align-items:center; gap:2px;
+    margin:-28px -32px 22px; padding:0 26px;
+    background:var(--card); border-bottom:1px solid var(--beige);
   }
-  .gv-bar a, .gv-bar button {
-    padding:9px 16px; border:1px solid var(--beige); background:var(--card); border-radius:9px;
-    font-size:13.5px; font-weight:700; color:#4A4438; text-decoration:none;
+    .gv-bar a,   .gv-bar button {
+    padding:11px 10px; border:0; background:none; border-radius:0;
+    font-size:13.5px; font-weight:700; color:#8A8574; text-decoration:none;
     cursor:pointer; font-family:inherit; white-space:nowrap;
+    border-bottom:2px solid transparent;
   }
-  .gv-bar a:hover, .gv-bar button:hover { border-color:var(--gold); color:#8A6F3C; }
-  .gv-bar .edit { background:var(--navy); border-color:var(--navy); color:#fff; }
-  .gv-bar .edit:hover { color:#fff; }
-  .gv-bar .sp { flex:1; }
-  .gv-bar .tt { font-size:13px; color:#9A9384; overflow:hidden; text-overflow:ellipsis;
-    white-space:nowrap; max-width:44%; }
+    .gv-bar a:hover,   .gv-bar button:hover { color:var(--ink); }
+    .gv-bar .edit { color:#8A6F3C; }
+    .gv-bar .edit:hover { color:#8A6F3C; border-bottom-color:var(--gold); }
+    .gv-bar .sp { flex:1; }
 
   @media (max-width:760px) {
-    .gv-bar { top:53px; margin:-18px -16px 14px; padding:9px 16px; }
-    .gv-bar a, .gv-bar button { padding:8px 13px; font-size:13px; }
-    .gv-bar .tt { display:none; }
+      .gv-bar { top:53px; margin:-18px -16px 16px; padding:0 10px; }
+      .gv-bar a,   .gv-bar button { padding:10px 8px; font-size:13px; }
   }
 
   .gv-head { border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
@@ -172,8 +171,6 @@
     <a href="/admin/guide/edit/<%= post.id %>" class="edit">수정하기</a>
     <a href="/admin/guide">관리</a>
   <% } %>
-  <span class="sp"></span>
-  <span class="tt"><%= post.title %></span>
 </div>
 
 <% if (lock) { %>
