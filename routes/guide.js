@@ -339,11 +339,11 @@ router.get('/admin/guide/views/:id(\\d+)', requireAuth, requireAdmin, async (req
     const { rows: p } = await pool.query('SELECT id, title FROM guide_posts WHERE id=$1', [req.params.id]);
     if (!p[0]) return res.redirect('/admin/guide');
     const { rows } = await pool.query(`
-      SELECT u.name, u.email, COUNT(*)::int AS n, MAX(v.viewed_at) AS last_at
+      SELECT u.name, u.account_email AS email, COUNT(*)::int AS n, MAX(v.viewed_at) AS last_at
         FROM guide_views v
         JOIN users u ON u.id = v.teacher_id
        WHERE v.post_id = $1
-       GROUP BY u.id, u.name, u.email
+       GROUP BY u.id, u.name, u.account_email
        ORDER BY MAX(v.viewed_at) DESC
     `, [req.params.id]);
     res.render('dash/admin-guide-views', {

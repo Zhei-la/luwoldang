@@ -44,6 +44,12 @@
   .as-redo { margin-top:9px; padding:7px 13px; border:1px solid var(--beige); background:var(--card);
     border-radius:8px; font-size:12.5px; color:#6B6656; cursor:pointer; font-family:inherit; }
 
+  .as-err { background:#FBF1EF; border:1px solid #E5C4BF; border-left:3px solid #A8332B;
+    border-radius:0 12px 12px 0; padding:15px 18px; margin-bottom:14px;
+    font-size:14px; line-height:1.8; color:#7A2A24; word-break:break-all; }
+  .as-err b { color:#A8332B; }
+  .as-err span { font-family:monospace; font-size:12.5px; color:#8a5a55; }
+
   .as-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
 </style>
 
@@ -55,6 +61,14 @@
     답변 필요 <span class="n"><%= count.open %></span>
   </a>
 </div>
+
+<% if (typeof dbError !== 'undefined' && dbError) { %>
+  <div class="as-err">
+    <b>문의를 불러오지 못했습니다.</b><br>
+    <span><%= dbError %></span><br>
+    이 내용을 그대로 알려주시면 바로 고쳐 드리겠습니다.
+  </div>
+<% } %>
 
 <% if (!items.length) { %>
   <div class="as-empty">

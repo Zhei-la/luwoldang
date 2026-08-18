@@ -340,9 +340,10 @@ router.get('/admin/support', requireAuth, requireAdmin, async (req, res, next) =
     const only = req.query.only === 'open' ? 'AND i.answered_at IS NULL' : '';
     let items = [];
     let count = { open: 0, all_n: 0 };
+    let dbError = null;
     try {
       const { rows } = await pool.query(`
-        SELECT i.*, u.name AS who, u.email
+        SELECT i.*, u.name AS who, u.account_email AS email
           FROM inquiries i
           JOIN users u ON u.id = i.teacher_id
          WHERE TRUE ${only}
@@ -354,12 +355,14 @@ router.get('/admin/support', requireAuth, requireAdmin, async (req, res, next) =
       );
       count = cnt[0];
     } catch (dbErr) {
-      /* 표가 아직 없을 수 있다. 그래도 화면은 떠야 한다. */
+      /* 표가 아직 없을 수 있다. 화면은 뜨되, 무엇이 잘못됐는지는 알려준다.
+         조용히 넘기면 '문의가 없는 것'과 구분이 안 된다. */
       console.error('[문의 관리] 불러오기 실패:', dbErr.message);
+      dbError = dbErr.message;
     }
     res.render('dash/admin-support', {
       user: req.user, active: 'admin-support',
-      items, count, only: req.query.only || '',
+      items, count, only: req.query.only || '', dbError,
     });
   } catch (e) { next(e); }
 });
