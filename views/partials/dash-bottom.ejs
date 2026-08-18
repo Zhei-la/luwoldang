@@ -6,6 +6,15 @@
     document.getElementById('sidebar').classList.add('open');
     document.getElementById('overlay').classList.add('show');
   }
+  /* 메뉴를 고르면 저절로 닫힌다 */
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.sidebar .nav-item')) closeSidebar();
+  });
+  /* ESC 로도 닫힌다 */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSidebar();
+  });
+
   function closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('overlay').classList.remove('show');

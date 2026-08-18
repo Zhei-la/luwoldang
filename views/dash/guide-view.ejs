@@ -136,7 +136,7 @@
      (사이드바 260px + 본문 최대 1000px) */
   .gv-marks {
     position:fixed; top:0; bottom:0;
-    left:260px; width:min(1000px, calc(100vw - 260px));
+    left:0; width:min(1000px, 100vw);
     z-index:9999; pointer-events:none; user-select:none; overflow:hidden;
   }
   .gv-marks .m {
@@ -154,8 +154,7 @@
   }
 
   @media (max-width:768px) {
-    /* 사이드바가 숨으므로 화면 전체가 본문이다 */
-    .gv-marks { left:0; width:100vw; }
+    .gv-marks { width:100vw; }
     .gv-marks .m { font-size:11px; }
     .gv-marks .mL { top:106px; left:10px; }
     .gv-marks .mR { right:4px; }
