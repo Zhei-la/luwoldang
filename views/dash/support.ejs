@@ -44,6 +44,30 @@
 
   .sp-del { margin-top:10px; padding:7px 13px; border:1px solid var(--beige); background:var(--card);
     border-radius:8px; font-size:12.5px; color:#A8332B; cursor:pointer; font-family:inherit; }
+.sp-imgs { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+  .sp-imgs img { width:84px; height:104px; object-fit:cover; border-radius:9px;
+    border:1px solid var(--beige); background:#fff; cursor:zoom-in; display:block; }
+
+  .sp-pick { border:1px dashed var(--beige); border-radius:11px; background:#fff;
+    padding:16px; text-align:center; cursor:pointer; margin-bottom:10px; }
+  .sp-pick:hover, .sp-pick.over { border-color:var(--gold); }
+  .sp-pick .t { font-size:13.5px; font-weight:700; color:#4A4438; }
+  .sp-pick .d { font-size:12px; color:#9A9384; margin-top:4px; }
+  .sp-pick .picked { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+  .sp-pick .pw { position:relative; }
+  .sp-pick .picked img { width:70px; height:88px; object-fit:cover; border-radius:8px;
+    border:1px solid var(--beige); display:block; }
+  .sp-pick .pw .x { position:absolute; top:-6px; right:-6px; width:20px; height:20px;
+    border-radius:50%; border:0; background:#A8332B; color:#fff; font-size:13px;
+    line-height:1; cursor:pointer; padding:0; font-family:inherit; }
+
+  .lbox { display:none; position:fixed; inset:0; z-index:9000;
+    background:rgba(20,16,10,.92); align-items:center; justify-content:center; padding:20px; }
+  .lbox.on { display:flex; }
+  .lbox img { max-width:100%; max-height:100%; border-radius:10px; }
+  .lbox .hint { position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    font-size:12.5px; color:rgba(255,255,255,.6); }
+
   .sp-empty { text-align:center; padding:44px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
   .sp-h { font-size:15px; font-weight:800; margin:26px 0 12px; }
 </style>
@@ -62,6 +86,14 @@
   </div>
   <input type="text" id="spTitle" placeholder="제목 — 어떤 내용인지 한 줄로">
   <textarea id="spBody" placeholder="자세히 적어주시면 더 빨리 도와드릴 수 있어요.&#10;오류라면 어느 화면에서, 무엇을 눌렀을 때 그랬는지 적어주세요."></textarea>
+
+  <div class="sp-pick" id="spPick">
+    <div id="spPickIn">
+      <div class="t">📷 화면 캡처 넣기</div>
+      <div class="d">누르거나 끌어다 놓으세요 · 붙여넣기(Ctrl+V)도 됩니다 · 5장까지</div>
+    </div>
+  </div>
+  <input type="file" id="spFile" accept="image/*" multiple hidden>
   <button type="button" class="send" id="spSend">문의 남기기</button>
 </div>
 
@@ -80,6 +112,11 @@
         </span>
       </div>
       <div class="bd"><%= it.body %></div>
+      <% if (it.imgs && it.imgs.length) { %>
+        <div class="sp-imgs">
+          <% it.imgs.forEach(function (u) { %><img src="<%= u %>" alt="첨부 사진"><% }); %>
+        </div>
+      <% } %>
       <div class="dt"><%= new Date(it.created_at).toLocaleString('ko-KR') %></div>
 
       <% if (it.answer) { %>
@@ -108,6 +145,57 @@
     });
   });
 
+  /* ── 캡처 넣기 ── */
+  var pick = document.getElementById('spPick');
+  var pickIn = document.getElementById('spPickIn');
+  var fileEl = document.getElementById('spFile');
+  var imgList = [];
+
+  function drawPick() {
+    if (!imgList.length) {
+      pickIn.innerHTML = '<div class="t">📷 화면 캡처 넣기</div>' +
+        '<div class="d">누르거나 끌어다 놓으세요 · 붙여넣기(Ctrl+V)도 됩니다 · 5장까지</div>';
+      return;
+    }
+    pickIn.innerHTML = '<div class="picked">' + imgList.map(function (u, i) {
+      return '<div class="pw"><img src="' + u + '" alt="">' +
+             '<button type="button" class="x" data-i="' + i + '">×</button></div>';
+    }).join('') + '</div><div class="d">사진 ' + imgList.length + '장 · 눌러서 더 넣기</div>';
+  }
+
+  function addFiles(files) {
+    [].slice.call(files || []).forEach(function (f) {
+      if (!f || !/^image\//.test(f.type)) return;
+      if (imgList.length >= 5) { alert('사진은 5장까지 넣을 수 있어요.'); return; }
+      if (f.size > 3 * 1024 * 1024) { alert('사진이 너무 큽니다. 3MB 이하로 올려주세요.'); return; }
+      var fr = new FileReader();
+      fr.onload = function () { imgList.push(fr.result); drawPick(); };
+      fr.readAsDataURL(f);
+    });
+  }
+
+  pick.addEventListener('click', function (e) {
+    if (e.target.closest('.pw .x')) {
+      e.stopPropagation();
+      imgList.splice(Number(e.target.closest('.pw .x').dataset.i), 1);
+      drawPick();
+      return;
+    }
+    fileEl.click();
+  });
+  fileEl.addEventListener('change', function () { addFiles(fileEl.files); fileEl.value = ''; });
+  pick.addEventListener('dragover', function (e) { e.preventDefault(); pick.classList.add('over'); });
+  pick.addEventListener('dragleave', function () { pick.classList.remove('over'); });
+  pick.addEventListener('drop', function (e) {
+    e.preventDefault(); pick.classList.remove('over'); addFiles(e.dataTransfer.files);
+  });
+  document.addEventListener('paste', function (e) {
+    var it = (e.clipboardData || {}).items || [];
+    for (var i = 0; i < it.length; i++) {
+      if (/^image\//.test(it[i].type)) { addFiles([it[i].getAsFile()]); break; }
+    }
+  });
+
   var send = document.getElementById('spSend');
   send.addEventListener('click', function () {
     var title = document.getElementById('spTitle').value.trim();
@@ -118,7 +206,7 @@
     send.disabled = true; send.textContent = '보내는 중...';
     fetch('/support/write', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: kind, title: title, body: body })
+      body: JSON.stringify({ kind: kind, title: title, body: body, imgs: imgList })
     })
     .then(function (r) { return r.json(); })
     .then(function (d) {
@@ -143,6 +231,19 @@
     }).then(function (r) { return r.json(); })
       .then(function () { item.remove(); });
   });
+
+/* 사진을 누르면 크게 본다 */
+(function () {
+  var box = document.createElement('div');
+  box.className = 'lbox';
+  box.innerHTML = '<img alt=""><span class="hint">아무 곳이나 누르면 닫힙니다</span>';
+  document.body.appendChild(box);
+  document.addEventListener('click', function (e) {
+    var im = e.target.closest('.sp-imgs img');
+    if (im) { box.querySelector('img').src = im.src; box.classList.add('on'); return; }
+    if (box.classList.contains('on')) { box.classList.remove('on'); box.querySelector('img').src = ''; }
+  });
+})();
 })();
 </script>
 

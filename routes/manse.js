@@ -27,8 +27,24 @@ router.use('/manse', requireAuth, requireApproved);
 router.use('/api/manse', requireAuth, requireApproved);
 
 /* ── 화면 ── */
-router.get('/manse', (req, res) => {
-  res.render('dash/manse', { user: req.user, active: 'manse' });
+router.get('/manse', async (req, res) => {
+  /* 사주 신청자 화면에서 '만세력 보기'로 넘어오면 그 사람 정보를 미리 채워준다.
+     같은 정보를 두 번 입력하지 않아도 된다. */
+  let prefill = null;
+  const from = Number(req.query.from);
+  if (from) {
+    try {
+      const { rows } = await pool.query(
+        `SELECT name, gender, birth, calendar, hour, region FROM leads
+          WHERE id = $1 AND teacher_id = $2`,
+        [from, req.user.id]
+      );
+      if (rows[0]) prefill = rows[0];
+    } catch (e) {
+      console.error('[만세력] 신청자 불러오기 실패:', e.message);
+    }
+  }
+  res.render('dash/manse', { user: req.user, active: 'manse', prefill });
 });
 
 /* ── 지역 목록 (진태양시 보정분 포함) ── */

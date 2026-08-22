@@ -50,6 +50,30 @@
   .as-err b { color:#A8332B; }
   .as-err span { font-family:monospace; font-size:12.5px; color:#8a5a55; }
 
+.sp-imgs { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+  .sp-imgs img { width:84px; height:104px; object-fit:cover; border-radius:9px;
+    border:1px solid var(--beige); background:#fff; cursor:zoom-in; display:block; }
+
+  .sp-pick { border:1px dashed var(--beige); border-radius:11px; background:#fff;
+    padding:16px; text-align:center; cursor:pointer; margin-bottom:10px; }
+  .sp-pick:hover, .sp-pick.over { border-color:var(--gold); }
+  .sp-pick .t { font-size:13.5px; font-weight:700; color:#4A4438; }
+  .sp-pick .d { font-size:12px; color:#9A9384; margin-top:4px; }
+  .sp-pick .picked { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+  .sp-pick .pw { position:relative; }
+  .sp-pick .picked img { width:70px; height:88px; object-fit:cover; border-radius:8px;
+    border:1px solid var(--beige); display:block; }
+  .sp-pick .pw .x { position:absolute; top:-6px; right:-6px; width:20px; height:20px;
+    border-radius:50%; border:0; background:#A8332B; color:#fff; font-size:13px;
+    line-height:1; cursor:pointer; padding:0; font-family:inherit; }
+
+  .lbox { display:none; position:fixed; inset:0; z-index:9000;
+    background:rgba(20,16,10,.92); align-items:center; justify-content:center; padding:20px; }
+  .lbox.on { display:flex; }
+  .lbox img { max-width:100%; max-height:100%; border-radius:10px; }
+  .lbox .hint { position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    font-size:12.5px; color:rgba(255,255,255,.6); }
+
   .as-empty { text-align:center; padding:56px 20px; color:#9A9384; font-size:14px; line-height:1.9; }
 </style>
 
@@ -88,6 +112,11 @@
         <%= it.who %> · <%= it.email %> · <%= new Date(it.created_at).toLocaleString('ko-KR') %>
       </div>
       <div class="as-body"><%= it.body %></div>
+      <% if (it.imgs && it.imgs.length) { %>
+        <div class="sp-imgs">
+          <% it.imgs.forEach(function (u) { %><img src="<%= u %>" alt="첨부 사진"><% }); %>
+        </div>
+      <% } %>
 
       <% if (it.answered_at) { %>
         <div class="as-done">
@@ -155,6 +184,19 @@ document.addEventListener('click', function (e) {
       .then(function () { item.remove(); });
   }
 });
+
+/* 사진을 누르면 크게 본다 */
+(function () {
+  var box = document.createElement('div');
+  box.className = 'lbox';
+  box.innerHTML = '<img alt=""><span class="hint">아무 곳이나 누르면 닫힙니다</span>';
+  document.body.appendChild(box);
+  document.addEventListener('click', function (e) {
+    var im = e.target.closest('.sp-imgs img');
+    if (im) { box.querySelector('img').src = im.src; box.classList.add('on'); return; }
+    if (box.classList.contains('on')) { box.classList.remove('on'); box.querySelector('img').src = ''; }
+  });
+})();
 </script>
 
 <%- include('../partials/dash-bottom') %>

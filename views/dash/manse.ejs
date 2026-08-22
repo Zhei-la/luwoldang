@@ -1,6 +1,13 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: '만세력 계산기' }) %>
 
 <style>
+  /* 신청자에서 넘어왔을 때 안내 */
+  .from-lead { background:#FBF6EC; border:1px solid var(--beige); border-left:3px solid var(--gold);
+    border-radius:0 12px 12px 0; padding:13px 16px; margin-bottom:16px;
+    font-size:14px; line-height:1.7; color:#4A4438; word-break:keep-all; }
+  .from-lead b { color:var(--ink); }
+  .from-lead a { color:#8A6F3C; font-weight:700; margin-left:6px; text-decoration:none; }
+
 /* ── 만세력 계산기 전용 스타일 ──
  * 원본 프로그램(cb_saju)의 CSS를 그대로 가져오되,
  * 전부 #manse-app 안으로 가둬서 대시보드 디자인과 섞이지 않게 했다.
@@ -1527,6 +1534,78 @@ document.getElementById('gSaveBtn').addEventListener('click', async () => {
 });
 
 loadSavedList();
+
+/* ── 사주 신청자에서 넘어온 정보 채우기 ──
+   신청자 화면의 '만세력 보기'로 들어오면 그 사람 정보가 미리 들어간다.
+   같은 내용을 두 번 입력하지 않아도 된다. */
+<% if (typeof prefill !== 'undefined' && prefill) { %>
+(function () {
+  var p = <%- JSON.stringify(prefill) %>;
+
+  function put(id, v) {
+    var el = document.getElementById(id);
+    if (el && v != null && v !== '') el.value = v;
+  }
+
+  put('name', p.name);
+
+  /* 성별 — '남'/'남자'/'male' 무엇으로 들어와도 알아본다 */
+  if (p.gender) {
+    var g = String(p.gender);
+    if (/남|male|M/i.test(g)) put('gender', 'male');
+    else if (/여|female|F/i.test(g)) put('gender', 'female');
+  }
+
+  /* 생일 — '1990-05-12', '1990.5.12', '19900512' 모두 YYYYMMDD 로 */
+  if (p.birth) {
+    var d = String(p.birth).replace(/[^0-9]/g, '');
+    if (d.length === 8) put('birth', d);
+  }
+
+  if (p.calendar) put('calendar', /음/.test(p.calendar) ? 'lunar' : 'solar');
+
+  /* 생시 — '14:30', '오후 2시' 같은 형태를 HHMM 으로.
+     모른다고 적혀 있으면 비워둔다. */
+  if (p.hour && !/모름|모릅|없음/.test(p.hour)) {
+    var t = String(p.hour);
+    var m = /(\d{1,2})\s*[:시]\s*(\d{1,2})?/.exec(t);
+    if (m) {
+      var hh = Number(m[1]);
+      var mm = Number(m[2] || 0);
+      if (/오후|PM/i.test(t) && hh < 12) hh += 12;
+      if (/오전|AM/i.test(t) && hh === 12) hh = 0;
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+        put('time', String(hh).padStart(2, '0') + String(mm).padStart(2, '0'));
+      }
+    } else {
+      var only = t.replace(/[^0-9]/g, '');
+      if (only.length === 4) put('time', only);
+    }
+  }
+
+  /* 지역 — 목록에 같은 이름이 있으면 고른다 */
+  if (p.region) {
+    var sel = document.getElementById('region');
+    if (sel) {
+      var hit = [].find.call(sel.options, function (o) {
+        return o.value === p.region || o.textContent.trim() === p.region;
+      });
+      if (hit) sel.value = hit.value;
+    }
+  }
+
+  /* 어디서 왔는지 알려준다 */
+  var box = document.getElementById('form');
+  if (box) {
+    var tip = document.createElement('div');
+    tip.className = 'from-lead';
+    tip.innerHTML = '<b>' + (p.name || '신청자') + '</b> 님의 신청 정보를 넣어두었습니다. ' +
+                    '확인하시고 <b>계산하기</b>를 눌러주세요. ' +
+                    '<a href="/leads">← 신청자 목록</a>';
+    box.parentNode.insertBefore(tip, box);
+  }
+})();
+<% } %>
 </script>
 
 </div>

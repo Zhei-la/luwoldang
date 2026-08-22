@@ -46,6 +46,9 @@
             <%= l.birth || '-' %> <%= l.calendar || '' %>
             <%= (l.hour && !/모름/.test(l.hour)) ? l.hour : '(시간모름)' %>
             <% if (l.region) { %> · <%= l.region %><% } %>
+            <% if (l.birth) { %>
+              <span class="lt-manse" data-manse="<%= l.id %>">만세력 보기</span>
+            <% } %>
           </div>
           <div class="u-sub">
             <% if (l.email) { %><%= l.email %><% } %>
@@ -186,6 +189,16 @@
     };
   });
 })();
+
+/* 신청자 정보를 만세력으로 넘긴다.
+   카드 전체가 링크라서, 버튼을 누를 때는 카드 링크가 안 열리게 막는다. */
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.lt-manse');
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  location.href = '/manse?from=' + b.dataset.manse;
+});
 </script>
 
 <%- include('../partials/dash-bottom') %>

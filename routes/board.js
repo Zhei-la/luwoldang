@@ -269,6 +269,23 @@ router.post('/admin/notice/cat', requireAuth, requireAdmin, async (req, res) => 
    ══════════════════════════════════ */
 
 const KINDS = ['기능 요청', '오류 신고', '사용 문의', '기타'];
+const MAX_INQ_IMG = 3 * 1024 * 1024;
+
+/* 문의들의 사진을 한 번에 읽어와 문의별로 묶는다 */
+async function inqImages(ids) {
+  if (!ids.length) return {};
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, inquiry_id FROM inquiry_imgs WHERE inquiry_id = ANY($1) ORDER BY sort, id',
+      [ids]
+    );
+    const map = {};
+    rows.forEach((r) => {
+      (map[r.inquiry_id] = map[r.inquiry_id] || []).push('/support/img/' + r.id);
+    });
+    return map;
+  } catch (e) { return {}; }
+}
 
 /* 교육생 — 내가 남긴 것만 */
 router.get('/support', requireAuth, requireApproved, async (req, res, next) => {
@@ -281,7 +298,8 @@ router.get('/support', requireAuth, requireApproved, async (req, res, next) => {
          WHERE teacher_id = $1
          ORDER BY created_at DESC
       `, [req.user.id]);
-      items = rows;
+      const imgs = await inqImages(rows.map((r) => r.id));
+      items = rows.map((r) => ({ ...r, imgs: imgs[r.id] || [] }));
     } catch (dbErr) {
       console.error('[문의하기] 불러오기 실패:', dbErr.message);
     }
@@ -298,10 +316,23 @@ router.post('/support/write', requireAuth, requireApproved, async (req, res) => 
     if (!body) return res.status(400).json({ ok: false, error: '내용을 적어주세요.' });
 
     const kind = KINDS.indexOf(String(b.kind)) > -1 ? String(b.kind) : '기타';
+    const imgs = Array.isArray(b.imgs) ? b.imgs.slice(0, 5) : [];
+    for (const im of imgs) {
+      if (!/^data:image\//.test(String(im))) return res.status(400).json({ ok: false, error: '이미지 파일만 올릴 수 있습니다.' });
+      if (String(im).length > MAX_INQ_IMG * 1.4) return res.status(400).json({ ok: false, error: '사진이 너무 큽니다. 3MB 이하로 올려주세요.' });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO inquiries (teacher_id, kind, title, body) VALUES ($1,$2,$3,$4) RETURNING id`,
       [req.user.id, kind, title, body]
     );
+
+    for (let i = 0; i < imgs.length; i++) {
+      await pool.query(
+        'INSERT INTO inquiry_imgs (inquiry_id, img, sort) VALUES ($1,$2,$3)',
+        [rows[0].id, String(imgs[i]), (i + 1) * 10]
+      );
+    }
 
     /* 관리자에게 알린다 */
     pool.query("SELECT id FROM users WHERE role='admin'")
@@ -321,6 +352,25 @@ router.post('/support/write', requireAuth, requireApproved, async (req, res) => 
     console.error('[문의] 저장 실패:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+/* 문의에 붙은 사진 — 올린 본인과 관리자만 볼 수 있다 */
+router.get('/support/img/:id(\\d+)', requireAuth, requireApproved, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.img, i.teacher_id FROM inquiry_imgs m
+         JOIN inquiries i ON i.id = m.inquiry_id
+        WHERE m.id = $1`, [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).end();
+    if (req.user.role !== 'admin' && rows[0].teacher_id !== req.user.id) return res.status(403).end();
+
+    const mm = /^data:(image\/[a-zA-Z+]+);base64,(.+)$/.exec(rows[0].img);
+    if (!mm) return res.status(404).end();
+    res.set('Content-Type', mm[1]);
+    res.set('Cache-Control', 'private, max-age=86400');
+    res.send(Buffer.from(mm[2], 'base64'));
+  } catch (e) { res.status(404).end(); }
 });
 
 /* 교육생이 자기 글을 지운다 */
@@ -349,7 +399,8 @@ router.get('/admin/support', requireAuth, requireAdmin, async (req, res, next) =
          WHERE TRUE ${only}
          ORDER BY (i.answered_at IS NULL) DESC, i.created_at DESC
       `);
-      items = rows;
+      const imgs = await inqImages(rows.map((r) => r.id));
+      items = rows.map((r) => ({ ...r, imgs: imgs[r.id] || [] }));
       const { rows: cnt } = await pool.query(
         'SELECT COUNT(*) FILTER (WHERE answered_at IS NULL)::int AS open, COUNT(*)::int AS all_n FROM inquiries'
       );

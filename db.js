@@ -388,6 +388,16 @@ async function initDb() {
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  /* 문의에 붙이는 사진 — 화면을 캡처해서 같이 보내면 훨씬 빨리 파악된다 */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS inquiry_imgs (
+      id         SERIAL PRIMARY KEY,
+      inquiry_id INTEGER REFERENCES inquiries(id) ON DELETE CASCADE,
+      img        TEXT NOT NULL,
+      sort       INTEGER DEFAULT 0
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_img ON inquiry_imgs(inquiry_id, sort, id);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_teacher ON inquiries(teacher_id, created_at DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_open ON inquiries(answered_at NULLS FIRST, created_at DESC);`);
 
