@@ -71,6 +71,16 @@
   <input type="file" id="zipFile" accept=".zip" hidden>
 
   <div class="im-fld">
+    <label>몇 주차에 넣을까요</label>
+    <select id="imWeek">
+      <% [1,2,3,4].forEach(function (w) { %>
+        <option value="<%= w %>"><%= w %>주차</option>
+      <% }); %>
+      <option value="5" selected>총정리 (4주차 후)</option>
+    </select>
+  </div>
+
+  <div class="im-fld">
     <label>어느 분류에 넣을까요</label>
     <select id="imCat">
       <option value="">분류 없음</option>
@@ -224,7 +234,7 @@
   }
 
   /* 한 자료를 가져온다 */
-  async function importOne(p, row, catId) {
+  async function importOne(p, row, catId, week) {
     var st = row.querySelector('.st');
     st.className = 'st work'; st.textContent = '사진 올리는 중...';
 
@@ -277,7 +287,7 @@
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: p.title, cat_id: catId || null, body: h.html,
-        pinned: false, published: true
+        week: week, pinned: false, published: true
       })
     }).then(function (x) { return x.json(); });
     if (!sv.ok) throw new Error(sv.error || '저장 실패');
@@ -301,13 +311,14 @@
 
     btn.disabled = true;
     var catId = document.getElementById('imCat').value;
+    var week = Number(document.getElementById('imWeek').value) || 5;
     var done = 0, fail = 0;
 
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
       var p = pages[Number(row.dataset.i)];
       try {
-        await importOne(p, row, catId);
+        await importOne(p, row, catId, week);
         done++;
       } catch (e) {
         fail++;
