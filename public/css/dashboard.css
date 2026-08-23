@@ -111,9 +111,11 @@ body {
    100vw 로 계산하면 스크롤바 너비만큼 어긋나므로 상자 방식을 쓴다. */
 .topbar { padding: 0; }
 .topbar-in {
+  position: relative;
   display: flex; align-items: center; gap: 14px;
-  width: 100%; max-width: 1304px; margin: 0 auto; padding: 16px 32px;
+  width: 100%; max-width: 1600px; margin: 0 auto; padding: 16px 40px;
 }
+.topbar-in .topgo { margin-left: auto; }
 
 /* ===== 오버레이(모바일) ===== */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 30; }
