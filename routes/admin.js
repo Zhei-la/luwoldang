@@ -67,11 +67,48 @@ function guardSelf(req, res) {
 }
 
 // 승인
+/* ── 자료집 시작일 정하기 ──
+   주차별 자료가 언제부터 열릴지를 정한다.
+   비워두면 승인일을 기준으로 삼는다. */
+router.post('/guide-start/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const act = String((req.body || {}).act || '');
+
+    if (act === 'today') {
+      await pool.query('UPDATE users SET guide_start = NOW() WHERE id = $1', [id]);
+    } else if (act === 'openall') {
+      await pool.query("UPDATE users SET guide_start = NOW() - INTERVAL '60 days' WHERE id = $1", [id]);
+    } else if (act === 'reset') {
+      await pool.query('UPDATE users SET guide_start = NULL WHERE id = $1', [id]);
+    } else if (act === 'date') {
+      const d = String(req.body.date || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        return res.status(400).json({ ok: false, error: '날짜를 올바르게 골라주세요.' });
+      }
+      await pool.query('UPDATE users SET guide_start = $2::date WHERE id = $1', [id, d]);
+    } else {
+      return res.status(400).json({ ok: false, error: '알 수 없는 요청입니다.' });
+    }
+
+    const { rows } = await pool.query(
+      'SELECT guide_start, approved_at, created_at FROM users WHERE id = $1', [id]
+    );
+    res.json({ ok: true, user: rows[0] });
+  } catch (e) {
+    console.error('[자료집 시작일] 실패:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 router.post('/approve/:id', async (req, res, next) => {
   if (guardSelf(req, res)) return;
   try {
+    /* 승인하는 순간이 자료집 시작이다.
+       가입을 언제 했든, 승인된 그날이 1주차가 된다. */
     await pool.query(
-      "UPDATE users SET status = 'approved', approved_at = NOW() WHERE id = $1",
+      `UPDATE users SET status = 'approved', approved_at = NOW(), guide_start = NOW()
+        WHERE id = $1`,
       [req.params.id]
     );
     res.redirect('/admin/approvals');
