@@ -233,6 +233,7 @@
     <b>더 빠른 방법</b> — 캡처를 복사한 뒤 글에 그대로 붙여넣으면 사진이 그 자리에 올라갑니다. 사진 파일을 끌어다 놓아도 됩니다.<br>
     <b>노션에서 가져오기</b> — 노션 글을 복사해 붙여넣으면 <b>글만 들어오고 사진은 빠집니다.</b> 노션이 사진을 주소가 아닌 내부 표시로만 넘기기 때문입니다. 사진까지 함께 옮기려면 <a href="/admin/guide/import" style="color:#8A6F3C;font-weight:700">노션에서 가져오기</a>를 이용해 주세요.<br>
     <b>자료 연결</b> — 다른 자료집 글로 이어지는 링크를 넣습니다. 순서대로 읽게 안내할 때 쓰세요.<br>
+    <b>사진 넣기</b> — 캡처(Win+Shift+S)를 <b>Ctrl+V</b> 로 바로 붙여넣을 수 있습니다. 노션에서 사진을 옮기실 때는 사진 위에서 <b>오른쪽 클릭 → 이미지 복사</b> 후 붙여넣으세요.<br>
     <b>사진 크기</b> — 사진을 한 번 누르면 <b>작게 · 중간 · 크게</b>를 고를 수 있습니다. 휴대폰 캡처처럼 세로로 긴 사진은 자동으로 작게 들어갑니다.<br>
     <b>복사상자</b> — 교육생이 그대로 복사해 쓸 문구에 쓰세요. 회색 상자로 나옵니다.<br>
     <b>상자에서 빠져나오기</b> — 복사상자나 인용 안에서 <b>Shift + Enter</b> 를 누르면 상자 아래에 새 줄이 생깁니다.<br>
@@ -569,14 +570,26 @@
     var dt = e.clipboardData;
     if (!dt) return;
 
+    /* 사진 파일이 들어온 경우 — 캡처(Win+Shift+S), 이미지 복사 등 */
     var imgs = [].slice.call(dt.items || [])
-      .filter(function (it) { return /^image\//.test(it.type); })
+      .filter(function (it) { return it.kind === 'file' && /^image\//.test(it.type); })
       .map(function (it) { return it.getAsFile(); })
       .filter(Boolean);
 
-    if (imgs.length) { e.preventDefault(); addFiles(imgs); return; }
+    /* files 로만 들어오는 브라우저도 있다 */
+    if (!imgs.length && dt.files && dt.files.length) {
+      imgs = [].slice.call(dt.files).filter(function (f) { return /^image\//.test(f.type); });
+    }
 
     var html = dt.getData('text/html');
+
+    /* 사진만 있고 글이 없으면 사진으로 넣는다.
+       글도 같이 있으면 아래 글 붙여넣기로 넘긴다 (사진은 거기서 따로 처리된다). */
+    if (imgs.length && !(html && /<img|<p|<div|<h[1-6]/i.test(html))) {
+      e.preventDefault(); addFiles(imgs); return;
+    }
+    if (imgs.length && !html) { e.preventDefault(); addFiles(imgs); return; }
+
     if (html) {
       e.preventDefault();
       seen = []; skipped = [];
@@ -593,6 +606,12 @@
       }
       dirty = true;
       fetchRemote(true);
+
+      /* 글과 함께 사진 파일도 들어왔다면 그것도 넣는다 */
+      if (imgs.length && !/<img/i.test(html)) addFiles(imgs);
+    } else if (imgs.length) {
+      e.preventDefault();
+      addFiles(imgs);
     }
   });
 
