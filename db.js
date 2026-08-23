@@ -410,6 +410,9 @@ async function initDb() {
      1~4 = 승인일로부터 그 주차가 되면 열림
      5 = 4주차가 다 지난 뒤에 열림 (지금의 전체 자료집) */
   await pool.query(`ALTER TABLE guide_posts ADD COLUMN IF NOT EXISTS week INTEGER DEFAULT 0;`);
+  /* 교육생마다 시작일을 따로 둘 수 있게 (비어 있으면 승인일을 쓴다).
+     ⚠️ 아래에서 이 칸을 쓰므로 반드시 먼저 만들어야 한다. */
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_start TIMESTAMPTZ;`);
 
   /* 한 번만 하는 정리 — 이미 올려둔 자료를 '전체 자료집'(4주차 완료 후)으로 옮긴다.
      1~4주차는 비워두고 관리자가 직접 채운다.
@@ -438,8 +441,6 @@ async function initDb() {
     await pool.query("INSERT INTO app_flags (key) VALUES ('guide_week_init')");
     console.log('[자료집] 기존 자료를 전체 자료집(4주차 완료 후)으로 옮겼습니다.');
   }
-  /* 교육생마다 시작일을 따로 둘 수 있게 (비어 있으면 승인일을 쓴다) */
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_start TIMESTAMPTZ;`);
 
   /* 누가 어떤 자료를 언제 봤는지 남긴다.
      캡처가 돌아다닐 때 어느 계정에서 나갔는지 좁힐 수 있다. */
