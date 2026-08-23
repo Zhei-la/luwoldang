@@ -42,7 +42,7 @@ function opensIn(user, week, preview) {
   return Math.max(0, Math.ceil((openAt - Date.now()) / 864e5));
 }
 
-const WEEK_LABEL = ['언제나', '1주차', '2주차', '3주차', '4주차', '전체 자료집 (4주차 후)'];
+const WEEK_LABEL = ['언제나', '1주차', '2주차', '3주차', '4주차', '총정리 (4주차 후)'];
 
 /* 분류 목록 (글 개수까지 함께) */
 async function cats() {
@@ -64,6 +64,7 @@ async function cats() {
 router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
   try {
     const catId = req.query.cat ? Number(req.query.cat) : null;
+    const wkFilter = req.query.wk !== undefined && req.query.wk !== '' ? Number(req.query.wk) : null;
     const q = String(req.query.q || '').trim();
 
     const where = ['p.published'];
@@ -88,16 +89,23 @@ router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
        숨겨버리면 '자료가 없다'고 오해하기 쉽다. */
     const preview = Number(req.query.week) || 0;
     const my = weekOf(req.user, preview);
-    const posts = rows.map((p) => ({
+    let posts = rows.map((p) => ({
       ...p,
       locked: p.week > 0 && p.week > my,
       weekLabel: WEEK_LABEL[p.week] || '',
       daysLeft: opensIn(req.user, p.week, preview),
     }));
 
+    if (wkFilter !== null) posts = posts.filter((p) => (p.week || 0) === wkFilter);
+
+    /* 주차 탭에 몇 개씩 있는지 */
+    const wkCount = {};
+    rows.forEach((p) => { const w = p.week || 0; wkCount[w] = (wkCount[w] || 0) + 1; });
+
     res.render('dash/guide', {
       user: req.user, active: 'guide',
       posts, catList: await cats(), catId, q, myWeek: my, preview,
+      wkFilter, wkCount,
     });
   } catch (e) { next(e); }
 });
@@ -179,9 +187,13 @@ router.get('/admin/guide', requireAuth, requireAdmin, async (req, res, next) => 
         LEFT JOIN guide_cats c ON c.id = p.cat_id
        ORDER BY p.pinned DESC, p.created_at DESC
     `);
+    /* 주차별로 몇 개인지 — 관리 화면에서 한눈에 보이게 */
+    const wkCount = {};
+    rows.forEach((p) => { const w = p.week || 0; wkCount[w] = (wkCount[w] || 0) + 1; });
+
     res.render('dash/admin-guide', {
       user: req.user, active: 'admin-guide',
-      posts: rows, catList: await cats(),
+      posts: rows, catList: await cats(), wkCount,
     });
   } catch (e) { next(e); }
 });

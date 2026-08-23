@@ -425,14 +425,16 @@ async function initDb() {
   `);
   /* 이미 가입해 계신 분들은 주차 제한 없이 전부 보시게 한다.
      3기부터 새로 들어오는 분들만 주차별로 열린다. */
-  const openFlag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_open_existing'");
+  const openFlag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_open_existing_v2'");
   if (!openFlag.rowCount) {
-    await pool.query(
-      `UPDATE users SET guide_start = NOW() - INTERVAL '40 days'
-        WHERE guide_start IS NULL AND role <> 'admin'`
+    /* 지금까지 가입한 분은 모두 전부 열어 드린다.
+       (앞선 판이 중간에 멈춰 적용되지 않은 경우가 있어 다시 한 번 돌린다) */
+    const r = await pool.query(
+      `UPDATE users SET guide_start = NOW() - INTERVAL '60 days'
+        WHERE role <> 'admin'`
     );
-    await pool.query("INSERT INTO app_flags (key) VALUES ('guide_open_existing')");
-    console.log('[자료집] 기존 교육생은 전체 자료를 볼 수 있게 열었습니다.');
+    await pool.query("INSERT INTO app_flags (key) VALUES ('guide_open_existing_v2')");
+    console.log('[자료집] 기존 교육생 ' + r.rowCount + '명에게 전체 자료를 열었습니다.');
   }
 
   const flag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_week_init'");

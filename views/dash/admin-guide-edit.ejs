@@ -209,7 +209,7 @@
   <div class="ge-opts">
     <label class="ge-week">공개 시점
       <select id="geWeek">
-        <% ['언제나 보임','1주차','2주차','3주차','4주차','전체 자료집 (4주차 후)'].forEach(function(t,i){ %>
+        <% ['언제나 보임','1주차','2주차','3주차','4주차','총정리 (4주차 후)'].forEach(function(t,i){ %>
           <option value="<%= i %>" <%= (post.week || 0) === i ? 'selected' : '' %>><%= t %></option>
         <% }); %>
       </select>

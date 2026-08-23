@@ -25,6 +25,10 @@
     font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
   .gd-note b { color:var(--ink); }
 
+  .gd-weeks { margin-bottom:8px; }
+  .gd-weeks .gd-cat { background:#FBF6EC; border-color:#E9E0CF; color:#8A6F3C; }
+  .gd-weeks .gd-cat.on { background:var(--gold); border-color:var(--gold); color:#fff; }
+
   .gd-cats { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:18px; }
   .gd-cats::-webkit-scrollbar { display:none; }
   .gd-cat { flex:0 0 auto; padding:9px 15px; border-radius:100px; border:1px solid var(--beige);
@@ -48,6 +52,19 @@
   .wk.on { background:#E8F3ED; color:#2E7D5B; }
   .wk.off { background:#F4EFE3; color:#8A6F3C; }
   .dleft { font-size:11px; font-weight:700; color:#A8332B; }
+
+  /* 총정리 자료집 안내 */
+  .gd-total { background:#fff; border:1px solid var(--beige); border-left:3px solid var(--gold);
+    border-radius:0 14px 14px 0; padding:16px 18px; margin-bottom:14px; }
+  .gd-total .tt { font-size:16px; font-weight:800; display:flex; align-items:center;
+    gap:9px; flex-wrap:wrap; }
+  .gd-total .lk { font-size:11.5px; font-weight:700; color:#A8332B;
+    background:#FBF1EF; padding:3px 10px; border-radius:100px; }
+  .gd-total .td { font-size:13.5px; color:#6B6656; margin-top:6px; line-height:1.7;
+    word-break:keep-all; }
+  .gd-total .tl { display:flex; flex-wrap:wrap; gap:6px; margin-top:11px; }
+  .gd-total .ti { font-size:12.5px; font-weight:700; color:#8A6F3C;
+    background:#F4EFE3; padding:5px 12px; border-radius:100px; }
 
   .gd-item .meta { margin-top:7px; font-size:11.5px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; }
   .gd-tag { background:#F4EFE3; color:#8A6F3C; padding:2px 8px; border-radius:5px; font-weight:600; }
@@ -87,6 +104,45 @@
   <% if (typeof myWeek !== 'undefined' && myWeek && myWeek < 5) { %>
     <br>지금은 <b><%= myWeek %>주차</b>까지 열려 있습니다.
   <% } %>
+</div>
+
+<% /* 총정리는 5주차에 열린다. 아직 그 전이면 안내를 띄운다.
+      (목록에 총정리 글이 없어도 판단이 되도록 내 주차로 본다) */
+   var myW = (typeof myWeek !== 'undefined' && myWeek) ? myWeek : 1;
+   var totalLocked = posts.filter(function (p) { return p.week === 5 && p.locked; });
+   var totalDays = totalLocked.length ? totalLocked[0].daysLeft : Math.max(0, (5 - myW) * 7); %>
+<% if (myW < 5 && user.role !== 'admin') { %>
+  <div class="gd-total">
+    <div class="tt">📚 총정리 자료집 <span class="lk">🔒 <%= totalDays > 0 ? totalDays + '일 뒤 열림' : '곧 열림' %></span></div>
+    <div class="td">4주차를 다 마치시면 아래 자료가 한꺼번에 열립니다.</div>
+    <div class="tl">
+      <% catList.forEach(function (c) { %>
+        <span class="ti"><%= c.name %></span>
+      <% }); %>
+    </div>
+  </div>
+<% } %>
+
+<% var WK = ['언제나','1주차','2주차','3주차','4주차','총정리'];
+   var wkf = (typeof wkFilter !== 'undefined') ? wkFilter : null;
+   var wkc = (typeof wkCount !== 'undefined') ? wkCount : {};
+   var qs = function (w) {
+     var p = [];
+     if (w !== null) p.push('wk=' + w);
+     if (catId) p.push('cat=' + catId);
+     if (q) p.push('q=' + encodeURIComponent(q));
+     if (typeof preview !== 'undefined' && preview) p.push('week=' + preview);
+     return p.length ? '?' + p.join('&') : '';
+   }; %>
+<div class="gd-cats gd-weeks">
+  <a href="/guide<%= qs(null) %>" class="gd-cat <%= wkf === null ? 'on' : '' %>">전체</a>
+  <% [1,2,3,4,5,0].forEach(function (w) { %>
+    <% if (wkc[w]) { %>
+      <a href="/guide<%= qs(w) %>" class="gd-cat <%= wkf === w ? 'on' : '' %>">
+        <%= WK[w] %><span class="n"><%= wkc[w] %></span>
+      </a>
+    <% } %>
+  <% }); %>
 </div>
 
 <div class="gd-cats">
