@@ -137,7 +137,7 @@
 #th-app .toggle-btn { width: 44px; height: 24px; border-radius: 100px; border: none; cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0; }
 #th-app .toggle-btn.on { background: var(--green); }
 #th-app .toggle-btn.off { background: var(--sur2); }
-#th-app .toggle-btn::after { content: ''; position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 50%; background:var(--card); transition: left .2s; }
+#th-app .toggle-btn::after { content: ''; position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s; }
 #th-app .toggle-btn.on::after { left: 22px; }
 #th-app .toggle-btn.off::after { left: 2px; }
 #th-app .add-time-btn { width: 100%; padding: 12px; background: var(--sur2); border: 1px dashed var(--bdr); border-radius: var(--r); color: var(--txt3); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 8px; }
@@ -197,7 +197,10 @@
 <div class="wrap">
   <!-- 제목은 대시보드 상단바가 대신하므로 안내 문구와 백업 버튼만 둔다 -->
   <div class="hd">
-    <div class="hd-sub">글을 적어두고 예약 발행까지 한 곳에서</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="/img/logo-threads-96.png" alt="" style="width:30px;height:30px;display:block">
+      <div class="hd-sub">글을 적어두고 예약 발행까지 한 곳에서</div>
+    </div>
     <button class="search-btn" id="backupBtn">백업/불러오기</button>
   </div>
 

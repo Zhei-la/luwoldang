@@ -8,6 +8,7 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#B59A62">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="루월당">
   <link rel="apple-touch-icon" href="/img/logo-luwol-180.png">
   <link rel="icon" href="/img/favicon.png">
@@ -17,6 +18,19 @@
     .brand-mini{ display:flex; align-items:center; gap:10px; }
     .brand-logo{ width:34px; height:34px; flex:0 0 auto; display:block; }
     .brand-name{ font-family:"Nanum Myeongjo", serif; }
+
+    /* 머리말 로고 — 사이드바를 접어도 늘 보인다 */
+    .top-brand { display:flex; align-items:center; gap:8px; text-decoration:none;
+      color:var(--ink); flex:0 0 auto; }
+    .top-logo { width:28px; height:28px; display:block; flex:0 0 auto; }
+    .top-name { font-family:"Nanum Myeongjo", serif; font-size:16px; font-weight:700;
+      letter-spacing:-.01em; }
+    .topbar .page-title { padding-left:14px; margin-left:2px; border-left:1px solid var(--beige); }
+
+    @media (max-width:560px) {
+      .top-name { display:none; }
+      .topbar .page-title { padding-left:10px; }
+    }
 
     /* 머리말 바로가기 버튼 */
     .topgo { display:flex; gap:6px; flex:0 0 auto; }
@@ -131,6 +145,10 @@
   <div class="content">
     <header class="topbar">
       <button class="hamburger" onclick="openSidebar()" aria-label="메뉴">☰</button>
+      <a class="top-brand" href="/home">
+        <img src="/img/logo-luwol-96.png" alt="" class="top-logo">
+        <span class="top-name">루월당</span>
+      </a>
       <h1 class="page-title"><%= typeof title !== 'undefined' ? title : '홈' %></h1>
 
       <!-- 자주 쓰는 곳으로 바로 가는 버튼 -->
