@@ -138,11 +138,22 @@ function nameOf(d) {
 router.get('/api/manse/saved', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT filename, type, data FROM manse_saved
-       WHERE teacher_id = $1 ORDER BY updated_at DESC`,
+      `SELECT filename, type, data,
+              to_char(COALESCE(updated_at, created_at, NOW()), 'YYMMDD') AS saved_at
+         FROM manse_saved
+        WHERE teacher_id = $1 ORDER BY updated_at DESC`,
       [req.user.id]
     );
-    const profiles = rows.map((r) => Object.assign({}, r.data, { filename: r.filename, type: r.type }));
+    const profiles = rows.map((r) => {
+      /* 예전 표에서는 글자로 저장돼 있을 수 있다 */
+      let d = r.data;
+      if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = {}; } }
+      return Object.assign({}, d || {}, {
+        filename: r.filename,
+        type: r.type || '개인',
+        savedAt: d && d.savedAt ? d.savedAt : r.saved_at,   // 저장한 날짜
+      });
+    });
     res.json({ ok: true, profiles });
   } catch (e) {
     console.error('[만세력] 저장 목록 실패:', e.message);

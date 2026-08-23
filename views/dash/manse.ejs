@@ -711,7 +711,11 @@ const MS_STORE = (function () {
   return {
     async list() {
       try { return await req('/api/manse/saved'); }
-      catch (e) { return { ok: false, profiles: [] }; }
+      catch (e) {
+        /* 왜 못 불러왔는지 알아야 고칠 수 있다 */
+        console.error('[만세력] 목록 불러오기 실패:', e);
+        return { ok: false, profiles: [], error: e && e.message };
+      }
     },
 
     async save(data) {
@@ -1333,10 +1337,16 @@ let savedSearchQuery = '';
 let savedCurrentPage = 1;
 
 function formatBirth(p) {
-  return String(p.year) + String(p.month).padStart(2, '0') + String(p.day).padStart(2, '0');
+  if (!p || p.year == null) return '';
+  return String(p.year) + String(p.month == null ? '' : p.month).padStart(2, '0')
+       + String(p.day == null ? '' : p.day).padStart(2, '0');
 }
 function formatSavedAt(savedAt) {
-  return savedAt.slice(0, 2) + '.' + savedAt.slice(2, 4) + '.' + savedAt.slice(4, 6);
+  /* 예전에는 화면에서 만들어 넣던 값이라 없을 수 있다.
+     없다고 목록 그리기가 통째로 멈추면 안 된다. */
+  const t = String(savedAt == null ? '' : savedAt).replace(/[^0-9]/g, '');
+  if (t.length < 6) return '';
+  return t.slice(0, 2) + '.' + t.slice(2, 4) + '.' + t.slice(4, 6);
 }
 
 // 개인 모드(prefix='')와 궁합 모드 본인/상대(prefix='p1_'/'p2_')가 공유하는 필드 채우기.
@@ -1386,16 +1396,20 @@ function savedItemLabel(p) {
   if (p.type === '궁합') {
     const n1 = (p.person1 && p.person1.name) || '이름없음';
     const n2 = (p.person2 && p.person2.name) || '이름없음';
-    return n1 + ' × ' + n2 + ' [' + (p.relationType || '') + '] · ' + formatSavedAt(p.savedAt);
+    const at2 = formatSavedAt(p.savedAt);
+    return n1 + ' × ' + n2 + ' [' + (p.relationType || '') + ']' + (at2 ? ' · ' + at2 : '');
   }
-  return (p.name || '이름없음') + ' (' + formatBirth(p) + ') · ' + formatSavedAt(p.savedAt);
+  const at = formatSavedAt(p.savedAt);
+  return (p.name || '이름없음') + ' (' + formatBirth(p) + ')' + (at ? ' · ' + at : '');
 }
 
 function filteredSavedProfiles() {
   const type = currentSavedType();
   const q = savedSearchQuery.trim();
   return allSavedProfiles.filter(p => {
-    if (p.type !== type) return false;
+    /* 예전에 저장된 것은 종류가 비어 있을 수 있다. 그런 것은 '개인'으로 본다. */
+    const pt = (p.type === '궁합' || (p.person1 && p.person2)) ? '궁합' : '개인';
+    if (pt !== type) return false;
     if (!q) return true;
     if (type === '궁합') {
       const n1 = (p.person1 && p.person1.name) || '';
@@ -1415,7 +1429,25 @@ function renderSavedSide() {
 
   savedListEl.innerHTML = '';
   if (!pageItems.length) {
-    const msg = allSavedProfiles.length === 0 ? '저장된 사주가 없습니다' : (list.length === 0 ? '검색 결과가 없습니다' : '해당 페이지에 항목이 없습니다');
+    let msg;
+    if (allSavedProfiles.length === 0) {
+      msg = '저장된 사주가 없습니다';
+    } else if (list.length === 0) {
+      /* 불러오기는 됐는데 이 칸에 안 보이는 경우 — 개수를 알려주면 원인을 찾기 쉽다 */
+      const kinds = {};
+      allSavedProfiles.forEach(function (x) {
+        const k = (x.type === '궁합' || (x.person1 && x.person2)) ? '궁합' : '개인';
+        kinds[k] = (kinds[k] || 0) + 1;
+      });
+      msg = savedSearchQuery.trim()
+        ? '검색 결과가 없습니다'
+        : '이 칸에는 없습니다<br><span style="font-size:11.5px;color:#8A6F3C">'
+          + '불러온 사주 ' + allSavedProfiles.length + '개 ('
+          + Object.keys(kinds).map(function (k) { return k + ' ' + kinds[k]; }).join(', ')
+          + ')</span>';
+    } else {
+      msg = '해당 페이지에 항목이 없습니다';
+    }
     savedListEl.innerHTML = '<div class="saved-empty">' + msg + '</div>';
     renderSavedPagination(0);
     return;
@@ -1481,10 +1513,21 @@ savedSearchEl.addEventListener('input', () => {
 async function loadSavedList() {
   try {
     const data = await MS_STORE.list();
-    allSavedProfiles = data.profiles || [];
+    if (data && data.ok === false) {
+      /* 왜 못 불러왔는지 화면에 남긴다. 그냥 '실패'만 보이면 원인을 알 수 없다. */
+      savedListEl.innerHTML =
+        '<div class="saved-empty">목록을 불러오지 못했습니다<br>' +
+        '<span style="font-size:11.5px;color:#A8332B">' +
+        String(data.error || '알 수 없는 오류').replace(/[<>]/g, '') + '</span></div>';
+      return;
+    }
+    allSavedProfiles = (data && data.profiles) || [];
     renderSavedSide();
   } catch (err) {
-    savedListEl.innerHTML = '<div class="saved-empty">목록을 불러오지 못했습니다</div>';
+    savedListEl.innerHTML =
+      '<div class="saved-empty">목록을 불러오지 못했습니다<br>' +
+      '<span style="font-size:11.5px;color:#A8332B">' +
+      String(err && err.message || '').replace(/[<>]/g, '') + '</span></div>';
   }
 }
 
