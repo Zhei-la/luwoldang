@@ -85,6 +85,8 @@ body {
 /* ===== 본문 =====
    사이드바는 평소에 접어두고 ☰ 를 눌러 편다. 화면이 넓게 쓰인다. */
 .content { flex: 1; margin-left: 0; display: flex; flex-direction: column; min-width: 0; }
+/* 머리말 — 안쪽을 본문과 같은 폭으로 맞춰 가운데에 둔다.
+   그러지 않으면 로고만 화면 맨 왼쪽에 붙는다. */
 .topbar {
   display: flex;
   align-items: center;
@@ -102,7 +104,12 @@ body {
 .page-title { font-family: "Nanum Myeongjo", serif; font-size: 18px; margin: 0; flex: 1; }
 .who { font-size: 13px; color: #8a8574; }
 /* 화면 전체를 쓴다. 폭을 제한하면 넓은 화면에서 가운데만 쓰고 양옆이 비어 보인다. */
-.main { padding: 28px 32px; width: 100%; }
+/* 본문 — 가운데로 모은다 */
+.main { padding: 28px 32px; width: 100%; max-width: 1304px; margin: 0 auto; }
+
+/* 머리말 안쪽도 본문과 같은 폭으로 — 좌우 여백을 자동으로 준다 */
+.topbar { padding-left: max(32px, calc((100vw - 1240px) / 2)); }
+.topbar { padding-right: max(32px, calc((100vw - 1240px) / 2)); }
 
 /* ===== 오버레이(모바일) ===== */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 30; }
