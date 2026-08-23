@@ -30,6 +30,11 @@
   .ag-bulk label { display:flex; align-items:center; gap:7px; cursor:pointer; }
   .ag-bulk input { width:17px; height:17px; }
   .ag-bulk .cnt { flex:1; font-size:12.5px; color:#9A9384; }
+  .wkb { flex:0 0 auto; font-size:11px; font-weight:800; color:#8A6F3C;
+    background:#F4EFE3; padding:3px 9px; border-radius:100px; white-space:nowrap; }
+  .ag-bulk select { padding:8px 11px; border:1px solid var(--beige); background:#fff;
+    border-radius:9px; font-size:13px; font-family:inherit; color:#4A4438; }
+
   .ag-bulk button { padding:8px 15px; border:1px solid var(--beige); background:var(--card);
     border-radius:9px; font-size:13.5px; font-weight:700; color:#A8332B;
     cursor:pointer; font-family:inherit; }
@@ -75,6 +80,12 @@
   <div class="ag-bulk">
     <label><input type="checkbox" id="ckAll"> 전체 고르기</label>
     <span class="cnt" id="ckCnt"></span>
+    <select id="selWeek">
+      <option value="">공개 시점 바꾸기…</option>
+      <% ['언제나 보임','1주차','2주차','3주차','4주차','전체 자료집 (4주차 후)'].forEach(function(t,i){ %>
+        <option value="<%= i %>"><%= t %></option>
+      <% }); %>
+    </select>
     <button type="button" id="btnDelSel" disabled>고른 것 삭제</button>
   </div>
 <% } %>
@@ -100,6 +111,9 @@
           <span><%= p.views %>번 읽음</span>
         </div>
       </div>
+      <% if (p.week) { %>
+        <span class="wkb"><%= ['','1주차','2주차','3주차','4주차','전체 자료집 (4주차 후)'][p.week] %></span>
+      <% } %>
       <a href="/admin/guide/views/<%= p.id %>" class="edit">읽은 사람</a>
       <a href="/admin/guide/edit/<%= p.id %>" class="edit">고치기</a>
       <button type="button" class="edit del" data-t="<%= p.title %>">삭제</button>
@@ -217,6 +231,28 @@
   document.addEventListener('change', function (e) {
     if (e.target.classList.contains('ag-ck')) refreshCnt();
   });
+
+  /* 고른 글의 공개 시점을 한 번에 바꾼다 */
+  var selWeek = document.getElementById('selWeek');
+  if (selWeek) {
+    selWeek.addEventListener('change', function () {
+      var w = selWeek.value;
+      selWeek.value = '';
+      if (w === '') return;
+      var rows = picked();
+      if (!rows.length) { alert('먼저 바꿀 자료를 골라주세요.'); return; }
+      fetch('/admin/guide/week', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: rows.map(function (r) { return r.dataset.id; }), week: Number(w) })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error(d.error || '실패');
+        location.reload();
+      })
+      .catch(function (e) { alert('바꾸지 못했습니다: ' + e.message); });
+    });
+  }
 
   if (btnDelSel) {
     btnDelSel.addEventListener('click', async function () {

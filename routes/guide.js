@@ -18,6 +18,32 @@ const gh = require('../services/guideHtml');                  // 새 글(블로�
 
 const MAX_IMG = 3 * 1024 * 1024;   // 사진 한 장 3MB
 
+/* ── 지금 몇 주차인지 ──
+   승인일(또는 따로 정한 시작일)로부터 며칠 지났는지로 정한다.
+   들어온 그날이 1주차, 7일 뒤 2주차, 14일 뒤 3주차 …
+   28일이 지나면 5가 되어 전체 자료집까지 열린다. */
+function weekOf(user, preview) {
+  /* 관리자가 '몇 주차 교육생 눈으로' 보고 싶을 때 쓴다 */
+  if (user.role === 'admin' && preview >= 1 && preview <= 5) return preview;
+  if (user.role === 'admin') return 99;            // 관리자는 다 본다
+  const base = user.guide_start || user.approved_at || user.created_at;
+  if (!base) return 1;
+  const days = Math.floor((Date.now() - new Date(base).getTime()) / 864e5);
+  return Math.min(5, Math.floor(days / 7) + 1);
+}
+
+/* 아직 안 열린 자료가 며칠 뒤에 열리는지 */
+function opensIn(user, week, preview) {
+  /* 미리보기 중이면 그 주차 기준으로 남은 날짜를 보여준다 */
+  if (preview >= 1 && preview <= 5) return Math.max(0, (week - preview) * 7);
+  const base = user.guide_start || user.approved_at || user.created_at;
+  if (!base || !week) return 0;
+  const openAt = new Date(base).getTime() + (week - 1) * 7 * 864e5;
+  return Math.max(0, Math.ceil((openAt - Date.now()) / 864e5));
+}
+
+const WEEK_LABEL = ['언제나', '1주차', '2주차', '3주차', '4주차', '전체 자료집 (4주차 후)'];
+
 /* 분류 목록 (글 개수까지 함께) */
 async function cats() {
   const { rows } = await pool.query(`
@@ -50,7 +76,7 @@ router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
 
     const { rows } = await pool.query(`
       SELECT p.id, p.title, p.pinned, p.views, p.created_at, c.name AS cat_name,
-             p.format
+             p.format, COALESCE(p.week, 0) AS week
         FROM guide_posts p
         LEFT JOIN guide_cats c ON c.id = p.cat_id
        WHERE ${where.join(' AND ')}
@@ -58,9 +84,20 @@ router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
        LIMIT 200
     `, args);
 
+    /* 아직 안 열린 자료는 목록에 남기되 들어가지 못하게 표시한다.
+       숨겨버리면 '자료가 없다'고 오해하기 쉽다. */
+    const preview = Number(req.query.week) || 0;
+    const my = weekOf(req.user, preview);
+    const posts = rows.map((p) => ({
+      ...p,
+      locked: p.week > 0 && p.week > my,
+      weekLabel: WEEK_LABEL[p.week] || '',
+      daysLeft: opensIn(req.user, p.week, preview),
+    }));
+
     res.render('dash/guide', {
       user: req.user, active: 'guide',
-      posts: rows, catList: await cats(), catId, q,
+      posts, catList: await cats(), catId, q, myWeek: my, preview,
     });
   } catch (e) { next(e); }
 });
@@ -78,6 +115,18 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
     if (!post || (!post.published && req.user.role !== 'admin')) {
       return res.status(404).send('없는 글입니다.');
     }
+    /* 아직 열리지 않은 주차는 볼 수 없다 */
+    const preview = Number(req.query.week) || 0;
+    const myWeek = weekOf(req.user, preview);
+    const pw = post.week || 0;
+    if (pw > 0 && pw > myWeek) {
+      const d = opensIn(req.user, pw, preview);
+      return res.status(403).render('dash/guide-locked', {
+        user: req.user, active: 'guide', post,
+        weekLabel: WEEK_LABEL[pw] || '', daysLeft: d,
+      });
+    }
+
     /* 조회수와 열람 기록은 관리자가 볼 때는 남기지 않는다 */
     if (req.user.role !== 'admin') {
       pool.query('UPDATE guide_posts SET views = views + 1 WHERE id = $1', [post.id]).catch(() => {});
@@ -124,7 +173,8 @@ router.get('/guide/img/:id(\\d+)', requireAuth, requireApproved, async (req, res
 router.get('/admin/guide', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
-      SELECT p.id, p.title, p.pinned, p.published, p.views, p.created_at, c.name AS cat_name
+      SELECT p.id, p.title, p.pinned, p.published, p.views, p.created_at, c.name AS cat_name,
+             COALESCE(p.week, 0) AS week
         FROM guide_posts p
         LEFT JOIN guide_cats c ON c.id = p.cat_id
        ORDER BY p.pinned DESC, p.created_at DESC
@@ -161,6 +211,7 @@ router.post('/admin/guide/save', requireAuth, requireAdmin, async (req, res, nex
     if (!title) return res.status(400).json({ ok: false, error: '제목을 적어주세요.' });
 
     const catId = b.cat_id ? Number(b.cat_id) : null;
+    const week = Math.min(Math.max(Number(b.week) || 0, 0), 5);
     const body = gh.sanitize(String(b.body || ''));
     const pinned = !!b.pinned;
     const published = b.published !== false && b.published !== 'false';
@@ -169,15 +220,15 @@ router.post('/admin/guide/save', requireAuth, requireAdmin, async (req, res, nex
     if (id) {
       await pool.query(
         `UPDATE guide_posts SET cat_id=$2, title=$3, body=$4, pinned=$5, published=$6,
-                                format='html', updated_at=NOW()
+                                week=$7, format='html', updated_at=NOW()
           WHERE id=$1`,
-        [id, catId, title, body, pinned, published]
+        [id, catId, title, body, pinned, published, week]
       );
     } else {
       const { rows } = await pool.query(
-        `INSERT INTO guide_posts (cat_id, title, body, pinned, published, format)
-         VALUES ($1,$2,$3,$4,$5,'html') RETURNING id`,
-        [catId, title, body, pinned, published]
+        `INSERT INTO guide_posts (cat_id, title, body, pinned, published, week, format)
+         VALUES ($1,$2,$3,$4,$5,$6,'html') RETURNING id`,
+        [catId, title, body, pinned, published, week]
       );
       id = rows[0].id;
     }
@@ -320,6 +371,19 @@ router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, 
     const msg = e.name === 'AbortError' ? '사진 받아오기가 너무 오래 걸립니다.' : e.message;
     console.error('[자료집] 주소 사진 실패:', msg);
     res.status(500).json({ ok: false, error: msg });
+  }
+});
+
+/* 여러 글의 공개 시점을 한 번에 바꾼다 */
+router.post('/admin/guide/week', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const ids = (req.body.ids || []).map(Number).filter(Boolean);
+    const week = Math.min(Math.max(Number(req.body.week) || 0, 0), 5);
+    if (!ids.length) return res.json({ ok: true, n: 0 });
+    await pool.query('UPDATE guide_posts SET week=$2 WHERE id = ANY($1)', [ids, week]);
+    res.json({ ok: true, n: ids.length, label: WEEK_LABEL[week] });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

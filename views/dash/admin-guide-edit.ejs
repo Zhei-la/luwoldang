@@ -87,6 +87,10 @@
     #geBody th { background:#F4EFE3; font-weight:700; }
 
   .ge-opts { display:flex; gap:18px; flex-wrap:wrap; margin:16px 0; font-size:14.5px; color:#4A4438; }
+  .ge-week { display:flex; align-items:center; gap:7px; font-weight:600; }
+  .ge-week select { padding:7px 10px; border:1px solid var(--beige); border-radius:8px;
+    font-size:13.5px; font-family:inherit; background:#fff; color:var(--ink); outline:none; }
+
   .ge-opts label { display:flex; align-items:center; gap:8px; cursor:pointer; }
 
   .ge-acts { display:flex; gap:8px; flex-wrap:wrap; }
@@ -203,6 +207,13 @@
   </div>
 
   <div class="ge-opts">
+    <label class="ge-week">공개 시점
+      <select id="geWeek">
+        <% ['언제나 보임','1주차','2주차','3주차','4주차','전체 자료집 (4주차 후)'].forEach(function(t,i){ %>
+          <option value="<%= i %>" <%= (post.week || 0) === i ? 'selected' : '' %>><%= t %></option>
+        <% }); %>
+      </select>
+    </label>
     <label><input type="checkbox" id="gePin" <%= post.pinned ? 'checked' : '' %>> 목록 맨 위에 고정</label>
     <label><input type="checkbox" id="gePub" <%= post.published !== false ? 'checked' : '' %>> 교육생에게 공개</label>
   </div>
@@ -809,6 +820,7 @@
         title: title,
         body: cleanBody(),
         pinned: document.getElementById('gePin').checked,
+        week: Number(document.getElementById('geWeek').value) || 0,
         published: document.getElementById('gePub').checked
       })
     })

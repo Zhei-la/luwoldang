@@ -364,6 +364,10 @@ async function initDb() {
     );
   }
 
+  /* 공지에 영상 넣기 — 유튜브 일부공개 링크를 붙인다.
+     영상 파일을 직접 담으면 용량이 커서 느려지고 요금도 많이 든다. */
+  await pool.query(`ALTER TABLE notices ADD COLUMN IF NOT EXISTS video_url TEXT;`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS notice_images (
       id        SERIAL PRIMARY KEY,
@@ -401,6 +405,42 @@ async function initDb() {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_teacher ON inquiries(teacher_id, created_at DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_open ON inquiries(answered_at NULLS FIRST, created_at DESC);`);
 
+  /* ── 자료집 주차별 공개 ──
+     0 = 언제나 보임
+     1~4 = 승인일로부터 그 주차가 되면 열림
+     5 = 4주차가 다 지난 뒤에 열림 (지금의 전체 자료집) */
+  await pool.query(`ALTER TABLE guide_posts ADD COLUMN IF NOT EXISTS week INTEGER DEFAULT 0;`);
+
+  /* 한 번만 하는 정리 — 이미 올려둔 자료를 '전체 자료집'(4주차 완료 후)으로 옮긴다.
+     1~4주차는 비워두고 관리자가 직접 채운다.
+     두 번 돌면 나중에 정한 주차가 지워지므로 표시를 남겨 한 번만 하게 한다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_flags (
+      key  TEXT PRIMARY KEY,
+      done TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  /* 이미 가입해 계신 분들은 주차 제한 없이 전부 보시게 한다.
+     3기부터 새로 들어오는 분들만 주차별로 열린다. */
+  const openFlag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_open_existing'");
+  if (!openFlag.rowCount) {
+    await pool.query(
+      `UPDATE users SET guide_start = NOW() - INTERVAL '40 days'
+        WHERE guide_start IS NULL AND role <> 'admin'`
+    );
+    await pool.query("INSERT INTO app_flags (key) VALUES ('guide_open_existing')");
+    console.log('[자료집] 기존 교육생은 전체 자료를 볼 수 있게 열었습니다.');
+  }
+
+  const flag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_week_init'");
+  if (!flag.rowCount) {
+    await pool.query('UPDATE guide_posts SET week = 5 WHERE COALESCE(week, 0) = 0');
+    await pool.query("INSERT INTO app_flags (key) VALUES ('guide_week_init')");
+    console.log('[자료집] 기존 자료를 전체 자료집(4주차 완료 후)으로 옮겼습니다.');
+  }
+  /* 교육생마다 시작일을 따로 둘 수 있게 (비어 있으면 승인일을 쓴다) */
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_start TIMESTAMPTZ;`);
+
   /* 누가 어떤 자료를 언제 봤는지 남긴다.
      캡처가 돌아다닐 때 어느 계정에서 나갔는지 좁힐 수 있다. */
   await pool.query(`
@@ -436,6 +476,28 @@ async function initDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE (teacher_id, filename)
     );
+  `);
+  /* 예전에 만들어진 표에는 없던 칸이 있을 수 있다.
+     칸이 하나라도 없으면 목록 조회가 통째로 실패해 '불러오지 못했습니다'만 나온다. */
+  for (const [col, def] of [
+    ['type',       "TEXT NOT NULL DEFAULT '개인'"],
+    ['data',       "JSONB NOT NULL DEFAULT '{}'::jsonb"],
+    ['created_at', 'TIMESTAMPTZ DEFAULT NOW()'],
+    ['updated_at', 'TIMESTAMPTZ DEFAULT NOW()'],
+  ]) {
+    await pool.query(`ALTER TABLE manse_saved ADD COLUMN IF NOT EXISTS ${col} ${def};`);
+  }
+  /* 덮어쓰기(ON CONFLICT)가 되려면 이 짝이 유일해야 한다 */
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conrelid = 'manse_saved'::regclass AND contype = 'u'
+      ) THEN
+        ALTER TABLE manse_saved ADD CONSTRAINT manse_saved_teacher_file UNIQUE (teacher_id, filename);
+      END IF;
+    END $$;
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_manse_saved_teacher ON manse_saved(teacher_id, updated_at DESC);`);
 

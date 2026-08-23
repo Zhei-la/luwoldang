@@ -11,6 +11,15 @@
   .gd-search button { padding:11px 16px; border:1px solid var(--beige); background:var(--card);
     border-radius:10px; font-size:14px; font-weight:600; color:#6B6656; cursor:pointer; font-family:inherit; }
 
+  .gd-prev { display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+    background:var(--navy); border-radius:12px; padding:10px 14px; margin-bottom:12px; }
+  .gd-prev .lb { font-size:11.5px; font-weight:800; color:#C9BDA8; margin-right:4px; }
+  .gd-prev a { padding:6px 12px; border-radius:100px; font-size:12.5px; font-weight:700;
+    color:#E8E3D6; text-decoration:none; background:rgba(255,255,255,.12); }
+  .gd-prev a:hover { background:rgba(255,255,255,.24); }
+  .gd-prev a.on { background:var(--gold); color:#fff; }
+  .gd-prev .now { font-size:11.5px; color:#E8D3A8; margin-left:6px; }
+
   .gd-note { background:#FBF8F1; border:1px solid var(--beige); border-left:3px solid var(--gold);
     border-radius:0 12px 12px 0; padding:14px 17px; margin-bottom:16px;
     font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
@@ -33,6 +42,13 @@
     display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
   .gd-pin { font-size:11px; font-weight:700; color:#fff; background:var(--gold);
     padding:2px 8px; border-radius:100px; }
+  .gd-item.lock { opacity:.55; }
+  .gd-item.lock .t:after { content:' 🔒'; font-size:13px; }
+  .wk { font-size:11px; font-weight:800; padding:2px 9px; border-radius:100px; }
+  .wk.on { background:#E8F3ED; color:#2E7D5B; }
+  .wk.off { background:#F4EFE3; color:#8A6F3C; }
+  .dleft { font-size:11px; font-weight:700; color:#A8332B; }
+
   .gd-item .meta { margin-top:7px; font-size:11.5px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; }
   .gd-tag { background:#F4EFE3; color:#8A6F3C; padding:2px 8px; border-radius:5px; font-weight:600; }
 
@@ -51,10 +67,26 @@
   <% } %>
 </div>
 
+<% if (user.role === 'admin') { %>
+  <div class="gd-prev">
+    <span class="lb">교육생 눈으로 보기</span>
+    <a href="/guide" class="<%= !preview ? 'on' : '' %>">관리자</a>
+    <% [1,2,3,4,5].forEach(function (w) { %>
+      <a href="/guide?week=<%= w %>" class="<%= preview === w ? 'on' : '' %>">
+        <%= w === 5 ? '전체' : w + '주차' %>
+      </a>
+    <% }); %>
+    <% if (preview) { %><span class="now">지금 <%= preview === 5 ? '전체 공개' : preview + '주차' %> 교육생 화면입니다</span><% } %>
+  </div>
+<% } %>
+
 <div class="gd-note">
-  <b>맨 아래 자료부터 하나씩 읽어주세요.</b>
-  순서대로 따라 하시도록 만든 자료입니다. 한 번에 몰아 보지 마시고,
-  하나를 읽고 직접 해본 뒤 다음 자료로 넘어가시면 훨씬 빨리 익힐 수 있습니다.
+  <b>자료는 주차별로 하나씩 열립니다.</b>
+  한 번에 몰아 보시는 것보다, 열린 자료를 읽고 직접 해보신 뒤
+  다음 주차로 넘어가시는 편이 훨씬 잘 익혀집니다.
+  <% if (typeof myWeek !== 'undefined' && myWeek && myWeek < 5) { %>
+    <br>지금은 <b><%= myWeek %>주차</b>까지 열려 있습니다.
+  <% } %>
 </div>
 
 <div class="gd-cats">
@@ -76,12 +108,20 @@
   </div>
 <% } else { %>
   <% posts.forEach(function (p) { %>
-    <a href="/guide/<%= p.id %>" class="gd-item">
+    <a href="/guide/<%= p.id %>" class="gd-item <%= p.locked ? 'lock' : '' %>">
       <div class="t">
         <% if (p.pinned) { %><span class="gd-pin">중요</span><% } %>
         <%= p.title %>
       </div>
       <div class="meta">
+        <% if (p.week) { %>
+          <span class="wk <%= p.locked ? 'off' : 'on' %>"><%= p.weekLabel %></span>
+          <% if (p.locked) { %>
+            <span class="dleft">
+              <%= p.daysLeft > 0 ? p.daysLeft + '일 뒤 열림' : '곧 열림' %>
+            </span>
+          <% } %>
+        <% } %>
         <% if (p.cat_name) { %><span class="gd-tag"><%= p.cat_name %></span><% } %>
         <span><%= new Date(p.created_at).toLocaleDateString('ko-KR') %></span>
         <span><%= p.views %>번 읽음</span>
