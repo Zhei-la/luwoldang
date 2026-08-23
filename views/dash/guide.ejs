@@ -141,21 +141,23 @@
      if (typeof preview !== 'undefined' && preview) p.push('week=' + preview);
      return p.length ? '?' + p.join('&') : '';
    }; %>
-<div class="gd-cats gd-weeks">
-  <a href="/guide/all<%= qs(null) %>" class="gd-cat <%= wkf === null ? 'on' : '' %>">전체</a>
-  <% [1,2,3,4,5,0].forEach(function (w) { %>
-    <% if (wkc[w]) { %>
-      <a href="/guide/all<%= qs(w) %>" class="gd-cat <%= wkf === w ? 'on' : '' %>">
-        <%= WK[w] %><span class="n"><%= wkc[w] %></span>
-      </a>
-    <% } %>
-  <% }); %>
-</div>
+<% if (wkf !== 5) { %>
+  <div class="gd-cats gd-weeks">
+    <a href="/guide/all<%= qs(null) %>" class="gd-cat <%= wkf === null ? 'on' : '' %>">전체</a>
+    <% [1,2,3,4,5,0].forEach(function (w) { %>
+      <% if (wkc[w]) { %>
+        <a href="/guide/all<%= qs(w) %>" class="gd-cat <%= wkf === w ? 'on' : '' %>">
+          <%= WK[w] %><span class="n"><%= wkc[w] %></span>
+        </a>
+      <% } %>
+    <% }); %>
+  </div>
+<% } %>
 
 <div class="gd-cats">
-  <a href="/guide/all" class="gd-cat <%= !catId ? 'on' : '' %>">전체</a>
+  <a href="/guide/all<%= wkf !== null ? '?wk=' + wkf : '' %>" class="gd-cat <%= !catId ? 'on' : '' %>">전체</a>
   <% catList.forEach(function (c) { %>
-    <a href="/guide/all?cat=<%= c.id %>" class="gd-cat <%= catId === c.id ? 'on' : '' %>">
+    <a href="/guide/all?cat=<%= c.id %><%= wkf !== null ? '&wk=' + wkf : '' %>" class="gd-cat <%= catId === c.id ? 'on' : '' %>">
       <%= c.name %><span class="n"><%= c.n %></span>
     </a>
   <% }); %>
