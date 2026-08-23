@@ -136,12 +136,15 @@
   /* 본문이 가운데 1100px 이므로 워터마크도 같은 칸을 기준으로 잡는다.
      화면 전체를 기준으로 하면 맨 끝으로 밀려나 보이지 않는다.
      좌우 30px 씩 넓혀 글 바로 바깥에 놓는다. */
+  /* 워터마크는 글 상자 안에만 둔다.
+     화면에 고정하면 머리말·제목 위에도 걸치고, 스크롤해도 그 자리에 남는다. */
+  .gv-stage { position:relative; }
   .gv-marks {
-    position:fixed; top:0; bottom:0;
-    left:50%; transform:translateX(-50%);
-    width:min(1160px, 100%);
-    z-index:9999; pointer-events:none; user-select:none; overflow:visible;
+    position:absolute; inset:0;
+    z-index:5; pointer-events:none; user-select:none;
   }
+  /* 글을 내려도 화면 안에 계속 보이게 따라온다 */
+  .gv-marks .m { position:sticky; }
   .gv-marks .m {
     position:absolute; white-space:nowrap;
     font-size:12.5px; font-weight:800; letter-spacing:.02em;
@@ -149,11 +152,11 @@
     text-shadow:0 0 3px rgba(255,255,255,.9), 0 1px 0 rgba(255,255,255,.9);
   }
   /* 왼쪽 위 */
-  .gv-marks .mL { top:118px; left:16px; }
+  .gv-marks .mL { position:sticky; top:70px; left:0; display:block; margin-left:4px; }
   /* 오른쪽 세로 — 글자를 세로로 흐르게 해 잘리지 않는다 */
   .gv-marks .mR {
-    top:50%; right:8px;
-    writing-mode:vertical-rl; transform:translateY(-50%) rotate(180deg);
+    position:sticky; top:45vh; float:right; margin-right:-26px;
+    writing-mode:vertical-rl; transform:rotate(180deg);
   }
 
   /* 글이 화면 폭을 다 쓰므로, 오른쪽 세로 워터마크가 놓일 자리를 비워둔다 */
@@ -161,8 +164,8 @@
   @media (max-width:768px) {
     .gv-marks { width:100%; }
     .gv-marks .m { font-size:11px; }
-    .gv-marks .mL { top:106px; left:10px; }
-    .gv-marks .mR { right:4px; }
+    .gv-marks .mL { top:66px; margin-left:2px; }
+    .gv-marks .mR { margin-right:-14px; }
   }
 
   .gv-copyright { max-width:1100px; margin-left:auto; margin-right:auto; margin-top:26px; padding:14px 16px; background:#FBF8F1;
@@ -219,12 +222,11 @@
   </div>
 </div>
 
-<div class="gv-marks" aria-hidden="true">
-  <span class="m mL"><%= markShort %></span>
-  <span class="m mR"><%= mark %></span>
-</div>
-
 <div class="gv-stage">
+  <div class="gv-marks" aria-hidden="true">
+    <span class="m mL"><%= markShort %></span>
+    <span class="m mR"><%= mark %></span>
+  </div>
   <div class="gv-body">
     <%- bodyHtml %>
   </div>
