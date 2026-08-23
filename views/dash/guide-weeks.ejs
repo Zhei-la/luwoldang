@@ -1,9 +1,12 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: '교육생 자료집' }) %>
 
 <style>
+  /* 화면이 넓어졌으므로 가운데로 모은다 */
+  .wb-prev, .wb-all, .wb-h, .wb { max-width:1000px; margin-left:auto; margin-right:auto; }
+
   .wb-h { font-size:11.5px; font-weight:800; letter-spacing:.16em; color:#9A9384; margin-bottom:12px; }
 
-  .wb { display:flex; flex-direction:column; gap:10px; max-width:1000px; }
+  .wb { display:flex; flex-direction:column; gap:10px; }
   .wb-row {
     display:flex; align-items:center; gap:16px;
     background:#fff; border:1px solid var(--beige); border-radius:14px;
