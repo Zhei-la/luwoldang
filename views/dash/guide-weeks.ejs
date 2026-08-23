@@ -1,0 +1,120 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '교육생 자료집' }) %>
+
+<style>
+  .wb-h { font-size:11.5px; font-weight:800; letter-spacing:.16em; color:#9A9384; margin-bottom:12px; }
+
+  .wb { display:flex; flex-direction:column; gap:10px; max-width:1000px; }
+  .wb-row {
+    display:flex; align-items:center; gap:16px;
+    background:#fff; border:1px solid var(--beige); border-radius:14px;
+    padding:18px 22px; text-decoration:none; color:inherit;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .wb-row:hover { border-color:var(--gold); box-shadow:0 3px 14px rgba(24,34,52,.06); }
+
+  .wb-no {
+    flex:0 0 auto; width:44px; height:44px; border-radius:50%;
+    background:#F1EDE4; color:#8A8574; font-size:16px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .wb-row.now .wb-no { background:var(--gold); color:#fff; }
+  .wb-row.now { border-left:3px solid var(--gold); }
+
+  .wb-mid { flex:1; min-width:0; }
+  .wb-lb { font-size:11.5px; font-weight:800; letter-spacing:.12em; color:#9A9384;
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .wb-now { background:var(--gold); color:#fff; font-size:10px; font-weight:800;
+    padding:2px 8px; border-radius:100px; letter-spacing:.04em; }
+  .wb-ti { font-size:17px; font-weight:800; margin-top:4px; word-break:keep-all; line-height:1.4; }
+  .wb-chips { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .wb-chip { font-size:11.5px; font-weight:700; color:#6B6656;
+    background:#F4EFE3; padding:4px 11px; border-radius:100px; }
+  .wb-chip.done { background:#E8F3ED; color:#2E7D5B; }
+  .wb-chip.lock { background:#F1EDE4; color:#A09689; }
+
+  .wb-go { flex:0 0 auto; font-size:19px; color:#8A8574; }
+  .wb-row:hover .wb-go { color:var(--gold); }
+
+  /* 잠긴 주차 */
+  .wb-row.off { background:#F7F4EE; border-color:#EDE7DB; pointer-events:none; }
+  .wb-row.off .wb-ti { color:#8A8574; }
+  .wb-when { flex:0 0 auto; text-align:right; font-size:12px; color:#9A9384; line-height:1.6; }
+  .wb-when b { display:block; color:#8A6F3C; font-weight:800; }
+
+  /* 관리자 미리보기 */
+  .wb-prev { display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+    background:var(--navy); border-radius:12px; padding:10px 14px; margin-bottom:14px; }
+  .wb-prev .lb { font-size:11.5px; font-weight:800; color:#C9BDA8; margin-right:4px; }
+  .wb-prev a { padding:6px 12px; border-radius:100px; font-size:12.5px; font-weight:700;
+    color:#E8E3D6; text-decoration:none; background:rgba(255,255,255,.12); }
+  .wb-prev a.on { background:var(--gold); color:#fff; }
+
+  .wb-all { display:flex; justify-content:flex-end; margin-bottom:12px; }
+  .wb-all a { font-size:13px; color:#8A6F3C; text-decoration:none; font-weight:700; }
+
+  @media (max-width:640px) {
+    .wb-row { padding:15px 16px; gap:12px; }
+    .wb-no { width:36px; height:36px; font-size:14px; }
+    .wb-ti { font-size:15.5px; }
+    .wb-when { font-size:11px; }
+  }
+</style>
+
+<% if (user.role === 'admin') { %>
+  <div class="wb-prev">
+    <span class="lb">교육생 눈으로 보기</span>
+    <a href="/guide/weeks" class="<%= !preview ? 'on' : '' %>">관리자</a>
+    <% [1,2,3,4,5].forEach(function (w) { %>
+      <a href="/guide/weeks?week=<%= w %>" class="<%= preview === w ? 'on' : '' %>">
+        <%= w === 5 ? '총정리' : w + '주차' %>
+      </a>
+    <% }); %>
+  </div>
+<% } %>
+
+<div class="wb-all"><a href="/guide/all">자료 전체 목록 보기 →</a></div>
+
+<div class="wb-h">WEEKS</div>
+
+<div class="wb">
+  <% weeks.forEach(function (w) { %>
+    <% var label = w.week === 0 ? 'PROLOGUE'
+                 : w.week === 5 ? 'FINAL'
+                 : 'WEEK ' + String(w.week).padStart(2, '0'); %>
+    <% if (w.unlocked) { %>
+      <a class="wb-row <%= w.isNow ? 'now' : '' %>" href="/guide/week/<%= w.week %><%= preview ? '?week=' + preview : '' %>">
+        <div class="wb-no"><%= w.week === 0 ? 'P' : (w.week === 5 ? '★' : w.week) %></div>
+        <div class="wb-mid">
+          <div class="wb-lb">
+            <%= label %>
+            <% if (w.isNow && w.week > 0 && w.week < 5) { %><span class="wb-now">NOW</span><% } %>
+          </div>
+          <div class="wb-ti"><%= w.title %><% if (w.subtitle) { %> / <%= w.subtitle %><% } %></div>
+          <div class="wb-chips">
+            <span class="wb-chip">● 강의 <%= w.posts %></span>
+            <% if (w.hasTask) { %>
+              <span class="wb-chip <%= w.taskDone ? 'done' : (w.taskOpen ? '' : 'lock') %>">
+                <%= w.taskDone ? '✓ 과제 완료' : (w.taskOpen ? '● 과제' : '🔒 과제') %>
+              </span>
+            <% } %>
+          </div>
+        </div>
+        <div class="wb-go">→</div>
+      </a>
+    <% } else { %>
+      <div class="wb-row off">
+        <div class="wb-no">🔒</div>
+        <div class="wb-mid">
+          <div class="wb-lb"><%= label %></div>
+          <div class="wb-ti"><%= w.title %><% if (w.subtitle) { %> / <%= w.subtitle %><% } %></div>
+        </div>
+        <div class="wb-when">
+          <b><%= w.daysLeft > 0 ? w.daysLeft + '일 후 오픈' : '곧 오픈' %></b>
+          <% if (w.opensAt) { %><%= new Date(w.opensAt).toLocaleDateString('ko-KR') %><% } %>
+        </div>
+      </div>
+    <% } %>
+  <% }); %>
+</div>
+
+<%- include('../partials/dash-bottom') %>

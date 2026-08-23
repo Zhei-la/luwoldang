@@ -1,0 +1,141 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '교육생 자료집' }) %>
+
+<style>
+  .wv-bar { position:sticky; top:57px; z-index:25; display:flex; align-items:center; gap:2px;
+    margin:-28px -32px 22px; padding:0 26px;
+    background:var(--card); border-bottom:1px solid var(--beige); }
+  .wv-bar a { padding:11px 10px; font-size:13.5px; font-weight:700; color:#8A8574;
+    text-decoration:none; white-space:nowrap; }
+  .wv-bar a:hover { color:var(--ink); }
+  @media (max-width:760px) { .wv-bar { top:53px; margin:-18px -16px 16px; padding:0 10px; } }
+
+  .wv-head { margin-bottom:22px; }
+  .wv-lb { font-size:11.5px; font-weight:800; letter-spacing:.16em; color:#9A9384; }
+  .wv-ti { font-family:"Nanum Myeongjo",serif; font-size:26px; margin:6px 0 0;
+    word-break:keep-all; line-height:1.35; }
+
+  .wv-sec { font-size:12px; font-weight:800; letter-spacing:.14em; color:#9A9384;
+    margin:26px 0 10px; }
+
+  .wv-list { display:flex; flex-direction:column; gap:8px; }
+  .wv-item { display:flex; align-items:center; gap:14px; background:#fff;
+    border:1px solid var(--beige); border-radius:12px; padding:15px 18px;
+    text-decoration:none; color:inherit; }
+  .wv-item:hover { border-color:var(--gold); }
+  .wv-num { flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:#F1EDE4;
+    color:#8A8574; font-size:13px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; }
+  .wv-item .t { flex:1; min-width:0; font-size:15.5px; font-weight:700; word-break:keep-all; }
+  .wv-item .m { flex:0 0 auto; font-size:11.5px; color:#9A9384; }
+  .wv-empty { padding:30px; text-align:center; color:#9A9384; font-size:14px;
+    background:#fff; border:1px dashed var(--beige); border-radius:12px; }
+
+  /* 과제 */
+  .tk { background:#fff; border:1px solid var(--beige); border-left:3px solid var(--gold);
+    border-radius:0 14px 14px 0; padding:20px 22px; }
+  .tk.locked { border-left-color:#D8D0C2; background:#F7F4EE; }
+  .tk .th { font-size:17px; font-weight:800; margin-bottom:8px; word-break:keep-all; }
+  .tk .tb { font-size:14.5px; line-height:1.8; color:#4A4438; white-space:pre-wrap;
+    word-break:keep-all; }
+  .tk .done { display:inline-flex; align-items:center; gap:7px; margin-top:14px;
+    background:#E8F3ED; color:#2E7D5B; font-size:13.5px; font-weight:700;
+    padding:9px 16px; border-radius:100px; }
+  .tk textarea { width:100%; margin-top:14px; padding:12px 14px; border:1px solid var(--beige);
+    border-radius:10px; font-size:14.5px; font-family:inherit; line-height:1.7;
+    min-height:90px; resize:vertical; outline:none; box-sizing:border-box; }
+  .tk textarea:focus { border-color:var(--gold); }
+  .tk .go { margin-top:10px; padding:13px 24px; background:var(--navy); color:#fff; border:0;
+    border-radius:11px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .tk .go:disabled { opacity:.5; cursor:default; }
+  .tk .lockmsg { font-size:14px; color:#8A8574; line-height:1.8; word-break:keep-all; }
+</style>
+
+<div class="wv-bar">
+  <a href="/guide/weeks<%= preview ? '?week=' + preview : '' %>">← 주차 목록</a>
+  <% if (user.role === 'admin') { %>
+    <a href="/admin/guide">관리</a>
+  <% } %>
+</div>
+
+<div class="wv-head">
+  <div class="wv-lb">
+    <%= n === 0 ? 'PROLOGUE' : (n === 5 ? 'FINAL' : 'WEEK ' + String(n).padStart(2,'0')) %>
+  </div>
+  <h1 class="wv-ti"><%= week.title %><% if (week.subtitle) { %> / <%= week.subtitle %><% } %></h1>
+</div>
+
+<div class="wv-sec">강의 자료</div>
+<% if (!posts.length) { %>
+  <div class="wv-empty">아직 올라온 자료가 없습니다.</div>
+<% } else { %>
+  <div class="wv-list">
+    <% posts.forEach(function (p, i) { %>
+      <a class="wv-item" href="/guide/<%= p.id %>">
+        <div class="wv-num"><%= i + 1 %></div>
+        <div class="t"><%= p.title %></div>
+        <div class="m"><%= p.cat_name || '' %></div>
+      </a>
+    <% }); %>
+  </div>
+<% } %>
+
+<% if (task) { %>
+  <div class="wv-sec">과제</div>
+  <% if (!taskOpen) { %>
+    <div class="tk locked">
+      <div class="th">🔒 <%= task.title || (n + '주차 과제') %></div>
+      <div class="lockmsg">
+        <b><%= n - 1 %>주차 과제</b>를 먼저 마쳐주세요.<br>
+        하나씩 해보셔야 다음 것이 훨씬 쉬워집니다.
+      </div>
+    </div>
+  <% } else { %>
+    <div class="tk">
+      <div class="th"><%= task.title || (n + '주차 과제') %></div>
+      <div class="tb"><%= task.body %></div>
+
+      <% if (taskDone) { %>
+        <div class="done">✓ 완료했습니다
+          <% if (myDone && myDone.done_at) { %>
+            · <%= new Date(myDone.done_at).toLocaleDateString('ko-KR') %>
+          <% } %>
+        </div>
+        <% if (myDone && myDone.note) { %>
+          <textarea id="tkNote" placeholder="적어두신 내용"><%= myDone.note %></textarea>
+          <button type="button" class="go" id="tkBtn" data-week="<%= n %>">다시 저장</button>
+        <% } %>
+      <% } else { %>
+        <textarea id="tkNote" placeholder="하시면서 궁금했던 점이나 남기고 싶은 내용을 적어주세요. (비워두셔도 됩니다)"></textarea>
+        <button type="button" class="go" id="tkBtn" data-week="<%= n %>">과제 완료하기</button>
+      <% } %>
+    </div>
+  <% } %>
+<% } %>
+
+<script>
+(function () {
+  var btn = document.getElementById('tkBtn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var note = (document.getElementById('tkNote') || {}).value || '';
+    btn.disabled = true;
+    var was = btn.textContent;
+    btn.textContent = '저장 중...';
+    fetch('/guide/task/done', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ week: Number(btn.dataset.week), note: note })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) throw new Error(d.error || '실패');
+      location.reload();
+    })
+    .catch(function (e) {
+      alert('저장하지 못했습니다: ' + e.message);
+      btn.disabled = false; btn.textContent = was;
+    });
+  });
+})();
+</script>
+
+<%- include('../partials/dash-bottom') %>

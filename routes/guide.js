@@ -45,6 +45,47 @@ function opensIn(user, week, preview) {
 const WEEK_LABEL = ['언제나', '1주차', '2주차', '3주차', '4주차', '총정리 (4주차 후)'];
 
 /* 분류 목록 (글 개수까지 함께) */
+/* 주차 제목 · 과제 · 진행 상황을 한 번에 읽어온다 */
+async function weekBoard(user, myWeek) {
+  const [wk, tasks, done, counts] = await Promise.all([
+    pool.query('SELECT week, title, subtitle FROM guide_weeks ORDER BY week'),
+    pool.query('SELECT week, title, published FROM guide_tasks'),
+    pool.query('SELECT week FROM guide_task_done WHERE teacher_id = $1', [user.id]),
+    pool.query(`SELECT COALESCE(week,0) AS week, COUNT(*)::int AS n
+                  FROM guide_posts WHERE published GROUP BY COALESCE(week,0)`),
+  ]);
+
+  const tmap = {}; tasks.rows.forEach((t) => { tmap[t.week] = t; });
+  const dset = new Set(done.rows.map((d) => d.week));
+  const cmap = {}; counts.rows.forEach((c) => { cmap[c.week] = c.n; });
+
+  const base = user.guide_start || user.approved_at || user.created_at;
+  const openDate = (w) => (base && w > 0
+    ? new Date(new Date(base).getTime() + (w - 1) * 7 * 864e5) : null);
+
+  return wk.rows.map((w) => {
+    const n = w.week;
+    const unlocked = n === 0 || n <= myWeek;
+    const task = tmap[n];
+    /* 과제는 앞 주차 과제를 마쳐야 열린다 */
+    const prevDone = n <= 1 || dset.has(n - 1);
+    return {
+      week: n,
+      title: w.title,
+      subtitle: w.subtitle,
+      posts: cmap[n] || 0,
+      hasTask: !!(task && task.published),
+      taskTitle: task ? task.title : '',
+      taskDone: dset.has(n),
+      taskOpen: unlocked && prevDone,
+      unlocked,
+      isNow: unlocked && n === myWeek,
+      opensAt: openDate(n),
+      daysLeft: opensIn(user, n),
+    };
+  });
+}
+
 async function cats() {
   const { rows } = await pool.query(`
     SELECT c.id, c.name, c.sort,
@@ -61,7 +102,7 @@ async function cats() {
    ══════════════════════════════════════ */
 
 /* 목록 */
-router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
+router.get('/guide/all', requireAuth, requireApproved, async (req, res, next) => {
   try {
     const catId = req.query.cat ? Number(req.query.cat) : null;
     const wkFilter = req.query.wk !== undefined && req.query.wk !== '' ? Number(req.query.wk) : null;
@@ -108,6 +149,94 @@ router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
       wkFilter, wkCount,
     });
   } catch (e) { next(e); }
+});
+
+/* ── 주차 판 (자료집 첫 화면) ── */
+router.get('/guide', requireAuth, requireApproved, async (req, res, next) => {
+  try {
+    const preview = Number(req.query.week) || 0;
+    const my = weekOf(req.user, preview);
+    res.render('dash/guide-weeks', {
+      user: req.user, active: 'guide',
+      weeks: await weekBoard(req.user, my), myWeek: my, preview,
+    });
+  } catch (e) { next(e); }
+});
+
+router.get('/guide/weeks', requireAuth, requireApproved, async (req, res, next) => {
+  try {
+    const preview = Number(req.query.week) || 0;
+    const my = weekOf(req.user, preview);
+    res.render('dash/guide-weeks', {
+      user: req.user, active: 'guide',
+      weeks: await weekBoard(req.user, my), myWeek: my, preview,
+    });
+  } catch (e) { next(e); }
+});
+
+/* ── 한 주차 안 (강의 자료 순서대로 + 과제) ── */
+router.get('/guide/week/:n(\\d+)', requireAuth, requireApproved, async (req, res, next) => {
+  try {
+    const n = Number(req.params.n);
+    const preview = Number(req.query.week) || 0;
+    const my = weekOf(req.user, preview);
+    if (n > 0 && n > my) {
+      return res.status(403).render('dash/guide-locked', {
+        user: req.user, active: 'guide',
+        post: { title: WEEK_LABEL[n] || (n + '주차') },
+        weekLabel: WEEK_LABEL[n] || '', daysLeft: opensIn(req.user, n, preview),
+      });
+    }
+
+    const [posts, wk, task, done] = await Promise.all([
+      pool.query(`SELECT p.id, p.title, p.views, p.created_at, c.name AS cat_name
+                    FROM guide_posts p LEFT JOIN guide_cats c ON c.id = p.cat_id
+                   WHERE p.published AND COALESCE(p.week,0) = $1
+                   ORDER BY p.pinned DESC, p.created_at`, [n]),
+      pool.query('SELECT * FROM guide_weeks WHERE week = $1', [n]),
+      pool.query('SELECT * FROM guide_tasks WHERE week = $1', [n]),
+      pool.query('SELECT week, note, done_at FROM guide_task_done WHERE teacher_id = $1', [req.user.id]),
+    ]);
+
+    const dset = new Set(done.rows.map((d) => d.week));
+    const t = task.rows[0];
+    res.render('dash/guide-week', {
+      user: req.user, active: 'guide', n,
+      week: wk.rows[0] || { week: n, title: WEEK_LABEL[n] || '' },
+      posts: posts.rows,
+      task: t && t.published ? t : null,
+      taskOpen: n <= 1 || dset.has(n - 1),
+      taskDone: dset.has(n),
+      myDone: done.rows.find((d) => d.week === n) || null,
+      preview,
+    });
+  } catch (e) { next(e); }
+});
+
+/* 과제 완료 표시 */
+router.post('/guide/task/done', requireAuth, requireApproved, async (req, res) => {
+  try {
+    const n = Number(req.body.week);
+    if (!(n >= 1 && n <= 4)) return res.status(400).json({ ok: false, error: '주차가 올바르지 않습니다.' });
+
+    /* 앞 주차를 마치지 않았으면 표시할 수 없다 */
+    const { rows } = await pool.query(
+      'SELECT week FROM guide_task_done WHERE teacher_id = $1', [req.user.id]
+    );
+    const dset = new Set(rows.map((d) => d.week));
+    if (n > 1 && !dset.has(n - 1)) {
+      return res.status(400).json({ ok: false, error: (n - 1) + '주차 과제를 먼저 마쳐주세요.' });
+    }
+
+    await pool.query(
+      `INSERT INTO guide_task_done (teacher_id, week, note) VALUES ($1,$2,$3)
+       ON CONFLICT (teacher_id, week) DO UPDATE SET note = EXCLUDED.note, done_at = NOW()`,
+      [req.user.id, n, String(req.body.note || '').slice(0, 1000)]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 /* 글 보기 */
@@ -383,6 +512,57 @@ router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, 
     const msg = e.name === 'AbortError' ? '사진 받아오기가 너무 오래 걸립니다.' : e.message;
     console.error('[자료집] 주소 사진 실패:', msg);
     res.status(500).json({ ok: false, error: msg });
+  }
+});
+
+/* ── 주차 제목 · 과제 관리 ── */
+router.get('/admin/guide/weeks', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const [wk, tasks, counts, done] = await Promise.all([
+      pool.query('SELECT week, title, subtitle FROM guide_weeks ORDER BY week'),
+      pool.query('SELECT week, title, body, published FROM guide_tasks'),
+      pool.query(`SELECT COALESCE(week,0) AS week, COUNT(*)::int AS n
+                    FROM guide_posts WHERE published GROUP BY COALESCE(week,0)`),
+      pool.query(`SELECT week, COUNT(*)::int AS n FROM guide_task_done GROUP BY week`),
+    ]);
+    const tmap = {}; tasks.rows.forEach((t) => { tmap[t.week] = t; });
+    const cmap = {}; counts.rows.forEach((c) => { cmap[c.week] = c.n; });
+    const dmap = {}; done.rows.forEach((d) => { dmap[d.week] = d.n; });
+    res.render('dash/admin-guide-weeks', {
+      user: req.user, active: 'admin-guide',
+      weeks: wk.rows.map((w) => ({
+        ...w, task: tmap[w.week] || null, posts: cmap[w.week] || 0, doneN: dmap[w.week] || 0,
+      })),
+    });
+  } catch (e) { next(e); }
+});
+
+router.post('/admin/guide/weeks/save', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const w = Number(b.week);
+    if (!(w >= 0 && w <= 5)) return res.status(400).json({ ok: false, error: '주차가 올바르지 않습니다.' });
+    const cut = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, n);
+
+    await pool.query(
+      `INSERT INTO guide_weeks (week, title, subtitle) VALUES ($1,$2,$3)
+       ON CONFLICT (week) DO UPDATE SET title = EXCLUDED.title, subtitle = EXCLUDED.subtitle`,
+      [w, cut(b.title, 60) || (w + '주차'), cut(b.subtitle, 100) || null]
+    );
+
+    /* 과제는 1~4주차만 */
+    if (w >= 1 && w <= 4) {
+      await pool.query(
+        `INSERT INTO guide_tasks (week, title, body, published, updated_at)
+         VALUES ($1,$2,$3,$4,NOW())
+         ON CONFLICT (week) DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body,
+                                          published = EXCLUDED.published, updated_at = NOW()`,
+        [w, cut(b.taskTitle, 80), cut(b.taskBody, 4000), b.taskOn !== false]
+      );
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

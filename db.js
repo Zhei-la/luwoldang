@@ -414,6 +414,43 @@ async function initDb() {
      ⚠️ 아래에서 이 칸을 쓰므로 반드시 먼저 만들어야 한다. */
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_start TIMESTAMPTZ;`);
 
+  /* ── 주차별 과제 ──
+     한 주에 하나씩. 앞 주차 과제를 마쳐야 다음 과제가 열린다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_tasks (
+      week      INTEGER PRIMARY KEY,
+      title     TEXT NOT NULL DEFAULT '',
+      body      TEXT NOT NULL DEFAULT '',
+      published BOOLEAN DEFAULT TRUE,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_task_done (
+      teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      week       INTEGER NOT NULL,
+      note       TEXT,
+      done_at    TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (teacher_id, week)
+    );
+  `);
+
+  /* 주차마다 제목을 붙일 수 있게 */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_weeks (
+      week     INTEGER PRIMARY KEY,
+      title    TEXT NOT NULL DEFAULT '',
+      subtitle TEXT
+    );
+  `);
+  const gw = await pool.query('SELECT COUNT(*)::int AS n FROM guide_weeks');
+  if (!gw.rows[0].n) {
+    await pool.query(`
+      INSERT INTO guide_weeks (week, title) VALUES
+      (0,'프롤로그'),(1,'1주차'),(2,'2주차'),(3,'3주차'),(4,'4주차'),(5,'총정리')
+    `);
+  }
+
   /* 한 번만 하는 정리 — 이미 올려둔 자료를 '전체 자료집'(4주차 완료 후)으로 옮긴다.
      1~4주차는 비워두고 관리자가 직접 채운다.
      두 번 돌면 나중에 정한 주차가 지워지므로 표시를 남겨 한 번만 하게 한다. */
