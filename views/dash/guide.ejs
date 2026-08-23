@@ -24,6 +24,7 @@
     border-radius:0 12px 12px 0; padding:14px 17px; margin-bottom:16px;
     font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
   .gd-note b { color:var(--ink); }
+  .gd-note a { color:#8A6F3C; font-weight:700; }
 
   .gd-weeks { margin-bottom:8px; }
   .gd-weeks .gd-cat { background:#FBF6EC; border-color:#E9E0CF; color:#8A6F3C; }
@@ -98,9 +99,9 @@
 <% } %>
 
 <div class="gd-note">
-  <b>자료는 주차별로 하나씩 열립니다.</b>
-  한 번에 몰아 보시는 것보다, 열린 자료를 읽고 직접 해보신 뒤
-  다음 주차로 넘어가시는 편이 훨씬 잘 익혀집니다.
+  <b>주차별 자료를 한곳에 모아둔 페이지입니다.</b>
+  상담 중에 급하게 찾아보셔야 할 때, 분류나 검색으로 바로 찾아보세요.
+  처음 배우실 때는 <a href="/guide">주차별로 하나씩</a> 따라오시는 편이 훨씬 잘 익혀집니다.
   <% if (typeof myWeek !== 'undefined' && myWeek && myWeek < 5) { %>
     <br>지금은 <b><%= myWeek %>주차</b>까지 열려 있습니다.
   <% } %>

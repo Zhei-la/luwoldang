@@ -2,7 +2,7 @@
 
 <style>
   /* 화면이 넓어졌으므로 가운데로 모은다 */
-  .wb-prev, .wb-all, .wb-h, .wb { max-width:1000px; margin-left:auto; margin-right:auto; }
+  .wb-prev, .wb-h, .wb { max-width:1000px; margin-left:auto; margin-right:auto; }
 
   .wb-h { font-size:11.5px; font-weight:800; letter-spacing:.16em; color:#9A9384; margin-bottom:12px; }
 
@@ -29,6 +29,7 @@
   .wb-now { background:var(--gold); color:#fff; font-size:10px; font-weight:800;
     padding:2px 8px; border-radius:100px; letter-spacing:.04em; }
   .wb-ti { font-size:17px; font-weight:800; margin-top:4px; word-break:keep-all; line-height:1.4; }
+  .wb-sub { font-size:12.5px; color:#9A9384; margin-top:5px; word-break:keep-all; }
   .wb-chips { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
   .wb-chip { font-size:11.5px; font-weight:700; color:#6B6656;
     background:#F4EFE3; padding:4px 11px; border-radius:100px; }
@@ -52,9 +53,6 @@
     color:#E8E3D6; text-decoration:none; background:rgba(255,255,255,.12); }
   .wb-prev a.on { background:var(--gold); color:#fff; }
 
-  .wb-all { display:flex; justify-content:flex-end; margin-bottom:12px; }
-  .wb-all a { font-size:13px; color:#8A6F3C; text-decoration:none; font-weight:700; }
-
   @media (max-width:640px) {
     .wb-row { padding:15px 16px; gap:12px; }
     .wb-no { width:36px; height:36px; font-size:14px; }
@@ -75,8 +73,6 @@
   </div>
 <% } %>
 
-<div class="wb-all"><a href="/guide/all">자료 전체 목록 보기 →</a></div>
-
 <div class="wb-h">WEEKS</div>
 
 <div class="wb">
@@ -84,8 +80,12 @@
     <% var label = w.week === 0 ? 'PROLOGUE'
                  : w.week === 5 ? 'FINAL'
                  : 'WEEK ' + String(w.week).padStart(2, '0'); %>
+    <% /* 총정리는 전체 목록 페이지로 보낸다 — 급할 때 찾아보기 좋다 */
+       var href = w.week === 5
+         ? '/guide/all' + (preview ? '?week=' + preview : '')
+         : '/guide/week/' + w.week + (preview ? '?week=' + preview : ''); %>
     <% if (w.unlocked) { %>
-      <a class="wb-row <%= w.isNow ? 'now' : '' %>" href="/guide/week/<%= w.week %><%= preview ? '?week=' + preview : '' %>">
+      <a class="wb-row <%= w.isNow ? 'now' : '' %>" href="<%= href %>">
         <div class="wb-no"><%= w.week === 0 ? 'P' : (w.week === 5 ? '★' : w.week) %></div>
         <div class="wb-mid">
           <div class="wb-lb">
@@ -93,8 +93,11 @@
             <% if (w.isNow && w.week > 0 && w.week < 5) { %><span class="wb-now">NOW</span><% } %>
           </div>
           <div class="wb-ti"><%= w.title %><% if (w.subtitle) { %> / <%= w.subtitle %><% } %></div>
+          <% if (w.week === 5) { %>
+            <div class="wb-sub">지금까지의 자료를 한곳에서 찾아볼 수 있습니다</div>
+          <% } %>
           <div class="wb-chips">
-            <span class="wb-chip">● 강의 <%= w.posts %></span>
+            <span class="wb-chip">● <%= w.week === 5 ? '자료 전체' : '강의' %> <%= w.posts %></span>
             <% if (w.hasTask) { %>
               <span class="wb-chip <%= w.taskDone ? 'done' : (w.taskOpen ? '' : 'lock') %>">
                 <%= w.taskDone ? '✓ 과제 완료' : (w.taskOpen ? '● 과제' : '🔒 과제') %>
@@ -110,6 +113,9 @@
         <div class="wb-mid">
           <div class="wb-lb"><%= label %></div>
           <div class="wb-ti"><%= w.title %><% if (w.subtitle) { %> / <%= w.subtitle %><% } %></div>
+          <% if (w.week === 5) { %>
+            <div class="wb-sub">4주차를 마치시면 지금까지의 자료를 한곳에서 보실 수 있습니다</div>
+          <% } %>
         </div>
         <div class="wb-when">
           <b><%= w.daysLeft > 0 ? w.daysLeft + '일 후 오픈' : '곧 오픈' %></b>
