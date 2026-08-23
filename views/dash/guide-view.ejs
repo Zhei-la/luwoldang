@@ -26,7 +26,7 @@
       .gv-bar a,   .gv-bar button { padding:10px 8px; font-size:13px; }
   }
 
-  .gv-head { border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
+  .gv-head { max-width:1100px; margin-left:auto; margin-right:auto; border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
   .gv-head h1 { font-family:"Nanum Myeongjo", serif; font-size:25px; line-height:1.4;
     margin:0 0 10px; word-break:keep-all; }
   .gv-meta { font-size:12px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
@@ -35,7 +35,7 @@
   /* 본문 — 읽기 편한 폭과 줄간격 */
   /* 본문은 흰 종이처럼 — 베이지 배경 위에서는 캡처와 글이 잘 안 보인다 */
   .gv-body {
-    max-width:860px; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all;
+    max-width:1100px; margin:0 auto; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all;
     background:#fff; border:1px solid var(--beige); border-radius:16px;   /* 본문은 늘 흰 종이 */
     padding:34px 38px; box-shadow:0 2px 10px rgba(24,34,52,.04);
   }
@@ -135,8 +135,7 @@
      (사이드바 260px + 본문 최대 1000px) */
   .gv-marks {
     position:fixed; top:0; bottom:0;
-    /* 본문이 가운데로 모였으므로 워터마크도 같은 칸을 기준으로 잡는다 */
-    left:50%; transform:translateX(-50%); width:min(1240px, 100vw);
+    left:0; width:100vw;
     z-index:9999; pointer-events:none; user-select:none; overflow:hidden;
   }
   .gv-marks .m {
@@ -151,6 +150,11 @@
   .gv-marks .mR {
     top:50%; right:8px;
     writing-mode:vertical-rl; transform:translateY(-50%) rotate(180deg);
+  }
+
+  /* 글이 화면 폭을 다 쓰므로, 오른쪽 세로 워터마크가 놓일 자리를 비워둔다 */
+  @media (min-width:769px) {
+    .gv-stage { padding-right:30px; }
   }
 
   @media (max-width:768px) {
