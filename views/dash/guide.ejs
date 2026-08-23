@@ -98,12 +98,19 @@
   </div>
 <% } %>
 
+<% var wkf = (typeof wkFilter !== 'undefined') ? wkFilter : null; %>
 <div class="gd-note">
+  <% if (wkf === 5) { %>
+    <b>총정리 자료집입니다.</b>
+    상담 중에 급하게 찾아보셔야 할 때, 분류나 검색으로 바로 찾아보세요.
+    주차별 강의는 <a href="/guide">주차 목록</a>에서 보실 수 있습니다.
+  <% } else { %>
   <b>주차별 자료를 한곳에 모아둔 페이지입니다.</b>
   상담 중에 급하게 찾아보셔야 할 때, 분류나 검색으로 바로 찾아보세요.
   처음 배우실 때는 <a href="/guide">주차별로 하나씩</a> 따라오시는 편이 훨씬 잘 익혀집니다.
   <% if (typeof myWeek !== 'undefined' && myWeek && myWeek < 5) { %>
     <br>지금은 <b><%= myWeek %>주차</b>까지 열려 있습니다.
+  <% } %>
   <% } %>
 </div>
 
@@ -125,7 +132,6 @@
 <% } %>
 
 <% var WK = ['언제나','1주차','2주차','3주차','4주차','총정리'];
-   var wkf = (typeof wkFilter !== 'undefined') ? wkFilter : null;
    var wkc = (typeof wkCount !== 'undefined') ? wkCount : {};
    var qs = function (w) {
      var p = [];
@@ -171,13 +177,15 @@
         <%= p.title %>
       </div>
       <div class="meta">
-        <% if (p.week) { %>
+        <% /* 주차로 걸러서 보는 중이면 딱지를 또 붙일 필요가 없다.
+              총정리 화면에서 줄마다 '총정리'가 붙으면 지저분하다. */ %>
+        <% if (p.week && wkf === null) { %>
           <span class="wk <%= p.locked ? 'off' : 'on' %>"><%= p.weekLabel %></span>
-          <% if (p.locked) { %>
-            <span class="dleft">
-              <%= p.daysLeft > 0 ? p.daysLeft + '일 뒤 열림' : '곧 열림' %>
-            </span>
-          <% } %>
+        <% } %>
+        <% if (p.locked) { %>
+          <span class="dleft">
+            <%= p.daysLeft > 0 ? p.daysLeft + '일 뒤 열림' : '곧 열림' %>
+          </span>
         <% } %>
         <% if (p.cat_name) { %><span class="gd-tag"><%= p.cat_name %></span><% } %>
         <span><%= new Date(p.created_at).toLocaleDateString('ko-KR') %></span>

@@ -80,9 +80,9 @@
     <% var label = w.week === 0 ? 'PROLOGUE'
                  : w.week === 5 ? 'FINAL'
                  : 'WEEK ' + String(w.week).padStart(2, '0'); %>
-    <% /* 총정리는 전체 목록 페이지로 보낸다 — 급할 때 찾아보기 좋다 */
+    <% /* 총정리는 전체 목록 페이지로 보내되, 총정리 자료만 보이게 한다 */
        var href = w.week === 5
-         ? '/guide/all' + (preview ? '?week=' + preview : '')
+         ? '/guide/all?wk=5' + (preview ? '&week=' + preview : '')
          : '/guide/week/' + w.week + (preview ? '?week=' + preview : ''); %>
     <% if (w.unlocked) { %>
       <a class="wb-row <%= w.isNow ? 'now' : '' %>" href="<%= href %>">
