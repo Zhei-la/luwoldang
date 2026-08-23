@@ -107,9 +107,13 @@ body {
 /* 본문 — 가운데로 모은다 */
 .main { padding: 28px 32px; width: 100%; max-width: 1304px; margin: 0 auto; }
 
-/* 머리말 안쪽도 본문과 같은 폭으로 — 좌우 여백을 자동으로 준다 */
-.topbar { padding-left: max(32px, calc((100vw - 1240px) / 2)); }
-.topbar { padding-right: max(32px, calc((100vw - 1240px) / 2)); }
+/* 머리말 안쪽 상자를 본문과 같은 폭으로 둔다.
+   100vw 로 계산하면 스크롤바 너비만큼 어긋나므로 상자 방식을 쓴다. */
+.topbar { padding: 0; }
+.topbar-in {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; max-width: 1304px; margin: 0 auto; padding: 16px 32px;
+}
 
 /* ===== 오버레이(모바일) ===== */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 30; }

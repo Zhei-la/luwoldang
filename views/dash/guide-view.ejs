@@ -4,11 +4,11 @@
   /* 위쪽 버튼 줄 — 머리말 바로 아래에 붙어 화면을 내려도 계속 보인다 */
   /* 머리말 바로 아래에 이어 붙는 줄 — 두 겹처럼 보이지 않게
      머리말과 같은 바탕을 쓰고, 글씨만 있는 버튼으로 가볍게 둔다. */
-    .gv-bar {
+  .gv-bar {
     position:sticky; top:57px; z-index:25;
     display:flex; align-items:center; gap:2px;
-    margin:-28px -32px 22px; padding:0 26px;
-    background:var(--card); border-bottom:1px solid var(--beige);
+    max-width:1100px; margin:0 auto 22px; padding:0;
+    background:transparent; border-bottom:1px solid var(--beige);
   }
     .gv-bar a,   .gv-bar button {
     padding:11px 10px; border:0; background:none; border-radius:0;
@@ -22,8 +22,8 @@
     .gv-bar .sp { flex:1; }
 
   @media (max-width:760px) {
-      .gv-bar { top:53px; margin:-18px -16px 16px; padding:0 10px; }
-      .gv-bar a,   .gv-bar button { padding:10px 8px; font-size:13px; }
+    .gv-bar { top:53px; margin:0 auto 16px; }
+    .gv-bar a, .gv-bar button { padding:10px 6px; font-size:13px; }
   }
 
   .gv-head { max-width:1100px; margin-left:auto; margin-right:auto; border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
@@ -93,7 +93,7 @@
     .gv-body .cbx-btn:hover { border-color:var(--gold); color:#8A6F3C; }
     .gv-body .cbx-btn.done { background:var(--gold); border-color:var(--gold); color:#fff; }
 
-  .gv-foot { max-width:760px; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
+  .gv-foot { max-width:1100px; margin-left:auto; margin-right:auto; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
     display:flex; gap:8px; flex-wrap:wrap; }
   .gv-btn { padding:11px 18px; border:1px solid var(--beige); background:var(--card); border-radius:10px;
     font-size:14px; font-weight:600; color:#6B6656; text-decoration:none; }
@@ -164,7 +164,7 @@
     .gv-marks .mR { right:4px; }
   }
 
-  .gv-copyright { max-width:760px; margin-top:26px; padding:14px 16px; background:#FBF8F1;
+  .gv-copyright { max-width:1100px; margin-left:auto; margin-right:auto; margin-top:26px; padding:14px 16px; background:#FBF8F1;
     border:1px solid var(--beige); border-radius:10px; font-size:12.5px; color:#6B6656;
     line-height:1.75; word-break:keep-all; }
 </style>
