@@ -280,6 +280,23 @@
   }
   @media (max-width:640px){ .shot{padding:18px;} .shot h3{font-size:17px;} }
 
+  /* 매일 사주 브리핑 */
+  .brief{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:12px; margin-top:26px; text-align:left;}
+  .bcard{background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:22px; word-break:keep-all;}
+  .bcard .bi{font-size:24px; line-height:1; margin-bottom:10px;}
+  .bcard b{display:block; font-size:16px; margin-bottom:7px;}
+  .bcard span{font-size:14px; color:var(--muted); line-height:1.75;}
+  .bcard span b{display:inline; font-size:inherit; color:var(--ink);}
+
+  .bwhy{margin-top:20px; background:#fff; border:1px solid var(--line);
+    border-left:3px solid var(--accent); border-radius:0 14px 14px 0;
+    padding:18px 20px; text-align:left; font-size:14.5px; line-height:1.8;
+    color:var(--muted); word-break:keep-all;}
+  .bwhy b{color:var(--ink);}
+  .bwhy > b{display:block; font-size:16px; margin-bottom:6px; color:var(--accent);}
+
   /* 프로그램 안 자료집 */
   .guidebox{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
     gap:12px; margin-top:26px; text-align:left;}
@@ -557,6 +574,7 @@
       <div class="item"><span class="ck">✓</span><div><b>SNS 실전 유입 구조</b><span>사람을 모으는 SNS 운영·유입 흐름을 실전 기준으로 공유합니다.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>상담 운영 & 수익화 흐름</b><span>상담 진행 순서, 응대 방식, 신뢰 쌓기, 재구매 유도, 단골 만드는 구조.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>손이 덜 가는 반자동 구조</b><span>PDF 제작·발송·추가응대를 가장 쉽고 빠른 루트로. 완전 자동은 아니지만 부담이 확 줄어듭니다.</span></div></div>
+      <div class="item"><span class="ck">✓</span><div><b>매일 사주 브리핑 (일진첩)</b><span>매일 밤 11시 다음날 일진 자동 갱신. 스레드 원고 5종 + 블로그 프롬프트까지 그대로 드립니다.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>프로그램 안 교육생 자료집</b><span>순서대로 따라 하는 사용법 + 상담 응대·대처법까지. 궁금할 때 프로그램 안에서 바로 찾아볼 수 있습니다.</span></div></div>
       <div class="item"><span class="ck">✓</span><div><b>물어보면 언제든 평생 피드백</b><span>막히는 지점을 물어보시면 빠르게 답해 드립니다. 한 번 수강하면 평생 이어집니다.</span></div></div>
     </div>
@@ -619,6 +637,50 @@
     <h2 class="st">말로만 하지 않습니다.<br><span class="hl">실제 화면</span>입니다</h2>
     <p class="lead center">수강하시면 바로 쓰시게 될 프로그램의 실제 모습입니다.</p>
     <div class="shotlist" id="shotlist"></div>
+  </div>
+</section>
+
+<!-- 매일 사주 브리핑 (일진첩) -->
+<section style="background:var(--cream); border-top:1px solid var(--line);">
+  <div class="wrap">
+    <span class="kick">매일 아침 준비 완료</span>
+    <h2 class="st">오늘 뭘 올릴지<br><span class="hl">고민하지 않으셔도 됩니다</span></h2>
+    <p class="lead center">SNS로 사람을 모으려면 매일 글을 올려야 합니다.
+      그런데 대부분 <b>"오늘 뭘 쓰지"</b>에서 막혀 사흘 만에 멈춥니다.<br>
+      그래서 <b>매일 밤 11시</b>, 다음날 사주 브리핑을 미리 만들어 둡니다.</p>
+
+    <div class="brief">
+      <div class="bcard">
+        <div class="bi">📜</div>
+        <b>그날의 일진 풀이</b>
+        <span>천간·지지가 어떻게 만나 어떤 하루가 되는지, 잘 풀리는 띠와 조심할 띠까지
+          <b>명리 근거를 붙여</b> 정리해 드립니다.</span>
+      </div>
+      <div class="bcard">
+        <div class="bi">🧵</div>
+        <b>스레드용 원고</b>
+        <span>본문과 댓글이 나뉜 완성 원고를 <b>다섯 가지 형태</b>로 드립니다.
+          훅형·랭킹형·리스트형 중에 골라 쓰시면 됩니다.</span>
+      </div>
+      <div class="bcard">
+        <div class="bi">📝</div>
+        <b>블로그·카페용 프롬프트</b>
+        <span>완성 글이 아니라 <b>프롬프트</b>로 드립니다. 채널 컨셉만 바꾸면
+          사람마다 다른 글이 나옵니다.</span>
+      </div>
+      <div class="bcard">
+        <div class="bi">🎯</div>
+        <b>내 말투로 바꾸는 법까지</b>
+        <span>같은 글이 여러 계정에 올라가면 서로 묻힙니다.
+          타깃·말투별 컨셉표와 변환 프롬프트를 함께 드립니다.</span>
+      </div>
+    </div>
+
+    <div class="bwhy">
+      <b>왜 완성 글을 그대로 안 드리냐면</b>
+      같은 글이 여러 블로그에 올라가면 <b>중복 콘텐츠로 검색에서 다 같이 밀립니다.</b>
+      수강생분들끼리 서로 깎아먹지 않도록, 사람마다 다른 글이 나오게 만들어 드립니다.
+    </div>
   </div>
 </section>
 
