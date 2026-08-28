@@ -85,9 +85,26 @@ header button{background:none;border:0;color:var(--faint);font:inherit;font-size
 .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:100px;font-size:14px;font-weight:700;z-index:90;animation:pop .2s ease both}
 @keyframes pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+  /* 기기 연동 상태 */
+  .syncbar{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 14px; font-size:12.5px; color:#5B5346;
+    background:#F6F2E9; border-bottom:1px solid #E4DCCB;
+  }
+  .syncbar .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:#2E7D5B; flex:0 0 auto;
+  }
+  .syncbar b{ color:#2E2A22; font-weight:700; }
 </style>
 </head>
 <body>
+<div id="syncBar" class="syncbar" style="display:none">
+  <span class="dot"></span>
+  <span>기기 연동 중 · <b id="syncState">확인 중...</b></span>
+</div>
+
 <div class="wrap">
   <header><h1>글 보관</h1><button id="backup">백업 · 불러오기</button></header>
   <div class="rowscroll" id="accs"></div>
@@ -114,11 +131,56 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const acc=id=>D.accs.find(a=>a.id===id);
 const box=id=>D.boxes.find(b=>b.id===id);
 
-/* 저장소 — localStorage 한 곳만 쓴다 */
+/* ── 저장소 ──
+   로그인했으면 서버에도 담는다. 기기가 달라도 같은 메모를 본다.
+   로그인 안 했으면 예전처럼 이 브라우저에만 담는다.
+   서버가 안 될 때도 브라우저에는 늘 담아 글을 잃지 않게 한다. */
+let LOGIN=false;          // 로그인 여부
+let syncTimer=null;       // 잦은 저장을 모아서 한 번에 보낸다
+let syncing=false;
+
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(D)); }
   catch(e){ toast("저장 공간이 꽉 찼어. 오래된 글을 지워줘"); }
+  if(LOGIN) pushSoon();
 }
+
+/* 1.5초 안에 여러 번 고쳐도 마지막 한 번만 보낸다 */
+function pushSoon(){
+  clearTimeout(syncTimer);
+  setSync("저장 중...");
+  syncTimer=setTimeout(pushNow, 1500);
+}
+
+async function pushNow(){
+  if(!LOGIN || syncing) return;
+  syncing=true;
+  try{
+    const r=await fetch("/api/memo",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({data:D})
+    });
+    const j=await r.json();
+    if(!j.ok) throw new Error(j.error||"실패");
+    setSync("저장됨");
+  }catch(e){
+    setSync("이 기기에만 저장됨");
+  }finally{ syncing=false; }
+}
+
+function setSync(t){
+  const el=$("syncState");
+  if(el) el.textContent=t;
+}
+
+/* 나가기 전에 못 보낸 게 있으면 보낸다 */
+window.addEventListener("beforeunload",()=>{
+  if(!LOGIN || !syncTimer) return;
+  try{
+    navigator.sendBeacon("/api/memo",
+      new Blob([JSON.stringify({data:D})],{type:"application/json"}));
+  }catch(e){}
+});
 function seed(){
   const a={id:uid(),name:"계정 1",color:PALETTE[0]};
   D.accs=[a];
@@ -130,9 +192,64 @@ function load(){
   try{ raw=localStorage.getItem(KEY); }catch(e){}
   if(raw){ try{ D=JSON.parse(raw); }catch(e){} }
   if(!D.accs||!D.accs.length) seed();
-  curAcc=D.accs[0].id;
+  fixCursor();
+}
+
+function fixCursor(){
+  if(!D.accs||!D.accs.length) seed();
+  if(!D.accs.some(a=>a.id===curAcc)) curAcc=D.accs[0].id;
   const bs=D.boxes.filter(b=>b.accId===curAcc);
-  curBox=bs.length?bs[0].id:null;
+  if(!bs.some(b=>b.id===curBox)) curBox=bs.length?bs[0].id:null;
+}
+
+/* 글이 몇 개나 담겨 있는지 — 어느 쪽이 더 최신인지 가늠할 때 쓴다 */
+function bulk(d){
+  if(!d) return -1;
+  return (d.posts?d.posts.length:0)*100 + (d.boxes?d.boxes.length:0);
+}
+
+/* ── 로그인했으면 서버와 맞춘다 ── */
+async function syncBoot(){
+  let who;
+  try{
+    who=await fetch("/api/memo/who").then(r=>r.json());
+  }catch(e){ return; }
+  if(!who || !who.login) return;      // 로그인 안 했으면 예전 그대로
+
+  LOGIN=true;
+  const bar=$("syncBar");
+  if(bar) bar.style.display="";
+
+  let server=null;
+  try{
+    const j=await fetch("/api/memo").then(r=>r.json());
+    if(j.ok) server=j.data;
+  }catch(e){ setSync("서버에 연결하지 못했어"); return; }
+
+  const hereN=bulk(D), thereN=bulk(server);
+
+  if(!server){
+    /* 서버에 아직 없다 — 이 기기 것을 올린다 */
+    await pushNow();
+    setSync("저장됨");
+    return;
+  }
+
+  if(thereN>=hereN){
+    /* 서버 것이 더 많다 — 그걸 쓴다 */
+    D=server; fixCursor(); render();
+    setSync("저장됨");
+    return;
+  }
+
+  /* 이 기기 것이 더 많다 — 지우지 말고 물어본다 */
+  const ok=confirm(
+    "이 기기에 서버보다 많은 메모가 있어.\n\n"+
+    "이 기기 것("+(D.posts?D.posts.length:0)+"개)으로 맞출까?\n"+
+    "취소하면 서버 것("+(server.posts?server.posts.length:0)+"개)을 가져와."
+  );
+  if(ok){ await pushNow(); }
+  else { D=server; fixCursor(); render(); setSync("저장됨"); }
 }
 
 /* ── 복사 ──
@@ -431,7 +548,7 @@ $("new").onclick=()=>{if(!curBox){alert("먼저 칸을 하나 만들어줘.");re
 $("backup").onclick=backupSheet;
 $("q").addEventListener("input",e=>{q=e.target.value.trim();render()});
 
-load(); render();
+load(); render(); syncBoot();
 
 /* 오프라인에서도 열리게 (인터넷이 없어도 저장한 글을 꺼내 쓸 수 있다) */
 if("serviceWorker" in navigator){

@@ -407,6 +407,17 @@ async function initDb() {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_teacher ON inquiries(teacher_id, created_at DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_inq_open ON inquiries(answered_at NULLS FIRST, created_at DESC);`);
 
+  /* ── 멘트 메모장 ──
+     기기마다 따로 놀지 않게 로그인한 사람은 서버에 담는다.
+     계정·상자·글을 통째로 담아둔다 (기기에서 쓰던 모양 그대로). */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS memo_store (
+      teacher_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      data       JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   /* ── 자료집 주차별 공개 ──
      0 = 언제나 보임
      1~4 = 승인일로부터 그 주차가 되면 열림

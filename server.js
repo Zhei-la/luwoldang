@@ -119,6 +119,8 @@ app.use('/', guideRouter);
 app.use('/', boardRouter);
 // 판매 페이지 후기 — /api/lp/reviews (누구나), /admin/lp-reviews (관리자)
 app.use('/', lpReviewRouter);
+// 멘트 메모장 기기 간 연동
+app.use('/', require('./routes/memo'));
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', coversRouter);   // 교육생: 내 PDF 표지
 app.use('/', pagesRouter);
