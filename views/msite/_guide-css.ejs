@@ -47,7 +47,10 @@
   .backbox .btn{display:inline-block;width:auto;padding:13px 26px;background:var(--gold);
     color:#fff;border-radius:11px;font-weight:800;text-decoration:none}
 
-  /* 개념 해설 글 */
+  /* 개념 해설 글 — 제목과 같은 세로줄에서 시작하게 카드 테두리를 뺀다.
+     카드로 두면 글만 20px 더 안으로 들어가 제목과 어긋나 보였다. */
+  .art{background:none;border:0;border-radius:0;padding:0;
+    border-top:1px solid var(--line);padding-top:20px;margin-bottom:0}
   .art h2{font-size:17px;font-weight:800;margin:26px 0 9px;color:var(--ink)}
   .art h2:first-child{margin-top:0}
   .art p{font-size:15px;line-height:1.95;color:var(--ink2);margin:0 0 14px}

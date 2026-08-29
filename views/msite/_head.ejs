@@ -62,7 +62,9 @@
     .top .tnav{margin-left:6px}
   }
 
-  .sec{padding:26px 0}
+  /* ⚠️ padding 을 줄여 쓰면 안 된다. .wrap 과 같은 칸에 붙는 이름이라
+     위아래만 주려다 좌우 20px 까지 지워, 글이 화면 끝에 붙어버렸다. */
+  .sec{padding-top:26px;padding-bottom:26px}
   h1{font-size:23px;line-height:1.45;font-weight:800;margin:0 0 9px;text-wrap:balance}
   h2{font-size:17px;font-weight:800;margin:0 0 12px}
   p{margin:0 0 12px;color:var(--ink2)}

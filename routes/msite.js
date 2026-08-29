@@ -24,6 +24,8 @@ const fortune = require('../services/cbFortune');
 const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
 const theme = require('../services/msiteTheme');
+/* 「사주 공부」 글은 따로 둔다. cbFortune 은 묶어 만든 파일이라 손대지 않는다. */
+const articles = require('../services/msiteArticles');
 const { notify } = require('../services/push');
 
 /* ── 도우미 ───────────────────────────────────────── */
@@ -90,7 +92,6 @@ function readBirth(b) {
       gender: b.gender === 'male' ? 'male' : 'female',
       correctionMinutes: region ? region.correctionMinutes : 0,
       birthRegionLabel: region ? region.name : '',
-      jasi: 'normal',
       name: String(b.name || '').trim().slice(0, 20),
     },
     regionName: region ? region.name : '',
@@ -169,7 +170,11 @@ async function showResult(req, res, next) {
 
     let r;
     try {
-      r = engine.명식표상세(b.input);
+      /* ⚠️ 두 번째 인자(날짜 경계)를 빼먹으면 안 된다.
+         빼면 밤 11시~자정 태생이 어느 관법과도 다른 시주를 받는다.
+         (자시 미분리도 야자시도 아닌, 그냥 처리를 안 한 값이 나온다)
+         교육생 만세력(/manse) 기본값과 똑같이 '자시 미분리'로 맞춘다. */
+      r = engine.명식표상세(b.input, 'jasi', '미적용');
     } catch (e) {
       console.error('[만세력] 계산 실패:', e.message);
       return res.render('msite/input', Object.assign(pageBits(req, t), {
@@ -347,7 +352,7 @@ async function guideIndex(req, res, next) {
       t, siteName: siteName(t), slug: t.slug,
       themeVars: theme.cssVars(t.msite_theme),
       base: basePath(req, t),
-      articles: fortune.ARTICLES,
+      articles: articles.ARTICLES,
       ilgan: fortune.ILGAN_LIST,
       EL: { 목: 'mok', 화: 'hwa', 토: 'to', 금: 'geum', 수: 'su' },
     });
@@ -360,14 +365,15 @@ async function guideArticle(req, res, next) {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
     const slug = String(req.params.article || '').trim();
-    const a = fortune.ARTICLES.find((x) => x.slug === slug);
+    const a = articles.ARTICLES.find((x) => x.slug === slug);
     /* 없는 글이면 다음 라우터로 넘긴다 */
     if (!a) return next();
     res.render('msite/guide-article', {
       t, siteName: siteName(t), slug: t.slug,
       themeVars: theme.cssVars(t.msite_theme),
       base: basePath(req, t),
-      a, others: fortune.ARTICLES.filter((x) => x.slug !== slug),
+      a, others: articles.ARTICLES.filter((x) => x.slug !== slug),
+      fmt: articles.format,
     });
   } catch (e) { next(e); }
 }

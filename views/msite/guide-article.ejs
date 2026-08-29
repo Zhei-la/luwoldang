@@ -14,17 +14,21 @@
   <section class="wrap" style="padding-bottom:8px">
     <div class="card art">
       <%
-        /* 'h' 로 시작하면 소제목, 'l' 로 시작하면 목록. 원본이 정한 규칙이다. */
+        /* 'h' 로 시작하면 소제목, 'l' 로 시작하면 목록. 나머지는 문단이다.
+           fmt() 가 글자를 먼저 escape 하고 **굵게**·[[슬러그|글자]] 만 되살린다.
+           그래서 그대로 내보내도 글 속 꺾쇠가 태그로 실행되지 않는다.
+           (주석 안에도 ejs 여는 표시를 적으면 안 된다. 화면이 통째로 깨진다) */
         var open = false;
         a.body.forEach(function(line){
-          var kind = line[0], text = line.slice(1);
+          var kind = line[0];
+          var text = (kind === 'h' || kind === 'l') ? line.slice(1) : line;
           if (kind === 'l') {
             if (!open) { %><ul><% open = true; }
-            %><li><%= text %></li><%
+            %><li><%- fmt(text, base) %></li><%
           } else {
             if (open) { %></ul><% open = false; }
-            if (kind === 'h') { %><h2><%= text %></h2><% }
-            else { %><p><%= line %></p><% }
+            if (kind === 'h') { %><h2><%- fmt(text, base) %></h2><% }
+            else { %><p><%- fmt(text, base) %></p><% }
           }
         });
         if (open) { %></ul><% }
