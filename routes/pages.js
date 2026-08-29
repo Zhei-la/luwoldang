@@ -55,6 +55,7 @@ router.get('/free-saju-settings', (req, res) => {
     saved: req.query.saved === '1',
     slugError: SLUG_ERR[req.query.slugerr] || null,
     themes: msiteTheme.list(),
+    msiteBase: msiteTheme.baseUrl(req),
     themeNow: msiteTheme.clean(req.user.msite_theme),
   });
 });

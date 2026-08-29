@@ -83,4 +83,22 @@ function clean(key) {
   return THEMES[key] ? key : DEFAULT;
 }
 
-module.exports = { THEMES, DEFAULT, get, cssVars, list, clean };
+/**
+ * 공개 만세력 링크에 쓸 주소.
+ *
+ * 루월당 대시보드는 luwolsaju.com 으로 들어가지만,
+ * 손님에게 뿌릴 만세력 링크는 다른 주소를 쓰고 싶을 수 있다
+ * (주소창에 루월당이 안 보이게 하려는 것).
+ * 그럴 때 Railway 환경변수에 MSITE_HOST 를 넣으면 그 주소로 링크를 만들어준다.
+ *   예) MSITE_HOST=luwoldang-production.up.railway.app
+ * 안 넣으면 지금 보고 있는 주소를 그대로 쓴다.
+ */
+function baseUrl(req) {
+  const set = String(process.env.MSITE_HOST || '').trim();
+  if (set) return /^https?:\/\//.test(set) ? set.replace(/\/+$/, '') : 'https://' + set.replace(/\/+$/, '');
+  const proto = (req && req.get && req.get('x-forwarded-proto')) || (req && req.protocol) || 'https';
+  const host = (req && req.get && req.get('host')) || '';
+  return host ? proto + '://' + host : (process.env.BASE_URL || '');
+}
+
+module.exports = { THEMES, DEFAULT, get, cssVars, list, clean, baseUrl };

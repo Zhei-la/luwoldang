@@ -92,7 +92,7 @@ router.get('/admin/manse', ...admin, async (req, res, next) => {
       students,
       studentText: JSON.stringify(students, null, 2),
       links: links.rows,
-      baseUrl: proto + '://' + req.get('host'),
+      baseUrl: require('../services/msiteTheme').baseUrl(req),
       recent: recent.rows,
     });
   } catch (e) { next(e); }
