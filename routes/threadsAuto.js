@@ -16,6 +16,8 @@ const store = require('../services/threads/store');
 const accounts = require('../services/threads/accounts');
 const pipeline = require('../services/threads/pipeline');
 const zernio = require('../services/threads/zernio');
+const tail = require('../services/threads/tail');
+const scheduler = require('../services/threads/scheduler');
 const { testKey } = require('../services/threads/llm');
 const { numberParts, formOf } = require('../services/threads/length');
 const { checkPost } = require('../services/threads/guideline');
@@ -63,7 +65,12 @@ router.get('/threads', ...guard, async (req, res, next) => {
       accounts: accList,
       account: live ? { id: live.id, username: live.username } : null,
       allowPublish: settings.allowPublish,
-      settings: { ctaLink: settings.ctaLink },
+      settings: {
+        ctaLink: settings.ctaLink,
+        dailyLine: settings.dailyLine,
+        ctaPerWeek: settings.ctaPerWeek,
+      },
+      linksThisWeek: await tail.linksThisWeek(req.user.id),
       posts: posts.map(pipeline.view),
       trashCount: trash,
       hookTotal: HOOKS.length,
@@ -87,6 +94,9 @@ router.post('/api/threads/settings', ...guard, async (req, res, next) => {
     const b = req.body || {};
     const patch = {};
     if (typeof b.ctaLink === 'string') patch.ctaLink = b.ctaLink.trim().slice(0, 300);
+    if (typeof b.dailyLine === 'string') patch.dailyLine = b.dailyLine.trim().slice(0, 400);
+    /* 3번을 넘기면 광고 계정으로 몰려 정지될 수 있다. 화면에서도 막지만 여기서도 조인다. */
+    if (b.ctaPerWeek != null) patch.ctaPerWeek = Math.max(0, Math.min(3, Number(b.ctaPerWeek) || 0));
     if (typeof b.allowPublish === 'boolean') patch.allowPublish = b.allowPublish;
     if (Array.isArray(b.facts)) {
       patch.facts = b.facts
@@ -213,6 +223,9 @@ router.post('/api/threads/save', ...guard, async (req, res, next) => {
 
 router.get('/api/threads/posts', ...guard, async (req, res, next) => {
   try {
+    /* 5분 주기만 믿으면 「시간이 지났는데 아직 예약중」 인 순간이 생긴다.
+       목록을 열 때 한 번 맞춰준다. */
+    await scheduler.checkUser(req.user.id);
     const list = await store.getPosts(req.user.id, { status: req.query.status });
     res.json({ ok: true, posts: list.map(pipeline.view) });
   } catch (e) { next(e); }
@@ -281,6 +294,17 @@ async function readyToSend(userId, post) {
   return { ok: true, acc: acc };
 }
 
+/**
+ * 실제로 나갈 본문을 만든다 — 번호 붙이기 + 꼬리말 한 편.
+ * 발행과 예약이 똑같이 써야 한다. 한쪽만 고치면 예약한 글에는 멘트가 안 붙는다.
+ */
+async function bodyToSend(userId, post) {
+  const settings = await store.getSettings(userId);
+  const t = await tail.build(userId, settings);
+  const body = post.form === 'chain' ? numberParts(post.parts) : post.parts;
+  return { parts: tail.attach(body, t.text), tail: t };
+}
+
 /** 지금 바로 올린다 */
 router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) => {
   try {
@@ -291,20 +315,24 @@ router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) =
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
+    const send = await bodyToSend(req.user.id, post);
     try {
       const out = await zernio.send({
         apiKey: ready.acc.key,
         accountId: ready.acc.accountId,
-        parts: post.form === 'chain' ? numberParts(post.parts) : post.parts,
+        parts: send.parts,
         mode: 'publish',
       });
       const saved = await store.updatePost(req.user.id, post.id, {
         status: 'published', zernioId: out.id, permalink: out.permalink,
         publishedAt: new Date().toISOString(), error: null,
+        accountId: ready.acc.id, accountName: ready.acc.username,
+        linkSent: send.tail.withLink,
       });
       res.json({
         ok: true, post: pipeline.view(saved),
         permalink: out.permalink, account: ready.acc.username,
+        tail: send.tail,
       });
     } catch (e) {
       await store.updatePost(req.user.id, post.id, {
@@ -329,19 +357,25 @@ router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) 
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
+    const send = await bodyToSend(req.user.id, post);
     try {
       const out = await zernio.send({
         apiKey: ready.acc.key,
         accountId: ready.acc.accountId,
-        parts: post.form === 'chain' ? numberParts(post.parts) : post.parts,
+        parts: send.parts,
         mode: 'schedule',
         scheduledFor: when.toISOString(),
       });
       const saved = await store.updatePost(req.user.id, post.id, {
         status: 'scheduled', scheduledFor: when.toISOString(),
         zernioId: out.id, error: null,
+        accountId: ready.acc.id, accountName: ready.acc.username,
+        linkSent: send.tail.withLink,
       });
-      res.json({ ok: true, post: pipeline.view(saved), account: ready.acc.username });
+      res.json({
+        ok: true, post: pipeline.view(saved),
+        account: ready.acc.username, tail: send.tail,
+      });
     } catch (e) {
       return fail(res, { message: e.message }, 502);
     }
@@ -372,6 +406,8 @@ router.post('/api/threads/posts/:id/unschedule', ...guard, async (req, res, next
 
     const saved = await store.updatePost(req.user.id, post.id, {
       status: 'draft', scheduledFor: null, zernioId: null,
+      /* 나가지 않았으니 이번 주 링크 횟수도 도로 비워준다 */
+      linkSent: false,
     });
     res.json({ ok: true, post: pipeline.view(saved) });
   } catch (e) { next(e); }

@@ -157,6 +157,58 @@
 #ta .ta-howto summary:hover{background:var(--sub)}
 #ta .ta-howto-in{padding:6px 16px 18px;border-top:1px solid var(--line2)}
 
+/* ── 언제 올릴지 고르는 창 ────────────────────────────
+   전에는 prompt() 로 「2026-09-01 21:00」 처럼 적게 했다.
+   형식을 틀리면 그대로 튕겨서, 굴려서 고르는 방식으로 바꿨다. */
+#ta .ta-when{position:fixed;inset:0;z-index:210;background:rgba(30,26,22,.55);
+  display:none;align-items:flex-end;justify-content:center}
+#ta .ta-when.open{display:flex}
+#ta .ta-when-box{background:#fff;width:100%;max-width:460px;border-radius:18px 18px 0 0;
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(0,0,0,.2)}
+@media (min-width:520px){
+  #ta .ta-when{align-items:center}
+  #ta .ta-when-box{border-radius:18px;padding-bottom:20px}
+}
+#ta .ta-when h3{margin:0 0 3px;font-size:17px;color:var(--ink)}
+#ta .ta-when .ta-when-sub{margin:0 0 14px;font-size:13px;color:var(--dim)}
+#ta .ta-quick{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+#ta .ta-quick button{border:1px solid var(--line);background:#fff;color:var(--ink2);
+  border-radius:100px;padding:7px 13px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit}
+#ta .ta-quick button:hover{border-color:var(--gold);color:var(--gold-d)}
+
+/* 굴림판 — 가운데 칸에 걸리는 것이 고른 값이다 */
+#ta .ta-rolls{position:relative;display:flex;gap:8px;
+  border:1px solid var(--line);border-radius:12px;background:var(--sub);
+  padding:0 8px;overflow:hidden}
+#ta .ta-roll{flex:1;min-width:0;height:180px;overflow-y:auto;
+  scroll-snap-type:y mandatory;scrollbar-width:none;-ms-overflow-style:none;
+  padding:70px 0;text-align:center;cursor:grab;touch-action:pan-y}
+#ta .ta-roll::-webkit-scrollbar{display:none}
+#ta .ta-roll.grabbing{cursor:grabbing}
+#ta .ta-roll div{scroll-snap-align:center;height:40px;line-height:40px;
+  font-size:15px;color:var(--dim);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;user-select:none;transition:color .12s,font-weight .12s}
+#ta .ta-roll div.on{color:var(--ink);font-weight:800;font-size:16px}
+/* 가운데 칸 표시. 굴림판 위에 얹기만 하고 손짓은 통과시킨다 */
+#ta .ta-rolls:before{content:'';position:absolute;left:8px;right:8px;top:70px;height:40px;
+  border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);
+  background:rgba(176,141,87,.07);pointer-events:none;z-index:1}
+#ta .ta-when-read{margin:14px 0 0;text-align:center;font-size:15px;font-weight:800;color:var(--ink)}
+#ta .ta-when-warn{margin:6px 0 0;text-align:center;font-size:13px;color:var(--no);min-height:18px}
+#ta .ta-when-act{display:flex;gap:8px;margin-top:14px}
+#ta .ta-when-act .ta-btn{flex:1;justify-content:center}
+
+/* ── 상태 딱지 ──────────────────────────────────────
+   「예약중」 인지 「올라간 글」 인지 한눈에 보여야 한다. */
+#ta .ta-state{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;
+  padding:4px 11px;border-radius:100px;border:1px solid var(--line);
+  background:#fff;color:var(--ink2)}
+#ta .ta-state:before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+#ta .ta-state.wait{background:#fff7e6;color:#8a6100;border-color:transparent}
+#ta .ta-state.done{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+#ta .ta-state.bad{background:var(--no-bg);color:var(--no);border-color:transparent}
+#ta .ta-state small{font-weight:600;opacity:.85}
 #ta .ta-accs{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 #ta .ta-acc{display:flex;align-items:center;gap:10px;border:1px solid var(--line);
   border-radius:10px;padding:11px 14px;background:#fff}
@@ -276,6 +328,63 @@
 「무료사주 · API 설정」에서 먼저 등록해주세요. 등록하면 여기서도 바로 쓰입니다.</div>
         <a class="ta-btn" href="/free-saju-settings">API 설정으로 가기</a>
       <% } %>
+      <!-- 열쇠 두 개가 헷갈리기 쉬워, 받는 방법을 여기에도 접이식으로 둔다 -->
+      <details class="ta-howto" <%= hasKey ? '' : 'open' %>>
+        <summary>OpenAI 키 받는 방법 보기 <span>6단계 · 10분</span></summary>
+        <div class="ta-howto-in">
+          <p class="ta-sub" style="margin:10px 0 14px">이 키로 <b>글을 씁니다.</b>
+            무료사주·PDF 와 같은 키라, 이미 넣어두셨으면 새로 받으실 필요가 없습니다.
+            <br>스레드에 <b>올리는</b> 것은 Zernio 열쇠가 맡습니다. 둘은 다른 것입니다.</p>
+
+          <ol class="ta-steps">
+            <li>
+              <b>OpenAI 에 가입합니다</b>
+              <span><a href="https://platform.openai.com" target="_blank" rel="noopener">platform.openai.com</a> 에서
+                가입합니다. <b>구글 계정으로 하시면 제일 빠릅니다.</b>
+                평소 쓰는 ChatGPT 계정이 있으면 그대로 로그인하시면 됩니다.</span>
+            </li>
+            <li>
+              <b>전화번호 인증을 합니다</b>
+              <span>문자로 온 번호를 넣으면 끝납니다. 한 번만 하면 됩니다.</span>
+            </li>
+            <li>
+              <b>결제 수단을 넣고 5달러를 채웁니다</b>
+              <span>왼쪽 메뉴 <b>Settings → Billing</b> 에서 카드를 등록하고 최소 <b>5달러</b>를 채웁니다.
+                (약 7,400원 · 환율에 따라 조금 다릅니다)
+                <br><b>매달 빠져나가는 구독이 아닙니다.</b> 미리 채워두고 쓴 만큼만 깎이는 방식입니다
+                (Pay-As-You-Go). 다 쓰면 그냥 멈추므로 요금이 새어나갈 걱정이 없습니다.
+                <br>ChatGPT Plus 를 쓰고 계셔도 <b>이건 따로입니다.</b> 별개의 요금입니다.</span>
+            </li>
+            <li>
+              <b>API keys 로 갑니다</b>
+              <span>왼쪽 메뉴에서 <b>API keys</b> 를 누릅니다. 주소로 바로 가시려면
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a>.</span>
+            </li>
+            <li>
+              <b>키를 만듭니다</b>
+              <span><b>+ Create new secret key</b> 를 누르고 이름을 아무거나 적은 뒤 <b>Create</b>.</span>
+            </li>
+            <li>
+              <b>키를 복사해 「무료사주 · API 설정」에 넣습니다</b>
+              <span><b>이 키는 딱 한 번만 보입니다.</b> 창을 닫으면 다시 못 봅니다.
+                못 보고 닫으셨으면 그 키를 지우고 새로 만드시면 됩니다.
+                <br>키는 <code>sk-</code> 로 시작합니다.
+                <a href="/free-saju-settings">「무료사주 · API 설정」</a> 에 붙여넣으면
+                여기 스레드 자동화에서도 바로 쓰입니다.</span>
+            </li>
+          </ol>
+
+          <div class="ta-msg warn" style="margin-top:4px">헷갈리기 쉬운 것 — 열쇠 두 개가 비슷하게 생겼습니다.
+OpenAI 키     sk-proj-…      붙임표(-)  ← 글을 쓰는 키, 「무료사주 · API 설정」에 넣는 것
+Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아래 「올릴 스레드 계정」에 넣는 것</div>
+
+          <p class="ta-sub" style="margin:12px 0 0">요금은 얼마나 드나요 —
+            글 하나 만드는 데 <b>몇십 원</b> 수준입니다. 5달러를 채우면 한참 쓰십니다.
+            여기 자동화는 하루 <%= dailyLimit %>번까지만 돌아가게 막아두었습니다.
+            실수로 수백 번 돌려 요금이 나가는 일을 막으려는 것입니다.</p>
+        </div>
+      </details>
+
       <div id="taKeyMsg"></div>
     </div>
 
@@ -435,13 +544,70 @@
     </div>
 
     <div class="ta-card">
+      <h2>글 끝에 붙는 멘트</h2>
+      <p class="ta-sub">여기에 적어두면 <b>올리는 글마다 매번</b> 맨 뒤에 답글 한 편으로 붙습니다.
+        본문에 이어 붙이지 않아 500자를 넘길 걱정이 없고, 글을 고쳐도 멘트가 딸려 들어가지 않습니다.
+        비워두면 아무것도 붙지 않습니다.</p>
+      <textarea id="taDaily" rows="3" maxlength="400"
+        placeholder="예) 루월당 3기 모집 중입니다. 궁금하신 분은 프로필 링크로 오세요."><%= settings.dailyLine || '' %></textarea>
+      <div style="margin-top:12px"><button class="ta-btn" type="button" id="taSaveDaily">저장</button></div>
+      <div id="taDailyMsg"></div>
+    </div>
+
+    <div class="ta-card">
       <h2>신청 안내 링크</h2>
-      <p class="ta-sub">신청을 안내할 때 쓰는 주소입니다. 비워두면 링크 없이 만듭니다.<br>        <b>따로 댓글이 하나 더 올라가는 게 아닙니다.</b> 글 안에 들어갑니다 — 연재면 마지막 편에, 「본문+댓글」 형태면 첫 댓글에 들어갑니다.<br>        매번 붙지도 않습니다. 광고처럼 보이지 않게 <b>세 글 중 한 글 정도</b>에만 붙습니다.</p>
+      <p class="ta-sub">신청을 안내할 때 쓰는 주소입니다. 비워두면 링크 없이 만듭니다.<br>
+        <b>따로 댓글이 하나 더 올라가는 게 아닙니다.</b> 위의 고정 멘트와 같은 자리 —
+        글 맨 뒤 답글 한 편에 함께 들어갑니다.</p>
       <input type="text" id="taCta" value="<%= settings.ctaLink || '' %>" placeholder="https://..." maxlength="300">
+
+      <label for="taPerWeek" style="margin-top:16px">링크를 일주일에 몇 번 붙일까요?</label>
+      <p class="ta-sub" style="margin:0 0 8px">고른 횟수만큼만 나갑니다. 어느 날 나갈지는 그 주 안에서 알아서 흩뿌립니다 —
+        몰아서 올리면 광고 계정으로 몰려 노출이 줄고, 심하면 계정이 정지됩니다.
+        그래서 <b>3번을 넘게는 못 고르게 해뒀습니다.</b></p>
+      <select id="taPerWeek">
+        <option value="0" <%= Number(settings.ctaPerWeek) === 0 ? 'selected' : '' %>>붙이지 않기</option>
+        <option value="1" <%= Number(settings.ctaPerWeek) === 1 ? 'selected' : '' %>>일주일에 1번</option>
+        <option value="2" <%= Number(settings.ctaPerWeek) === 2 ? 'selected' : '' %>>일주일에 2번 (권합니다)</option>
+        <option value="3" <%= Number(settings.ctaPerWeek) === 3 ? 'selected' : '' %>>일주일에 3번 (최대)</option>
+      </select>
+      <p class="ta-sub" style="margin:8px 0 0">이번 주에 <b><%= linksThisWeek %>번</b> 나갔습니다.
+        (월요일에 다시 셉니다)</p>
+
       <div style="margin-top:12px"><button class="ta-btn" type="button" id="taSaveCta">저장</button></div>
       <div id="taCtaMsg"></div>
     </div>
   </section>
+  <!-- 언제 올릴지 굴려서 고른다 -->
+  <div class="ta-when" id="taWhen" role="dialog" aria-modal="true" aria-label="올릴 시각 고르기">
+    <div class="ta-when-box">
+      <h3>언제 올릴까요?</h3>
+      <p class="ta-when-sub">굴려서 맞추거나, 아래 단추로 한 번에 고르세요.</p>
+
+      <div class="ta-quick" id="taQuick">
+        <button type="button" data-q="1h">1시간 뒤</button>
+        <button type="button" data-q="3h">3시간 뒤</button>
+        <button type="button" data-q="today21">오늘 저녁 9시</button>
+        <button type="button" data-q="tom9">내일 아침 9시</button>
+        <button type="button" data-q="tom21">내일 저녁 9시</button>
+      </div>
+
+      <div class="ta-rolls">
+        <div class="ta-roll" id="taRollDay"  tabindex="0" aria-label="날짜"></div>
+        <div class="ta-roll" id="taRollHour" tabindex="0" aria-label="시"></div>
+        <div class="ta-roll" id="taRollMin"  tabindex="0" aria-label="분"></div>
+      </div>
+
+      <p class="ta-when-read" id="taWhenRead"></p>
+      <p class="ta-when-warn" id="taWhenWarn"></p>
+
+      <div class="ta-when-act">
+        <button class="ta-btn ghost" type="button" id="taWhenNo">그만두기</button>
+        <button class="ta-btn go" type="button" id="taWhenOk">이 시각에 예약</button>
+      </div>
+    </div>
+  </div>
+
   <div class="ta-zoom" id="taZoom" role="dialog" aria-modal="true" aria-label="안내 사진 크게 보기">
     <button class="x" type="button" aria-label="닫기">&times;</button>
     <img id="taZoomImg" src="" alt="">
@@ -454,9 +620,14 @@
   var esc = function(s){ return String(s==null?'':s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
+  /* 글 뒤에 붙는 고정 멘트. 미리보기에서 미리 알려준다.
+     교육생이 직접 적는 글이라 닫는 스크립트 태그가 들어올 수 있다.
+     그대로 넣으면 여기서 스크립트가 끊겨 화면 전체가 죽는다.
+     그래서 여는 꺾쇠를 < 로 바꿔 넣는다. */
+  var TAIL = <%- JSON.stringify(settings.dailyLine || '').replace(/</g, '\\u003c') %>;
   var HAS_ACCOUNT = <%= accounts.length ? 'true' : 'false' %>;
   var ALLOWED     = <%= allowPublish ? 'true' : 'false' %>;
-  var TOPICS      = <%- JSON.stringify(topics) %>;
+  var TOPICS      = <%- JSON.stringify(topics).replace(/</g, '\\u003c') %>;
 
   /* ── 서버와 이야기하기 ── */
   function post(url, body){
@@ -581,16 +752,197 @@
     return '';
   }
 
-  /** 예약 시각을 물어본다 */
-  function askWhen(){
-    var d = new Date(Date.now() + 60*60*1000);
-    var pad = function(n){ return String(n).padStart(2,'0'); };
-    var def = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
-    var v = prompt('언제 올릴까요?  (예: ' + def + ')', def);
-    if (!v) return null;
-    var at = new Date(v.replace(' ', 'T'));
-    if (isNaN(at.getTime())) { alert('시간을 알아듣지 못했습니다. 2026-09-01 21:00 처럼 적어주세요.'); return null; }
-    return at.toISOString();
+  /* ══════════ 언제 올릴지 굴려서 고르기 ══════════
+     전에는 prompt() 로 「2026-09-01 21:00」 처럼 적게 했는데
+     형식을 조금만 틀려도 그대로 튕겨서, 굴림판으로 바꿨다.
+     시각은 전부 한국 기준으로 다룬다. */
+  var ROLL_H = 40;                    /* 한 칸 높이. CSS 와 같아야 한다. */
+  var whenBox = $('#taWhen');
+  var rollDay = $('#taRollDay'), rollHour = $('#taRollHour'), rollMin = $('#taRollMin');
+  var whenRead = $('#taWhenRead'), whenWarn = $('#taWhenWarn');
+  var whenDone = null;                /* 고르고 나면 부를 곳 */
+
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+
+  /** 날짜 칸 60개 — 오늘부터 두 달 */
+  function dayList(){
+    var out = [], base = new Date();
+    base.setHours(0, 0, 0, 0);
+    for (var i = 0; i < 60; i++) {
+      var d = new Date(base.getTime() + i * 86400000);
+      /* 칸이 좁다. 「8월 29일 (토)」 는 잘려서 짧게 쓴다. */
+      var label = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + DOW[d.getDay()] + ')';
+      if (i === 0) label = '오늘 ' + label;
+      else if (i === 1) label = '내일 ' + label;
+      out.push({ v: d.getTime(), t: label });
+    }
+    return out;
+  }
+
+  function fillRoll(el, items){
+    el.innerHTML = items.map(function(it){
+      return '<div data-v="' + it.v + '">' + esc(it.t) + '</div>';
+    }).join('');
+  }
+
+  /** 지금 가운데 칸에 걸린 값 */
+  function rollValue(el){
+    var i = Math.round(el.scrollTop / ROLL_H);
+    var kid = el.children[Math.max(0, Math.min(el.children.length - 1, i))];
+    return kid ? Number(kid.dataset.v) : 0;
+  }
+
+  function rollTo(el, value, smooth){
+    for (var i = 0; i < el.children.length; i++) {
+      if (Number(el.children[i].dataset.v) === value) {
+        el.scrollTo({ top: i * ROLL_H, behavior: smooth ? 'smooth' : 'auto' });
+        return;
+      }
+    }
+  }
+
+  /** 가운데 칸을 진하게 */
+  function markRoll(el){
+    var i = Math.round(el.scrollTop / ROLL_H);
+    for (var k = 0; k < el.children.length; k++) {
+      el.children[k].classList.toggle('on', k === i);
+    }
+  }
+
+  /** 세 굴림판이 가리키는 시각 */
+  function whenPicked(){
+    var d = new Date(rollValue(rollDay));
+    d.setHours(rollValue(rollHour), rollValue(rollMin), 0, 0);
+    return d;
+  }
+
+  function whenRefresh(){
+    [rollDay, rollHour, rollMin].forEach(markRoll);
+    var d = whenPicked();
+    whenRead.textContent = d.toLocaleString('ko-KR',
+      { month:'long', day:'numeric', weekday:'short', hour:'numeric', minute:'2-digit' });
+    var late = d.getTime() < Date.now() + 60000;
+    whenWarn.textContent = late ? '지난 시각입니다. 앞으로 미뤄주세요.' : '';
+    $('#taWhenOk').disabled = late;
+  }
+
+  /** 굴림판을 손으로 끌 수 있게. 마우스로도 끌린다. */
+  function makeDraggable(el){
+    var down = false, y0 = 0, top0 = 0, moved = false;
+    el.addEventListener('pointerdown', function(e){
+      if (e.pointerType === 'touch') return;   /* 손가락은 브라우저가 알아서 굴린다 */
+      down = true; moved = false; y0 = e.clientY; top0 = el.scrollTop;
+      el.classList.add('grabbing');
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', function(e){
+      if (!down) return;
+      var dy = e.clientY - y0;
+      if (Math.abs(dy) > 3) moved = true;
+      el.scrollTop = top0 - dy;
+      whenRefresh();
+      e.preventDefault();
+    });
+    function up(e){
+      if (!down) return;
+      down = false;
+      el.classList.remove('grabbing');
+      try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+      /* 끌기를 놓으면 제일 가까운 칸에 붙인다 — scroll-snap 은 손으로 끌 때 안 걸린다 */
+      el.scrollTo({ top: Math.round(el.scrollTop / ROLL_H) * ROLL_H, behavior: 'smooth' });
+      setTimeout(whenRefresh, 220);
+    }
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    /* 안 끌고 그냥 눌렀으면 그 칸으로 간다 */
+    el.addEventListener('click', function(e){
+      if (moved) return;
+      var kid = e.target.closest('div[data-v]');
+      if (!kid) return;
+      rollTo(el, Number(kid.dataset.v), true);
+      setTimeout(whenRefresh, 260);
+    });
+    el.addEventListener('scroll', function(){
+      clearTimeout(el._t);
+      el._t = setTimeout(whenRefresh, 60);
+    });
+    el.addEventListener('keydown', function(e){
+      var step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+      if (!step) return;
+      e.preventDefault();
+      el.scrollTo({ top: (Math.round(el.scrollTop / ROLL_H) + step) * ROLL_H, behavior: 'smooth' });
+      setTimeout(whenRefresh, 220);
+    });
+  }
+
+  if (whenBox) {
+    fillRoll(rollDay, dayList());
+    fillRoll(rollHour, Array.from({ length: 24 }, function(_, h){
+      return { v: h, t: (h < 12 ? '오전 ' : '오후 ') + (h % 12 === 0 ? 12 : h % 12) + '시' };
+    }));
+    fillRoll(rollMin, Array.from({ length: 12 }, function(_, i){
+      return { v: i * 5, t: String(i * 5).padStart(2, '0') + '분' };
+    }));
+    [rollDay, rollHour, rollMin].forEach(makeDraggable);
+
+    /* 한 번에 고르는 단추 */
+    $('#taQuick').addEventListener('click', function(e){
+      var b = e.target.closest('button[data-q]');
+      if (!b) return;
+      var d = new Date();
+      var q = b.dataset.q;
+      if (q === '1h') d = new Date(Date.now() + 3600000);
+      else if (q === '3h') d = new Date(Date.now() + 3 * 3600000);
+      else if (q === 'today21') d.setHours(21, 0, 0, 0);
+      else if (q === 'tom9') { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); }
+      else if (q === 'tom21') { d.setDate(d.getDate() + 1); d.setHours(21, 0, 0, 0); }
+      setWhen(d, true);
+    });
+
+    $('#taWhenNo').addEventListener('click', closeWhen);
+    whenBox.addEventListener('click', function(e){ if (e.target === whenBox) closeWhen(); });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && whenBox.classList.contains('open')) closeWhen();
+    });
+    $('#taWhenOk').addEventListener('click', function(){
+      var d = whenPicked();
+      if (d.getTime() < Date.now() + 60000) return;
+      var cb = whenDone;
+      closeWhen();
+      cb && cb(d.toISOString());
+    });
+  }
+
+  /**
+   * 굴림판을 그 시각에 맞춘다. 분은 5분 단위로 내린다.
+   * 창을 열 때는 부드럽게 굴리면 안 된다 — 굴러가는 도중에 읽어버려
+   * 「지난 시각입니다」 가 잠깐 떴다 사라진다. 열 때는 그냥 툭 놓는다.
+   */
+  function setWhen(d, smooth){
+    var day = new Date(d); day.setHours(0, 0, 0, 0);
+    rollTo(rollDay, day.getTime(), smooth);
+    rollTo(rollHour, d.getHours(), smooth);
+    rollTo(rollMin, Math.floor(d.getMinutes() / 5) * 5, smooth);
+    if (smooth) setTimeout(whenRefresh, 280);
+    else whenRefresh();
+  }
+
+  function closeWhen(){
+    whenBox.classList.remove('open');
+    document.body.style.overflow = '';
+    whenDone = null;
+  }
+
+  /**
+   * 시각을 물어본다. 고르면 cb(ISO 문자열), 그만두면 아무것도 안 부른다.
+   * 전에는 값을 바로 돌려줬는데, 창이 뜨는 방식이라 부르는 쪽을 콜백으로 바꿨다.
+   */
+  function askWhen(cb){
+    if (!whenBox) return;
+    whenDone = cb;
+    whenBox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setWhen(new Date(Date.now() + 3600000), false);
   }
 
   /* ══════════ 만들기 ══════════ */
@@ -637,6 +989,7 @@
           '</span></div>'+
         '<div class="ta-body">'+partsHtml(p)+
           (p.cutNote ? '<p class="ta-sub" style="margin:12px 0 0">끊은 곳 — '+esc(p.cutNote)+'</p>' : '')+
+        (TAIL ? '<div class="ta-msg" style="margin:12px 0 0">맨 뒤에 붙습니다 — ' + esc(TAIL) + '</div>' : '')+
         '</div>'+ checkHtml(p.check) +'</div>';
     }).join('');
 
@@ -682,10 +1035,14 @@
 
     /* 미리보기에서 바로 올리기 — 저장부터 하고 올린다 */
     function sendOne(el, mode){
+      /* 시각 고르기는 창이 뜨므로, 고르고 나서 이어서 한다 */
+      if (mode === 'schedule') { askWhen(function(iso){ go(el, mode, iso); }); return; }
+      if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
+      go(el, mode, null);
+    }
+
+    function go(el, mode, at){
       var i = Number(el.dataset.i);
-      var at = null;
-      if (mode === 'schedule') { at = askWhen(); if (!at) return; }
-      else if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
 
       var btns = el.querySelectorAll('.ta-pub-now, .ta-sched-now');
       btns.forEach(function(b){ b.disabled = true; });
@@ -729,23 +1086,49 @@
   /* ══════════ 내 원고 ══════════ */
   var list = $('#taList');
 
-  var STATUS = {
-    draft:     { t:'초안',      c:'' },
-    scheduled: { t:'예약됨',    c:'ok' },
-    sending:   { t:'올리는 중', c:'ok' },
-    published: { t:'올림',      c:'ok' },
-    failed:    { t:'실패',      c:'no' }
-  };
+  /** 언제인지 사람이 읽는 말로 */
   function when(iso){
     try {
       return new Date(iso).toLocaleString('ko-KR',
-        { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' });
+        { month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' });
     } catch(e){ return ''; }
   }
+
+  /**
+   * 이 글이 지금 어떤 상태인지.
+   * 「예약중」 과 「예약 발행 완료」 를 갈라야 한다 —
+   * 예약해둔 게 실제로 나갔는지 궁금한 게 사람 마음이다.
+   * 예약해서 나간 글은 scheduledFor 가 남아 있어 손으로 올린 것과 구분된다.
+   */
+  function stateOf(p){
+    if (p.status === 'failed')  return { t:'올리지 못함', c:'bad', s:'' };
+    if (p.status === 'sending') return { t:'올리는 중',   c:'wait', s:'' };
+    if (p.status === 'scheduled') {
+      var late = p.scheduledFor && new Date(p.scheduledFor).getTime() < Date.now();
+      return {
+        t: late ? '올라가는 중' : '예약중',
+        c: 'wait',
+        s: p.scheduledFor
+             ? (late ? '예약 시각이 지났습니다 · 곧 반영됩니다' : when(p.scheduledFor) + ' 에 올라갑니다')
+             : '',
+      };
+    }
+    if (p.status === 'published') {
+      var byPlan = !!p.scheduledFor;
+      return {
+        t: byPlan ? '예약 발행 완료' : '올라간 글',
+        c: 'done',
+        s: (p.publishedAt ? when(p.publishedAt) + ' 올라감' : '') +
+           (p.accountName ? ' · @' + p.accountName : ''),
+      };
+    }
+    return { t:'초안', c:'', s:'아직 올리지 않았습니다' };
+  }
+
   function statusTag(p){
-    var s = STATUS[p.status] || STATUS.draft;
-    var extra = (p.status === 'scheduled' && p.scheduledFor) ? ' ' + when(p.scheduledFor) : '';
-    return '<span class="ta-tag '+s.c+'">' + esc(s.t + extra) + '</span>';
+    var s = stateOf(p);
+    return '<span class="ta-state ' + s.c + '">' + esc(s.t) +
+           (s.s ? '<small>' + esc(s.s) + '</small>' : '') + '</span>';
   }
   function actionBtns(p){
     if (p.status === 'published') {
@@ -876,13 +1259,14 @@
 
     list.querySelectorAll('.ta-sched').forEach(function(b){
       b.addEventListener('click', function(){
-        var at = askWhen();
-        if (!at) return;
-        b.disabled = true;
-        post('/api/threads/posts/' + idOf(b) + '/schedule', { at: at }).then(function(r){
-          b.disabled = false;
-          if (!r.j.ok) { alert(r.j.error); return; }
-          loadList();
+        /* 시각 고르기는 창이 뜨므로, 고르고 나서 이어서 한다 */
+        askWhen(function(at){
+          b.disabled = true;
+          post('/api/threads/posts/' + idOf(b) + '/schedule', { at: at }).then(function(r){
+            b.disabled = false;
+            if (!r.j.ok) { alert(r.j.error); return; }
+            loadList();
+          });
         });
       });
     });
@@ -961,8 +1345,17 @@
   });
 
   $('#taSaveCta') && $('#taSaveCta').addEventListener('click', function(){
-    post('/api/threads/settings', { ctaLink: $('#taCta').value.trim() }).then(function(r){
+    post('/api/threads/settings', {
+      ctaLink: $('#taCta').value.trim(),
+      ctaPerWeek: Number($('#taPerWeek').value),
+    }).then(function(r){
       msg($('#taCtaMsg'), r.j.ok ? 'ok' : 'err', r.j.ok ? '저장했습니다.' : r.j.error);
+    });
+  });
+
+  $('#taSaveDaily') && $('#taSaveDaily').addEventListener('click', function(){
+    post('/api/threads/settings', { dailyLine: $('#taDaily').value.trim() }).then(function(r){
+      msg($('#taDailyMsg'), r.j.ok ? 'ok' : 'err', r.j.ok ? '저장했습니다. 다음에 올리는 글부터 붙습니다.' : r.j.error);
     });
   });
 })();

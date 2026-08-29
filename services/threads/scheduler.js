@@ -16,20 +16,44 @@ const EVERY_MS = 5 * 60 * 1000;     // 5분마다. 급할 것 없다.
 let timer = null;
 let running = false;
 
-/** 예약해둔 것 중 시각이 지난 글을 가져온다 */
+/**
+ * 예약해둔 것 중 시각이 지난 글.
+ *
+ * 열쇠는 그 글을 올린 계정에서 가져온다 (th_posts.account_id).
+ * 예전에는 「지금 고른 계정」을 봤는데, 계정을 바꾸면 예약해둔 글이
+ * 조회 대상에서 통째로 빠져 영영 「예약중」에 머물렀다.
+ * 계정 칸이 비어 있는 옛 글은 그 사람의 아무 계정이나 써서 물어본다.
+ */
+function dueSql(extra) {
+  return `SELECT * FROM (
+            SELECT p.*, COALESCE(own.zernio_key, fa.zernio_key) AS zernio_key
+              FROM th_posts p
+              LEFT JOIN th_accounts own
+                     ON own.id = p.account_id AND own.user_id = p.user_id
+              /* 계정 칸이 빈 옛 글용 — 그 사람이 제일 먼저 등록한 계정.
+                 id 가 SERIAL 이라 제일 작은 것이 제일 먼저 넣은 것이다. */
+              LEFT JOIN (
+                SELECT user_id, MIN(id) AS aid FROM th_accounts GROUP BY user_id
+              ) f ON f.user_id = p.user_id
+              LEFT JOIN th_accounts fa ON fa.id = f.aid
+             WHERE p.status = 'scheduled'
+               AND p.scheduled_for <= NOW()
+               AND p.zernio_id IS NOT NULL
+               ${extra}
+          ) q
+          WHERE q.zernio_key IS NOT NULL
+          ORDER BY q.scheduled_for`;
+}
+
 async function dueRows(limit) {
+  const { rows } = await pool.query(dueSql('') + ' LIMIT $1', [limit || 20]);
+  return rows;
+}
+
+/** 한 사람 것만. 화면을 열 때 바로 맞춰주려고 쓴다. */
+async function dueRowsFor(userId, limit) {
   const { rows } = await pool.query(
-    /* 열쇠는 계정 표에 있다. 그 글을 올린 계정이 아직 남아 있어야 물어볼 수 있다. */
-    `SELECT p.*, a.zernio_key
-       FROM th_posts p
-       JOIN th_settings s ON s.user_id = p.user_id
-       JOIN th_accounts a ON a.id = s.active_account
-      WHERE p.status = 'scheduled'
-        AND p.scheduled_for <= NOW()
-        AND p.zernio_id IS NOT NULL
-      ORDER BY p.scheduled_for
-      LIMIT $1`,
-    [limit || 20]
+    dueSql('AND p.user_id = $1') + ' LIMIT $2', [userId, limit || 20]
   );
   return rows;
 }
@@ -59,6 +83,25 @@ async function checkOne(row) {
     /* 물어보다 실패한 것뿐이다. 글 상태는 건드리지 않는다. */
     return 'unknown';
   }
+}
+
+/**
+ * 한 사람의 지난 예약을 지금 바로 확인한다.
+ * 5분 주기만 믿으면 「시간이 지났는데 아직 예약중이네」 하는 순간이 생긴다.
+ * 목록을 열 때 이걸 한 번 돌려서 화면과 실제를 맞춘다.
+ */
+async function checkUser(userId) {
+  let changed = 0;
+  try {
+    const rows = await dueRowsFor(userId, 10);
+    for (const r of rows) {
+      const out = await checkOne(r);
+      if (out === 'published' || out === 'failed') changed++;
+    }
+  } catch (e) {
+    /* 확인에 실패해도 목록은 보여줘야 한다 */
+  }
+  return changed;
 }
 
 async function tick() {
@@ -91,4 +134,4 @@ function stop() {
   timer = null;
 }
 
-module.exports = { start, stop, tick, checkOne, dueRows };
+module.exports = { start, stop, tick, checkOne, checkUser, dueRows, dueRowsFor };

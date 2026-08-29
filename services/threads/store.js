@@ -34,6 +34,9 @@ function rowToPost(r) {
     status: r.status,
     scheduledFor: r.scheduled_for ? new Date(r.scheduled_for).toISOString() : undefined,
     zernioId: r.zernio_id || undefined,
+    accountId: r.account_id || undefined,
+    accountName: r.account_name || undefined,
+    linkSent: !!r.link_sent,
     permalink: r.permalink || undefined,
     publishedAt: r.published_at ? new Date(r.published_at).toISOString() : undefined,
     savedAt: r.saved_at ? new Date(r.saved_at).toISOString() : undefined,
@@ -106,6 +109,9 @@ const PATCHABLE = {
   status: ['status', (v) => v],
   scheduledFor: ['scheduled_for', (v) => v],
   zernioId: ['zernio_id', (v) => v],
+  linkSent: ['link_sent', (v) => !!v],
+  accountId: ['account_id', (v) => v],
+  accountName: ['account_name', (v) => v],
   permalink: ['permalink', (v) => v],
   publishedAt: ['published_at', (v) => v],
   savedAt: ['saved_at', (v) => v],
@@ -244,6 +250,8 @@ async function markHooksUsed(userId, ids) {
 
 const DEFAULT_SETTINGS = {
   ctaLink: '',
+  dailyLine: '',
+  ctaPerWeek: 2,
   zernioKey: '',
   zernioAccountId: '',
   zernioUsername: '',
@@ -258,6 +266,8 @@ async function getSettings(userId) {
   if (!r) return Object.assign({}, DEFAULT_SETTINGS);
   return {
     ctaLink: r.cta_link || '',
+    dailyLine: r.daily_line || '',
+    ctaPerWeek: r.cta_per_week == null ? 2 : Number(r.cta_per_week),
     zernioKey: r.zernio_key || '',
     zernioAccountId: r.zernio_account_id || '',
     zernioUsername: r.threads_username || '',
@@ -269,6 +279,9 @@ async function getSettings(userId) {
 
 const SETTING_COLS = {
   ctaLink: ['cta_link', (v) => String(v || '')],
+  dailyLine: ['daily_line', (v) => String(v || '')],
+  /* 3번을 넘기면 광고 계정으로 몰린다. 화면에서도 막지만 여기서 한 번 더 조인다. */
+  ctaPerWeek: ['cta_per_week', (v) => Math.max(0, Math.min(3, Number(v) || 0))],
   zernioKey: ['zernio_key', (v) => String(v || '')],
   zernioAccountId: ['zernio_account_id', (v) => String(v || '')],
   zernioUsername: ['threads_username', (v) => String(v || '')],

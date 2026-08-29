@@ -827,6 +827,16 @@ async function initDb() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_accounts ON th_accounts(user_id, created_at);`);
     /* 지금 올릴 계정 */
     await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS active_account INTEGER;`);
+    /* 그 글이 어느 계정으로 나갔는지. 계정을 바꿔도 예약 상태를 계속 확인하려면 필요하다.
+       이름은 따로 적어둔다 — 계정을 빼도 「어디로 올렸는지」는 남아야 한다. */
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS account_id INTEGER;`);
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS account_name TEXT;`);
+    /* 매번 글 끝에 붙는 고정 멘트 */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS daily_line TEXT;`);
+    /* 신청 링크를 일주일에 몇 번 붙일지. 1~3. 그 이상은 광고 계정으로 몰려 정지될 수 있다. */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS cta_per_week INTEGER DEFAULT 2;`);
+    /* 이 글에 링크가 실제로 붙었는지 — 주당 횟수를 세려면 필요하다 */
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS link_sent BOOLEAN DEFAULT FALSE;`);
 
     console.log('[DB] 스레드 자동화 준비 완료');
   } catch (e) {
