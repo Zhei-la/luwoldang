@@ -1,6 +1,7 @@
 <%
   var EL = { 목:'mok', 화:'hwa', 토:'to', 금:'geum', 수:'su' };
-  var who = name ? name + '님' : '이 사주';
+  var c = consult;
+  var 기둥 = ['년', '월', '일', '시'];
 %>
 <%- include('_head', {
   siteName: siteName, themeVars: themeVars,
@@ -9,30 +10,35 @@
 }) %>
 
 <style>
+  .eyebrow{display:block;font-size:11.5px;letter-spacing:.12em;color:var(--gold-d);
+    font-weight:800;margin:0 0 6px}
+  .sec-t{font-size:19px;font-weight:800;margin:0 0 12px;line-height:1.45}
+
   .hero{padding:26px 0 8px}
   .hero .al{font-size:13px;letter-spacing:.1em;color:var(--gold-d);font-weight:800;margin:0 0 6px}
-  .hero h1{font-size:27px;margin:0 0 8px}
-  .hero .tg{font-size:15px;color:var(--dim);margin:0 0 4px}
-  .hero .bt{font-size:12.5px;color:var(--faint);margin:10px 0 0}
+  .hero h1{font-size:26px;margin:0 0 9px}
+  .hero .tg{font-size:15px;color:var(--dim);margin:0}
+  .hero .bt{font-size:12.5px;color:var(--faint);margin:12px 0 0}
 
-  /* 원국 표 — 좁은 화면에서 옆으로 넘긴다 */
+  /* 원국 */
   .wg-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
   table.wg{width:100%;min-width:340px;border-collapse:separate;border-spacing:6px 0}
   table.wg th{font-size:11.5px;color:var(--faint);font-weight:700;padding:0 0 7px;text-align:center}
   table.wg td{text-align:center;vertical-align:top}
-  .gz{border-radius:12px;padding:11px 4px;border:1px solid transparent}
+  .gz{border-radius:12px;padding:11px 4px}
   .gz .h{font-size:29px;font-weight:800;line-height:1.15;font-family:serif}
-  .gz .k{font-size:12px;margin-top:2px;opacity:.8}
+  .gz .k{font-size:12px;margin-top:2px;opacity:.85}
   .gz .t{font-size:11.5px;margin-top:5px;font-weight:700;opacity:.9}
   .gz.mok{background:var(--mok-bg);color:var(--mok)}
   .gz.hwa{background:var(--hwa-bg);color:var(--hwa)}
   .gz.to{background:var(--to-bg);color:var(--to)}
   .gz.geum{background:var(--geum-bg);color:var(--geum)}
   .gz.su{background:var(--su-bg);color:var(--su)}
-  .gz.non{background:#F4F1EA;color:var(--faint)}
-  .gz.day{border-color:var(--gold)}
+  .gz.non{background:var(--line2);color:var(--faint)}
+  .gz.day{outline:2px solid var(--gold);outline-offset:1px}
   .wg .gap{height:6px}
-  .wg .jj{font-size:11px;color:var(--faint);line-height:1.65;padding-top:6px}
+  .wg .jj{font-size:11px;color:var(--faint);line-height:1.7;padding-top:7px}
+  .wg .un{font-size:11px;color:var(--dim);padding-top:5px;font-weight:600}
 
   /* 오늘의 운세 */
   .td{background:linear-gradient(160deg,#2C2620,#3D352B);color:#fff;border-radius:15px;
@@ -44,7 +50,7 @@
   .td .band span{font-size:13px;color:#C9BFAE}
   .td .bar{height:7px;border-radius:100px;background:rgba(255,255,255,.16);overflow:hidden;
     margin-bottom:14px}
-  .td .bar i{display:block;height:100%;border-radius:100px;background:var(--gold)}
+  .td .bar i{display:block;height:100%;border-radius:100px;background:#C9A469}
   .td p{color:#EDE7DC;margin:0 0 12px;font-size:14.5px;line-height:1.85}
   .td .lucky{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
   .td .lucky span{background:rgba(255,255,255,.1);border-radius:100px;padding:5px 12px;
@@ -56,14 +62,39 @@
   .el .n{width:22px;font-size:14px;font-weight:800;flex:none;text-align:center}
   .el .b{flex:1;height:9px;background:var(--line2);border-radius:100px;overflow:hidden}
   .el .b i{display:block;height:100%;border-radius:100px}
-  .el .v{width:64px;font-size:12px;color:var(--faint);text-align:right;flex:none}
-  /* 글자에는 글자색만, 막대에는 배경색만.
-     둘을 한 줄에 적으면 글자가 배경과 같은 색이 돼 안 보인다. */
+  .el .v{width:66px;font-size:12px;color:var(--faint);text-align:right;flex:none}
   .el.mok .n{color:var(--mok)}  .el.mok .b i{background:var(--mok)}
   .el.hwa .n{color:var(--hwa)}  .el.hwa .b i{background:var(--hwa)}
   .el.to  .n{color:var(--to)}   .el.to  .b i{background:var(--to)}
   .el.geum .n{color:var(--geum)} .el.geum .b i{background:var(--geum)}
   .el.su  .n{color:var(--su)}   .el.su  .b i{background:var(--su)}
+
+  .kv{display:flex;flex-wrap:wrap;gap:7px}
+  .kv span{background:var(--bg);border:1px solid var(--line2);border-radius:100px;
+    padding:5px 12px;font-size:12.5px;color:var(--ink2)}
+  .kv span b{color:var(--ink)}
+  .kv span.on{background:var(--navy);color:var(--card);border-color:var(--navy)}
+  .kv span.on b{color:var(--card)}
+
+  /* 신살 */
+  .sal{display:flex;flex-direction:column;gap:10px}
+  .sal .row{display:flex;gap:10px;align-items:flex-start}
+  .sal .k{flex:none;width:34px;font-size:12px;font-weight:800;color:var(--faint);padding-top:5px}
+  .sal .v{display:flex;flex-wrap:wrap;gap:6px}
+  .sal .v span{background:var(--bg);border:1px solid var(--line2);border-radius:7px;
+    padding:4px 10px;font-size:12.5px;color:var(--ink2)}
+  .sal .v span.none{color:var(--faint);border-style:dashed}
+
+  /* 흐름 표 */
+  .flow{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
+  .flow .in{display:flex;gap:7px;padding-bottom:4px}
+  .flow .cell{flex:none;width:72px;border:1px solid var(--line);border-radius:11px;
+    padding:10px 6px;text-align:center;background:var(--card)}
+  .flow .cell.on{border-color:var(--gold);background:var(--bg)}
+  .flow .cell .w{font-size:11px;color:var(--faint);font-weight:700}
+  .flow .cell .g{font-size:16px;font-weight:800;margin:4px 0 3px}
+  .flow .cell .s{font-size:10.5px;color:var(--dim);line-height:1.5}
+  .flow .cell.on .w{color:var(--gold-d)}
 
   .blk{border-top:1px solid var(--line2);padding-top:16px;margin-top:16px}
   .blk:first-of-type{border-top:0;padding-top:0;margin-top:0}
@@ -72,32 +103,40 @@
   .blk .bd{font-size:14.5px;color:var(--ink2);line-height:1.9}
   .blk .bd b{color:var(--ink)}
 
-  .kv{display:flex;flex-wrap:wrap;gap:7px}
-  .kv span{background:#F7F4ED;border:1px solid var(--line2);border-radius:100px;
-    padding:5px 12px;font-size:12.5px;color:var(--ink2)}
-  .kv span b{color:var(--ink)}
-
-  /* 모집 — 다 보여준 다음에 나온다 */
-  .cta{background:var(--navy);color:#fff;border-radius:15px;padding:24px 20px;margin:20px 0 14px}
-  .cta h2{color:#fff;font-size:19px;margin:0 0 8px}
-  .cta p{color:#C9BFAE;font-size:14px;margin:0 0 16px;line-height:1.85}
+  /* 이어지는 곳 — 여기서부터는 사람이 읽어야 한다 */
+  .more-box{background:var(--card);border:1px solid var(--line);border-radius:15px;
+    padding:22px 20px;margin-bottom:14px;position:relative;overflow:hidden}
+  .more-box .tz{font-size:14.5px;line-height:1.9;color:var(--dim);margin:0;
+    max-height:96px;overflow:hidden;position:relative}
+  .more-box .tz:after{content:'';position:absolute;left:0;right:0;bottom:0;height:56px;
+    background:linear-gradient(to bottom,transparent,var(--card))}
+  /* 신청칸은 색마다 따로 정해둔 색을 쓴다.
+     var(--navy) 를 그냥 쓰면 「밤」에서 금색 위에 금색이 돼 아무것도 안 보인다. */
+  .cta{background:var(--cta-bg);color:var(--cta-fg);border-radius:15px;padding:24px 20px;
+    margin-bottom:14px}
+  .cta h2{color:var(--cta-fg);font-size:19px;margin:0 0 9px;line-height:1.5}
+  .cta p{color:var(--cta-fg);opacity:.72;font-size:14px;margin:0 0 16px;line-height:1.85}
   .cta ul{margin:0 0 18px;padding:0;list-style:none}
-  .cta li{color:#EDE7DC;font-size:14px;padding-left:19px;position:relative;margin-bottom:7px}
-  .cta li:before{content:'✓';position:absolute;left:0;color:var(--gold);font-weight:800}
-  .cta label{color:#9A9384}
-  .cta input,.cta textarea{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);
-    color:#fff}
-  .cta input::placeholder,.cta textarea::placeholder{color:#7C7566}
-  .cta .chk{color:#C9BFAE}
-  .cta .chk b{color:#fff}
-  .cta a{color:var(--gold)}
-  .cta .fine{font-size:12px;color:#7C7566;line-height:1.8;margin:12px 0 0}
+  .cta li{color:var(--cta-fg);opacity:.9;font-size:14px;padding-left:20px;position:relative;
+    margin-bottom:7px}
+  .cta li:before{content:'✓';position:absolute;left:0;color:var(--cta-ac);font-weight:800;opacity:1}
+  .cta label{color:var(--cta-fg);opacity:.6}
+  .cta input,.cta textarea{background:rgba(127,127,127,.14);
+    border-color:rgba(127,127,127,.32);color:var(--cta-fg)}
+  .cta input::placeholder,.cta textarea::placeholder{color:var(--cta-fg);opacity:.4}
+  .cta .chk{color:var(--cta-fg);opacity:.8}
+  .cta .chk b{opacity:1}
+  .cta .chk input{accent-color:var(--cta-ac)}
+  .cta .fine{font-size:12px;color:var(--cta-fg);opacity:.5;line-height:1.8;margin:12px 0 0}
+  .cta .btn.gold{background:var(--cta-ac);color:var(--cta-ac-fg)}
+  .cta .err{background:rgba(200,60,40,.16);color:var(--cta-fg)}
+  .cta .ok{background:rgba(60,160,100,.18);color:var(--cta-fg)}
 </style>
 
 <main class="wrap">
   <section class="hero">
     <% if (reading.alias) { %><p class="al"><%= reading.alias %></p><% } %>
-    <h1><%= reading.tagline || (who + '의 사주') %></h1>
+    <h1><%= reading.tagline || ((name ? name + '님' : '이 사주') + '의 사주') %></h1>
     <% if (reading.iljuBody) { %><p class="tg"><%= reading.iljuBody %></p><% } %>
     <p class="bt"><%= name ? name + ' · ' : '' %><%= birthLabel %></p>
   </section>
@@ -126,7 +165,8 @@
   <% } %>
 
   <div class="card">
-    <h2>내 사주 원국</h2>
+    <span class="eyebrow">原局</span>
+    <h2 class="sec-t">만세력 원국</h2>
     <div class="wg-wrap">
       <table class="wg">
         <tr><% wonguk.forEach(function(p){ %><th><%= p.key %>주</th><% }); %></tr>
@@ -154,20 +194,50 @@
             <td class="jj"><% if (!p.unknown) { (p.jijanggan || []).forEach(function(j){ %><div><%= j %></div><% }); } %></td>
           <% }); %>
         </tr>
+        <tr>
+          <% wonguk.forEach(function(p){ %>
+            <td class="un"><%= p.unknown ? '' : (p.unseong || '') %></td>
+          <% }); %>
+        </tr>
       </table>
     </div>
     <div class="kv" style="margin-top:16px">
-      <span>일간 <b><%= consult.일간 %> (<%= consult.일간오행 %>)</b></span>
-      <span>격국 <b><%= consult.격국 %></b></span>
-      <span><b><%= consult.신강약 %></b></span>
-      <span>용신 <b><%= consult.용신 %></b></span>
-      <% if (consult.현재대운 && consult.현재대운.간지) { %><span>현재 대운 <b><%= consult.현재대운.간지 %></b> <%= consult.현재대운.나이 %>세부터</span><% } %>
-      <% if (consult.올해세운 && consult.올해세운.간지) { %><span><%= consult.올해세운.년도 %>년 <b><%= consult.올해세운.간지 %></b></span><% } %>
+      <span>일간 <b><%= c.일간 %> (<%= c.일간오행 %>)</b></span>
+      <span>일주 <b><%= c.일주 %></b></span>
+      <span>격국 <b><%= c.격국 %></b></span>
+      <% if (c.공망일 && c.공망일.length) { %><span>공망 <b><%= c.공망일.join('·') %></b></span><% } %>
     </div>
   </div>
 
+  <% if (c.신살 || (c.합 && c.합.length) || (c.충형파해 && c.충형파해.length)) { %>
+    <div class="card">
+      <span class="eyebrow">神煞</span>
+      <h2 class="sec-t">신살과 관계</h2>
+      <div class="sal">
+        <% 기둥.forEach(function(k){ var v = (c.신살 || {})[k] || []; %>
+          <div class="row">
+            <span class="k"><%= k %>주</span>
+            <span class="v">
+              <% if (v.length) { v.forEach(function(x){ %><span><%= x %></span><% }); }
+                 else { %><span class="none">없음</span><% } %>
+            </span>
+          </div>
+        <% }); %>
+        <% if (c.합 && c.합.length) { %>
+          <div class="row"><span class="k">합</span>
+            <span class="v"><% c.합.forEach(function(x){ %><span><%= x %></span><% }); %></span></div>
+        <% } %>
+        <% if (c.충형파해 && c.충형파해.length) { %>
+          <div class="row"><span class="k">충형</span>
+            <span class="v"><% c.충형파해.forEach(function(x){ %><span><%= x %></span><% }); %></span></div>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
   <div class="card">
-    <h2>오행 균형</h2>
+    <span class="eyebrow">五行</span>
+    <h2 class="sec-t">오행과 십성</h2>
     <div class="els">
       <% reading.elements.forEach(function(e){ %>
         <div class="el <%= EL[e.name] || '' %>">
@@ -177,11 +247,87 @@
         </div>
       <% }); %>
     </div>
+    <% if (c.십성분포) { %>
+      <div class="kv" style="margin-top:16px">
+        <% Object.keys(c.십성분포).forEach(function(k){ %>
+          <span><%= k %> <b><%= c.십성분포[k] %></b></span>
+        <% }); %>
+      </div>
+    <% } %>
   </div>
+
+  <div class="card">
+    <span class="eyebrow">身强身弱 · 用神</span>
+    <h2 class="sec-t">내 힘과, 나에게 이로운 기운</h2>
+    <div class="kv">
+      <span class="on"><b><%= c.신강약 %></b></span>
+      <% if (c.득령) { %><span>득령 <b><%= c.득령 %></b></span><% } %>
+      <% if (c.득지) { %><span>득지 <b><%= c.득지 %></b></span><% } %>
+      <% if (c.득세) { %><span>득세 <b><%= c.득세 %></b></span><% } %>
+    </div>
+    <div class="kv" style="margin-top:9px">
+      <span>용신 <b><%= c.용신 %></b></span>
+      <% if (c.희신) { %><span>희신 <b><%= c.희신 %></b></span><% } %>
+      <% if (c.기신) { %><span>기신 <b><%= c.기신 %></b></span><% } %>
+      <% if (c.구신) { %><span>구신 <b><%= c.구신 %></b></span><% } %>
+      <% if (c.조후) { %><span>조후 <b><%= c.조후 %></b></span><% } %>
+    </div>
+  </div>
+
+  <% if (c.대운목록 && c.대운목록.length) { %>
+    <div class="card">
+      <span class="eyebrow">大運</span>
+      <h2 class="sec-t">십 년 단위의 큰 흐름</h2>
+      <p style="font-size:13.5px;color:var(--dim);margin:0 0 13px">
+        <%= c.대운수 %>세부터 <%= c.대운방향 %>합니다. 금색이 지금 지나고 있는 대운입니다.</p>
+      <div class="flow"><div class="in">
+        <% c.대운목록.forEach(function(d){ %>
+          <div class="cell <%= d.현재 ? 'on' : '' %>">
+            <div class="w"><%= d.나이 %>세</div>
+            <div class="g"><%= d.간지 %></div>
+            <div class="s"><%= d.천간십성 %><br><%= d.지지십성 %></div>
+          </div>
+        <% }); %>
+      </div></div>
+    </div>
+  <% } %>
+
+  <% if (c.세운목록 && c.세운목록.length) { %>
+    <div class="card">
+      <span class="eyebrow">歲運</span>
+      <h2 class="sec-t">해마다의 흐름</h2>
+      <div class="flow"><div class="in">
+        <% c.세운목록.forEach(function(d){ %>
+          <div class="cell <%= d.현재 ? 'on' : '' %>">
+            <div class="w"><%= d.년도 %></div>
+            <div class="g"><%= d.간지 %></div>
+            <div class="s"><%= d.천간십성 %><br><%= d.지지십성 %></div>
+          </div>
+        <% }); %>
+      </div></div>
+    </div>
+  <% } %>
+
+  <% if (wolun && wolun.length) { %>
+    <div class="card">
+      <span class="eyebrow">月運</span>
+      <h2 class="sec-t">달마다의 흐름</h2>
+      <div class="flow"><div class="in">
+        <% wolun.forEach(function(d){ %>
+          <div class="cell <%= d.현재 ? 'on' : '' %>">
+            <div class="w"><%= d.월 %>월</div>
+            <div class="g"><%= d.간지 %></div>
+            <div class="s"><%= d.천간십성 %><br><%= d.지지십성 %></div>
+          </div>
+        <% }); %>
+      </div></div>
+    </div>
+  <% } %>
 
   <% if ((reading.blocks || []).length) { %>
     <div class="card">
-      <h2>무료 풀이</h2>
+      <span class="eyebrow">풀어 쓴 해석</span>
+      <h2 class="sec-t">사주 풀이</h2>
       <% reading.blocks.forEach(function(b){ %>
         <div class="blk">
           <div class="no"><%= b.no %></div>
@@ -192,25 +338,31 @@
     </div>
   <% } %>
 
+  <div class="more-box">
+    <span class="eyebrow">여기서부터는 사람이 읽습니다</span>
+    <h2 class="sec-t">대운 해석 · 직업 적성 · 올해 월별 운</h2>
+    <p class="tz"><%= teaser %></p>
+  </div>
+
   <div class="cta" id="join">
     <% if (joined) { %>
-      <h2>보내드렸습니다</h2>
+      <h2>신청하셨습니다</h2>
       <p>남겨주신 번호로 연락드리겠습니다. 감사합니다.</p>
     <% } else { %>
-      <h2>사주를 제대로 배워보고 싶다면</h2>
-      <p>여기까지는 계산이 해준 것입니다.
-        스스로 읽고 풀이할 수 있게 되는 과정을 안내해드립니다.</p>
+      <h2>대운 해석 · 직업 적성 · 올해 월별 운은<br>사주 신청에서 이어집니다</h2>
+      <p>위까지는 계산이 해준 것입니다.
+        여기서부터는 원국을 직접 읽고 <%= name ? name + '님' : '이 사주' %>에 맞춰 풀어 드립니다.</p>
       <ul>
-        <li>만세력을 스스로 읽고 해석하는 법</li>
-        <li>실제 사례로 배우는 대운·세운 풀이</li>
-        <li>수료 후 개인 만세력 페이지 제공</li>
+        <li>지금 대운이 어떤 십 년인지, 무엇을 준비해야 하는지</li>
+        <li>어떤 일이 맞고 어떤 자리에서 힘이 빠지는지</li>
+        <li>올해 달마다의 흐름과 조심할 달</li>
       </ul>
 
       <form id="jf">
         <div class="fld">
           <label for="jn">이름</label>
           <input type="text" name="name" id="jn" maxlength="30" required
-                 placeholder="홍길동" autocomplete="name">
+                 placeholder="<%= name || '홍길동' %>" value="<%= name || '' %>" autocomplete="name">
         </div>
         <div class="fld">
           <label for="jp">연락처</label>
@@ -219,7 +371,7 @@
         </div>
         <div class="fld">
           <label for="jm">궁금한 점 <span style="font-weight:500;letter-spacing:0">— 안 적으셔도 됩니다</span></label>
-          <textarea name="memo" id="jm" maxlength="500" placeholder="수업 일정이 궁금합니다"></textarea>
+          <textarea name="memo" id="jm" maxlength="500" placeholder="올해 이직 시기가 궁금합니다"></textarea>
         </div>
 
         <label class="chk">
@@ -229,17 +381,22 @@
         </label>
 
         <div id="jmsg"></div>
-        <button class="btn gold" type="submit"><%= t.button_text || '상담 안내 받기' %></button>
+        <button class="btn gold" type="submit"><%= t.button_text || '내 사주 신청하기' %></button>
         <p class="fine">만 14세 이상만 신청하실 수 있습니다.
           <% if (t.kakao_consult_link) { %>보내시면 곧바로 카카오톡 상담창이 열립니다.<% } %></p>
       </form>
     <% } %>
   </div>
 
-  <p style="font-size:12.5px;color:var(--faint);line-height:1.85;margin:0 0 8px">
+  <p style="font-size:12.5px;color:var(--faint);line-height:1.85;margin:0 0 10px">
     이 풀이는 사주 명리의 일반적인 해석을 계산해 보여드리는 것입니다.
     의료·법률·투자 판단의 근거로 쓰지 마세요.</p>
-  <a class="btn ghost" href="/saju@<%= slug %>">다른 사주 보기</a>
+  <a class="btn ghost" href="<%= base || '/' %>">다른 사주 보기</a>
+  <% if (reading.alias) { %>
+    <p style="text-align:center;margin:14px 0 0;font-size:13px">
+      <a href="<%= base %>/guide/ilju/<%= encodeURIComponent(c.일주) %>"
+         style="color:var(--gold-d);font-weight:700"><%= c.일주 %> 일주 자세히 보기 →</a></p>
+  <% } %>
 </main>
 
 <footer class="foot">
@@ -255,11 +412,13 @@
   if (!f) return;
   var msg = document.getElementById('jmsg');
   function say(kind, t){
-    msg.innerHTML = '<div class="' + kind + '">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+    msg.innerHTML = '<div class="' + kind + '">' +
+      t.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
   }
   f.addEventListener('submit', function(e){
     e.preventDefault();
     var b = f.querySelector('button[type=submit]');
+    var was = b.textContent;
     b.disabled = true; b.textContent = '보내는 중…';
     var body = new URLSearchParams();
     ['name','phone','memo'].forEach(function(k){ body.set(k, f.elements[k].value); });
@@ -269,16 +428,16 @@
       method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body:body
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok) {
-        b.disabled = false; b.textContent = '<%= t.button_text || "상담 안내 받기" %>';
+        b.disabled = false; b.textContent = was;
         say('err', j.error || '보내지 못했습니다. 잠시 뒤 다시 해주세요.');
         return;
       }
       /* 식기 전에 바로 이야기가 시작되도록 카톡으로 넘긴다 */
       if (j.kakao) { location.href = j.kakao; return; }
-      say('ok', '보내드렸습니다. 남겨주신 번호로 연락드리겠습니다.');
-      b.textContent = '보냈습니다';
+      say('ok', '신청하셨습니다. 남겨주신 번호로 연락드리겠습니다.');
+      b.textContent = '신청 완료';
     }).catch(function(){
-      b.disabled = false; b.textContent = '<%= t.button_text || "상담 안내 받기" %>';
+      b.disabled = false; b.textContent = was;
       say('err', '연결이 끊겼습니다. 잠시 뒤 다시 해주세요.');
     });
   });

@@ -1,0 +1,36 @@
+<%- include('_head', {
+  siteName: siteName, themeVars: themeVars,
+  pageTitle: '일주 60갑자 — 태어난 날의 간지로 보는 나',
+  pageDesc: '갑자부터 계해까지 60가지 일주를 한자리에 모았습니다. 천간의 오행이 색이 되고 지지의 동물이 이름이 됩니다.',
+}) %>
+
+<%- include('_guide-css') %>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow">일주 60갑자</span>
+    <h1>태어난 날의 간지가<br>곧 나입니다</h1>
+    <p class="lead">천간의 오행이 색이 되고, 지지의 동물이 이름이 됩니다.
+      내 일주가 무엇인지는 생년월일만 넣으면 바로 나옵니다.</p>
+    <a class="btn" href="<%= base || '/' %>">내 일주 무료로 확인하기</a>
+  </section>
+
+  <section class="wrap sec">
+    <% groups.forEach(function(g){ %>
+      <div class="grp">
+        <h3><%= g.stem %><%= g.hanja %> 일간<small><%= g.elem %> · <%= g.list.length %>가지</small></h3>
+        <div class="list">
+          <% g.list.forEach(function(i){ %>
+            <a class="it" href="<%= base %>/guide/ilju/<%= encodeURIComponent(i.ganzhi) %>">
+              <span class="gz"><%= i.ganzhi %></span>
+              <span class="al"><%= i.alias %></span>
+              <span class="tg"><%= i.tagline %></span>
+            </a>
+          <% }); %>
+        </div>
+      </div>
+    <% }); %>
+  </section>
+</main>
+
+<%- include('_guide-foot') %>

@@ -30,11 +30,15 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var fortune_entry_exports = {};
 __export(fortune_entry_exports, {
   BRANCH_ANIMAL: () => BRANCH_ANIMAL,
+  BRANCH_ELEM_KO: () => BRANCH_ELEM_KO,
+  BRANCH_K2H: () => BRANCH_K2H,
   ELEMENTS: () => ELEMENTS,
   ILGAN: () => ILGAN,
   ILGAN_LIST: () => ILGAN_LIST,
   LOCKED_TEASER: () => LOCKED_TEASER,
   STEM_COLOR: () => STEM_COLOR,
+  STEM_ELEM_KO: () => STEM_ELEM_KO,
+  STEM_K2H: () => STEM_K2H,
   YONGSIN: () => YONGSIN,
   allIlju: () => allIlju,
   buildReading: () => buildReading,
@@ -2189,11 +2193,15 @@ var ILGAN_LIST = Object.values(ILGAN);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BRANCH_ANIMAL,
+  BRANCH_ELEM_KO,
+  BRANCH_K2H,
   ELEMENTS,
   ILGAN,
   ILGAN_LIST,
   LOCKED_TEASER,
   STEM_COLOR,
+  STEM_ELEM_KO,
+  STEM_K2H,
   YONGSIN,
   allIlju,
   buildReading,

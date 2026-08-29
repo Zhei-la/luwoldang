@@ -99,6 +99,27 @@ function readBirth(b) {
 
 /* ── 화면 ─────────────────────────────────────────── */
 
+/**
+ * 이 손님이 들어온 주소의 앞자리.
+ *   /saju@kimdosa  →  '/saju@kimdosa'
+ *   /kimdosa       →  '/kimdosa'
+ *   서브도메인      →  ''  (맨 뿌리)
+ * 안쪽 링크를 이걸로 만들어야 주소창에 루월당이 안 드러난다.
+ */
+function basePath(req, t) {
+  /* 서브도메인으로 들어온 경우는 앞자리가 없다.
+     주소만 보고 짐작하면 /guide/ilju 의 「/guide」 를 이름으로 잘못 읽는다.
+     그래서 서브도메인 미들웨어가 여기에 표시를 남겨둔다. */
+  if (req._msiteRoot) return '';
+  const p = (req.originalUrl || '').split('?')[0].replace(/\/+$/, '');
+  const m = p.match(/^(\/(?:saju@|@)?[A-Za-z0-9-]+)/);
+  if (!m) return '';
+  /* 「/guide」 처럼 우리가 쓰는 말이면 이름이 아니다 */
+  const first = m[1].replace(/^\/(?:saju@|@)?/, '');
+  if (first === 'guide' || first === 'join') return '';
+  return m[1];
+}
+
 /** 해마다 고를 수 있는 연도 — 올해부터 1900년까지 */
 function yearList() {
   const out = [];
@@ -120,6 +141,7 @@ function pageBits(req, t) {
     years: yearList(),
     samples: fortune.allIlju().slice(0, 6),
     postTo: req.originalUrl.split('?')[0] || ('/saju@' + t.slug),
+    base: basePath(req, t),
   };
 }
 
@@ -180,6 +202,10 @@ async function showResult(req, res, next) {
         (b.input.hourUnknown ? ' · 시간 모름' : ' ' + b.input.hour + '시 ' + b.input.minute + '분') +
         (b.regionName ? ' · ' + b.regionName : ''),
       wonguk: r.raw.wonguk || [],
+      wolun: r.raw.월운목록 || [],
+      /* 여기서부턴는 사람이 읽어야 하는 곳이라는 걸 보여준다 */
+      teaser: fortune.LOCKED_TEASER,
+      base: basePath(req, t),
       consult: c,
       reading,
       today,
@@ -228,6 +254,96 @@ async function join(req, res, next) {
   } catch (e) { next(e); }
 }
 
+
+/* ── 일주·일간 설명 ────────────────────────────────
+ * 검색으로 들어오는 자리다. 「무오 일주」 같은 말로 찾아온 손님이
+ * 설명을 읽고, 그 아래에서 자기 만세력을 보게 된다.
+ * ============================================================ */
+
+const EL_HANJA = { 목: '木', 화: '火', 토: '土', 금: '金', 수: '水' };
+
+/** 60갑자 목록 — 일간 열 개로 묶어 보여준다 */
+async function guideIljuIndex(req, res, next) {
+  try {
+    const t = await teacherOf(req.params.slug);
+    if (!t) return next();
+    const all = fortune.allIlju();
+    const groups = Object.keys(fortune.ILGAN).map((stem) => {
+      const g = fortune.ILGAN[stem];
+      return {
+        stem, hanja: g.hanja, elem: g.elem,
+        list: all.filter((x) => x.ganzhi[0] === stem),
+      };
+    }).filter((g) => g.list.length);
+
+    res.render('msite/guide-ilju-index', {
+      t, siteName: siteName(t), slug: t.slug,
+      themeVars: theme.cssVars(t.msite_theme),
+      base: basePath(req, t),
+      groups,
+    });
+  } catch (e) { next(e); }
+}
+
+/** 일주 하나 */
+async function guideIlju(req, res, next) {
+  try {
+    const t = await teacherOf(req.params.slug);
+    if (!t) return next();
+
+    const ganzhi = decodeURIComponent(String(req.params.ganzhi || '')).trim();
+    const info = fortune.ilju(ganzhi);
+    /* 없는 간지면 다음 라우터로 넘긴다. 억지로 빈 화면을 보여주지 않는다. */
+    if (!info || !info.tagline) return next();
+
+    const stem = ganzhi[0], branch = ganzhi[1];
+    const all = fortune.allIlju();
+
+    res.render('msite/guide-ilju', {
+      t, siteName: siteName(t), slug: t.slug,
+      themeVars: theme.cssVars(t.msite_theme),
+      base: basePath(req, t),
+      info, stem, branch,
+      stemHanja: fortune.STEM_K2H[stem] || '',
+      branchHanja: fortune.BRANCH_K2H[branch] || '',
+      stemElem: fortune.STEM_ELEM_KO[stem] || '',
+      branchElem: fortune.BRANCH_ELEM_KO[branch] || '',
+      animal: fortune.BRANCH_ANIMAL[branch] || '',
+      g: fortune.ILGAN[stem] || null,
+      EL: { 목: 'mok', 화: 'hwa', 토: 'to', 금: 'geum', 수: 'su' },
+      others: all.filter((x) => x.ganzhi[0] === stem && x.ganzhi !== ganzhi),
+      sameAnimal: all.filter((x) => x.ganzhi[1] === branch && x.ganzhi !== ganzhi),
+    });
+  } catch (e) { next(e); }
+}
+
+/** 일간 하나 */
+async function guideIlgan(req, res, next) {
+  try {
+    const t = await teacherOf(req.params.slug);
+    if (!t) return next();
+
+    const stem = decodeURIComponent(String(req.params.stem || '')).trim();
+    const g = fortune.ILGAN[stem];
+    if (!g) return next();
+
+    res.render('msite/guide-ilgan', {
+      t, siteName: siteName(t), slug: t.slug,
+      themeVars: theme.cssVars(t.msite_theme),
+      base: basePath(req, t),
+      g, elemHanja: EL_HANJA[g.elem] || '',
+      iljus: fortune.allIlju().filter((x) => x.ganzhi[0] === stem),
+    });
+  } catch (e) { next(e); }
+}
+
+/** 한 라우터에 설명 페이지 세 개를 붙인다. 주소 모양마다 다시 쓰지 않으려고 함수로 뺐다. */
+function addGuide(r, pre) {
+  r.get(pre + '/guide/ilju', guideIljuIndex);
+  r.get(pre + '/guide/ilju/:ganzhi', guideIlju);
+  r.get(pre + '/guide/ilgan/:stem', guideIlgan);
+}
+
 /* ── 어느 주소로 들어와도 알아듣는다 ────────────────
  *
  *   luwolsaju.com/saju@kimdosa      긴 주소 — 무엇인지 알아보기 쉽다
@@ -245,6 +361,8 @@ router.post('/saju@:slug', showResult);
 router.post('/@:slug', showResult);
 router.post('/saju@:slug/join', join);
 router.post('/@:slug/join', join);
+addGuide(router, '/saju@:slug');
+addGuide(router, '/@:slug');
 
 /**
  * 서브도메인으로 들어왔는지 본다 — kimdosa.어디.kr
@@ -278,9 +396,18 @@ router.use(async (req, res, next) => {
   const t = await teacherOf(slug).catch(() => null);
   if (!t) return next();
   req.params.slug = slug;
+  req._msiteRoot = true;   /* 앞자리가 없는 주소다 */
   if (req.method === 'GET' && req.path === '/') return showInput(req, res, next);
   if (req.method === 'POST' && req.path === '/') return showResult(req, res, next);
   if (req.method === 'POST' && req.path === '/join') return join(req, res, next);
+  if (req.method === 'GET') {
+    /* 서브도메인은 이름이 주소에 없으므로 여기서 갈라준다 */
+    if (req.path === '/guide/ilju') return guideIljuIndex(req, res, next);
+    let m = req.path.match(/^\/guide\/ilju\/(.+)$/);
+    if (m) { req.params.ganzhi = m[1]; return guideIlju(req, res, next); }
+    m = req.path.match(/^\/guide\/ilgan\/(.+)$/);
+    if (m) { req.params.stem = m[1]; return guideIlgan(req, res, next); }
+  }
   next();
 });
 
@@ -295,6 +422,7 @@ const tail = express.Router();
 tail.get('/:slug', showInput);
 tail.post('/:slug', showResult);
 tail.post('/:slug/join', join);
+addGuide(tail, '/:slug');
 
 module.exports = router;
 module.exports.tail = tail;

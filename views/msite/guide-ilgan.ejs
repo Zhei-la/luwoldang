@@ -1,0 +1,52 @@
+<%- include('_head', {
+  siteName: siteName, themeVars: themeVars,
+  pageTitle: g.headline,
+  pageDesc: g.intro.slice(0, 110),
+}) %>
+
+<%- include('_guide-css') %>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow"><a href="<%= base %>/guide/ilju">일주 60갑자</a></span>
+    <h1><%= g.headline %></h1>
+    <p class="lead" style="margin-bottom:0"><%= g.elem %>(<%= elemHanja %>) · <%= g.yinYang %>간</p>
+  </section>
+
+  <section class="wrap" style="padding-bottom:8px">
+    <div class="card">
+      <p style="font-size:15px;line-height:1.95;margin:0"><%= g.intro %></p>
+      <h3 class="sub-t">잘 맞는 일</h3>
+      <p class="bd"><%= g.work %></p>
+      <h3 class="sub-t">관계</h3>
+      <p class="bd"><%= g.relation %></p>
+      <h3 class="sub-t">조심할 것</h3>
+      <p class="bd"><%= g.caution %></p>
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <h2 class="sec-t"><%= g.stem %><%= g.hanja %> 일간의 <%= iljus.length %>가지 일주</h2>
+    <p class="sec-lead">같은 일간이라도 지지에 따라 성격이 갈립니다.</p>
+    <div class="list">
+      <% iljus.forEach(function(i){ %>
+        <a class="it" href="<%= base %>/guide/ilju/<%= encodeURIComponent(i.ganzhi) %>">
+          <span class="gz"><%= i.ganzhi %></span>
+          <span class="al"><%= i.alias %></span>
+          <span class="tg"><%= i.tagline %></span>
+        </a>
+      <% }); %>
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <h2 class="sec-t">일간만으로는 절반입니다</h2>
+    <p style="font-size:14.5px;color:var(--dim);line-height:1.9">
+      일간은 「나」를 가리킬 뿐이고, 그 나에게 힘이 실려 있는지는 나머지 일곱 글자가 정합니다.
+      같은 <%= g.stem %><%= g.hanja %> 일간이라도 <b>신강인지 신약인지</b>에 따라
+      필요한 처방이 정반대가 됩니다.</p>
+    <a class="btn" href="<%= base || '/' %>">내 원국 무료로 보기</a>
+  </section>
+</main>
+
+<%- include('_guide-foot') %>

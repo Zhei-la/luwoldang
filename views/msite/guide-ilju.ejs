@@ -1,0 +1,91 @@
+<%- include('_head', {
+  siteName: siteName, themeVars: themeVars,
+  pageTitle: info.ganzhi + ' 일주 — ' + info.alias + '의 성격과 특징',
+  pageDesc: info.ganzhi + ' 일주는 ' + info.alias + '입니다. ' + info.tagline + ' ' + info.body.slice(0, 70),
+}) %>
+
+<%- include('_guide-css') %>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow"><a href="<%= base %>/guide/ilju">일주 60갑자</a></span>
+    <h1><%= info.ganzhi %> 일주<br><span style="color:var(--gold-d)"><%= info.alias %></span></h1>
+    <p class="lead" style="margin-bottom:0"><%= info.tagline %></p>
+  </section>
+
+  <section class="wrap" style="padding-bottom:8px">
+    <div class="card">
+      <div class="pair">
+        <div class="col">
+          <div class="lb">천간</div>
+          <div class="tile <%= EL[stemElem] %>"><%= stemHanja %></div>
+          <div class="ko"><%= stem %> · <%= stemElem %></div>
+        </div>
+        <div class="col">
+          <div class="lb">지지</div>
+          <div class="tile <%= EL[branchElem] %>"><%= branchHanja %></div>
+          <div class="ko"><%= branch %> · <%= branchElem %></div>
+        </div>
+      </div>
+      <p style="font-size:15px;line-height:1.95;margin:0"><%= info.body %></p>
+    </div>
+  </section>
+
+  <% if (g) { %>
+    <section class="wrap sec">
+      <h2 class="sec-t"><%= stem %><%= g.hanja %> 일간이라는 것</h2>
+      <div class="card">
+        <p style="font-size:14.5px;line-height:1.9;margin:0 0 4px"><%= g.intro %></p>
+        <h3 class="sub-t">잘 맞는 일</h3>
+        <p class="bd"><%= g.work %></p>
+        <h3 class="sub-t">관계</h3>
+        <p class="bd"><%= g.relation %></p>
+        <h3 class="sub-t">조심할 것</h3>
+        <p class="bd"><%= g.caution %></p>
+        <p class="tiny" style="margin:15px 0 0">
+          <a href="<%= base %>/guide/ilgan/<%= stem %>"><%= stem %><%= g.hanja %> 일간 전체 보기 →</a></p>
+      </div>
+    </section>
+  <% } %>
+
+  <section class="wrap sec">
+    <h2 class="sec-t">중요한 것은 일주만으로 정해지지 않습니다</h2>
+    <p style="font-size:14.5px;color:var(--dim);line-height:1.9">
+      일주는 여덟 글자 중 두 글자입니다. 같은 <%= info.ganzhi %> 일주라도 태어난 달과 시각에 따라
+      신강한 사주가 되기도 하고 신약한 사주가 되기도 하며, 그에 따라 <b>용신이 완전히 달라집니다.</b>
+      일주 해설은 출발점일 뿐이니, 실제 원국을 확인해 보세요.</p>
+    <a class="btn" href="<%= base || '/' %>">내 만세력 무료로 보기</a>
+  </section>
+
+  <% if (others.length) { %>
+    <section class="wrap sec">
+      <h2 class="sec-t">같은 <%= stem %><%= stemHanja %> 일간</h2>
+      <div class="list">
+        <% others.forEach(function(i){ %>
+          <a class="it" href="<%= base %>/guide/ilju/<%= encodeURIComponent(i.ganzhi) %>">
+            <span class="gz"><%= i.ganzhi %></span>
+            <span class="al"><%= i.alias %></span>
+            <span class="tg"><%= i.tagline %></span>
+          </a>
+        <% }); %>
+      </div>
+    </section>
+  <% } %>
+
+  <% if (sameAnimal.length) { %>
+    <section class="wrap sec">
+      <h2 class="sec-t">같은 <%= animal %>띠 자리</h2>
+      <div class="list">
+        <% sameAnimal.forEach(function(i){ %>
+          <a class="it" href="<%= base %>/guide/ilju/<%= encodeURIComponent(i.ganzhi) %>">
+            <span class="gz"><%= i.ganzhi %></span>
+            <span class="al"><%= i.alias %></span>
+            <span class="tg"><%= i.tagline %></span>
+          </a>
+        <% }); %>
+      </div>
+    </section>
+  <% } %>
+</main>
+
+<%- include('_guide-foot') %>
