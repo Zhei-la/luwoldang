@@ -16,8 +16,12 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
-const engine = require('../services/cbEngine');
+/* ⚠️ services/cbEngine.js 를 쓰지 않는다.
+   그것은 명리학자가 준 파일이라 그대로 두고,
+   교육생 만세력 계산기(/manse)가 계속 쓴다.
+   이 페이지는 cbFortune 안에 함께 들어있는 엔진을 쓴다. */
 const fortune = require('../services/cbFortune');
+const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
 const { notify } = require('../services/push');
 

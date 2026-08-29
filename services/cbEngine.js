@@ -1,7 +1,3 @@
-/* 사주 명식 엔진 — 만세력 원본(src/engine.ts)을 esbuild 로 묶은 것.
- * 손으로 고치지 마세요. 원본을 고치고 다시 묶어야 합니다.
- * 2026-08 판: 일진() · raw.wonguk · raw.월운목록 · raw.consult 가 늘었습니다. */
-"use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -23,19 +19,11 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/engine.ts
 var engine_exports = {};
 __export(engine_exports, {
-  BRANCH_ELEM_KO: () => BRANCH_ELEM_KO,
-  BRANCH_K2H: () => BRANCH_K2H,
-  BRANCH_MAIN: () => BRANCH_MAIN,
   HIDDEN_STEMS_TABLE: () => HIDDEN_STEMS_TABLE,
-  STEM_ELEM_KO: () => STEM_ELEM_KO,
-  STEM_K2H: () => STEM_K2H,
-  tenGod: () => tenGod,
   \uACA9\uAD6D\uD310\uC815: () => \uACA9\uAD6D\uD310\uC815,
   \uAD81\uD569\uBD84\uC11D: () => \uAD81\uD569\uBD84\uC11D,
   \uBA85\uC2DD\uD45C: () => \uBA85\uC2DD\uD45C,
   \uBA85\uC2DD\uD45C\uC0C1\uC138: () => \uBA85\uC2DD\uD45C\uC0C1\uC138,
-  \uC2ED\uC774\uC6B4\uC131\uB9F5: () => \uC2ED\uC774\uC6B4\uC131\uB9F5,
-  \uC77C\uC9C4: () => \uC77C\uC9C4,
   \uC870\uD6C4\uC6A9\uC2E0\uACC4\uC0B0: () => \uC870\uD6C4\uC6A9\uC2E0\uACC4\uC0B0,
   \uC9C0\uC7A5\uAC04\uC2ED\uC131\uBAA9\uB85D: () => \uC9C0\uC7A5\uAC04\uC2ED\uC131\uBAA9\uB85D
 });
@@ -631,19 +619,6 @@ function \uC6D4\uC6B4\uD45C\uB370\uC774\uD130(dayStemHanja, gender, dayBoundary,
   }
   return rows;
 }
-function \uC77C\uC9C4(year, month, day) {
-  const p = (0, import_manseryeok.calculateFourPillars)({
-    year,
-    month,
-    day,
-    hour: 12,
-    minute: 0,
-    isLunar: false,
-    gender: "male",
-    dayBoundary: "jasi"
-  }).toObject();
-  return { \uAC04\uC9C0: p.day, \uB144\uC8FC: p.year, \uC6D4\uC8FC: p.month };
-}
 function \uC138\uC6B41\uB144(bySsaju, unseongMap, dayStemHanja, gender, dayBoundary, year, curY) {
   const found = bySsaju.get(year);
   if (found) return { year, ganzhi: k(found.ganzhi), tgStem: found.tenGodStem, tgBranch: found.tenGodBranch, stage12: found.stage12, isCurrent: year === curY };
@@ -669,14 +644,6 @@ function \uC138\uC6B4\uD45C\uB370\uC774\uD130(s, dayStemHanja, dayStemKo, gender
   const unseongMap = \uC2ED\uC774\uC6B4\uC131\uB9F5(dayStemKo);
   const rows = [];
   for (let i = 0; i < 5; i++) rows.push(\uC138\uC6B41\uB144(bySsaju, unseongMap, dayStemHanja, gender, dayBoundary, startYear + i, startYear));
-  return rows;
-}
-function \uC138\uC6B4\uAD6C\uAC04(s, dayStemHanja, dayStemKo, gender, dayBoundary, startYear, \uB144\uC218, curYear) {
-  const bySsaju = /* @__PURE__ */ new Map();
-  (s.seyun || []).forEach((y) => bySsaju.set(y.year, y));
-  const unseongMap = \uC2ED\uC774\uC6B4\uC131\uB9F5(dayStemKo);
-  const rows = [];
-  for (let i = 0; i < \uB144\uC218; i++) rows.push(\uC138\uC6B41\uB144(bySsaju, unseongMap, dayStemHanja, gender, dayBoundary, startYear + i, curYear));
   return rows;
 }
 function \uB9CC\uB098\uC774\uACC4\uC0B0(birthSolar, now) {
@@ -1005,127 +972,10 @@ ${concern}`);
   };
   const pdfHtml = PDF\uD45CHTML(pdfTableParams, "pdf");
   const colorHtml = PDF\uD45CHTML(pdfTableParams, "color");
-  const \uC2ED\uC131\uC0C1\uC138 = {};
-  const \uC2ED\uC131\uADF8\uB8F9 = { \uC778\uC131: 0, \uBE44\uAC81: 0, \uC2DD\uC0C1: 0, \uC7AC\uC131: 0, \uAD00\uC131: 0 };
-  const \uC2ED\uC131\uAC12 = hourUnknown ? [tgSelf.year.stem, tgSelf.year.branch, tgSelf.month.stem, tgSelf.month.branch, tgSelf.day.branch] : [tgSelf.year.stem, tgSelf.year.branch, tgSelf.month.stem, tgSelf.month.branch, tgSelf.day.branch, tgSelf.hour.stem, tgSelf.hour.branch];
-  \uC2ED\uC131\uAC12.forEach((v) => {
-    if (!v) return;
-    \uC2ED\uC131\uC0C1\uC138[v] = (\uC2ED\uC131\uC0C1\uC138[v] || 0) + 1;
-    const g = TEN_GOD_GROUP[v];
-    if (g) \uC2ED\uC131\uADF8\uB8F9[g]++;
-  });
-  const \uB300\uC6B4\uD56D\uBAA9 = (d) => d ? { \uB098\uC774: d.startAge, \uAC04\uC9C0: k(d.ganzhi), \uC2ED\uC131: `${d.stemTenGod}/${d.branchTenGod}`, \uC6B4\uC131: d.stage12 } : null;
-  const \uC138\uC6B4\uD604\uC7AC = seyunPdfRows.find((r) => r.isCurrent) || seyunPdfRows.find((r) => r.year === thisYear) || null;
-  const \uC6D4\uC6B4\uD604\uC7AC = wolunPdfRows.find((r) => r.isCurrent) || null;
-  const \uACF5\uB9DD\uB77C\uBCA8 = (branch) => {
-    const inYear = [\uACF5\uB9DD\uB1441, \uACF5\uB9DD\uB1442].includes(branch), inDay = [\uACF5\uB9DD\uC77C1, \uACF5\uB9DD\uC77C2].includes(branch);
-    if (inYear && inDay) return "\uACF5\uB9DD(\uB144, \uC77C)";
-    if (inYear) return "\uACF5\uB9DD(\uB144)";
-    if (inDay) return "\uACF5\uB9DD(\uC77C)";
-    return null;
-  };
-  const wongukCols = [
-    { c: "hour", key: "\uC2DC" },
-    { c: "day", key: "\uC77C" },
-    { c: "month", key: "\uC6D4" },
-    { c: "year", key: "\uB144" }
-  ];
-  const wonguk = wongukCols.map(({ c, key }) => {
-    const gz = m[c];
-    const stemKo = gz[0], branchKo = gz[1];
-    const gm = \uACF5\uB9DD\uB77C\uBCA8(branchKo);
-    const unknown = hourUnknown && c === "hour";
-    return {
-      key,
-      ganzhi: gz,
-      stemKo,
-      stemHanja: STEM_K2H[stemKo] || stemKo,
-      stemElem: STEM_ELEM_KO[stemKo] || "",
-      branchKo,
-      branchHanja: BRANCH_K2H[branchKo] || branchKo,
-      branchElem: BRANCH_ELEM_KO[branchKo] || "",
-      stemTenGod: c === "day" ? "\uC77C\uAC04" : \uBE48\uCE78\uCC44\uC6C0(tgSelf[c].stem),
-      branchTenGod: \uBE48\uCE78\uCC44\uC6C0(tgSelf[c].branch),
-      jijanggan: unknown ? [] : \uC9C0\uC7A5\uAC04\uC2ED\uC131\uBAA9\uB85D(dayStemHanja, branchKo).filter((l) => l !== "-"),
-      unseong: \uBE48\uCE78\uCC44\uC6C0(unseong[c]),
-      yearSal: \uBE48\uCE78\uCC44\uC6C0(\uC2ED\uC774\uC2E0\uC0B4\uBCC4\uCE6D(yearSal[c])),
-      daySal: \uBE48\uCE78\uCC44\uC6C0(\uC2ED\uC774\uC2E0\uC0B4\uBCC4\uCE6D(daySal[c])),
-      sinsal: unknown ? [] : [...gm ? [gm] : [], ...\uD2B9\uC218\uC2E0\uC0B4\uACB0\uACFC.byPillar[key] || []],
-      unknown
-    };
-  });
   const raw = {
     m: { hour: m.hour, day: m.day, month: m.month, year: m.year },
     hourUnknown,
-    eokbu,
-    wonguk,
-    \uC6D4\uC6B4\uBAA9\uB85D: wolunPdfRows.map((r) => ({
-      \uB144: r.year,
-      \uC6D4: r.month,
-      \uAC04\uC9C0: r.ganzhi,
-      \uCC9C\uAC04\uC2ED\uC131: r.tgStem,
-      \uC9C0\uC9C0\uC2ED\uC131: r.tgBranch,
-      \uD604\uC7AC: !!r.isCurrent
-    })),
-    consult: {
-      \uC77C\uAC04: m.day[0],
-      \uC77C\uAC04\uC624\uD589: STEM_ELEM_KO[m.day[0]],
-      \uC77C\uC8FC: m.day,
-      \uC131\uBCC4: info.gender,
-      \uB9CC\uB098\uC774: manAge,
-      \uACA9\uAD6D: gyeok.name,
-      \uACA9\uAD6D\uADFC\uAC70: gyeok.basis,
-      \uC2E0\uAC15\uC57D: sgy.gradeLabel,
-      \uC2E0\uAC15\uC57D\uC810\uC218: sgy.score,
-      \uB4DD\uB839: sgy.\uB4DD\uB839\uB77C\uBCA8,
-      \uB4DD\uC9C0: sgy.\uB4DD\uC9C0\uB77C\uBCA8,
-      \uB4DD\uC138: sgy.\uB4DD\uC138\uB77C\uBCA8,
-      \uC6A9\uC2E0: eokbu.\uC6A9\uC2E0,
-      \uD76C\uC2E0: eokbu.\uD76C\uC2E0,
-      \uAE30\uC2E0: eokbu.\uAE30\uC2E0,
-      \uAD6C\uC2E0: eokbu.\uAD6C\uC2E0,
-      \uD55C\uC2E0: eokbu.\uD55C\uC2E0,
-      \uC870\uD6C4: johuText,
-      \uC624\uD589\uBD84\uD3EC: fe,
-      \uC2ED\uC131\uBD84\uD3EC: \uC2ED\uC131\uADF8\uB8F9,
-      \uC2ED\uC131\uC0C1\uC138,
-      \uACF5\uB9DD\uB144: [\uACF5\uB9DD\uB1441, \uACF5\uB9DD\uB1442],
-      \uACF5\uB9DD\uC77C: [\uACF5\uB9DD\uC77C1, \uACF5\uB9DD\uC77C2],
-      \uC2E0\uC0B4: {
-        \uB144: \uD2B9\uC218\uC2E0\uC0B4\uACB0\uACFC.byPillar.\uB144 || [],
-        \uC6D4: \uD2B9\uC218\uC2E0\uC0B4\uACB0\uACFC.byPillar.\uC6D4 || [],
-        \uC77C: \uD2B9\uC218\uC2E0\uC0B4\uACB0\uACFC.byPillar.\uC77C || [],
-        \uC2DC: \uD2B9\uC218\uC2E0\uC0B4\uACB0\uACFC.byPillar.\uC2DC || []
-      },
-      \uC2E0\uC0B4\uAE30\uD0C0: \uAE30\uD0C0\uC2E0\uC0B4,
-      \uD569: \uD569\uC804\uCCB4,
-      \uCDA9\uD615\uD30C\uD574: \uCDA9\uD615\uD30C\uD574\uC804\uCCB4,
-      \uCC9C\uAC04\uAD00\uACC4: [...\uCC9C\uAC04\uACB0\uACFC],
-      \uD604\uC7AC\uB300\uC6B4: \uB300\uC6B4\uD56D\uBAA9(daeunList[curDaeunIdx]),
-      \uB2E4\uC74C\uB300\uC6B4: \uB300\uC6B4\uD56D\uBAA9(daeunList[curDaeunIdx + 1]),
-      \uB300\uC6B4\uC218: s.daeun.startAge,
-      \uB300\uC6B4\uBC29\uD5A5: s.daeun.basis.direction === "forward" ? "\uC21C\uD589" : "\uC5ED\uD589",
-      \uB300\uC6B4\uBAA9\uB85D: daeunList.map((d, i) => ({
-        \uB098\uC774: d.startAge,
-        \uAC04\uC9C0: k(d.ganzhi),
-        \uCC9C\uAC04\uC2ED\uC131: d.stemTenGod,
-        \uC9C0\uC9C0\uC2ED\uC131: d.branchTenGod,
-        \uC6B4\uC131: d.stage12,
-        \uD604\uC7AC: i === curDaeunIdx
-      })),
-      \uC138\uC6B4\uBAA9\uB85D: \uC138\uC6B4\uAD6C\uAC04(s, dayStemHanja, m.day[0], info.gender, dayBoundary, thisYear - 2, 15, thisYear).map((r) => ({
-        \uB144\uB3C4: r.year,
-        \uAC04\uC9C0: r.ganzhi,
-        \uCC9C\uAC04\uC2ED\uC131: r.tgStem,
-        \uC9C0\uC9C0\uC2ED\uC131: r.tgBranch,
-        \uC6B4\uC131: r.stage12,
-        \uD604\uC7AC: !!r.isCurrent
-      })),
-      \uC62C\uD574\uC138\uC6B4: \uC138\uC6B4\uD604\uC7AC ? { \uB144\uB3C4: \uC138\uC6B4\uD604\uC7AC.year, \uAC04\uC9C0: \uC138\uC6B4\uD604\uC7AC.ganzhi, \uC2ED\uC131: `${\uC138\uC6B4\uD604\uC7AC.tgStem}/${\uC138\uC6B4\uD604\uC7AC.tgBranch}`, \uC6B4\uC131: \uC138\uC6B4\uD604\uC7AC.stage12 } : null,
-      \uC774\uBC88\uB2EC\uC6D4\uC6B4: \uC6D4\uC6B4\uD604\uC7AC ? { \uB77C\uBCA8: `${\uC6D4\uC6B4\uD604\uC7AC.year}\uB144 ${\uC6D4\uC6B4\uD604\uC7AC.month}\uC6D4`, \uAC04\uC9C0: \uC6D4\uC6B4\uD604\uC7AC.ganzhi, \uC2ED\uC131: `${\uC6D4\uC6B4\uD604\uC7AC.tgStem}/${\uC6D4\uC6B4\uD604\uC7AC.tgBranch}`, \uC6B4\uC131: "" } : null,
-      \uACE0\uBBFC: concern,
-      \uC5F0\uC560\uC0C1\uD0DC: \uC5F0\uC560\uC0C1\uD0DC && \uC5F0\uC560\uC0C1\uD0DC !== "\uC120\uD0DD\uC548\uD568" ? \uC5F0\uC560\uC0C1\uD0DC : ""
-    }
+    eokbu
   };
   return { text: blocks.join("\n\n") + "\n", pdfHtml, colorHtml, raw };
 }
@@ -1224,19 +1074,11 @@ ${concern}`);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  BRANCH_ELEM_KO,
-  BRANCH_K2H,
-  BRANCH_MAIN,
   HIDDEN_STEMS_TABLE,
-  STEM_ELEM_KO,
-  STEM_K2H,
-  tenGod,
   \uACA9\uAD6D\uD310\uC815,
   \uAD81\uD569\uBD84\uC11D,
   \uBA85\uC2DD\uD45C,
   \uBA85\uC2DD\uD45C\uC0C1\uC138,
-  \uC2ED\uC774\uC6B4\uC131\uB9F5,
-  \uC77C\uC9C4,
   \uC870\uD6C4\uC6A9\uC2E0\uACC4\uC0B0,
   \uC9C0\uC7A5\uAC04\uC2ED\uC131\uBAA9\uB85D
 });
