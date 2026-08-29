@@ -2,7 +2,7 @@
 
 <style>
 /* ══════════════════════════════════════════════════════════
- * 스레드 자동화 — 주제 하나로 글을 만들고 지침에 맞는지 본다.
+ * 스레드 자동화 — 주제 하나로 글을 만들고, 지침에 맞는지 보고, 올린다.
  * 모든 규칙을 #ta 안에 가둔다. 밖으로 새면 대시보드가 깨진다.
  * ══════════════════════════════════════════════════════════ */
 #ta{
@@ -26,12 +26,21 @@
 #ta .ta-tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 #ta .ta-panel[hidden]{display:none}
 
+/* 지금 올릴 계정 — 늘 보이게 */
+#ta .ta-who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--sub);border:1px solid var(--line);border-radius:12px;
+  padding:11px 15px;margin-bottom:16px;font-size:14px}
+#ta .ta-who b{color:var(--ink);font-weight:700}
+#ta .ta-who .none{color:var(--no);font-weight:700}
+#ta .ta-who select{width:auto;min-width:150px;padding:7px 10px;font-size:14px}
+#ta .ta-who .sp{margin-left:auto;font-size:13px;color:var(--dim)}
+
 /* 입력 */
 #ta label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px}
 #ta input[type=text],#ta input[type=password],#ta textarea,#ta select{
   width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;
   font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
-#ta textarea{line-height:1.7;resize:vertical}
+#ta textarea{line-height:1.8;resize:vertical}
 #ta input:focus,#ta textarea:focus,#ta select:focus{outline:0;border-color:var(--gold)}
 #ta .ta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
 #ta .ta-row>div{flex:1;min-width:150px}
@@ -46,6 +55,8 @@
 #ta .ta-btn.ghost:hover{background:var(--sub);color:var(--ink)}
 #ta .ta-btn.sm{padding:8px 14px;font-size:13.5px}
 #ta .ta-btn.danger{background:#fff;color:var(--no);border:1px solid var(--no)}
+#ta .ta-btn.go{background:var(--ok)}
+#ta .ta-btn.go:hover{background:#17603F}
 
 /* 알림 */
 #ta .ta-msg{border-radius:9px;padding:13px 15px;font-size:14px;line-height:1.7;margin-bottom:14px;white-space:pre-wrap}
@@ -56,11 +67,13 @@
 /* 글 카드 */
 #ta .ta-post{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:14px;overflow:hidden}
 #ta .ta-post.picked{border-color:var(--gold);box-shadow:0 0 0 2px rgba(181,154,98,.18)}
-#ta .ta-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+#ta .ta-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
   padding:13px 16px;background:var(--sub);border-bottom:1px solid var(--line2)}
 #ta .ta-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:100px;background:#fff;border:1px solid var(--line);color:var(--ink2)}
 #ta .ta-tag.form{background:var(--ink);color:#fff;border-color:var(--ink)}
-#ta .ta-head .ta-sp{margin-left:auto;display:flex;gap:6px;align-items:center}
+#ta .ta-tag.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+#ta .ta-tag.no{background:var(--no-bg);color:var(--no);border-color:transparent}
+#ta .ta-head .ta-sp{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 #ta .ta-body{padding:16px}
 #ta .ta-part{border-left:3px solid var(--line);padding:0 0 0 14px;margin-bottom:16px}
 #ta .ta-part:last-child{margin-bottom:0}
@@ -68,6 +81,7 @@
 #ta .ta-part .txt{font-size:15px;line-height:1.85;white-space:pre-wrap;word-break:keep-all}
 #ta .ta-part .len{font-size:12px;color:var(--dim);margin-top:6px}
 #ta .ta-part .len.over{color:var(--no);font-weight:700}
+#ta .ta-part textarea{margin-bottom:4px}
 
 /* 점검 결과 */
 #ta .ta-check{border-top:1px solid var(--line2);padding:14px 16px;background:var(--paper)}
@@ -95,6 +109,7 @@
 #ta .ta-num b{display:block;font-size:22px;font-weight:800;color:var(--ink)}
 #ta .ta-num span{font-size:12.5px;color:var(--dim)}
 
+/* 주제 고르기 */
 #ta .ta-pick{margin-top:16px;border-top:1px solid var(--line2);padding-top:14px}
 #ta .ta-pick-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 #ta .ta-pick-top b{font-size:14px;color:var(--ink2);margin-right:auto}
@@ -104,6 +119,8 @@
   cursor:pointer;font-family:inherit}
 #ta .ta-chip:hover{border-color:var(--gold);color:var(--gold-d);background:var(--sub)}
 #ta .ta-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* 연결 안내 단계 */
 #ta .ta-steps{list-style:none;counter-reset:s;padding:0;margin:0 0 4px}
 #ta .ta-steps li{counter-increment:s;position:relative;padding:0 0 16px 38px;
   border-left:2px solid var(--line2);margin-left:11px}
@@ -115,12 +132,15 @@
 #ta .ta-steps li span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
 #ta .ta-steps a{color:var(--gold-d);font-weight:700}
 #ta .ta-steps code{background:var(--sub);padding:2px 6px;border-radius:4px;font-size:12.5px}
-#ta .ta-acc{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
-#ta .ta-acc button{border:1px solid var(--line);background:#fff;color:var(--ink2);
-  border-radius:100px;padding:8px 15px;font-size:13.5px;font-weight:600;
-  cursor:pointer;font-family:inherit}
-#ta .ta-acc button:hover{border-color:var(--gold);color:var(--gold-d)}
-#ta .ta-acc button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* 등록된 계정 목록 */
+#ta .ta-accs{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+#ta .ta-acc{display:flex;align-items:center;gap:10px;border:1px solid var(--line);
+  border-radius:10px;padding:11px 14px;background:#fff}
+#ta .ta-acc.on{border-color:var(--ok);background:var(--ok-bg)}
+#ta .ta-acc b{font-size:14.5px;font-weight:700}
+#ta .ta-acc .now{font-size:12px;font-weight:700;color:var(--ok)}
+#ta .ta-acc .sp{margin-left:auto;display:flex;gap:6px}
 
 #ta .ta-empty{text-align:center;color:var(--dim);font-size:14px;padding:34px 10px;line-height:1.8}
 #ta .ta-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
@@ -135,6 +155,22 @@
     <button class="ta-tab" role="tab" aria-selected="true"  data-panel="make">글 만들기</button>
     <button class="ta-tab" role="tab" aria-selected="false" data-panel="queue">내 원고 <span id="taCount"><%= posts.length %></span></button>
     <button class="ta-tab" role="tab" aria-selected="false" data-panel="setup">설정</button>
+  </div>
+
+  <!-- 지금 어느 계정으로 나가는지 늘 보이게 -->
+  <div class="ta-who">
+    <% if (accounts.length) { %>
+      <span>올릴 계정</span>
+      <select id="taWho">
+        <% accounts.forEach(function(a){ %>
+          <option value="<%= a.id %>" <%= (account && a.id === account.id) ? 'selected' : '' %>>@<%= a.username || a.accountId %></option>
+        <% }) %>
+      </select>
+      <span class="sp"><%= allowPublish ? '올리기 켜짐' : '올리기 잠김 — 설정에서 켜세요' %></span>
+    <% } else { %>
+      <span class="none">올릴 계정이 아직 없습니다</span>
+      <span class="sp">설정 탭에서 Zernio 열쇠를 넣으면 등록됩니다</span>
+    <% } %>
   </div>
 
   <!-- ══════════ 글 만들기 ══════════ -->
@@ -158,17 +194,19 @@
         <div style="max-width:130px">
           <label for="taLimit">글 개수</label>
           <select id="taLimit">
+            <option value="1">1개</option>
+            <option value="2">2개</option>
             <option value="3" selected>3개</option>
             <option value="5">5개</option>
             <option value="8">8개</option>
           </select>
         </div>
         <div style="flex:0 0 auto">
-          <button class="ta-btn" id="taGo" <%= hasKey ? '' : 'disabled' %>>만들기</button>
+          <button class="ta-btn" type="button" id="taGo" <%= hasKey ? '' : 'disabled' %>>만들기</button>
         </div>
       </div>
       <p class="ta-sub" style="margin:12px 0 0">
-        3개 45초 · 5개 1분 · 8개 3분쯤 걸립니다. 오늘 <b id="taUsed"><%= usedToday %></b>/<%= dailyLimit %>번 썼습니다.
+        1개 20초 · 3개 45초 · 8개 3분쯤 걸립니다. 오늘 <b id="taUsed"><%= usedToday %></b>/<%= dailyLimit %>번 썼습니다.
       </p>
 
       <div class="ta-pick">
@@ -193,8 +231,8 @@
     </div>
 
     <div class="ta-card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="ta-btn ghost sm" id="taReload">새로고침</button>
-      <button class="ta-btn ghost sm" id="taRestore" <%= trashCount ? '' : 'disabled' %>>방금 지운 것 되살리기</button>
+      <button class="ta-btn ghost sm" type="button" id="taReload">새로고침</button>
+      <button class="ta-btn ghost sm" type="button" id="taRestore" <%= trashCount ? '' : 'disabled' %>>방금 지운 것 되살리기</button>
       <span class="ta-sub" style="margin:0 0 0 auto">지운 글은 휴지통에 남습니다</span>
     </div>
 
@@ -206,10 +244,10 @@
     <div class="ta-card">
       <h2>글 만들기 — OpenAI 키</h2>
       <p class="ta-sub">「무료사주 · API 설정」에 등록해두신 <b>OpenAI 키를 그대로 씁니다.</b>
-        따로 넣으실 것이 없습니다. 요금도 무료사주·PDF와 같은 계정에서 나갑니다.</p>
+        따로 넣으실 것이 없습니다. 요금도 무료사주·PDF 와 같은 계정에서 나갑니다.</p>
       <% if (hasKey) { %>
         <div class="ta-msg ok">키가 등록되어 있습니다.</div>
-        <button class="ta-btn ghost" id="taTestKey">연결 확인</button>
+        <button class="ta-btn ghost" type="button" id="taTestKey">연결 확인</button>
       <% } else { %>
         <div class="ta-msg err">아직 OpenAI 키가 없습니다.
 「무료사주 · API 설정」에서 먼저 등록해주세요. 등록하면 여기서도 바로 쓰입니다.</div>
@@ -219,14 +257,22 @@
     </div>
 
     <div class="ta-card">
-      <h2>스레드 계정 잇기</h2>
-      <% if (zernio.connected) { %>
-        <div class="ta-msg ok">@<%= zernio.username || '계정' %> 에 올라갑니다.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="ta-btn ghost sm" type="button" id="taAccounts">다른 계정으로 바꾸기</button>
-          <button class="ta-btn danger sm" type="button" id="taDisconnect">연결 끊기</button>
+      <h2>올릴 스레드 계정</h2>
+      <% if (accounts.length) { %>
+        <p class="ta-sub">여러 개 등록해두고 골라 쓰실 수 있습니다.
+          다른 계정을 더 넣으려면 그 계정이 연결된 Zernio 열쇠를 아래에 또 넣으시면 됩니다.</p>
+        <div class="ta-accs" id="taAccList">
+          <% accounts.forEach(function(a){ %>
+            <div class="ta-acc <%= a.active ? 'on' : '' %>" data-id="<%= a.id %>">
+              <b>@<%= a.username || a.accountId %></b>
+              <% if (a.active) { %><span class="now">지금 여기에 올라갑니다</span><% } %>
+              <span class="sp">
+                <% if (!a.active) { %><button class="ta-btn ghost sm ta-use" type="button">이 계정 쓰기</button><% } %>
+                <button class="ta-btn danger sm ta-del-acc" type="button">빼기</button>
+              </span>
+            </div>
+          <% }) %>
         </div>
-        <div id="taAccList" style="margin-top:12px"></div>
       <% } else { %>
         <p class="ta-sub">프로그램이 대신 글을 올리려면 스레드 계정을 한 번 이어줘야 합니다.
           <b>페이스북 개발자 등록은 필요 없습니다.</b> Zernio 라는 중계 서비스를 씁니다.
@@ -235,44 +281,37 @@
         <ol class="ta-steps">
           <li>
             <b>Zernio 가입하기</b>
-            <span><a href="https://zernio.com" target="_blank" rel="noopener">zernio.com</a> 에 들어가
-              오른쪽 위 <b>Sign Up</b> 을 누릅니다. 구글 계정으로 가입하시면 제일 빠릅니다.
-              영어 사이트지만 누를 곳이 몇 개 없습니다.</span>
+            <span><a href="https://zernio.com" target="_blank" rel="noopener">zernio.com</a> 오른쪽 위 <b>Sign Up</b>.
+              구글 계정으로 가입하시면 제일 빠릅니다. 영어 사이트지만 누를 곳이 몇 개 없습니다.</span>
           </li>
           <li>
             <b>스레드 계정 연결하기</b>
-            <span><a href="https://zernio.com/dashboard/connections" target="_blank" rel="noopener">Connections</a> 로 가서
-              <b>Add Account</b> → 목록에서 <b>Threads</b> → 글 올릴 계정으로 로그인 → 권한 허용.
+            <span><a href="https://zernio.com/dashboard/connections" target="_blank" rel="noopener">Connections</a> →
+              <b>Add Account</b> → <b>Threads</b> → 글 올릴 계정으로 로그인 → 권한 허용.
               <br><b>인스타그램 계정이 여러 개면 어느 계정으로 로그인하는지 꼭 확인하세요.</b>
-              브라우저에 다른 계정이 로그인돼 있으면 그쪽으로 이어질 수 있습니다.
               잘못 이었으면 그 연결을 지우고 다시 하면 됩니다.</span>
           </li>
           <li>
             <b>열쇠 받기</b>
-            <span>Zernio 대시보드 왼쪽 메뉴에서 <b>API Keys</b> → <b>Create API Key</b>.
-              이름은 아무거나 적으세요.
-              <br><b>이 열쇠는 딱 한 번만 보입니다.</b> 창을 닫으면 다시 못 봅니다.
-              못 보고 닫으셨으면 그 키를 지우고 새로 만드시면 됩니다.
-              <br>열쇠는 <code>zk_live_...</code> 이렇게 생겼습니다.</span>
+            <span>Zernio 대시보드 왼쪽 <b>API Keys</b> → <b>Create API Key</b>. 이름은 아무거나.
+              <br><b>열쇠는 만들 때 딱 한 번만 보입니다.</b> 못 보고 닫으셨으면 그 키를 지우고 새로 만드세요.</span>
           </li>
           <li>
             <b>여기에 붙여넣기</b>
-            <span>아래 칸에 넣고 「잇기」를 누르면 연결된 스레드 계정을 찾아옵니다.</span>
+            <span>아래 칸에 넣고 「계정 불러오기」를 누르면, 그 열쇠에 연결된 스레드 계정을 모두 등록합니다.</span>
           </li>
         </ol>
       <% } %>
 
-      <div id="taKeyWrap" <%= zernio.connected ? 'style="display:none"' : '' %>>
-        <label for="taZKey" style="margin-top:14px">Zernio 열쇠</label>
-        <input type="password" id="taZKey" placeholder="zk_live_ 로 시작합니다" autocomplete="off"
-               data-lpignore="true" data-form-type="other">
-        <div style="margin-top:12px"><button class="ta-btn" type="button" id="taConnect">잇기</button></div>
-      </div>
+      <label for="taZKey" style="margin-top:14px">Zernio 열쇠</label>
+      <input type="password" id="taZKey" placeholder="Zernio 에서 받은 열쇠를 붙여넣으세요" autocomplete="off"
+             data-lpignore="true" data-form-type="other">
+      <div style="margin-top:12px"><button class="ta-btn" type="button" id="taConnect">계정 불러오기</button></div>
       <div id="taTokenMsg"></div>
 
       <p class="ta-sub" style="margin:14px 0 0">
         계정 1~2개는 <b>무료</b>입니다. 카드 등록도 필요 없습니다.
-        열쇠는 남에게 보내지 마세요. 새어나가도 스레드 비밀번호가 넘어가는 건 아니지만,
+        열쇠는 남에게 보내지 마세요. 새어나가도 스레드 비밀번호가 넘어가지는 않지만,
         Zernio 에서 그 키를 지우고 새로 만드시면 됩니다.
       </p>
     </div>
@@ -282,10 +321,18 @@
       <p class="ta-sub">꺼두면 아무것도 올라가지 않습니다. 예약해둔 글도 나가지 않습니다.
         처음 써보실 때는 꺼둔 채로 글만 만들어 보시고, 확인이 끝나면 켜세요.</p>
       <label style="display:flex;gap:10px;align-items:center;cursor:pointer;font-size:15px;font-weight:700">
-        <input type="checkbox" id="taAllow" <%= zernio.allowPublish ? "checked" : "" %> style="width:18px;height:18px">
+        <input type="checkbox" id="taAllow" <%= allowPublish ? 'checked' : '' %> style="width:18px;height:18px">
         올리기를 허용합니다
       </label>
       <div id="taAllowMsg" style="margin-top:10px"></div>
+    </div>
+
+    <div class="ta-card">
+      <h2>신청 안내 링크</h2>
+      <p class="ta-sub">글 마지막에 신청을 안내할 때 쓰는 주소입니다. 비워두면 링크 없이 만듭니다.</p>
+      <input type="text" id="taCta" value="<%= settings.ctaLink || '' %>" placeholder="https://..." maxlength="300">
+      <div style="margin-top:12px"><button class="ta-btn" type="button" id="taSaveCta">저장</button></div>
+      <div id="taCtaMsg"></div>
     </div>
   </section>
 </div>
@@ -296,17 +343,9 @@
   var esc = function(s){ return String(s==null?'':s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
-  /* ── 탭 ── */
-  var tabs = document.querySelectorAll('#ta .ta-tab[data-panel]');
-  tabs.forEach(function(b){
-    b.addEventListener('click', function(){
-      tabs.forEach(function(x){ x.setAttribute('aria-selected', String(x===b)); });
-      ['make','queue','setup'].forEach(function(k){
-        $('#p-'+k).hidden = (k !== b.dataset.panel);
-      });
-      if (b.dataset.panel === 'queue') loadList();
-    });
-  });
+  var HAS_ACCOUNT = <%= accounts.length ? 'true' : 'false' %>;
+  var ALLOWED     = <%= allowPublish ? 'true' : 'false' %>;
+  var TOPICS      = <%- JSON.stringify(topics) %>;
 
   /* ── 서버와 이야기하기 ── */
   function post(url, body){
@@ -316,97 +355,29 @@
     }).then(function(r){ return r.json().then(function(j){ return { status:r.status, j:j }; }); });
   }
   function msg(box, kind, text){
-    box.innerHTML = '<div class="ta-msg '+kind+'">'+esc(text)+'</div>';
+    if (box) box.innerHTML = '<div class="ta-msg '+kind+'">'+esc(text)+'</div>';
   }
 
-  /* ── 점검 결과 그리기 ── */
-  function checkHtml(c){
-    if (!c) return '';
-    var rows = c.rows.map(function(r){
-      var cls = r.ok ? 'pass' : (r.hard ? 'fail' : 'soft');
-      var mark = r.ok ? '✓' : (r.hard ? '✕' : '!');
-      return '<div class="ta-chk '+cls+'"><i>'+mark+'</i><div><b>'+esc(r.label)+'</b>'+
-             (r.detail ? ' <span>'+esc(r.detail)+'</span>' : '')+'</div></div>';
-    }).join('');
-    var v = c.passHard
-      ? '<div class="ta-verdict ok">지침 통과</div>'
-      : '<div class="ta-verdict no">고쳐야 올릴 수 있습니다</div>';
-    return '<div class="ta-check">'+v+rows+'</div>';
-  }
+  /* ── 탭 ── */
+  var tabs = document.querySelectorAll('#ta .ta-tab[data-panel]');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.setAttribute('aria-selected', String(x===b)); });
+      ['make','queue','setup'].forEach(function(k){ $('#p-'+k).hidden = (k !== b.dataset.panel); });
+      if (b.dataset.panel === 'queue') loadList();
+    });
+  });
 
-  function partsHtml(p){
-    return p.preview.map(function(t, i){
-      var len = p.lengths[i];
-      return '<div class="ta-part"><div class="no">'+(p.preview.length>1?(i+1)+'편':'본문')+'</div>'+
-             '<div class="txt">'+esc(t)+'</div>'+
-             '<div class="len'+(len>500?' over':'')+'">'+len+' / 500자</div></div>';
-    }).join('');
-  }
+  /* ── 올릴 계정 바꾸기 (위쪽 줄) ── */
+  $('#taWho') && $('#taWho').addEventListener('change', function(){
+    post('/api/threads/accounts/use', { id: Number(this.value) }).then(function(r){
+      if (!r.j.ok) { alert(r.j.error); return; }
+      location.reload();
+    });
+  });
 
-  function headHtml(p, extra){
-    var formName = { single:'단일', pair:'본문+댓글', chain:'연재 '+p.parts.length+'편' }[p.form] || p.form;
-    return '<div class="ta-head">'+
-      '<span class="ta-tag form">'+esc(formName)+'</span>'+
-      (p.postType ? '<span class="ta-tag">'+esc(p.postType)+'</span>' : '')+
-      (p.hookNames||[]).map(function(h){ return '<span class="ta-tag">'+esc(h)+'</span>'; }).join('')+
-      (p.cta ? '<span class="ta-tag">신청 안내</span>' : '')+
-      '<span class="ta-sp">'+(extra||'')+'</span></div>';
-  }
-
-  var CONNECTED = <%= zernio.connected ? 'true' : 'false' %>;
-  var ALLOWED   = <%= zernio.allowPublish ? 'true' : 'false' %>;
-
-  var STATUS = {
-    draft:     { t:'초안',   c:'' },
-    scheduled: { t:'예약됨', c:'ok' },
-    sending:   { t:'올리는 중', c:'ok' },
-    published: { t:'올림',   c:'ok' },
-    failed:    { t:'실패',   c:'no' }
-  };
-
-  function statusTag(p){
-    var s = STATUS[p.status] || STATUS.draft;
-    var extra = '';
-    if (p.status === 'scheduled' && p.scheduledFor) extra = ' ' + when(p.scheduledFor);
-    return '<span class="ta-tag" style="' +
-      (s.c==='ok' ? 'background:var(--ok-bg);color:var(--ok);border-color:transparent' :
-       s.c==='no' ? 'background:var(--no-bg);color:var(--no);border-color:transparent' : '') +
-      '">' + esc(s.t + extra) + '</span>';
-  }
-
-  function when(iso){
-    try {
-      var d = new Date(iso);
-      return d.toLocaleString('ko-KR', { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' });
-    } catch(e){ return ''; }
-  }
-
-  /* 상태에 따라 쓸 수 있는 단추가 다르다 */
-  function actionBtns(p){
-    if (p.status === 'published') {
-      return (p.permalink ? '<a class="ta-btn ghost sm" target="_blank" rel="noopener" href="'+esc(p.permalink)+'">스레드에서 보기</a>' : '') +
-             '<button class="ta-btn danger sm ta-del">지우기</button>';
-    }
-    if (p.status === 'scheduled') {
-      return '<button class="ta-btn ghost sm ta-unsched">예약 취소</button>' +
-             '<button class="ta-btn danger sm ta-del">지우기</button>';
-    }
-    var can = CONNECTED && ALLOWED && p.check && p.check.passHard;
-    var why = !CONNECTED ? '스레드 계정을 먼저 이어주세요'
-            : !ALLOWED   ? '설정에서 올리기를 허용해주세요'
-            : (p.check && !p.check.passHard) ? '지침에 걸려 올릴 수 없습니다' : '';
-    return '<button class="ta-btn sm ta-pub" ' + (can ? '' : 'disabled title="'+esc(why)+'"') + '>지금 올리기</button>' +
-           '<button class="ta-btn ghost sm ta-sched" ' + (can ? '' : 'disabled title="'+esc(why)+'"') + '>예약</button>' +
-           '<button class="ta-btn ghost sm ta-rw">다시 쓰기</button>' +
-           '<button class="ta-btn danger sm ta-del">지우기</button>';
-  }
-
-  /* ── 주제 고르기 ──
-     "오늘 뭐 쓰지" 에서 멈추지 않게, 사주에서 이야깃거리가 되는 것들을
-     섞어서 보여준다. 눌러 넣거나 「주제 뽑기」로 하나를 바로 받는다. */
-  var TOPICS = <%- JSON.stringify(topics) %>;
+  /* ── 주제 고르기 ── */
   var topicEl = $('#taTopic');
-
   function shuffle(a){
     var x = a.slice();
     for (var i = x.length - 1; i > 0; i--) {
@@ -415,7 +386,6 @@
     }
     return x;
   }
-
   function drawChips(){
     var box = $('#taChips');
     if (!box) return;
@@ -432,7 +402,6 @@
     });
   }
   drawChips();
-
   $('#taMore') && $('#taMore').addEventListener('click', drawChips);
   $('#taRoll') && $('#taRoll').addEventListener('click', function(){
     var t = TOPICS[Math.floor(Math.random() * TOPICS.length)];
@@ -443,26 +412,76 @@
     topicEl.focus();
   });
 
+  /* ── 글 카드 그리기 ── */
+  function checkHtml(c){
+    if (!c) return '';
+    var rows = c.rows.map(function(r){
+      var cls = r.ok ? 'pass' : (r.hard ? 'fail' : 'soft');
+      var mark = r.ok ? '✓' : (r.hard ? '✕' : '!');
+      return '<div class="ta-chk '+cls+'"><i>'+mark+'</i><div><b>'+esc(r.label)+'</b>'+
+             (r.detail ? ' <span>'+esc(r.detail)+'</span>' : '')+'</div></div>';
+    }).join('');
+    return '<div class="ta-check">' +
+      (c.passHard ? '<div class="ta-verdict ok">지침 통과</div>'
+                  : '<div class="ta-verdict no">고쳐야 올릴 수 있습니다</div>') +
+      rows + '</div>';
+  }
+
+  function partsHtml(p){
+    return p.preview.map(function(t, i){
+      var len = p.lengths[i];
+      return '<div class="ta-part"><div class="no">'+(p.preview.length>1?(i+1)+'편':'본문')+'</div>'+
+             '<div class="txt">'+esc(t)+'</div>'+
+             '<div class="len'+(len>500?' over':'')+'">'+len+' / 500자</div></div>';
+    }).join('');
+  }
+
+  function formName(p){
+    return { single:'단일', pair:'본문+댓글', chain:'연재 '+p.parts.length+'편' }[p.form] || p.form;
+  }
+  function tagsHtml(p){
+    return '<span class="ta-tag form">'+esc(formName(p))+'</span>'+
+      (p.postType ? '<span class="ta-tag">'+esc(p.postType)+'</span>' : '')+
+      (p.hookNames||[]).map(function(h){ return '<span class="ta-tag">'+esc(h)+'</span>'; }).join('')+
+      (p.cta ? '<span class="ta-tag">신청 안내</span>' : '');
+  }
+
+  /** 왜 못 올리는지 한 마디 */
+  function whyNot(p){
+    if (!HAS_ACCOUNT) return '올릴 계정을 먼저 등록해주세요';
+    if (!ALLOWED) return '설정에서 올리기를 허용해주세요';
+    if (p.check && !p.check.passHard) return '지침에 걸려 올릴 수 없습니다';
+    return '';
+  }
+
+  /** 예약 시각을 물어본다 */
+  function askWhen(){
+    var d = new Date(Date.now() + 60*60*1000);
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    var def = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    var v = prompt('언제 올릴까요?  (예: ' + def + ')', def);
+    if (!v) return null;
+    var at = new Date(v.replace(' ', 'T'));
+    if (isNaN(at.getTime())) { alert('시간을 알아듣지 못했습니다. 2026-09-01 21:00 처럼 적어주세요.'); return null; }
+    return at.toISOString();
+  }
 
   /* ══════════ 만들기 ══════════ */
   var out = $('#taOut'), goBtn = $('#taGo'), batch = null;
 
   goBtn && goBtn.addEventListener('click', function(){
-    var topic = $('#taTopic').value.trim();
+    var topic = topicEl.value.trim();
     if (!topic) { msg(out, 'err', '주제를 적어주세요.'); return; }
     var limit = Number($('#taLimit').value);
 
     goBtn.disabled = true;
     goBtn.innerHTML = '<span class="ta-spin"></span> 만드는 중';
     msg(out, 'warn', '후킹 26가지를 훑어보고 글을 쓰는 중입니다. 창을 닫지 마세요.\n' +
-                     (limit>=8 ? '8개는 3분쯤 걸립니다.' : limit>=5 ? '1분쯤 걸립니다.' : '45초쯤 걸립니다.'));
+      (limit>=8 ? '8개는 3분쯤 걸립니다.' : limit>=5 ? '1분쯤 걸립니다.' : limit<=1 ? '20초쯤 걸립니다.' : '45초쯤 걸립니다.'));
 
     post('/api/threads/generate', { topic: topic, limit: limit }).then(function(r){
       goBtn.disabled = false; goBtn.textContent = '만들기';
-      if (!r.j.ok) {
-        msg(out, 'err', r.j.error + (r.j.hint ? '\n\n' + r.j.hint : ''));
-        return;
-      }
+      if (!r.j.ok) { msg(out, 'err', r.j.error + (r.j.hint ? '\n\n' + r.j.hint : '')); return; }
       $('#taUsed').textContent = r.j.usedToday;
       batch = r.j.batch;
       drawBatch(batch);
@@ -479,9 +498,16 @@
     }).join('');
 
     var posts = b.posts.map(function(p, i){
+      var no = whyNot(p);
+      var lock = no ? ' disabled title="'+esc(no)+'"' : '';
       return '<div class="ta-post picked" data-i="'+i+'">'+
-        headHtml(p, '<label style="font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:pointer">'+
-                    '<input type="checkbox" class="ta-pick" checked> 저장</label>')+
+        '<div class="ta-head">'+ tagsHtml(p) +
+          '<span class="ta-sp">'+
+            '<button class="ta-btn go sm ta-pub-now" type="button"'+lock+'>지금 올리기</button>'+
+            '<button class="ta-btn ghost sm ta-sched-now" type="button"'+lock+'>예약</button>'+
+            '<label style="font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:pointer">'+
+              '<input type="checkbox" class="ta-pick-one" checked> 저장</label>'+
+          '</span></div>'+
         '<div class="ta-body">'+partsHtml(p)+
           (p.cutNote ? '<p class="ta-sub" style="margin:12px 0 0">끊은 곳 — '+esc(p.cutNote)+'</p>' : '')+
         '</div>'+ checkHtml(p.check) +'</div>';
@@ -499,24 +525,24 @@
       '</div>'+
       '<div class="ta-card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
         '<b style="font-size:15px">글 '+b.posts.length+'개를 만들었습니다</b>'+
-        '<span class="ta-sub" style="margin:0">고른 것만 저장됩니다. 저장하지 않으면 후킹도 쓴 것으로 치지 않습니다.</span>'+
-        '<button class="ta-btn" id="taSave" style="margin-left:auto">고른 글 저장하기</button>'+
+        '<span class="ta-sub" style="margin:0">바로 올리셔도 되고, 좋은 원고는 저장해뒀다 나중에 쓰셔도 됩니다.</span>'+
+        '<button class="ta-btn ghost" type="button" id="taSave" style="margin-left:auto">고른 글 저장하기</button>'+
       '</div>'+
       posts;
 
-    out.querySelectorAll('.ta-pick').forEach(function(c){
+    out.querySelectorAll('.ta-pick-one').forEach(function(c){
       c.addEventListener('change', function(){
         c.closest('.ta-post').classList.toggle('picked', c.checked);
       });
     });
 
+    /* 저장해두기 */
     $('#taSave').addEventListener('click', function(){
       var chosen = [];
       out.querySelectorAll('.ta-post').forEach(function(el){
-        if ($('.ta-pick', el).checked) chosen.push(batch.posts[Number(el.dataset.i)]);
+        if ($('.ta-pick-one', el).checked) chosen.push(batch.posts[Number(el.dataset.i)]);
       });
       if (!chosen.length) { alert('저장할 글을 골라주세요.'); return; }
-
       var btn = this; btn.disabled = true; btn.textContent = '저장하는 중';
       post('/api/threads/save', { batch: batch, posts: chosen }).then(function(r){
         btn.disabled = false; btn.textContent = '고른 글 저장하기';
@@ -526,10 +552,91 @@
         batch = null;
       });
     });
+
+    /* 미리보기에서 바로 올리기 — 저장부터 하고 올린다 */
+    function sendOne(el, mode){
+      var i = Number(el.dataset.i);
+      var at = null;
+      if (mode === 'schedule') { at = askWhen(); if (!at) return; }
+      else if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
+
+      var btns = el.querySelectorAll('.ta-pub-now, .ta-sched-now');
+      btns.forEach(function(b){ b.disabled = true; });
+      var mark = el.querySelector(mode === 'schedule' ? '.ta-sched-now' : '.ta-pub-now');
+      mark.innerHTML = '<span class="ta-spin"></span> 보내는 중';
+
+      post('/api/threads/save', { batch: batch, posts: [batch.posts[i]] }).then(function(r){
+        if (!r.j.ok || !r.j.ids || !r.j.ids.length) {
+          btns.forEach(function(b){ b.disabled = false; });
+          mark.textContent = mode === 'schedule' ? '예약' : '지금 올리기';
+          alert((r.j && r.j.error) || '저장하지 못했습니다.');
+          return;
+        }
+        var id = r.j.ids[0];
+        $('#taCount').textContent = Number($('#taCount').textContent) + 1;
+        var url = '/api/threads/posts/' + id + (mode === 'schedule' ? '/schedule' : '/publish');
+        post(url, mode === 'schedule' ? { at: at } : {}).then(function(r2){
+          btns.forEach(function(b){ b.disabled = false; });
+          mark.textContent = mode === 'schedule' ? '예약' : '지금 올리기';
+          if (!r2.j.ok) { alert(r2.j.error + (r2.j.hint ? '\n\n' + r2.j.hint : '')); return; }
+          if (mode === 'schedule') {
+            alert('예약했습니다. 「내 원고」 탭에서 확인하실 수 있습니다.');
+          } else {
+            alert('올렸습니다.' + (r2.j.account ? '\n@' + r2.j.account : '') +
+                  (r2.j.permalink ? '\n' + r2.j.permalink : ''));
+          }
+          el.querySelector('.ta-sp').innerHTML =
+            '<span class="ta-tag ok">' + (mode === 'schedule' ? '예약됨' : '올림') + '</span>';
+        });
+      });
+    }
+
+    out.querySelectorAll('.ta-pub-now').forEach(function(b){
+      b.addEventListener('click', function(){ sendOne(b.closest('.ta-post'), 'publish'); });
+    });
+    out.querySelectorAll('.ta-sched-now').forEach(function(b){
+      b.addEventListener('click', function(){ sendOne(b.closest('.ta-post'), 'schedule'); });
+    });
   }
 
   /* ══════════ 내 원고 ══════════ */
   var list = $('#taList');
+
+  var STATUS = {
+    draft:     { t:'초안',      c:'' },
+    scheduled: { t:'예약됨',    c:'ok' },
+    sending:   { t:'올리는 중', c:'ok' },
+    published: { t:'올림',      c:'ok' },
+    failed:    { t:'실패',      c:'no' }
+  };
+  function when(iso){
+    try {
+      return new Date(iso).toLocaleString('ko-KR',
+        { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' });
+    } catch(e){ return ''; }
+  }
+  function statusTag(p){
+    var s = STATUS[p.status] || STATUS.draft;
+    var extra = (p.status === 'scheduled' && p.scheduledFor) ? ' ' + when(p.scheduledFor) : '';
+    return '<span class="ta-tag '+s.c+'">' + esc(s.t + extra) + '</span>';
+  }
+  function actionBtns(p){
+    if (p.status === 'published') {
+      return (p.permalink ? '<a class="ta-btn ghost sm" target="_blank" rel="noopener" href="'+esc(p.permalink)+'">스레드에서 보기</a>' : '') +
+             '<button class="ta-btn danger sm ta-del" type="button">지우기</button>';
+    }
+    if (p.status === 'scheduled') {
+      return '<button class="ta-btn ghost sm ta-unsched" type="button">예약 취소</button>' +
+             '<button class="ta-btn danger sm ta-del" type="button">지우기</button>';
+    }
+    var no = whyNot(p);
+    var lock = no ? ' disabled title="'+esc(no)+'"' : '';
+    return '<button class="ta-btn go sm ta-pub" type="button"'+lock+'>지금 올리기</button>' +
+           '<button class="ta-btn ghost sm ta-sched" type="button"'+lock+'>예약</button>' +
+           '<button class="ta-btn ghost sm ta-edit" type="button">고치기</button>' +
+           '<button class="ta-btn ghost sm ta-rw" type="button">다시 쓰기</button>' +
+           '<button class="ta-btn danger sm ta-del" type="button">지우기</button>';
+  }
 
   function loadList(){
     list.innerHTML = '<div class="ta-empty">불러오는 중…</div>';
@@ -541,13 +648,13 @@
       }
       list.innerHTML = j.posts.map(function(p){
         return '<div class="ta-post" data-id="'+esc(p.id)+'">'+
-          headHtml(p, statusTag(p) +
-                      actionBtns(p))+
+          '<div class="ta-head">'+ statusTag(p) + tagsHtml(p) +
+            '<span class="ta-sp">'+ actionBtns(p) +'</span></div>'+
           '<div class="ta-body">'+
-            (p.error ? '<div class="ta-msg err" style="margin-bottom:12px">'+esc(p.error)+'</div>' : '') +
+            (p.error ? '<div class="ta-msg err" style="margin-bottom:12px">'+esc(p.error)+'</div>' : '')+
             '<p class="ta-sub" style="margin:0 0 12px">주제 — '+esc(p.topic||'')+
               (p.situation ? ' · '+esc(p.situation) : '')+'</p>'+
-            partsHtml(p)+
+            '<div class="ta-parts">'+partsHtml(p)+'</div>'+
           '</div>'+ checkHtml(p.check) +'</div>';
       }).join('');
       wireList();
@@ -555,6 +662,8 @@
   }
 
   function wireList(){
+    function idOf(b){ return b.closest('.ta-post').dataset.id; }
+
     list.querySelectorAll('.ta-del').forEach(function(b){
       b.addEventListener('click', function(){
         var el = b.closest('.ta-post');
@@ -568,36 +677,82 @@
         });
       });
     });
-    /* 지금 올리기 */
-    list.querySelectorAll('.ta-pub').forEach(function(b){
+
+    list.querySelectorAll('.ta-rw').forEach(function(b){
       b.addEventListener('click', function(){
-        var el = b.closest('.ta-post');
-        if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
-        b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 올리는 중';
-        post('/api/threads/posts/' + el.dataset.id + '/publish', {}).then(function(r){
-          if (!r.j.ok) {
-            b.disabled = false; b.textContent = '지금 올리기';
-            alert(r.j.error); loadList(); return;
-          }
-          alert('올렸습니다.' + (r.j.permalink ? '\n' + r.j.permalink : ''));
+        b.disabled = true; b.innerHTML = '<span class="ta-spin"></span>';
+        post('/api/threads/posts/' + idOf(b) + '/rewrite', {}).then(function(r){
+          b.disabled = false; b.textContent = '다시 쓰기';
+          if (!r.j.ok) { alert(r.j.error + (r.j.hint ? '\n\n' + r.j.hint : '')); return; }
           loadList();
         });
       });
     });
 
-    /* 예약 — 시간을 정해두면 서버가 올린다 */
-    list.querySelectorAll('.ta-sched').forEach(function(b){
+    /* 손으로 고치기 — 편마다 칸을 열어준다 */
+    list.querySelectorAll('.ta-edit').forEach(function(b){
       b.addEventListener('click', function(){
         var el = b.closest('.ta-post');
-        var d = new Date(Date.now() + 60*60*1000);
-        var pad = function(n){ return String(n).padStart(2,'0'); };
-        var def = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
-        var v = prompt('언제 올릴까요?  (예: ' + def + ')', def);
-        if (!v) return;
-        var at = new Date(v.replace(' ', 'T'));
-        if (isNaN(at.getTime())) { alert('시간을 알아듣지 못했습니다. 2026-09-01 21:00 처럼 적어주세요.'); return; }
+        var box = $('.ta-parts', el);
+        if (box.dataset.editing === '1') return;
+        box.dataset.editing = '1';
+
+        var texts = [].map.call(el.querySelectorAll('.ta-part .txt'), function(t){ return t.textContent; });
+        box.innerHTML = texts.map(function(t, i){
+          return '<div class="ta-part"><div class="no">'+(texts.length>1?(i+1)+'편':'본문')+'</div>'+
+                 '<textarea rows="'+Math.max(4, Math.min(16, t.split('\n').length + 2))+'">'+esc(t)+'</textarea>'+
+                 '<div class="len">'+t.length+'자</div></div>';
+        }).join('') +
+        '<div style="display:flex;gap:8px;margin-top:6px">'+
+          '<button class="ta-btn sm ta-save-edit" type="button">고친 내용 저장</button>'+
+          '<button class="ta-btn ghost sm ta-cancel-edit" type="button">취소</button>'+
+        '</div>';
+
+        /* 글자 수를 세어 보여준다 — 500자가 넘으면 못 올린다 */
+        box.querySelectorAll('textarea').forEach(function(ta){
+          var len = ta.nextElementSibling;
+          ta.addEventListener('input', function(){
+            len.textContent = ta.value.length + '자';
+            len.classList.toggle('over', ta.value.length > 500);
+          });
+        });
+
+        $('.ta-cancel-edit', box).addEventListener('click', function(){ loadList(); });
+        $('.ta-save-edit', box).addEventListener('click', function(){
+          var parts = [].map.call(box.querySelectorAll('textarea'), function(t){ return t.value.trim(); })
+                        .filter(Boolean);
+          if (!parts.length) { alert('본문이 비어 있습니다.'); return; }
+          var sb = this; sb.disabled = true; sb.textContent = '저장하는 중';
+          post('/api/threads/posts/' + el.dataset.id, { parts: parts }).then(function(r){
+            if (!r.j.ok) { sb.disabled = false; sb.textContent = '고친 내용 저장'; alert(r.j.error); return; }
+            loadList();
+          });
+        });
+      });
+    });
+
+    list.querySelectorAll('.ta-pub').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
+        b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 올리는 중';
+        post('/api/threads/posts/' + idOf(b) + '/publish', {}).then(function(r){
+          if (!r.j.ok) {
+            b.disabled = false; b.textContent = '지금 올리기';
+            alert(r.j.error); loadList(); return;
+          }
+          alert('올렸습니다.' + (r.j.account ? '\n@' + r.j.account : '') +
+                (r.j.permalink ? '\n' + r.j.permalink : ''));
+          loadList();
+        });
+      });
+    });
+
+    list.querySelectorAll('.ta-sched').forEach(function(b){
+      b.addEventListener('click', function(){
+        var at = askWhen();
+        if (!at) return;
         b.disabled = true;
-        post('/api/threads/posts/' + el.dataset.id + '/schedule', { at: at.toISOString() }).then(function(r){
+        post('/api/threads/posts/' + idOf(b) + '/schedule', { at: at }).then(function(r){
           b.disabled = false;
           if (!r.j.ok) { alert(r.j.error); return; }
           loadList();
@@ -605,23 +760,11 @@
       });
     });
 
-    /* 예약 물리기 */
     list.querySelectorAll('.ta-unsched').forEach(function(b){
       b.addEventListener('click', function(){
-        var el = b.closest('.ta-post');
-        post('/api/threads/posts/' + el.dataset.id + '/unschedule', {}).then(function(r){
-          if (!r.j.ok) { alert(r.j.error); return; }
-          loadList();
-        });
-      });
-    });
-
-    list.querySelectorAll('.ta-rw').forEach(function(b){
-      b.addEventListener('click', function(){
-        var el = b.closest('.ta-post');
-        b.disabled = true; b.innerHTML = '<span class="ta-spin"></span>';
-        post('/api/threads/posts/' + el.dataset.id + '/rewrite', {}).then(function(r){
-          b.disabled = false; b.textContent = '다시 쓰기';
+        b.disabled = true;
+        post('/api/threads/posts/' + idOf(b) + '/unschedule', {}).then(function(r){
+          b.disabled = false;
           if (!r.j.ok) { alert(r.j.error + (r.j.hint ? '\n\n' + r.j.hint : '')); return; }
           loadList();
         });
@@ -641,7 +784,6 @@
   });
 
   /* ══════════ 설정 ══════════ */
-  /* OpenAI 키는 무료사주 설정에서 관리한다. 여기서는 되는지만 본다. */
   $('#taTestKey') && $('#taTestKey').addEventListener('click', function(){
     var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin" style="border-top-color:#8A7340"></span> 확인 중';
     post('/api/threads/test-key', {}).then(function(r){
@@ -650,71 +792,44 @@
     });
   });
 
-  /* ── Zernio 잇기 ──
-     열쇠를 넣으면 연결된 스레드 계정을 찾아온다.
-     계정이 여럿이면 어디에 올릴지 고르게 한다. */
-  function drawAccounts(list, chosen){
-    var box = $('#taAccList') || $('#taTokenMsg');
-    if (!box) return;
-    if (!list.length) {
-      box.innerHTML = '<div class="ta-msg warn">Zernio 에 연결된 스레드 계정이 없습니다.\n' +
-        'zernio.com 의 Connections 에서 스레드를 먼저 이어주세요.</div>';
-      return;
-    }
-    box.innerHTML = '<div class="ta-sub" style="margin:0 0 6px">어느 계정에 올릴까요?</div>' +
-      '<div class="ta-acc">' + list.map(function(a){
-        return '<button type="button" data-id="' + esc(a.id) + '"' +
-               (String(a.id) === String(chosen) ? ' class="on"' : '') + '>@' +
-               esc(a.username || a.id) + '</button>';
-      }).join('') + '</div>';
-    box.querySelectorAll('.ta-acc button').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        post('/api/threads/account', { id: btn.dataset.id }).then(function(r){
-          if (!r.j.ok) { alert(r.j.error); return; }
-          location.reload();
-        });
-      });
-    });
-  }
-
+  /* 열쇠를 넣으면 그 열쇠에 붙은 계정을 전부 등록한다 */
   $('#taConnect') && $('#taConnect').addEventListener('click', function(){
     var k = $('#taZKey').value.trim();
     if (!k) { msg($('#taTokenMsg'), 'err', 'Zernio 열쇠를 넣어주세요.'); return; }
-    var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 확인 중';
-    post('/api/threads/connect', { key: k }).then(function(r){
-      b.disabled = false; b.textContent = '잇기';
+    var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 불러오는 중';
+    post('/api/threads/accounts/connect', { key: k }).then(function(r){
+      b.disabled = false; b.textContent = '계정 불러오기';
       if (!r.j.ok) { msg($('#taTokenMsg'), 'err', r.j.error + (r.j.hint ? '\n' + r.j.hint : '')); return; }
-      if (r.j.chosen) {
-        msg($('#taTokenMsg'), 'ok', r.j.message + ' 화면을 새로 불러옵니다.');
-        setTimeout(function(){ location.reload(); }, 900);
-      } else {
-        msg($('#taTokenMsg'), 'ok', r.j.message);
-        drawAccounts(r.j.accounts, '');
-      }
+      msg($('#taTokenMsg'), 'ok', r.j.message + ' 화면을 새로 불러옵니다.');
+      setTimeout(function(){ location.reload(); }, 900);
     });
   });
 
-  $('#taAccounts') && $('#taAccounts').addEventListener('click', function(){
-    var b = this; b.disabled = true;
-    fetch('/api/threads/accounts').then(function(r){ return r.json(); }).then(function(j){
-      b.disabled = false;
-      if (!j.ok) { alert(j.error); return; }
-      drawAccounts(j.accounts, j.chosen);
+  document.querySelectorAll('.ta-use').forEach(function(b){
+    b.addEventListener('click', function(){
+      post('/api/threads/accounts/use', { id: Number(b.closest('.ta-acc').dataset.id) }).then(function(r){
+        if (!r.j.ok) { alert(r.j.error); return; }
+        location.reload();
+      });
     });
   });
 
-  $('#taDisconnect') && $('#taDisconnect').addEventListener('click', function(){
-    if (!confirm('연결을 끊을까요? 예약해둔 글은 Zernio 에 그대로 남아 올라갑니다.')) return;
-    post('/api/threads/disconnect', {}).then(function(){ location.reload(); });
+  document.querySelectorAll('.ta-del-acc').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (!confirm('이 계정을 뺄까요? 예약해둔 글은 Zernio 에 그대로 남아 올라갑니다.')) return;
+      post('/api/threads/accounts/remove', { id: Number(b.closest('.ta-acc').dataset.id) }).then(function(r){
+        if (!r.j.ok) { alert(r.j.error); return; }
+        location.reload();
+      });
+    });
   });
 
-
-  /* 올리기 허용 — 꺼두면 서버가 막는다 */
   $('#taAllow') && $('#taAllow').addEventListener('change', function(){
     var on = this.checked;
     post('/api/threads/settings', { allowPublish: on }).then(function(r){
       msg($('#taAllowMsg'), r.j.ok ? 'ok' : 'err',
-        r.j.ok ? (on ? '이제 올릴 수 있습니다.' : '올리기를 잠갔습니다.') : r.j.error);
+        r.j.ok ? (on ? '이제 올릴 수 있습니다. 화면을 새로 불러오면 단추가 열립니다.' : '올리기를 잠갔습니다.') : r.j.error);
+      if (r.j.ok) setTimeout(function(){ location.reload(); }, 1200);
     });
   });
 

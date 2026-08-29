@@ -811,6 +811,23 @@ async function initDb() {
     /* 예약 글을 빨리 찾기 위한 색인 */
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_due ON th_posts(status, scheduled_for);`);
 
+    /* 올릴 계정들 — 여러 개 등록해두고 골라서 쓴다.
+     * 열쇠는 계정마다 따로 담는다. Zernio 계정을 여러 개 쓰는 경우도 있다. */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_accounts (
+        id          SERIAL PRIMARY KEY,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        zernio_key  TEXT NOT NULL,
+        account_id  TEXT NOT NULL,
+        username    TEXT,
+        created_at  TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (user_id, account_id)
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_accounts ON th_accounts(user_id, created_at);`);
+    /* 지금 올릴 계정 */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS active_account INTEGER;`);
+
     console.log('[DB] 스레드 자동화 준비 완료');
   } catch (e) {
     console.error('[DB] 스레드 자동화 테이블 만들기 실패 — 이 기능만 꺼집니다:', e.message);

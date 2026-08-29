@@ -19,13 +19,14 @@ let running = false;
 /** 예약해둔 것 중 시각이 지난 글을 가져온다 */
 async function dueRows(limit) {
   const { rows } = await pool.query(
-    `SELECT p.*, s.zernio_key
+    /* 열쇠는 계정 표에 있다. 그 글을 올린 계정이 아직 남아 있어야 물어볼 수 있다. */
+    `SELECT p.*, a.zernio_key
        FROM th_posts p
        JOIN th_settings s ON s.user_id = p.user_id
+       JOIN th_accounts a ON a.id = s.active_account
       WHERE p.status = 'scheduled'
         AND p.scheduled_for <= NOW()
         AND p.zernio_id IS NOT NULL
-        AND s.zernio_key <> ''
       ORDER BY p.scheduled_for
       LIMIT $1`,
     [limit || 20]
