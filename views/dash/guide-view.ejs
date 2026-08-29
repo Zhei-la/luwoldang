@@ -5,9 +5,9 @@
   /* 머리말 바로 아래에 이어 붙는 줄 — 두 겹처럼 보이지 않게
      머리말과 같은 바탕을 쓰고, 글씨만 있는 버튼으로 가볍게 둔다. */
   .gv-bar {
-    position:sticky; top:57px; z-index:25;
+    position:sticky; top:var(--tb); z-index:25;
     display:flex; align-items:center; gap:2px;
-    max-width:1100px; margin:0 auto 22px; padding:0;
+    width:100%; margin:0 auto 22px; padding:0;
     background:transparent; border-bottom:1px solid var(--beige);
   }
     .gv-bar a,   .gv-bar button {
@@ -22,20 +22,21 @@
     .gv-bar .sp { flex:1; }
 
   @media (max-width:760px) {
-    .gv-bar { top:53px; margin:0 auto 16px; }
+    .gv-bar { margin:0 auto 16px; }
     .gv-bar a, .gv-bar button { padding:10px 6px; font-size:13px; }
   }
 
-  .gv-head { max-width:1100px; margin-left:auto; margin-right:auto; border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
+  .gv-head { width:100%; margin-left:auto; margin-right:auto; border-bottom:1px solid var(--beige); padding-bottom:16px; margin-bottom:22px; }
   .gv-head h1 { font-family:"Nanum Myeongjo", serif; font-size:25px; line-height:1.4;
     margin:0 0 10px; word-break:keep-all; }
   .gv-meta { font-size:12px; color:#9A9384; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
   .gv-tag { background:#F4EFE3; color:#8A6F3C; padding:3px 9px; border-radius:5px; font-weight:600; }
 
-  /* 본문 — 읽기 편한 폭과 줄간격 */
+  /* 본문 — 머리말·목록과 같은 폭. 대신 글씨와 줄간격을 조금 키워
+     줄이 길어져도 눈이 덜 피로하게 했다. */
   /* 본문은 흰 종이처럼 — 베이지 배경 위에서는 캡처와 글이 잘 안 보인다 */
   .gv-body {
-    max-width:1100px; margin:0 auto; font-size:16px; line-height:1.85; color:var(--ink); word-break:keep-all;
+    width:100%; margin:0 auto; font-size:16.5px; line-height:1.9; color:var(--ink); word-break:keep-all;
     background:#fff; border:1px solid var(--beige); border-radius:16px;   /* 본문은 늘 흰 종이 */
     padding:34px 38px; box-shadow:0 2px 10px rgba(24,34,52,.04);
   }
@@ -95,7 +96,7 @@
     .gv-body .cbx-btn:hover { border-color:var(--gold); color:#8A6F3C; }
     .gv-body .cbx-btn.done { background:var(--gold); border-color:var(--gold); color:#fff; }
 
-  .gv-foot { max-width:1100px; margin-left:auto; margin-right:auto; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
+  .gv-foot { width:100%; margin-left:auto; margin-right:auto; margin-top:36px; padding-top:18px; border-top:1px solid var(--beige);
     display:flex; gap:8px; flex-wrap:wrap; }
   .gv-btn { padding:11px 18px; border:1px solid var(--beige); background:var(--card); border-radius:10px;
     font-size:14px; font-weight:600; color:#6B6656; text-decoration:none; }
@@ -169,7 +170,7 @@
     .gv-marks .mR { top:42vh; margin-right:-10px; }
   }
 
-  .gv-copyright { max-width:1100px; margin-left:auto; margin-right:auto; margin-top:26px; padding:14px 16px; background:#FBF8F1;
+  .gv-copyright { width:100%; margin-left:auto; margin-right:auto; margin-top:26px; padding:14px 16px; background:#FBF8F1;
     border:1px solid var(--beige); border-radius:10px; font-size:12.5px; color:#6B6656;
     line-height:1.75; word-break:keep-all; }
 </style>

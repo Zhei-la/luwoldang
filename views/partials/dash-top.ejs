@@ -47,7 +47,8 @@
       .topbar .who { display:none; }
     }
     @media (max-width:560px) {
-      .topbar { padding:12px 14px; gap:8px; }
+      /* 여백은 .topbar-in 이 준다. 여기서 또 주면 머리말이 두 겹으로 두꺼워져
+         그 아래 붙는 줄(주차 목록 등)이 머리말에 가려진다. */
       .topbar .page-title { font-size:16px; }
       .topgo { gap:4px; }
       .topgo a { padding:7px 9px; font-size:12px; }

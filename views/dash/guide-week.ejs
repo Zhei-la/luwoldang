@@ -1,18 +1,21 @@
 <%- include('../partials/dash-top', { user: user, active: active, title: '교육생 자료집' }) %>
 
 <style>
-  .wv-bar { position:sticky; top:57px; z-index:25; display:flex; align-items:center; gap:2px;
-    margin:-28px -32px 22px; padding:0 26px;
+  /* 주차 목록 줄 — 본문 여백을 밀어내 화면 끝까지 뻗는다.
+     글자는 본문과 같은 세로줄에서 시작하게 여백을 도로 넣어준다. */
+  .wv-bar { position:sticky; top:var(--tb); z-index:25; display:flex; align-items:center; gap:2px;
+    margin:-28px calc(var(--pad) * -1) 22px; padding:0 calc(var(--pad) - 10px);
     background:var(--card); border-bottom:1px solid var(--beige); }
   .wv-bar { justify-content:flex-start; }
   .wv-bar a { padding:11px 10px; font-size:13.5px; font-weight:700; color:#8A8574;
     text-decoration:none; white-space:nowrap; }
   .wv-bar a:hover { color:var(--ink); }
-  @media (max-width:760px) { .wv-bar { top:53px; margin:-18px -16px 16px; padding:0 10px; } }
+  @media (max-width:760px) { .wv-bar { margin:-18px calc(var(--pad) * -1) 16px; padding:0 8px; } }
 
-  /* 가운데로 모은다 */
-  .wv-head, .wv-sec, .wv-list, .wv-empty, .tk {
-    max-width:900px; margin-left:auto; margin-right:auto; }
+  /* 과제와 강의 자료는 같은 폭이어야 한다.
+     체크리스트(.ck)만 빠져 있어 과제 상자가 자료 목록보다 넓어 보였다. */
+  .wv-head, .wv-sec, .wv-list, .wv-empty, .tk, .ck {
+    width:100%; margin-left:auto; margin-right:auto; }
 
   .wv-head { margin-bottom:22px; }
   .wv-lb { font-size:11.5px; font-weight:800; letter-spacing:.16em; color:#9A9384; }
