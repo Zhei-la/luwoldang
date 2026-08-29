@@ -1,12 +1,10 @@
 <%- include('_head', {
-  siteName: siteName, themeVars: themeVars,
+  siteName: siteName, themeVars: themeVars, base: base,
   pageTitle: info.ganzhi + ' 일주 — ' + info.alias + '의 성격과 특징',
   pageDesc: info.ganzhi + ' 일주는 ' + info.alias + '입니다. ' + info.tagline + ' ' + info.body.slice(0, 70),
 }) %>
 
 <%- include('_guide-css') %>
-<%- include('_nav') %>
-
 <main>
   <section class="wrap sec">
     <span class="eyebrow"><a href="<%= base %>/guide/ilju">일주 60갑자</a></span>

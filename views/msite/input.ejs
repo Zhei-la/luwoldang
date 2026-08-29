@@ -1,5 +1,5 @@
 <%- include('_head', {
-  siteName: siteName, themeVars: themeVars,
+  siteName: siteName, themeVars: themeVars, base: base,
   pageTitle: siteName + ' — 무료 만세력과 오늘의 운세',
   pageDesc: '생년월일시만 넣으면 만세력 원국·오행 분석·대운·세운이 한 화면에 나옵니다. 오늘의 운세는 매일 새로 계산됩니다. 가입 없이 무료.',
 }) %>
@@ -47,8 +47,6 @@
   .list .tg{font-size:12.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap}
 </style>
-
-<%- include('_nav') %>
 
 <main>
   <section class="wrap sec">

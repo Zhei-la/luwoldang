@@ -4,7 +4,7 @@
   var 기둥 = ['년', '월', '일', '시'];
 %>
 <%- include('_head', {
-  siteName: siteName, themeVars: themeVars,
+  siteName: siteName, themeVars: themeVars, base: base,
   pageTitle: (reading.alias ? reading.alias + ' · ' : '') + siteName,
   pageDesc: reading.tagline || '내 사주 원국과 오늘의 운세를 무료로 봅니다.',
 }) %>

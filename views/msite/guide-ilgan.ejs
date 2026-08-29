@@ -1,12 +1,10 @@
 <%- include('_head', {
-  siteName: siteName, themeVars: themeVars,
+  siteName: siteName, themeVars: themeVars, base: base,
   pageTitle: g.headline,
   pageDesc: g.intro.slice(0, 110),
 }) %>
 
 <%- include('_guide-css') %>
-<%- include('_nav') %>
-
 <main>
   <section class="wrap sec">
     <span class="eyebrow"><a href="<%= base %>/guide/ilju">일주 60갑자</a></span>

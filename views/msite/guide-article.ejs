@@ -1,11 +1,9 @@
 <%- include('_head', {
-  siteName: siteName, themeVars: themeVars,
+  siteName: siteName, themeVars: themeVars, base: base,
   pageTitle: a.title, pageDesc: a.summary,
 }) %>
 
 <%- include('_guide-css') %>
-<%- include('_nav') %>
-
 <main>
   <section class="wrap sec">
     <span class="eyebrow"><a href="<%= base %>/guide">사주 공부</a></span>
