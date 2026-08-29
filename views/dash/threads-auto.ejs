@@ -117,7 +117,6 @@
     <button class="ta-tab" role="tab" aria-selected="true"  data-panel="make">글 만들기</button>
     <button class="ta-tab" role="tab" aria-selected="false" data-panel="queue">내 원고 <span id="taCount"><%= posts.length %></span></button>
     <button class="ta-tab" role="tab" aria-selected="false" data-panel="setup">설정</button>
-    <a class="ta-tab" style="text-decoration:none" href="/threads/manual">직접 쓰기 도구</a>
   </div>
 
   <!-- ══════════ 글 만들기 ══════════ -->
@@ -212,7 +211,7 @@
       <% } else { %>
         <p class="ta-sub">스레드에 자동으로 올리려면 <b>장기 토큰</b>이 필요합니다.
           한 번 등록하면 60일 동안 쓰고, 그 뒤에 다시 받으시면 됩니다.
-          받는 방법은 <a href="/threads/manual" style="color:var(--gold-d);font-weight:700">직접 쓰기 도구</a>의 토큰 안내에 그대로 있습니다.</p>
+          받는 방법은 <a href="/threads/manual" target="_blank" rel="noopener" style="color:var(--gold-d);font-weight:700">여기에 정리</a>되어 있습니다.</p>
       <% } %>
       <div id="taTokenWrap" <%= threads.connected ? 'style="display:none"' : '' %>>
         <label for="taToken" style="margin-top:12px">장기 토큰</label>
