@@ -102,7 +102,7 @@
           <tr>
             <td><%= u2.site_name || u2.name %></td>
             <td><input class="mn-mini" id="ml<%= i %>" readonly
-                       value="<%= baseUrl %>/saju@<%= u2.slug %>"></td>
+                       value="<%= baseUrl %>/<%= u2.slug %>"></td>
             <td><button type="button" class="mn-mini-btn" data-copy="#ml<%= i %>">복사</button></td>
           </tr>
         <% }); %>
@@ -170,7 +170,7 @@
     </div>
     <p class="mn-after">지금 <b><%= students.수강생.length %>명</b>입니다.
       링크는 이렇게 만들어집니다 —
-      <b>만세력주소/saju@<%= students.수강생[0].아이디 %></b>
+      <b>만세력주소/<%= students.수강생[0].아이디 %></b>
       (<%= students.수강생[0].이름 %>님)</p>
   <% } else { %>
     <p class="mn-after">아직 링크를 줄 교육생이 없습니다.

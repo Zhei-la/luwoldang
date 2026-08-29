@@ -25,6 +25,11 @@
     font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%;word-break:keep-all}
   .wrap{max-width:600px;width:100%;margin:0 auto;padding:0 20px}
 
+  /* 링크는 파란 밑줄이 아니라 이 색으로. 안 정해두면 브라우저 기본이 나와
+     글 사이에서 혼자 튄다. */
+  a{color:var(--gold-d);font-weight:700;text-decoration:none}
+  a:hover{text-decoration:underline}
+
   .top{background:var(--card);border-bottom:1px solid var(--line);padding:15px 0;
     position:sticky;top:0;z-index:20}
   .top .wrap{display:flex;align-items:center;gap:10px}
