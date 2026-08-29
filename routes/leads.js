@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+/* 손님이 보는 링크는 손님 주소로 만든다 */
+const guest = require('../services/guestSite');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
 
@@ -661,11 +663,11 @@ router.post('/pdfs/:id/send', async (req, res, next) => {
         result: pdf.sections || {},
         input: { name: pdf.name, email: to },
         upsell: UPSELL,
-        baseUrl: process.env.BASE_URL || '',
+        baseUrl: guest.base(req),
       });
     } else {
       const token = await ensureToken(pdf.id);
-      const base = process.env.BASE_URL || '';
+      const base = guest.base(req);
       await sendPdfReport({
         to,
         teacher: req.user,
@@ -816,7 +818,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       const html = buildFreePdfHtml({
         teacher: req.user, client, saju,
         result: pdf.sections || {},
-        baseUrl: process.env.BASE_URL || '',
+        baseUrl: guest.base(req),
       });
       const bar = `
 <style>
@@ -850,7 +852,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       saju,
       chapters,
       extra,
-      baseUrl: process.env.BASE_URL || '',
+      baseUrl: guest.base(req),
     });
 
     const toolbar = `
@@ -1347,7 +1349,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
       });
     } catch (e) { /* 만세력 실패해도 메일은 나간다 */ }
 
-    const base = process.env.BASE_URL || '';
+    const base = guest.base(req);
     const items = [];
     for (const p of rows) {
       const token = await ensureToken(p.id);
@@ -1412,7 +1414,7 @@ async function downloadPdf(req, res) {
       });
     } catch (e) { /* 만세력 실패해도 본문은 나간다 */ }
 
-    const baseUrl = process.env.BASE_URL || '';
+    const baseUrl = guest.base(req);
     const cover = await resolveCover(req.user.id, pdf.type);
     const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
     const token = await ensureToken(pdf.id);

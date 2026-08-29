@@ -25,6 +25,7 @@ const boardRouter = require('./routes/board');     // 공지사항 · 문의하�
 const lpReviewRouter = require('./routes/lpReview'); // 판매 페이지 후기
 const manseLinkRouter = require('./routes/manseLink'); // 만세력 연동
 const msiteRouter = require('./routes/msite'); // 공개 만세력 (교육생 개인 링크)
+const guest = require('./services/guestSite'); // 손님 주소와 루월당 주소를 가른다
 const { router: reviewRoutes } = require('./routes/reviews');
 const { requireAuth } = require('./middleware/auth');
 const app = express();
@@ -57,6 +58,16 @@ app.use(
     },
   })
 );
+/* ⚠️ 손님 주소(saju.pe.kr)에서는 루월당이 한 글자도 보이면 안 된다.
+   첫 화면·로그인은 루월당 주소에서만 열린다. */
+app.use((req, res, next) => {
+  if (!guest.isGuest(req)) return next();
+  if (req.path === '/' || /^\/(auth|logout|pending)(\/|$)/.test(req.path)) {
+    return guest.block(req, res);
+  }
+  next();
+});
+
 // 랜딩 (비로그인)
 app.get('/', (req, res) => {
   if (req.session.userId) return res.redirect('/home');
@@ -109,10 +120,22 @@ app.use('/', manseLinkRouter);
 /* 공개 만세력 — /saju@아이디 · /@아이디 (로그인 없음).
    없는 아이디면 next() 로 넘기므로 뒤에 붙은 라우터를 가로막지 않는다. */
 app.use('/', msiteRouter);
+// 무료사주 — /s/:slug 등 손님이 보는 화면. 손님 문보다 먼저 붙인다.
+app.use('/', freeRouter);
+
+/* ── 손님 주소는 여기까지다 ────────────────────────────────
+ * 위까지가 손님이 볼 수 있는 것 전부다 (만세력·무료사주·리포트·후기).
+ * 아래는 전부 교육생 대시보드라 손님 주소에서는 닫는다.
+ * 다만 맨 주소 만세력(/아이디)은 제일 마지막에 붙는 법이라
+ * 여기서 먼저 한 번 불러보고, 그래도 아니면 안내 화면을 준다. */
+app.use((req, res, next) => {
+  if (!guest.isGuest(req)) return next();
+  msiteRouter.tail(req, res, () => guest.block(req, res));
+});
+
 // 스레드 자동화 — /threads, /threads/manual, /api/threads/*
 // (leads 라우터의 requireAuth 가 /api/* 를 가로채므로 반드시 그보다 먼저)
 app.use('/', threadsAutoRouter);
-app.use('/', freeRouter);
 // 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
 app.use('/admin', adminRouter);
 // 랜딩 빌더

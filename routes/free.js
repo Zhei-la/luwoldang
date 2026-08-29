@@ -2,6 +2,8 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const { pool } = require('../db');
+/* 손님이 보는 링크는 손님 주소로 만든다 */
+const guest = require('../services/guestSite');
 const { calcSaju } = require('../services/manseryeok');
 
 /* 지역시(진태양시) 보정 사용 여부를 폼 본문에서 읽는다.
@@ -333,7 +335,7 @@ router.get('/free/:logId/pdf', async (req, res, next) => {
 
     const html = buildFreePdfHtml({
       teacher, client, saju, result,
-      baseUrl: process.env.BASE_URL || '',
+      baseUrl: guest.base(req),
     });
 
     const bar = `
@@ -384,7 +386,8 @@ async function loadFree(token) {
   const html = buildFreePdfHtml({
     teacher: row, client, saju,
     result: row.result || {},
-    baseUrl: process.env.BASE_URL || '',
+    /* 여기는 req 이 없는 자리다. 손님 주소만 보고 만든다. */
+    baseUrl: guest.base(),
   });
   return { row, client, html };
 }

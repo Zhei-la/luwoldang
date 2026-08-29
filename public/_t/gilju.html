@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>일주 60갑자 — 태어난 날의 간지로 보는 나</title>
+<meta name="description" content="갑자부터 계해까지 60가지 일주를 한자리에 모았습니다. 천간의 오행이 색이 되고 지지의 동물이 이름이 됩니다.">
+<meta property="og:title" content="일주 60갑자 — 태어난 날의 간지로 보는 나">
+<meta property="og:description" content="갑자부터 계해까지 60가지 일주를 한자리에 모았습니다. 천간의 오행이 색이 되고 지지의 동물이 이름이 됩니다.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23241F18%27/%3E%3Ctext x=%2732%27 y=%2745%27 font-size=%2738%27 text-anchor=%27middle%27 fill=%27%23fff%27 font-family=%27serif%27%3E命%3C/text%3E%3C/svg%3E">
+<style>
+  /* 손님이 보는 화면이다. 대시보드 css 를 쓰지 않고 여기서 끝낸다. */
+  /* 색은 교육생이 「웹사이트 설정」에서 고른 것으로 들어온다.
+     다섯 벌 중 하나이고, 전부 글씨가 읽히는지 확인한 것들이다. */
+  :root{
+    --ink:#241F18;--ink2:#4A4438;--dim:#7C7566;--faint:#A8A192;--line:#E6DFD1;--line2:#F0EAE0;--bg:#FBF8F2;--card:#FFFFFF;--gold:#B08D57;--gold-d:#8A6F3C;--navy:#241F18;--cta-bg:#241F18;--cta-fg:#FFFFFF;--cta-ac:#C9A469;--cta-ac-fg:#1B1710;
+    --mok:#3E7D5A; --hwa:#C0503C; --to:#B08D57; --geum:#6B7A8A; --su:#3C5A80;
+    --mok-bg:#EDF5F0; --hwa-bg:#FBEDEA; --to-bg:#F7F1E6; --geum-bg:#EEF1F4; --su-bg:#EBF0F7;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%;word-break:keep-all}
+  /* 폰에서는 지금 그대로, 넓은 화면에서는 통째로 키운다.
+     칸을 옆으로 나누지 않고 규격만 키운 것이다. */
+  .wrap{max-width:600px;width:100%;margin:0 auto;padding:0 20px}
+  @media (min-width:900px){
+    .wrap{max-width:900px;padding:0 28px}
+    body{font-size:17px}
+    h1{font-size:30px}
+  }
+  @media (min-width:1280px){
+    .wrap{max-width:1040px}
+    body{font-size:17.5px}
+  }
+
+  /* 링크는 파란 밑줄이 아니라 이 색으로. 안 정해두면 브라우저 기본이 나와
+     글 사이에서 혼자 튄다. */
+  a{color:var(--gold-d);font-weight:700;text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .top{background:var(--card);border-bottom:1px solid var(--line);padding:12px 0;
+    position:sticky;top:0;z-index:20}
+  .top .wrap{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+  .top .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
+  .top .mark{width:32px;height:32px;border-radius:9px;background:var(--navy);color:var(--card);
+    display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex:none}
+  .top .nm{font-size:16px;font-weight:800;color:var(--ink)}
+
+  /* 차림표는 로고 옆, 같은 흰 줄 안에 둔다.
+     폰에서는 자리가 모자라 아랫줄로 내려가고, 넘치면 옆으로 밀어서 본다. */
+  .top .tnav{display:flex;align-items:center;gap:9px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;min-width:0}
+  .top .tnav::-webkit-scrollbar{display:none}
+  .top .tnav a{font-size:14px;font-weight:700;color:var(--dim);white-space:nowrap}
+  .top .tnav a:hover{color:var(--gold-d);text-decoration:none}
+  .top .tnav .sep{color:var(--line);font-weight:700}
+  @media (min-width:560px){
+    .top .wrap{flex-wrap:nowrap}
+    .top .tnav{margin-left:6px}
+  }
+
+  .sec{padding:26px 0}
+  h1{font-size:23px;line-height:1.45;font-weight:800;margin:0 0 9px;text-wrap:balance}
+  h2{font-size:17px;font-weight:800;margin:0 0 12px}
+  p{margin:0 0 12px;color:var(--ink2)}
+  .lead{font-size:14.5px;color:var(--dim);margin:0 0 22px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:15px;
+    padding:20px;margin-bottom:14px}
+  .card h2{display:flex;align-items:center;gap:8px}
+  .card h2 .no{width:23px;height:23px;border-radius:50%;background:var(--gold);color:#fff;
+    font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+
+  label{display:block;font-size:12px;letter-spacing:.05em;color:var(--faint);
+    font-weight:700;margin:0 0 6px}
+  input[type=text],input[type=tel],input[type=number],select,textarea{
+    width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;
+    font-size:16px;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
+  /* 어두운 색을 고르면 바탕도 어두워진다.
+     #fff 로 박아두면 흰 바탕에 흰 글씨가 돼 아무것도 안 보인다. */
+  input::placeholder,textarea::placeholder{color:var(--faint);opacity:1}
+  select option{background:var(--card);color:var(--ink)}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  textarea{min-height:80px;resize:vertical;line-height:1.7}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1;min-width:0}
+  .fld{margin-bottom:14px}
+  .chk{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--ink2);
+    cursor:pointer;font-weight:600;margin-bottom:12px}
+  .chk input{width:19px;height:19px;flex:none;margin:3px 0 0;accent-color:var(--gold)}
+  .chk span{font-weight:500;line-height:1.7}
+
+  .btn{display:block;width:100%;padding:15px;background:var(--navy);color:#fff;border:0;
+    border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;
+    text-align:center;text-decoration:none}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.gold{background:var(--gold)}
+  .btn.ghost{background:var(--card);color:var(--ink2);border:1px solid var(--line)}
+
+  .err{background:#FBEDEA;color:#9A3B2B;border-radius:10px;padding:12px 14px;
+    font-size:14px;margin-bottom:16px;line-height:1.7}
+  .ok{background:#EDF5F0;color:#2F6B4E;border-radius:10px;padding:12px 14px;
+    font-size:14px;margin-bottom:16px;line-height:1.7}
+
+  .foot{padding:28px 0 40px;text-align:center;font-size:12px;color:var(--faint);line-height:1.9}
+  .foot a{color:var(--dim)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/saju@leemyung">
+      <span class="mark">命</span>
+      <span class="nm">이명리</span>
+    </a>
+    <nav class="tnav">
+      <a href="/saju@leemyung">만세력 보기</a>
+      <span class="sep">·</span>
+      <a href="/saju@leemyung/guide">사주 공부</a>
+      <span class="sep">·</span>
+      <a href="/saju@leemyung/guide/ilju">일주 60갑자</a>
+    </nav>
+  </div>
+</header>
+
+
+<style>
+  .eyebrow{display:block;font-size:12px;letter-spacing:.12em;color:var(--gold-d);
+    font-weight:800;margin:0 0 9px}
+  .eyebrow a{color:inherit;text-decoration:none}
+  .eyebrow a:hover{text-decoration:underline}
+  .sec-t{font-size:19px;font-weight:800;margin:0 0 10px;line-height:1.45}
+  .sec-lead{font-size:14px;color:var(--dim);margin:0 0 14px}
+  .sub-t{font-size:14px;font-weight:800;margin:16px 0 5px;color:var(--gold-d)}
+  .bd{font-size:14.5px;line-height:1.9;margin:0;color:var(--ink2)}
+  .tiny{font-size:12.5px;color:var(--faint)}
+  .tiny a{color:var(--gold-d);font-weight:700}
+
+  /* 천간·지지 타일 */
+  .pair{display:flex;gap:10px;margin-bottom:18px}
+  .pair .col{flex:1;text-align:center}
+  .pair .lb{font-size:11px;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-bottom:5px}
+  .pair .tile{border-radius:12px;padding:14px 0;font-size:34px;font-weight:800;
+    line-height:1.1;font-family:serif}
+  .pair .ko{font-size:12.5px;color:var(--dim);margin-top:5px}
+  .tile.mok{background:var(--mok-bg);color:var(--mok)}
+  .tile.hwa{background:var(--hwa-bg);color:var(--hwa)}
+  .tile.to{background:var(--to-bg);color:var(--to)}
+  .tile.geum{background:var(--geum-bg);color:var(--geum)}
+  .tile.su{background:var(--su-bg);color:var(--su)}
+
+  /* 목록 */
+  .list{display:flex;flex-direction:column;gap:8px}
+  .list .it{display:flex;align-items:baseline;gap:10px;background:var(--card);
+    border:1px solid var(--line);border-radius:11px;padding:12px 14px;
+    text-decoration:none;color:inherit}
+  .list .it:hover{border-color:var(--gold)}
+  .list .gz{font-size:15px;font-weight:800;flex:none}
+  .list .al{font-size:13.5px;color:var(--gold-d);font-weight:700;flex:none}
+  .list .tg{font-size:12.5px;color:var(--faint);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+
+  /* 60갑자를 열 개씩 묶어 보여준다 */
+  .grp{margin-bottom:22px}
+  .grp h3{font-size:15px;font-weight:800;margin:0 0 9px;color:var(--ink)}
+  .grp h3 small{font-weight:600;color:var(--faint);font-size:12.5px;margin-left:6px}
+
+  /* 돌아오기 칸 */
+  .backbox{border:1px solid var(--gold);border-radius:15px;background:var(--card);
+    padding:24px 20px;text-align:center}
+  .backbox h3{font-size:18px;font-weight:800;margin:0 0 8px}
+  .backbox p{font-size:14px;color:var(--dim);margin:0 0 16px;line-height:1.85}
+  .backbox .btn{display:inline-block;width:auto;padding:13px 26px;background:var(--gold);
+    color:#fff;border-radius:11px;font-weight:800;text-decoration:none}
+
+  /* 개념 해설 글 */
+  .art h2{font-size:17px;font-weight:800;margin:26px 0 9px;color:var(--ink)}
+  .art h2:first-child{margin-top:0}
+  .art p{font-size:15px;line-height:1.95;color:var(--ink2);margin:0 0 14px}
+  .art ul{margin:0 0 14px;padding:0;list-style:none}
+  .art li{font-size:14.5px;line-height:1.9;color:var(--ink2);padding-left:15px;
+    position:relative;margin-bottom:8px}
+  .art li:before{content:'·';position:absolute;left:3px;color:var(--gold);font-weight:800}
+
+  /* 일간 열 개 */
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+  .chip{display:block;text-align:center;padding:12px 8px;border:1px solid var(--line);
+    border-radius:11px;background:var(--card);text-decoration:none}
+  .chip b{display:block;font-size:17px;font-family:serif;font-weight:800}
+  .chip span{display:block;font-size:11px;color:var(--faint);margin-top:3px}
+  .chip:hover{border-color:var(--gold)}
+  .chip.mok b{color:var(--mok)} .chip.hwa b{color:var(--hwa)} .chip.to b{color:var(--to)}
+  .chip.geum b{color:var(--geum)} .chip.su b{color:var(--su)}
+
+  /* 넓은 화면에서는 일간 열 개만 한 줄로 편다.
+     나머지는 그대로 두고 폭만 커진다. */
+  @media (min-width:900px){
+    .chips{grid-template-columns:repeat(10,1fr)}
+  }
+</style>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow">일주 60갑자</span>
+    <h1>태어난 날의 간지가<br>곧 나입니다</h1>
+    <p class="lead">천간의 오행이 색이 되고, 지지의 동물이 이름이 됩니다.
+      내 일주가 무엇인지는 생년월일만 넣으면 바로 나옵니다.</p>
+  </section>
+
+  <section class="wrap sec">
+    
+      <div class="grp">
+        <h3>갑甲 일간<small>목 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B0%91%EC%9E%90">
+              <span class="gz">갑자</span>
+              <span class="al">푸른 쥐</span>
+              <span class="tg">겨울 물가에 처음 뿌리내린 나무</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B0%91%EC%9D%B8">
+              <span class="gz">갑인</span>
+              <span class="al">푸른 호랑이</span>
+              <span class="tg">제 뿌리 위에 그대로 선 큰 나무</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B0%91%EC%A7%84">
+              <span class="gz">갑진</span>
+              <span class="al">푸른 용</span>
+              <span class="tg">흙을 밀고 올라오는 나무</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B0%91%EC%98%A4">
+              <span class="gz">갑오</span>
+              <span class="al">푸른 말</span>
+              <span class="tg">한여름 볕을 다 받는 나무</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B0%91%EC%8B%A0">
+              <span class="gz">갑신</span>
+              <span class="al">푸른 원숭이</span>
+              <span class="tg">단단한 것에 부딪히며 자란 나무</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B0%91%EC%88%A0">
+              <span class="gz">갑술</span>
+              <span class="al">푸른 개</span>
+              <span class="tg">늦가을까지 잎을 붙들고 있는 나무</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>을乙 일간<small>목 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9D%84%EC%B6%95">
+              <span class="gz">을축</span>
+              <span class="al">푸른 소</span>
+              <span class="tg">언 땅을 견디는 풀</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9D%84%EB%AC%98">
+              <span class="gz">을묘</span>
+              <span class="al">푸른 토끼</span>
+              <span class="tg">봄바람에 제일 먼저 흔들리는 풀</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9D%84%EC%82%AC">
+              <span class="gz">을사</span>
+              <span class="al">푸른 뱀</span>
+              <span class="tg">뜨거운 곳에서 피는 꽃</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9D%84%EB%AF%B8">
+              <span class="gz">을미</span>
+              <span class="al">푸른 양</span>
+              <span class="tg">마른 땅에 뿌리를 내린 풀</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9D%84%EC%9C%A0">
+              <span class="gz">을유</span>
+              <span class="al">푸른 닭</span>
+              <span class="tg">서릿바람 속에 남은 잎</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9D%84%ED%95%B4">
+              <span class="gz">을해</span>
+              <span class="al">푸른 돼지</span>
+              <span class="tg">물을 머금은 덩굴</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>병丙 일간<small>화 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%B3%91%EC%9D%B8">
+              <span class="gz">병인</span>
+              <span class="al">붉은 호랑이</span>
+              <span class="tg">아침에 막 떠오른 해</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%B3%91%EC%A7%84">
+              <span class="gz">병진</span>
+              <span class="al">붉은 용</span>
+              <span class="tg">구름 사이로 비치는 해</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%B3%91%EC%98%A4">
+              <span class="gz">병오</span>
+              <span class="al">붉은 말</span>
+              <span class="tg">한낮의 태양</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%B3%91%EC%8B%A0">
+              <span class="gz">병신</span>
+              <span class="al">붉은 원숭이</span>
+              <span class="tg">쇠붙이를 달구는 불</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%B3%91%EC%88%A0">
+              <span class="gz">병술</span>
+              <span class="al">붉은 개</span>
+              <span class="tg">저물녘의 붉은 하늘</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%B3%91%EC%9E%90">
+              <span class="gz">병자</span>
+              <span class="al">붉은 쥐</span>
+              <span class="tg">물 위에 비친 햇빛</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>정丁 일간<small>화 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%A0%95%EB%AC%98">
+              <span class="gz">정묘</span>
+              <span class="al">붉은 토끼</span>
+              <span class="tg">새벽에 켜둔 등불</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%A0%95%EC%82%AC">
+              <span class="gz">정사</span>
+              <span class="al">붉은 뱀</span>
+              <span class="tg">꺼지지 않는 화로</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%A0%95%EB%AF%B8">
+              <span class="gz">정미</span>
+              <span class="al">붉은 양</span>
+              <span class="tg">마른 장작 위의 불</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%A0%95%EC%9C%A0">
+              <span class="gz">정유</span>
+              <span class="al">붉은 닭</span>
+              <span class="tg">금속을 다듬는 불</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%A0%95%ED%95%B4">
+              <span class="gz">정해</span>
+              <span class="al">붉은 돼지</span>
+              <span class="tg">어두운 바다 위의 등대</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%A0%95%EC%B6%95">
+              <span class="gz">정축</span>
+              <span class="al">붉은 소</span>
+              <span class="tg">언 밤을 지키는 잉걸불</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>무戊 일간<small>토 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%AC%B4%EC%A7%84">
+              <span class="gz">무진</span>
+              <span class="al">황금 용</span>
+              <span class="tg">물을 품은 큰 산</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%AC%B4%EC%98%A4">
+              <span class="gz">무오</span>
+              <span class="al">황금 말</span>
+              <span class="tg">한낮의 마른 들판</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%AC%B4%EC%8B%A0">
+              <span class="gz">무신</span>
+              <span class="al">황금 원숭이</span>
+              <span class="tg">광물을 품은 산</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%AC%B4%EC%88%A0">
+              <span class="gz">무술</span>
+              <span class="al">황금 개</span>
+              <span class="tg">오래된 성벽</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%AC%B4%EC%9E%90">
+              <span class="gz">무자</span>
+              <span class="al">황금 쥐</span>
+              <span class="tg">물가에 선 언덕</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EB%AC%B4%EC%9D%B8">
+              <span class="gz">무인</span>
+              <span class="al">황금 호랑이</span>
+              <span class="tg">나무가 뿌리내린 흙</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>기己 일간<small>토 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B8%B0%EC%82%AC">
+              <span class="gz">기사</span>
+              <span class="al">황금 뱀</span>
+              <span class="tg">따뜻하게 데워진 밭</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B8%B0%EB%AF%B8">
+              <span class="gz">기미</span>
+              <span class="al">황금 양</span>
+              <span class="tg">한여름의 논밭</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B8%B0%EC%9C%A0">
+              <span class="gz">기유</span>
+              <span class="al">황금 닭</span>
+              <span class="tg">잘 갈아둔 밭</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B8%B0%ED%95%B4">
+              <span class="gz">기해</span>
+              <span class="al">황금 돼지</span>
+              <span class="tg">물을 머금은 논</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B8%B0%EC%B6%95">
+              <span class="gz">기축</span>
+              <span class="al">황금 소</span>
+              <span class="tg">겨울 논</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B8%B0%EB%AC%98">
+              <span class="gz">기묘</span>
+              <span class="al">황금 토끼</span>
+              <span class="tg">새싹이 돋는 밭</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>경庚 일간<small>금 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B2%BD%EC%98%A4">
+              <span class="gz">경오</span>
+              <span class="al">하얀 말</span>
+              <span class="tg">불에 달궈진 쇠</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B2%BD%EC%8B%A0">
+              <span class="gz">경신</span>
+              <span class="al">하얀 원숭이</span>
+              <span class="tg">벼려진 칼</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B2%BD%EC%88%A0">
+              <span class="gz">경술</span>
+              <span class="al">하얀 개</span>
+              <span class="tg">땅에 묻힌 광석</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B2%BD%EC%9E%90">
+              <span class="gz">경자</span>
+              <span class="al">하얀 쥐</span>
+              <span class="tg">차가운 물에 담근 쇠</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B2%BD%EC%9D%B8">
+              <span class="gz">경인</span>
+              <span class="al">하얀 호랑이</span>
+              <span class="tg">나무를 다듬는 도끼</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B2%BD%EC%A7%84">
+              <span class="gz">경진</span>
+              <span class="al">하얀 용</span>
+              <span class="tg">흙 속의 무쇠</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>신辛 일간<small>금 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%8B%A0%EB%AF%B8">
+              <span class="gz">신미</span>
+              <span class="al">하얀 양</span>
+              <span class="tg">흙에서 갓 나온 보석</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%8B%A0%EC%9C%A0">
+              <span class="gz">신유</span>
+              <span class="al">하얀 닭</span>
+              <span class="tg">세공된 보석</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%8B%A0%ED%95%B4">
+              <span class="gz">신해</span>
+              <span class="al">하얀 돼지</span>
+              <span class="tg">물에 씻긴 옥</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%8B%A0%EC%B6%95">
+              <span class="gz">신축</span>
+              <span class="al">하얀 소</span>
+              <span class="tg">흙 속에 묻힌 옥</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%8B%A0%EB%AC%98">
+              <span class="gz">신묘</span>
+              <span class="al">하얀 토끼</span>
+              <span class="tg">나뭇가지에 걸린 장신구</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%8B%A0%EC%82%AC">
+              <span class="gz">신사</span>
+              <span class="al">하얀 뱀</span>
+              <span class="tg">불에 달궈진 보석</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>임壬 일간<small>수 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9E%84%EC%8B%A0">
+              <span class="gz">임신</span>
+              <span class="al">검은 원숭이</span>
+              <span class="tg">샘에서 솟는 물</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9E%84%EC%88%A0">
+              <span class="gz">임술</span>
+              <span class="al">검은 개</span>
+              <span class="tg">둑에 가둔 물</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9E%84%EC%9E%90">
+              <span class="gz">임자</span>
+              <span class="al">검은 쥐</span>
+              <span class="tg">깊고 넓은 바다</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9E%84%EC%9D%B8">
+              <span class="gz">임인</span>
+              <span class="al">검은 호랑이</span>
+              <span class="tg">나무를 적시는 큰물</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9E%84%EC%A7%84">
+              <span class="gz">임진</span>
+              <span class="al">검은 용</span>
+              <span class="tg">용이 사는 물</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EC%9E%84%EC%98%A4">
+              <span class="gz">임오</span>
+              <span class="al">검은 말</span>
+              <span class="tg">햇빛을 받는 강물</span>
+            </a>
+          
+        </div>
+      </div>
+    
+      <div class="grp">
+        <h3>계癸 일간<small>수 · 6가지</small></h3>
+        <div class="list">
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B3%84%EC%9C%A0">
+              <span class="gz">계유</span>
+              <span class="al">검은 닭</span>
+              <span class="tg">바위에서 떨어지는 물방울</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B3%84%ED%95%B4">
+              <span class="gz">계해</span>
+              <span class="al">검은 돼지</span>
+              <span class="tg">드넓은 물</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B3%84%EC%B6%95">
+              <span class="gz">계축</span>
+              <span class="al">검은 소</span>
+              <span class="tg">얼어붙은 샘</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B3%84%EB%AC%98">
+              <span class="gz">계묘</span>
+              <span class="al">검은 토끼</span>
+              <span class="tg">새싹을 적시는 이슬</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B3%84%EC%82%AC">
+              <span class="gz">계사</span>
+              <span class="al">검은 뱀</span>
+              <span class="tg">뜨거운 땅에 내리는 비</span>
+            </a>
+          
+            <a class="it" href="/saju@leemyung/guide/ilju/%EA%B3%84%EB%AF%B8">
+              <span class="gz">계미</span>
+              <span class="al">검은 양</span>
+              <span class="tg">마른 땅에 스미는 물</span>
+            </a>
+          
+        </div>
+      </div>
+    
+  </section>
+  <!-- 읽다 나가려는 손님을 되돌린다. 설명 페이지 끝마다 붙는다. -->
+<section class="wrap sec">
+  <div class="backbox">
+    <h3>내 사주는 어떻게 생겼을까</h3>
+    <p>생년월일시만 넣으면 만세력 원국과 오늘의 운세가 바로 나옵니다.
+      가입도, 앱 설치도 필요 없습니다.</p>
+    <a class="btn" href="/saju@leemyung">무료로 만세력 보기</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <a href="/saju@leemyung" style="color:var(--gold-d);font-weight:700">
+      이명리 — 무료 만세력 보러 가기</a><br>
+    무료 만세력 · 오늘의 운세
+  </div>
+</footer>
+</body>
+</html>
+

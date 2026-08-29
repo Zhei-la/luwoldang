@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const msiteTheme = require('../services/msiteTheme');
 const { pool } = require('../db');
+/* 손님이 보는 링크는 손님 주소로 만든다 */
+const guest = require('../services/guestSite');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { getPromo, normalizePromo } = require('../services/freePromo');
 
@@ -46,7 +48,7 @@ router.get('/free-saju-settings', (req, res) => {
   res.render('dash/free-settings', {
     user: req.user,
     active: 'settings',
-    baseUrl: process.env.BASE_URL || '',
+    baseUrl: guest.base(req),
     hasKey: !!req.user.openai_key,
     promo: getPromo(req.user),
     mailDomain: process.env.MAIL_DOMAIN || null,
@@ -153,7 +155,7 @@ router.post('/api/mail/test', async (req, res) => {
 router.get('/account', (req, res) => {
   res.render('dash/account', {
     user: req.user, active: 'account',
-    baseUrl: process.env.BASE_URL || '',
+    baseUrl: guest.base(req),
   });
 });
 

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>사주 공부 — 만세력을 읽을 수 있게</title>
+<meta name="description" content="만세력·신강신약·용신·대운·진태양시. 결과 화면이 전부 읽히도록 기초부터 정리했습니다.">
+<meta property="og:title" content="사주 공부 — 만세력을 읽을 수 있게">
+<meta property="og:description" content="만세력·신강신약·용신·대운·진태양시. 결과 화면이 전부 읽히도록 기초부터 정리했습니다.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23241F18%27/%3E%3Ctext x=%2732%27 y=%2745%27 font-size=%2738%27 text-anchor=%27middle%27 fill=%27%23fff%27 font-family=%27serif%27%3E命%3C/text%3E%3C/svg%3E">
+<style>
+  /* 손님이 보는 화면이다. 대시보드 css 를 쓰지 않고 여기서 끝낸다. */
+  /* 색은 교육생이 「웹사이트 설정」에서 고른 것으로 들어온다.
+     다섯 벌 중 하나이고, 전부 글씨가 읽히는지 확인한 것들이다. */
+  :root{
+    --ink:#241F18;--ink2:#4A4438;--dim:#7C7566;--faint:#A8A192;--line:#E6DFD1;--line2:#F0EAE0;--bg:#FBF8F2;--card:#FFFFFF;--gold:#B08D57;--gold-d:#8A6F3C;--navy:#241F18;--cta-bg:#241F18;--cta-fg:#FFFFFF;--cta-ac:#C9A469;--cta-ac-fg:#1B1710;
+    --mok:#3E7D5A; --hwa:#C0503C; --to:#B08D57; --geum:#6B7A8A; --su:#3C5A80;
+    --mok-bg:#EDF5F0; --hwa-bg:#FBEDEA; --to-bg:#F7F1E6; --geum-bg:#EEF1F4; --su-bg:#EBF0F7;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%;word-break:keep-all}
+  /* 폰에서는 지금 그대로, 넓은 화면에서는 통째로 키운다.
+     칸을 옆으로 나누지 않고 규격만 키운 것이다. */
+  .wrap{max-width:600px;width:100%;margin:0 auto;padding:0 20px}
+  @media (min-width:900px){
+    .wrap{max-width:900px;padding:0 28px}
+    body{font-size:17px}
+    h1{font-size:30px}
+  }
+  @media (min-width:1280px){
+    .wrap{max-width:1040px}
+    body{font-size:17.5px}
+  }
+
+  /* 링크는 파란 밑줄이 아니라 이 색으로. 안 정해두면 브라우저 기본이 나와
+     글 사이에서 혼자 튄다. */
+  a{color:var(--gold-d);font-weight:700;text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .top{background:var(--card);border-bottom:1px solid var(--line);padding:12px 0;
+    position:sticky;top:0;z-index:20}
+  .top .wrap{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+  .top .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
+  .top .mark{width:32px;height:32px;border-radius:9px;background:var(--navy);color:var(--card);
+    display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex:none}
+  .top .nm{font-size:16px;font-weight:800;color:var(--ink)}
+
+  /* 차림표는 로고 옆, 같은 흰 줄 안에 둔다.
+     폰에서는 자리가 모자라 아랫줄로 내려가고, 넘치면 옆으로 밀어서 본다. */
+  .top .tnav{display:flex;align-items:center;gap:9px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;min-width:0}
+  .top .tnav::-webkit-scrollbar{display:none}
+  .top .tnav a{font-size:14px;font-weight:700;color:var(--dim);white-space:nowrap}
+  .top .tnav a:hover{color:var(--gold-d);text-decoration:none}
+  .top .tnav .sep{color:var(--line);font-weight:700}
+  @media (min-width:560px){
+    .top .wrap{flex-wrap:nowrap}
+    .top .tnav{margin-left:6px}
+  }
+
+  .sec{padding:26px 0}
+  h1{font-size:23px;line-height:1.45;font-weight:800;margin:0 0 9px;text-wrap:balance}
+  h2{font-size:17px;font-weight:800;margin:0 0 12px}
+  p{margin:0 0 12px;color:var(--ink2)}
+  .lead{font-size:14.5px;color:var(--dim);margin:0 0 22px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:15px;
+    padding:20px;margin-bottom:14px}
+  .card h2{display:flex;align-items:center;gap:8px}
+  .card h2 .no{width:23px;height:23px;border-radius:50%;background:var(--gold);color:#fff;
+    font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+
+  label{display:block;font-size:12px;letter-spacing:.05em;color:var(--faint);
+    font-weight:700;margin:0 0 6px}
+  input[type=text],input[type=tel],input[type=number],select,textarea{
+    width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;
+    font-size:16px;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
+  /* 어두운 색을 고르면 바탕도 어두워진다.
+     #fff 로 박아두면 흰 바탕에 흰 글씨가 돼 아무것도 안 보인다. */
+  input::placeholder,textarea::placeholder{color:var(--faint);opacity:1}
+  select option{background:var(--card);color:var(--ink)}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  textarea{min-height:80px;resize:vertical;line-height:1.7}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1;min-width:0}
+  .fld{margin-bottom:14px}
+  .chk{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--ink2);
+    cursor:pointer;font-weight:600;margin-bottom:12px}
+  .chk input{width:19px;height:19px;flex:none;margin:3px 0 0;accent-color:var(--gold)}
+  .chk span{font-weight:500;line-height:1.7}
+
+  .btn{display:block;width:100%;padding:15px;background:var(--navy);color:#fff;border:0;
+    border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;
+    text-align:center;text-decoration:none}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.gold{background:var(--gold)}
+  .btn.ghost{background:var(--card);color:var(--ink2);border:1px solid var(--line)}
+
+  .err{background:#FBEDEA;color:#9A3B2B;border-radius:10px;padding:12px 14px;
+    font-size:14px;margin-bottom:16px;line-height:1.7}
+  .ok{background:#EDF5F0;color:#2F6B4E;border-radius:10px;padding:12px 14px;
+    font-size:14px;margin-bottom:16px;line-height:1.7}
+
+  .foot{padding:28px 0 40px;text-align:center;font-size:12px;color:var(--faint);line-height:1.9}
+  .foot a{color:var(--dim)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/saju@leemyung">
+      <span class="mark">命</span>
+      <span class="nm">이명리</span>
+    </a>
+    <nav class="tnav">
+      <a href="/saju@leemyung">만세력 보기</a>
+      <span class="sep">·</span>
+      <a href="/saju@leemyung/guide">사주 공부</a>
+      <span class="sep">·</span>
+      <a href="/saju@leemyung/guide/ilju">일주 60갑자</a>
+    </nav>
+  </div>
+</header>
+
+
+<style>
+  .eyebrow{display:block;font-size:12px;letter-spacing:.12em;color:var(--gold-d);
+    font-weight:800;margin:0 0 9px}
+  .eyebrow a{color:inherit;text-decoration:none}
+  .eyebrow a:hover{text-decoration:underline}
+  .sec-t{font-size:19px;font-weight:800;margin:0 0 10px;line-height:1.45}
+  .sec-lead{font-size:14px;color:var(--dim);margin:0 0 14px}
+  .sub-t{font-size:14px;font-weight:800;margin:16px 0 5px;color:var(--gold-d)}
+  .bd{font-size:14.5px;line-height:1.9;margin:0;color:var(--ink2)}
+  .tiny{font-size:12.5px;color:var(--faint)}
+  .tiny a{color:var(--gold-d);font-weight:700}
+
+  /* 천간·지지 타일 */
+  .pair{display:flex;gap:10px;margin-bottom:18px}
+  .pair .col{flex:1;text-align:center}
+  .pair .lb{font-size:11px;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-bottom:5px}
+  .pair .tile{border-radius:12px;padding:14px 0;font-size:34px;font-weight:800;
+    line-height:1.1;font-family:serif}
+  .pair .ko{font-size:12.5px;color:var(--dim);margin-top:5px}
+  .tile.mok{background:var(--mok-bg);color:var(--mok)}
+  .tile.hwa{background:var(--hwa-bg);color:var(--hwa)}
+  .tile.to{background:var(--to-bg);color:var(--to)}
+  .tile.geum{background:var(--geum-bg);color:var(--geum)}
+  .tile.su{background:var(--su-bg);color:var(--su)}
+
+  /* 목록 */
+  .list{display:flex;flex-direction:column;gap:8px}
+  .list .it{display:flex;align-items:baseline;gap:10px;background:var(--card);
+    border:1px solid var(--line);border-radius:11px;padding:12px 14px;
+    text-decoration:none;color:inherit}
+  .list .it:hover{border-color:var(--gold)}
+  .list .gz{font-size:15px;font-weight:800;flex:none}
+  .list .al{font-size:13.5px;color:var(--gold-d);font-weight:700;flex:none}
+  .list .tg{font-size:12.5px;color:var(--faint);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+
+  /* 60갑자를 열 개씩 묶어 보여준다 */
+  .grp{margin-bottom:22px}
+  .grp h3{font-size:15px;font-weight:800;margin:0 0 9px;color:var(--ink)}
+  .grp h3 small{font-weight:600;color:var(--faint);font-size:12.5px;margin-left:6px}
+
+  /* 돌아오기 칸 */
+  .backbox{border:1px solid var(--gold);border-radius:15px;background:var(--card);
+    padding:24px 20px;text-align:center}
+  .backbox h3{font-size:18px;font-weight:800;margin:0 0 8px}
+  .backbox p{font-size:14px;color:var(--dim);margin:0 0 16px;line-height:1.85}
+  .backbox .btn{display:inline-block;width:auto;padding:13px 26px;background:var(--gold);
+    color:#fff;border-radius:11px;font-weight:800;text-decoration:none}
+
+  /* 개념 해설 글 */
+  .art h2{font-size:17px;font-weight:800;margin:26px 0 9px;color:var(--ink)}
+  .art h2:first-child{margin-top:0}
+  .art p{font-size:15px;line-height:1.95;color:var(--ink2);margin:0 0 14px}
+  .art ul{margin:0 0 14px;padding:0;list-style:none}
+  .art li{font-size:14.5px;line-height:1.9;color:var(--ink2);padding-left:15px;
+    position:relative;margin-bottom:8px}
+  .art li:before{content:'·';position:absolute;left:3px;color:var(--gold);font-weight:800}
+
+  /* 일간 열 개 */
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+  .chip{display:block;text-align:center;padding:12px 8px;border:1px solid var(--line);
+    border-radius:11px;background:var(--card);text-decoration:none}
+  .chip b{display:block;font-size:17px;font-family:serif;font-weight:800}
+  .chip span{display:block;font-size:11px;color:var(--faint);margin-top:3px}
+  .chip:hover{border-color:var(--gold)}
+  .chip.mok b{color:var(--mok)} .chip.hwa b{color:var(--hwa)} .chip.to b{color:var(--to)}
+  .chip.geum b{color:var(--geum)} .chip.su b{color:var(--su)}
+
+  /* 넓은 화면에서는 일간 열 개만 한 줄로 편다.
+     나머지는 그대로 두고 폭만 커진다. */
+  @media (min-width:900px){
+    .chips{grid-template-columns:repeat(10,1fr)}
+  }
+</style>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow">아는 만큼 보입니다</span>
+    <h1>사주 공부</h1>
+    <p class="lead" style="margin-bottom:0">만세력을 읽을 수 있게 되면,
+      남의 풀이에 끌려다니지 않게 됩니다.</p>
+  </section>
+
+  <section class="wrap sec">
+    <span class="eyebrow">基礎</span>
+    <h2 class="sec-t">기초 개념</h2>
+    <p class="sec-lead">여기부터 읽으면 결과 화면이 전부 읽힙니다.</p>
+    <div class="list">
+      
+        <a class="it" href="/saju@leemyung/guide/manseryeok" style="display:block">
+          <b style="font-size:14.5px;display:block;margin-bottom:3px">만세력이란 무엇인가</b>
+          <span style="font-size:12.5px;color:var(--faint);line-height:1.7">사주를 보려면 먼저 만세력이 필요합니다. 만세력이 정확히 무엇이고, 왜 생년월일만으로는 부족한지 정리했습니다.</span>
+        </a>
+      
+        <a class="it" href="/saju@leemyung/guide/sinkang-sinyak" style="display:block">
+          <b style="font-size:14.5px;display:block;margin-bottom:3px">신강과 신약, 무엇이 다른가</b>
+          <span style="font-size:12.5px;color:var(--faint);line-height:1.7">사주 풀이에서 가장 먼저 나오는 말이 신강·신약입니다. 무엇을 재는 개념이고 어느 쪽이 더 좋은지 정리했습니다.</span>
+        </a>
+      
+        <a class="it" href="/saju@leemyung/guide/yongsin" style="display:block">
+          <b style="font-size:14.5px;display:block;margin-bottom:3px">용신이 무엇이고 왜 중요한가</b>
+          <span style="font-size:12.5px;color:var(--faint);line-height:1.7">사주 풀이의 결론은 결국 용신입니다. 억부용신과 조후용신의 차이, 그리고 생활에서 어떻게 쓰는지 설명합니다.</span>
+        </a>
+      
+        <a class="it" href="/saju@leemyung/guide/daeun" style="display:block">
+          <b style="font-size:14.5px;display:block;margin-bottom:3px">대운 보는 법 — 십 년마다 바뀌는 흐름</b>
+          <span style="font-size:12.5px;color:var(--faint);line-height:1.7">사주에서 시기를 보는 핵심은 대운입니다. 대운수가 무엇이고, 순행과 역행이 왜 갈리는지 설명합니다.</span>
+        </a>
+      
+        <a class="it" href="/saju@leemyung/guide/jintaeyangsi" style="display:block">
+          <b style="font-size:14.5px;display:block;margin-bottom:3px">진태양시 보정 — 시계와 하늘의 시간은 다릅니다</b>
+          <span style="font-size:12.5px;color:var(--faint);line-height:1.7">서울에서 태어났다면 실제 하늘의 시각은 시계보다 32분 늦습니다. 경계 시각에 태어난 사람은 이 보정 하나로 시주가 바뀝니다.</span>
+        </a>
+      
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <span class="eyebrow">日干</span>
+    <h2 class="sec-t">일간 10가지</h2>
+    <p class="sec-lead">태어난 날의 첫 글자가 사주에서 「나」입니다.</p>
+    <div class="chips">
+      
+        <a class="chip mok" href="/saju@leemyung/guide/ilgan/%EA%B0%91">
+          <b>갑甲</b>
+          <span>목 · 양</span>
+        </a>
+      
+        <a class="chip mok" href="/saju@leemyung/guide/ilgan/%EC%9D%84">
+          <b>을乙</b>
+          <span>목 · 음</span>
+        </a>
+      
+        <a class="chip hwa" href="/saju@leemyung/guide/ilgan/%EB%B3%91">
+          <b>병丙</b>
+          <span>화 · 양</span>
+        </a>
+      
+        <a class="chip hwa" href="/saju@leemyung/guide/ilgan/%EC%A0%95">
+          <b>정丁</b>
+          <span>화 · 음</span>
+        </a>
+      
+        <a class="chip to" href="/saju@leemyung/guide/ilgan/%EB%AC%B4">
+          <b>무戊</b>
+          <span>토 · 양</span>
+        </a>
+      
+        <a class="chip to" href="/saju@leemyung/guide/ilgan/%EA%B8%B0">
+          <b>기己</b>
+          <span>토 · 음</span>
+        </a>
+      
+        <a class="chip geum" href="/saju@leemyung/guide/ilgan/%EA%B2%BD">
+          <b>경庚</b>
+          <span>금 · 양</span>
+        </a>
+      
+        <a class="chip geum" href="/saju@leemyung/guide/ilgan/%EC%8B%A0">
+          <b>신辛</b>
+          <span>금 · 음</span>
+        </a>
+      
+        <a class="chip su" href="/saju@leemyung/guide/ilgan/%EC%9E%84">
+          <b>임壬</b>
+          <span>수 · 양</span>
+        </a>
+      
+        <a class="chip su" href="/saju@leemyung/guide/ilgan/%EA%B3%84">
+          <b>계癸</b>
+          <span>수 · 음</span>
+        </a>
+      
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <span class="eyebrow">日柱</span>
+    <h2 class="sec-t">일주 60가지</h2>
+    <p class="sec-lead">태어난 날의 간지 두 글자.
+      사주에서 가장 개인적인 자리입니다.</p>
+    <p style="margin:0"><a href="/saju@leemyung/guide/ilju">60갑자 전체 보기 →</a></p>
+  </section>
+
+  <!-- 읽다 나가려는 손님을 되돌린다. 설명 페이지 끝마다 붙는다. -->
+<section class="wrap sec">
+  <div class="backbox">
+    <h3>내 사주는 어떻게 생겼을까</h3>
+    <p>생년월일시만 넣으면 만세력 원국과 오늘의 운세가 바로 나옵니다.
+      가입도, 앱 설치도 필요 없습니다.</p>
+    <a class="btn" href="/saju@leemyung">무료로 만세력 보기</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <a href="/saju@leemyung" style="color:var(--gold-d);font-weight:700">
+      이명리 — 무료 만세력 보러 가기</a><br>
+    무료 만세력 · 오늘의 운세
+  </div>
+</footer>
+</body>
+</html>
+
