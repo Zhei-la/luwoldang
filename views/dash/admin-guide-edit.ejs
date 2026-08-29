@@ -38,7 +38,9 @@
   #geBody h2 { font-family:"Nanum Myeongjo",serif; font-size:21px; margin:30px 0 12px;
     padding-bottom:8px; border-bottom:1px solid var(--beige); }
   #geBody h3 { font-size:17.5px; margin:24px 0 10px; color:#8A6F3C; }
-  #geBody p { margin:0 0 14px; }
+  /* 편집칸에서도 보는 화면과 같은 간격이어야 한다.
+     div 로 들어온 옛 글도 같이 맞춰준다. */
+  #geBody p, #geBody > div { margin:0 0 14px; }
   #geBody ul, #geBody ol { margin:0 0 14px; padding-left:24px; }
   #geBody li { margin-bottom:6px; }
   #geBody blockquote { margin:0 0 15px; padding:13px 16px; background:#FBF8F1;
@@ -249,6 +251,45 @@
   var postId = document.getElementById('gePostId');
   var dirty = false;
 
+  /* 엔터를 치면 크롬은 기본으로 <div> 를 만든다.
+     보는 화면(.gv-body)은 p 에만 문단 간격을 주므로 div 로 저장되면 글이 붙어 보인다.
+     그래서 문단을 p 로 만들게 바꾼다. */
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
+
+  /* 맨 앞에 아무 태그 없이 떠 있는 글자를 p 로 감싼다.
+     크롬은 빈 편집칸에 처음 친 글자를 어느 태그에도 안 넣는다.
+     그러면 그 줄만 문단 간격이 없어 혼자 붙어버린다. */
+  function wrapLooseText(root) {
+    var loose = [];
+    for (var i = 0; i < root.childNodes.length; i++) {
+      var n = root.childNodes[i];
+      if (n.nodeType === 3 && n.textContent.trim()) loose.push(n);
+      else if (n.nodeType === 1 && /^(BR|SPAN|B|STRONG|I|EM|U|S|CODE|A)$/.test(n.tagName)) loose.push(n);
+    }
+    loose.forEach(function (n) {
+      /* 잇달아 붙은 것은 한 문단으로 모은다 */
+      if (!n.parentNode || n.parentNode !== root) return;
+      var p = document.createElement('p');
+      root.insertBefore(p, n);
+      var cur = n;
+      while (cur && (cur.nodeType === 3
+        || (cur.nodeType === 1 && /^(BR|SPAN|B|STRONG|I|EM|U|S|CODE|A)$/.test(cur.tagName)))) {
+        var next = cur.nextSibling;
+        p.appendChild(cur);
+        cur = next;
+      }
+      if (!p.childNodes.length) p.remove();
+    });
+  }
+
+  /* 편집칸이 통째로 비면 문단 하나를 깔아둔다.
+     아무것도 없으면 크롬이 또 태그 없는 글자를 만든다. */
+  function ensureBlock() {
+    if (!ed.innerHTML.trim()) ed.innerHTML = '<p><br></p>';
+  }
+  ensureBlock();
+  wrapLooseText(ed);
+
   function toast(m) {
     var e = document.createElement('div');
     e.className = 'toast'; e.textContent = m;
@@ -311,6 +352,20 @@
         var cur = curBlock();
         if (cur && cur.tagName === val.toUpperCase()) val = 'p';
         document.execCommand('formatBlock', false, '<' + val + '>');
+        /* 크롬이 안 바꿔줄 때가 있다. 그럴 땐 우리가 직접 갈아끼운다.
+           「본문」 을 눌러도 소제목이 그대로이던 일이 있었다. */
+        var now = curBlock();
+        if (now && now.tagName !== val.toUpperCase()
+            && !/^(LI|PRE|BLOCKQUOTE)$/.test(now.tagName)) {
+          var box = document.createElement(val);
+          while (now.firstChild) box.appendChild(now.firstChild);
+          if (now.getAttribute('class')) box.setAttribute('class', now.getAttribute('class'));
+          now.parentNode.replaceChild(box, now);
+          var rr = document.createRange();
+          rr.selectNodeContents(box); rr.collapse(false);
+          var ss = window.getSelection();
+          ss.removeAllRanges(); ss.addRange(rr);
+        }
       } else {
         /* 목록·번호는 브라우저가 알아서 켜고 끈다 */
         document.execCommand(cmd, false, null);
@@ -327,6 +382,40 @@
     if (!b || !/^(PRE|BLOCKQUOTE)$/.test(b.tagName)) return;
     e.preventDefault();
     newLineAfter(b);
+  });
+
+  /* ⚠️ 제목 줄에서 엔터를 치면 크롬이 같은 제목을 하나 더 만든다.
+     소제목을 쓰고 엔터를 쳐서 본문을 쓰려 하면 계속 소제목 크기·색으로 나오던 원인이다.
+     제목 안에서 엔터를 치면 우리가 직접 본문 문단을 만들어 준다. */
+  ed.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    var b = curBlock();
+    if (!b || !/^H[234]$/.test(b.tagName)) return;
+
+    var sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    var r = sel.getRangeAt(0);
+
+    /* 커서 뒤에 남은 글자는 새 본문 문단으로 옮긴다.
+       끝에서 눌렀으면 빈 문단이 생긴다. */
+    var after = r.cloneRange();
+    after.setEndAfter(b.lastChild || b);
+    var rest = after.extractContents();
+
+    var p = document.createElement('p');
+    if (rest.textContent.trim()) p.appendChild(rest);
+    else p.innerHTML = '<br>';
+    b.parentNode.insertBefore(p, b.nextSibling);
+
+    /* 제목이 통째로 비었으면 지운다 */
+    if (!b.textContent.trim()) b.remove();
+
+    var nr = document.createRange();
+    nr.setStart(p, 0); nr.collapse(true);
+    sel.removeAllRanges(); sel.addRange(nr);
+
+    e.preventDefault();
+    dirty = true;
   });
 
   /* 커서 자리에 넣기 */
@@ -808,6 +897,20 @@
   function cleanBody() {
     var tmp = document.createElement('div');
     tmp.innerHTML = ed.innerHTML;
+
+    /* 태그 없이 떠 있는 글자를 문단으로 감싼다 */
+    wrapLooseText(tmp);
+
+    /* 크롬이 만든 <div> 를 문단으로 바꾼다.
+       보는 화면은 p 에만 문단 간격을 주므로, div 로 저장되면 글이 붙어 보인다.
+       다만 사진·표를 감싼 div 는 그대로 둔다. */
+    tmp.querySelectorAll('div').forEach(function (d) {
+      if (d.querySelector('figure, table, img, ul, ol, pre, blockquote, h2, h3, h4, div')) return;
+      var p = document.createElement('p');
+      while (d.firstChild) p.appendChild(d.firstChild);
+      if (d.getAttribute('class')) p.setAttribute('class', d.getAttribute('class'));
+      d.parentNode.replaceChild(p, d);
+    });
     tmp.querySelectorAll('figure.sel').forEach(function (f) { f.classList.remove('sel'); });
     /* 아직 못 받아온 사진은 빈칸으로 남으므로 빼고 저장한다 */
     tmp.querySelectorAll('img[data-remote], img[data-inline]').forEach(function (im) {
