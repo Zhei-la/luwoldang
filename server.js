@@ -130,6 +130,9 @@ app.use('/', freeRouter);
  * 여기서 먼저 한 번 불러보고, 그래도 아니면 안내 화면을 준다. */
 app.use((req, res, next) => {
   if (!guest.isGuest(req)) return next();
+  /* /.well-known 은 막으면 안 된다.
+     https 인증서를 받을 때 이 통로로 확인하러 온다. 막으면 인증서가 안 나온다. */
+  if (req.path.startsWith('/.well-known/')) return next();
   msiteRouter.tail(req, res, () => guest.block(req, res));
 });
 
