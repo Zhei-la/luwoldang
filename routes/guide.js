@@ -198,7 +198,7 @@ router.get('/guide/week/:n(\\d+)', requireAuth, requireApproved, async (req, res
       });
     }
 
-    const [posts, wk, task, done] = await Promise.all([
+    const [posts, wk, task, done, items] = await Promise.all([
       pool.query(`SELECT p.id, p.title, p.views, p.created_at, c.name AS cat_name
                     FROM guide_posts p LEFT JOIN guide_cats c ON c.id = p.cat_id
                    WHERE p.published AND COALESCE(p.week,0) = $1
@@ -206,6 +206,13 @@ router.get('/guide/week/:n(\\d+)', requireAuth, requireApproved, async (req, res
       pool.query('SELECT * FROM guide_weeks WHERE week = $1', [n]),
       pool.query('SELECT * FROM guide_tasks WHERE week = $1', [n]),
       pool.query('SELECT week, note, done_at FROM guide_task_done WHERE teacher_id = $1', [req.user.id]),
+      pool.query(`SELECT i.id, i.title, i.sort,
+                         (d.item_id IS NOT NULL) AS done
+                    FROM guide_task_items i
+                    LEFT JOIN guide_task_item_done d
+                      ON d.item_id = i.id AND d.teacher_id = $2
+                   WHERE i.week = $1 AND i.published
+                   ORDER BY i.sort, i.id`, [n, req.user.id]),
     ]);
 
     const dset = new Set(done.rows.map((d) => d.week));
@@ -215,12 +222,73 @@ router.get('/guide/week/:n(\\d+)', requireAuth, requireApproved, async (req, res
       week: wk.rows[0] || { week: n, title: WEEK_LABEL[n] || '' },
       posts: posts.rows,
       task: t && t.published ? t : null,
+      items: items.rows,
       taskOpen: n <= 1 || dset.has(n - 1),
       taskDone: dset.has(n),
       myDone: done.rows.find((d) => d.week === n) || null,
       preview,
     });
   } catch (e) { next(e); }
+});
+
+/* 체크리스트 하나를 켜고 끈다.
+   그 주차 항목을 전부 체크하면 「주차 과제 완료」로도 기록한다.
+   다음 주차 과제가 그걸 보고 열리기 때문이다. */
+router.post('/guide/task/check', requireAuth, requireApproved, async (req, res) => {
+  try {
+    const itemId = Number(req.body.itemId);
+    const on = req.body.done === true || req.body.done === 'true';
+    if (!itemId) return res.status(400).json({ ok: false, error: '항목이 올바르지 않습니다.' });
+
+    const it = await pool.query(
+      'SELECT week FROM guide_task_items WHERE id = $1 AND published', [itemId]
+    );
+    if (!it.rowCount) return res.status(404).json({ ok: false, error: '없는 항목입니다.' });
+    const week = it.rows[0].week;
+
+    if (on) {
+      await pool.query(
+        `INSERT INTO guide_task_item_done (teacher_id, item_id) VALUES ($1,$2)
+         ON CONFLICT (teacher_id, item_id) DO NOTHING`,
+        [req.user.id, itemId]
+      );
+    } else {
+      await pool.query(
+        'DELETE FROM guide_task_item_done WHERE teacher_id = $1 AND item_id = $2',
+        [req.user.id, itemId]
+      );
+    }
+
+    /* 그 주차를 다 했는지 다시 센다 */
+    const cnt = await pool.query(`
+      SELECT COUNT(*)::int AS total,
+             COUNT(d.item_id)::int AS done
+        FROM guide_task_items i
+        LEFT JOIN guide_task_item_done d
+          ON d.item_id = i.id AND d.teacher_id = $2
+       WHERE i.week = $1 AND i.published
+    `, [week, req.user.id]);
+    const { total, done } = cnt.rows[0];
+    const allDone = total > 0 && done === total;
+
+    if (allDone) {
+      await pool.query(
+        `INSERT INTO guide_task_done (teacher_id, week) VALUES ($1,$2)
+         ON CONFLICT (teacher_id, week) DO NOTHING`,
+        [req.user.id, week]
+      );
+    } else {
+      /* 하나라도 풀면 완료를 거둔다. 적어둔 소감은 지우지 않는다. */
+      await pool.query(
+        'DELETE FROM guide_task_done WHERE teacher_id = $1 AND week = $2 AND note IS NULL',
+        [req.user.id, week]
+      );
+    }
+
+    res.json({ ok: true, total, done, allDone });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 /* 과제 완료 표시 */
@@ -534,20 +602,24 @@ router.post('/admin/guide/img/from-url', requireAuth, requireAdmin, async (req, 
 /* ── 주차 제목 · 과제 관리 ── */
 router.get('/admin/guide/weeks', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const [wk, tasks, counts, done] = await Promise.all([
+    const [wk, tasks, counts, done, items] = await Promise.all([
       pool.query('SELECT week, title, subtitle FROM guide_weeks ORDER BY week'),
       pool.query('SELECT week, title, body, published FROM guide_tasks'),
       pool.query(`SELECT COALESCE(week,0) AS week, COUNT(*)::int AS n
                     FROM guide_posts WHERE published GROUP BY COALESCE(week,0)`),
       pool.query(`SELECT week, COUNT(*)::int AS n FROM guide_task_done GROUP BY week`),
+      pool.query(`SELECT id, week, title, sort FROM guide_task_items
+                   WHERE published ORDER BY week, sort, id`),
     ]);
     const tmap = {}; tasks.rows.forEach((t) => { tmap[t.week] = t; });
     const cmap = {}; counts.rows.forEach((c) => { cmap[c.week] = c.n; });
     const dmap = {}; done.rows.forEach((d) => { dmap[d.week] = d.n; });
+    const imap = {}; items.rows.forEach((i) => { (imap[i.week] = imap[i.week] || []).push(i); });
     res.render('dash/admin-guide-weeks', {
       user: req.user, active: 'admin-guide',
       weeks: wk.rows.map((w) => ({
         ...w, task: tmap[w.week] || null, posts: cmap[w.week] || 0, doneN: dmap[w.week] || 0,
+        items: imap[w.week] || [],
       })),
     });
   } catch (e) { next(e); }
@@ -566,15 +638,46 @@ router.post('/admin/guide/weeks/save', requireAuth, requireAdmin, async (req, re
       [w, cut(b.title, 60) || (w + '주차'), cut(b.subtitle, 100) || null]
     );
 
-    /* 과제는 1~4주차만 */
-    if (w >= 1 && w <= 4) {
-      await pool.query(
-        `INSERT INTO guide_tasks (week, title, body, published, updated_at)
-         VALUES ($1,$2,$3,$4,NOW())
-         ON CONFLICT (week) DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body,
-                                          published = EXCLUDED.published, updated_at = NOW()`,
-        [w, cut(b.taskTitle, 80), cut(b.taskBody, 4000), b.taskOn !== false]
+    /* 과제는 1~4주차만.
+       빈 줄은 빼고, 적힌 줄만 순서대로 다시 깐다.
+       ⚠️ 통째로 지우면 교육생이 체크해둔 것도 같이 날아간다(ON DELETE CASCADE).
+          그래서 글자가 그대로인 줄은 건드리지 않고 살려둔다. */
+    if (w >= 1 && w <= 4 && Array.isArray(b.items)) {
+      const want = b.items
+        .map((t) => cut(t, 200).trim())
+        .filter(Boolean)
+        .slice(0, 30);
+
+      const cur = await pool.query(
+        'SELECT id, title FROM guide_task_items WHERE week = $1 ORDER BY sort, id', [w]
       );
+      const left = cur.rows.slice();
+
+      for (let i = 0; i < want.length; i++) {
+        const same = left.findIndex((r) => r.title === want[i]);
+        if (same >= 0) {
+          await pool.query('UPDATE guide_task_items SET sort = $2, published = TRUE WHERE id = $1',
+            [left[same].id, i]);
+          left.splice(same, 1);
+        } else {
+          const reuse = left.shift();          /* 글자만 고친 줄은 그 줄을 그대로 쓴다 */
+          if (reuse) {
+            await pool.query(
+              'UPDATE guide_task_items SET title = $2, sort = $3, published = TRUE WHERE id = $1',
+              [reuse.id, want[i], i]
+            );
+          } else {
+            await pool.query(
+              'INSERT INTO guide_task_items (week, title, sort) VALUES ($1,$2,$3)',
+              [w, want[i], i]
+            );
+          }
+        }
+      }
+      /* 남은 줄은 정말 없어진 것이다 */
+      for (const r of left) {
+        await pool.query('DELETE FROM guide_task_items WHERE id = $1', [r.id]);
+      }
     }
     res.json({ ok: true });
   } catch (e) {

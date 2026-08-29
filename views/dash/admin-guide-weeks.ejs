@@ -56,15 +56,24 @@
 
     <% if (w.week >= 1 && w.week <= 4) { %>
       <div class="tsec">
-        <div class="lb">과제</div>
-        <label class="chk">
-          <input type="checkbox" class="t-on" <%= (!w.task || w.task.published) ? 'checked' : '' %>>
-          이 주차에 과제 보이기
-        </label>
-        <label>과제 제목</label>
-        <input type="text" class="t-title" value="<%= w.task ? w.task.title : '' %>" placeholder="예: 첫 글 올려보기">
-        <label>과제 내용</label>
-        <textarea class="t-body" placeholder="무엇을 어떻게 하면 되는지 적어주세요."><%= w.task ? w.task.body : '' %></textarea>
+        <div class="lb">과제 체크리스트</div>
+        <p class="thelp">한 줄에 하나씩. 교육생 화면에서 <b>강의 자료 위에</b> 체크리스트로 뜹니다.
+          다 체크하면 다음 주차 과제가 열립니다. 빈 줄은 저장할 때 빠집니다.</p>
+        <div class="tlist">
+          <% (w.items || []).forEach(function (it) { %>
+            <div class="trow">
+              <input type="text" class="t-item" value="<%= it.title %>">
+              <button type="button" class="tdel" title="빼기">×</button>
+            </div>
+          <% }); %>
+          <% if (!(w.items || []).length) { %>
+            <div class="trow">
+              <input type="text" class="t-item" placeholder="예: 스레드 계정 만들기">
+              <button type="button" class="tdel" title="빼기">×</button>
+            </div>
+          <% } %>
+        </div>
+        <button type="button" class="tadd">+ 과제 한 줄 더</button>
       </div>
     <% } %>
 
@@ -72,21 +81,55 @@
   </div>
 <% }); %>
 
+<style>
+  .thelp { font-size:12.5px; color:#8A8375; line-height:1.8; margin:0 0 10px; word-break:keep-all; }
+  .thelp b { color:#4A4438; }
+  .trow { display:flex; gap:7px; margin-bottom:7px; }
+  .trow input { flex:1; min-width:0; }
+  .tdel { flex:none; width:38px; border:1px solid var(--beige); background:#fff;
+    border-radius:9px; font-size:17px; color:#A8332B; cursor:pointer; font-family:inherit; }
+  .tdel:hover { border-color:#D9B4B4; background:#FCF6F5; }
+  .tadd { border:1px dashed var(--beige); background:#fff; border-radius:9px;
+    padding:9px 14px; font-size:13.5px; font-weight:600; color:#6B6656;
+    cursor:pointer; font-family:inherit; }
+  .tadd:hover { border-color:var(--gold); color:#8A6F3C; }
+</style>
+
 <script>
+/* 과제 줄 더하기 · 빼기 */
+document.addEventListener('click', function (e) {
+  var add = e.target.closest('.tadd');
+  if (add) {
+    var list = add.closest('.tsec').querySelector('.tlist');
+    var row = document.createElement('div');
+    row.className = 'trow';
+    row.innerHTML = '<input type="text" class="t-item" placeholder="할 일을 적어주세요">' +
+                    '<button type="button" class="tdel" title="빼기">\u00d7</button>';
+    list.appendChild(row);
+    row.querySelector('input').focus();
+    return;
+  }
+  var del = e.target.closest('.tdel');
+  if (del) {
+    var list2 = del.closest('.tlist');
+    if (list2.querySelectorAll('.trow').length > 1) del.closest('.trow').remove();
+    else del.closest('.trow').querySelector('input').value = '';
+  }
+});
+
 document.addEventListener('click', function (e) {
   var b = e.target.closest('.aw .save');
   if (!b) return;
   var box = b.closest('.aw');
   var v = function (c) { var el = box.querySelector(c); return el ? el.value : ''; };
-  var on = box.querySelector('.t-on');
   b.disabled = true; b.textContent = '저장 중...';
   fetch('/admin/guide/weeks/save', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       week: Number(box.dataset.week),
       title: v('.w-title'), subtitle: v('.w-sub'),
-      taskTitle: v('.t-title'), taskBody: v('.t-body'),
-      taskOn: on ? on.checked : true,
+      items: Array.prototype.map.call(box.querySelectorAll('.t-item'),
+        function (i) { return i.value; }),
     })
   })
   .then(function (r) { return r.json(); })

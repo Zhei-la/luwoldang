@@ -474,6 +474,32 @@ async function initDb() {
     );
   `);
 
+  /* 주차마다 과제를 여러 개 둘 수 있게.
+     guide_tasks 는 week 이 기본키라 주차당 한 개뿐이었다.
+     그건 그대로 두고(옛 글이 걸려 있다), 체크리스트 항목을 따로 담는다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_task_items (
+      id         SERIAL PRIMARY KEY,
+      week       INTEGER NOT NULL,
+      title      TEXT NOT NULL DEFAULT '',
+      sort       INTEGER DEFAULT 0,
+      published  BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  await pool.query(
+    `CREATE INDEX IF NOT EXISTS idx_task_items ON guide_task_items(week, sort, id);`
+  );
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guide_task_item_done (
+      teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      item_id    INTEGER NOT NULL REFERENCES guide_task_items(id) ON DELETE CASCADE,
+      done_at    TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (teacher_id, item_id)
+    );
+  `);
+
+
   /* 주차마다 제목을 붙일 수 있게 */
   await pool.query(`
     CREATE TABLE IF NOT EXISTS guide_weeks (
@@ -499,6 +525,22 @@ async function initDb() {
       done TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+
+  /* 이미 적어둔 주차 과제를 체크리스트 첫 항목으로 옮긴다. 한 번만 돈다. */
+  const taskFlag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_task_items_init'");
+  if (!taskFlag.rowCount) {
+    const moved = await pool.query(`
+      INSERT INTO guide_task_items (week, title, sort, published)
+      SELECT week,
+             CASE WHEN COALESCE(title,'') <> '' THEN title
+                  ELSE week::text || '주차 과제' END,
+             0, published
+        FROM guide_tasks
+       WHERE COALESCE(title,'') <> '' OR COALESCE(body,'') <> ''
+    `);
+    await pool.query("INSERT INTO app_flags (key) VALUES ('guide_task_items_init')");
+    if (moved.rowCount) console.log('[자료집] 주차 과제 ' + moved.rowCount + '개를 체크리스트로 옮겼습니다.');
+  }
   /* 이미 가입해 계신 분들은 주차 제한 없이 전부 보시게 한다.
      3기부터 새로 들어오는 분들만 주차별로 열린다. */
   const openFlag = await pool.query("SELECT 1 FROM app_flags WHERE key = 'guide_open_existing_v2'");
