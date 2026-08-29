@@ -36,10 +36,10 @@ img{max-width:100%}
 /* 돈 숫자 전용 — 이 페이지에서 제일 크게 보여야 하는 것 */
 .money{font-family:'Black Han Sans','Noto Sans KR',sans-serif;font-weight:400;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
-.wrap{max-width:720px;margin:0 auto;padding:0 22px}
+.wrap{max-width:720px;width:100%;margin:0 auto;padding:0 22px;min-width:0}
 
 section{padding:76px 0}
-.stack{display:flex;flex-direction:column;gap:24px}
+.stack{display:flex;flex-direction:column;gap:24px;min-width:0}
 
 /* 조용한 칸과 큰소리 치는 칸을 번갈아 둔다 */
 .band{background:var(--fire);color:#fff}
@@ -194,16 +194,41 @@ blockquote{margin:0;padding:30px 32px;background:var(--ink);color:#fff;border-ra
 .note.jade{background:var(--jade-soft);border-color:transparent}
 .note.jade .t{color:var(--jade)}
 
-/* 후기 */
-.revs{columns:2;column-gap:16px}
-@media(max-width:640px){.revs{columns:1}}
-.rev{break-inside:avoid;background:var(--card);border:1.5px solid var(--rule);border-radius:14px;
-  padding:20px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px}
-.rev .stars{font-size:14px;letter-spacing:.16em;color:var(--fire-ink)}
-.rev p{font-size:15.5px;line-height:1.78;color:var(--ink-2)}
-.rev .shot{display:block;border:1px solid var(--rule-soft);border-radius:9px;overflow:hidden;background:var(--paper)}
-.rev .shot img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain}
-.rev .who{font-size:13.5px;color:var(--ink-3);font-weight:600}
+/* 후기 — 세로로 쌓지 않고 옆으로 넘겨서 본다 */
+.revbox{position:relative;margin:0 -22px;min-width:0}
+.revs{display:flex;gap:14px;min-width:0;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  padding:4px 22px 12px;scrollbar-width:none;cursor:grab}
+.revs::-webkit-scrollbar{display:none}
+.revs.grabbing{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
+.rev{flex:0 0 min(80vw,320px);scroll-snap-align:center;height:430px;
+  background:var(--card);border:1.5px solid var(--rule);border-radius:14px;
+  padding:18px;display:flex;flex-direction:column;gap:10px}
+.rev .stars{font-size:14px;letter-spacing:.16em;color:var(--fire-ink);flex:none}
+.rev p{font-size:15px;line-height:1.7;color:var(--ink-2);flex:none;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rev.noimg p{-webkit-line-clamp:13;flex:1}
+.rev .shot{display:block;flex:1;min-height:0;border:1px solid var(--rule-soft);
+  border-radius:9px;overflow:hidden;background:var(--paper)}
+.rev .shot img{display:block;width:100%;height:100%;object-fit:contain}
+.rev .thumbs{display:flex;gap:6px;flex:none}
+.rev .thumbs a{display:block;width:42px;height:42px;border:1px solid var(--rule-soft);
+  border-radius:6px;overflow:hidden;background:var(--paper)}
+.rev .thumbs img{display:block;width:100%;height:100%;object-fit:cover}
+.rev .who{font-size:13.5px;color:var(--ink-3);font-weight:600;flex:none}
+/* 넘기기 단추 — 마우스 쓰는 화면에서만 */
+.revnav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+  width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule);
+  background:#fff;color:var(--ink);font-size:22px;line-height:1;cursor:pointer;
+  display:none;align-items:center;justify-content:center;font-family:inherit;
+  box-shadow:0 3px 10px rgba(27,21,18,.12)}
+.revnav:hover{border-color:var(--fire);color:var(--fire-ink)}
+.revnav[disabled]{opacity:.3;cursor:default}
+.revnav.prev{left:-4px} .revnav.next{right:-4px}
+@media(hover:hover) and (min-width:760px){.revnav{display:flex}}
+.revfoot{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-3);font-weight:600}
+.revfoot b{color:var(--ink)}
+.revfoot .hint{margin-left:auto;font-weight:500}
 .revmore{display:inline-flex;align-items:center;gap:8px;font-size:16px;color:var(--fire-ink);
   font-weight:700;text-decoration:none;border-bottom:2px solid var(--fire);padding-bottom:2px;align-self:flex-start}
 
@@ -412,7 +437,12 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
   <div class="wrap stack">
     <div class="eyebrow"><s></s>직접 남겨주신 후기</div>
     <h2 class="head">말이 아니라<br><span class="mark">인증</span>으로 보여드립니다</h2>
-    <div class="revs" id="revwrap"></div>
+    <div class="revbox">
+      <div class="revs" id="revwrap"></div>
+      <button class="revnav prev" type="button" aria-label="이전 후기">&lsaquo;</button>
+      <button class="revnav next" type="button" aria-label="다음 후기">&rsaquo;</button>
+    </div>
+    <div class="revfoot"><span><b id="revNow">1</b> / <span id="revTotal">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
     <a class="revmore" href="https://cafe.naver.com/f-e/cafes/30688236/menus/4?viewType=L" target="_blank" rel="noopener">네이버 카페에서 더 보기 →</a>
   </div>
 </section>
@@ -989,20 +1019,80 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
       if (!list.length) return;                 /* 후기가 없으면 칸째로 감춘 채로 둔다 */
       wrap.innerHTML = list.map(function(r){
         var imgs = (r.imgs && r.imgs.length) ? r.imgs : (r.img ? [r.img] : []);
-        return '<div class="rev">' +
+        var first = imgs[0], rest = imgs.slice(1);
+        /* 카드는 높이가 같아야 옆으로 넘길 때 깔끔하다.
+           사진은 첫 장만 크게, 나머지는 아래 작은 칸으로 둔다. */
+        return '<div class="rev' + (first ? '' : ' noimg') + '">' +
           '<div class="stars">★★★★★</div>' +
           (r.body ? '<p>' + esc(r.body).replace(/\n/g,'<br>') + '</p>' : '') +
-          imgs.map(function(u){
-            return '<a class="shot" href="' + esc(u) + '" target="_blank" rel="noopener">' +
+          (first ? '<a class="shot" href="' + esc(first) + '" target="_blank" rel="noopener">' +
+                   '<img src="' + esc(first) + '" alt="수강생 인증" loading="lazy"></a>' : '') +
+          (rest.length ? '<div class="thumbs">' + rest.map(function(u){
+            return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
                    '<img src="' + esc(u) + '" alt="수강생 인증" loading="lazy"></a>';
-          }).join('') +
+          }).join('') + '</div>' : '') +
           (r.who ? '<div class="who">— ' + esc(r.who) + '</div>' : '') +
         '</div>';
       }).join('');
       sec.style.display = '';
       showReveals();
+      initRevSwipe();
     })
     .catch(function(){ /* 못 읽어오면 감춘 채로 둔다 */ });
+
+  /* ── 후기 옆으로 넘기기 ──
+     폰에서는 손가락으로, 마우스에서는 끌거나 단추로 넘긴다. */
+  function initRevSwipe(){
+    var strip = wrap;
+    var cards = strip.querySelectorAll('.rev');
+    if (!cards.length) return;
+
+    var now = document.getElementById('revNow');
+    var total = document.getElementById('revTotal');
+    var prev = document.querySelector('.revnav.prev');
+    var next = document.querySelector('.revnav.next');
+    total.textContent = cards.length;
+
+    function step(){ return cards[0].offsetWidth + 14; }   /* 카드 한 장 + 사이 간격 */
+
+    function paint(){
+      var i = Math.round(strip.scrollLeft / step()) + 1;
+      now.textContent = Math.min(Math.max(i, 1), cards.length);
+      var end = strip.scrollWidth - strip.clientWidth - 2;
+      prev.disabled = strip.scrollLeft <= 2;
+      next.disabled = strip.scrollLeft >= end;
+    }
+    strip.addEventListener('scroll', paint, { passive: true });
+    paint();
+
+    prev.addEventListener('click', function(){ strip.scrollBy({ left: -step(), behavior: 'smooth' }); });
+    next.addEventListener('click', function(){ strip.scrollBy({ left:  step(), behavior: 'smooth' }); });
+
+    /* 마우스로 끌어서 넘기기 — 손가락은 브라우저가 알아서 한다 */
+    var down = false, startX = 0, startLeft = 0, moved = false;
+    strip.addEventListener('pointerdown', function(e){
+      if (e.pointerType === 'touch') return;
+      down = true; moved = false;
+      startX = e.clientX; startLeft = strip.scrollLeft;
+      strip.classList.add('grabbing');
+    });
+    strip.addEventListener('pointermove', function(e){
+      if (!down) return;
+      var d = e.clientX - startX;
+      if (Math.abs(d) > 4) moved = true;
+      strip.scrollLeft = startLeft - d;
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(function(t){
+      strip.addEventListener(t, function(){
+        if (!down) return;
+        down = false; strip.classList.remove('grabbing');
+      });
+    });
+    /* 끌고 나서 손을 뗄 때 사진이 열리지 않게 한다 */
+    strip.addEventListener('click', function(e){
+      if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
+    }, true);
+  }
 })();
 </script>
 
