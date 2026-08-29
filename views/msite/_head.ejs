@@ -23,7 +23,15 @@
   body{background:var(--bg);color:var(--ink);
     font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
     font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%;word-break:keep-all}
+  /* 폰에서는 한 칸, 넓은 화면에서는 넓게 쓴다.
+     글은 아무리 넓어도 한 줄이 너무 길면 읽기 힘들어,
+     읽는 글만 따로 좁혀둔다(.narrow). */
   .wrap{max-width:600px;width:100%;margin:0 auto;padding:0 20px}
+  @media (min-width:960px){
+    .wrap{max-width:1120px;padding:0 32px}
+    .narrow{max-width:760px}
+    body{font-size:16.5px}
+  }
 
   /* 링크는 파란 밑줄이 아니라 이 색으로. 안 정해두면 브라우저 기본이 나와
      글 사이에서 혼자 튄다. */

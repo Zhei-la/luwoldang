@@ -46,146 +46,169 @@
   .list .al{font-size:13.5px;color:var(--gold-d);font-weight:700;flex:none}
   .list .tg{font-size:12.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap}
+
+  /* 넓은 화면 — 왼쪽에 이야기, 오른쪽에 입력칸(따라다님).
+     폰에서는 그대로 위에서 아래로 쌓이고, 그때 차례는
+     머릿말 → 입력칸 → 설명 이다. 첫 화면은 설명이 아니라
+     입력칸이 먼저 보여야 한다. */
+  @media (min-width:960px){
+    .home{display:grid;grid-template-columns:1fr 420px;gap:0 40px;align-items:start}
+    .home .hero-col{grid-column:1;grid-row:1}
+    .home .side{grid-column:2;grid-row:1 / span 2;position:sticky;top:88px}
+    .home .main{grid-column:1;grid-row:2}
+    .feat{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+    .feat-row:nth-child(2){border-top:0}
+    .list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  }
 </style>
 
 <%- include('_nav') %>
 
 <main>
-  <section class="wrap sec">
-    <span class="eyebrow">무료 만세력 · 오늘의 운세</span>
-    <h1>생년월일만 넣으면<br>내 사주가 한 장으로.</h1>
-    <p class="lead">만세력 원국부터 오늘의 운세까지 전부 무료로 봅니다.
-      가입도, 앱 설치도 필요 없습니다.</p>
-  </section>
+<div class="wrap">
+<div class="home">
+  <div class="hero-col">
+    <section class="sec">
+      <span class="eyebrow">무료 만세력 · 오늘의 운세</span>
+      <h1>생년월일만 넣으면<br>내 사주가 한 장으로.</h1>
+      <p class="lead">만세력 원국부터 오늘의 운세까지 전부 무료로 봅니다.
+        가입도, 앱 설치도 필요 없습니다.</p>
+    </section>
+  </div>
 
-  <section class="wrap" style="padding-bottom:8px">
-    <% if (err) { %><div class="err"><%= err %></div><% } %>
-
-    <form method="post" action="<%= postTo %>" id="f">
-      <div class="card">
-        <div class="fld">
-          <label for="nm">이름 <span class="tiny">(선택 · 결과에만 보이고 저장되지 않습니다)</span></label>
-          <input type="text" name="name" id="nm" maxlength="20" placeholder="비워두어도 됩니다"
-                 value="<%= old.name || '' %>">
-        </div>
-
-        <div class="fld">
-          <label>성별</label>
-          <div class="seg">
-            <label><input type="radio" name="gender" value="female" <%= old.gender === 'male' ? '' : 'checked' %>><span>여자</span></label>
-            <label><input type="radio" name="gender" value="male" <%= old.gender === 'male' ? 'checked' : '' %>><span>남자</span></label>
+  <div class="side">
+    <section class="" style="padding-bottom:8px">
+      <% if (err) { %><div class="err"><%= err %></div><% } %>
+  
+      <form method="post" action="<%= postTo %>" id="f">
+        <div class="card">
+          <div class="fld">
+            <label for="nm">이름 <span class="tiny">(선택 · 결과에만 보이고 저장되지 않습니다)</span></label>
+            <input type="text" name="name" id="nm" maxlength="20" placeholder="비워두어도 됩니다"
+                   value="<%= old.name || '' %>">
           </div>
-        </div>
-
-        <div class="fld">
-          <label>양력 / 음력</label>
-          <div class="seg">
-            <label><input type="radio" name="calendar" value="양력" <%= (old.calendar === '음력' || old.calendar === '음력 윤달') ? '' : 'checked' %>><span>양력</span></label>
-            <label><input type="radio" name="calendar" value="음력" <%= old.calendar === '음력' ? 'checked' : '' %>><span>음력</span></label>
-            <label><input type="radio" name="calendar" value="음력 윤달" <%= old.calendar === '음력 윤달' ? 'checked' : '' %>><span>음력 윤달</span></label>
+  
+          <div class="fld">
+            <label>성별</label>
+            <div class="seg">
+              <label><input type="radio" name="gender" value="female" <%= old.gender === 'male' ? '' : 'checked' %>><span>여자</span></label>
+              <label><input type="radio" name="gender" value="male" <%= old.gender === 'male' ? 'checked' : '' %>><span>남자</span></label>
+            </div>
           </div>
-        </div>
-
-        <div class="fld">
-          <label for="yy">생년월일</label>
-          <div class="row">
-            <select name="year" id="yy" aria-label="년">
-              <% years.forEach(function(y){ %>
-                <option value="<%= y %>" <%= String(old.year || 1990) === String(y) ? 'selected' : '' %>><%= y %>년</option>
-              <% }); %>
-            </select>
-            <select name="month" aria-label="월">
-              <% for (var m = 1; m <= 12; m++) { %>
-                <option value="<%= m %>" <%= String(old.month || 1) === String(m) ? 'selected' : '' %>><%= m %>월</option>
-              <% } %>
-            </select>
-            <select name="day" aria-label="일">
-              <% for (var d = 1; d <= 31; d++) { %>
-                <option value="<%= d %>" <%= String(old.day || 1) === String(d) ? 'selected' : '' %>><%= d %>일</option>
-              <% } %>
-            </select>
+  
+          <div class="fld">
+            <label>양력 / 음력</label>
+            <div class="seg">
+              <label><input type="radio" name="calendar" value="양력" <%= (old.calendar === '음력' || old.calendar === '음력 윤달') ? '' : 'checked' %>><span>양력</span></label>
+              <label><input type="radio" name="calendar" value="음력" <%= old.calendar === '음력' ? 'checked' : '' %>><span>음력</span></label>
+              <label><input type="radio" name="calendar" value="음력 윤달" <%= old.calendar === '음력 윤달' ? 'checked' : '' %>><span>음력 윤달</span></label>
+            </div>
           </div>
-        </div>
-
-        <div class="fld">
-          <label for="hh">태어난 시각</label>
-          <div class="row">
-            <select name="hour" id="hh" aria-label="시">
-              <% for (var h = 0; h < 24; h++) { %>
-                <option value="<%= h %>" <%= String(old.hour == null ? 12 : old.hour) === String(h) ? 'selected' : '' %>><%= h %>시</option>
-              <% } %>
-            </select>
-            <select name="minute" id="mi" aria-label="분">
-              <% for (var mn = 0; mn < 60; mn++) { %>
-                <option value="<%= mn %>" <%= String(old.minute || 0) === String(mn) ? 'selected' : '' %>><%= mn %>분</option>
-              <% } %>
-            </select>
+  
+          <div class="fld">
+            <label for="yy">생년월일</label>
+            <div class="row">
+              <select name="year" id="yy" aria-label="년">
+                <% years.forEach(function(y){ %>
+                  <option value="<%= y %>" <%= String(old.year || 1990) === String(y) ? 'selected' : '' %>><%= y %>년</option>
+                <% }); %>
+              </select>
+              <select name="month" aria-label="월">
+                <% for (var m = 1; m <= 12; m++) { %>
+                  <option value="<%= m %>" <%= String(old.month || 1) === String(m) ? 'selected' : '' %>><%= m %>월</option>
+                <% } %>
+              </select>
+              <select name="day" aria-label="일">
+                <% for (var d = 1; d <= 31; d++) { %>
+                  <option value="<%= d %>" <%= String(old.day || 1) === String(d) ? 'selected' : '' %>><%= d %>일</option>
+                <% } %>
+              </select>
+            </div>
           </div>
-          <label class="chk" style="margin:9px 0 0">
-            <input type="checkbox" name="hourUnknown" id="unk" <%= old.hourUnknown ? 'checked' : '' %>>
-            <span>태어난 시각을 모릅니다 <span class="tiny">(시주를 빼고 계산합니다)</span></span>
-          </label>
-        </div>
-
-        <details class="more" <%= old.region ? 'open' : '' %>>
-          <summary>정확도 높이기 (출생지역)</summary>
-          <div class="in">
-            <label for="rg">태어난 지역</label>
-            <select name="region" id="rg">
-              <option value="">고르지 않음 (보정하지 않음)</option>
-              <% regions.forEach(function(r){ %>
-                <option value="<%= r.name %>" <%= old.region === r.name ? 'selected' : '' %>><%= r.name %> (<%= r.correctionMinutes >= 0 ? '+' : '' %><%= r.correctionMinutes %>분)</option>
-              <% }); %>
-            </select>
-            <p class="tiny" style="margin:8px 0 0;line-height:1.8">한국 표준시는 동경 135도 기준이라
-              실제 태어난 지역의 진태양시와 최대 30분 넘게 차이가 납니다.
-              경계 시각에 태어났다면 시주가 바뀔 수 있습니다.</p>
+  
+          <div class="fld">
+            <label for="hh">태어난 시각</label>
+            <div class="row">
+              <select name="hour" id="hh" aria-label="시">
+                <% for (var h = 0; h < 24; h++) { %>
+                  <option value="<%= h %>" <%= String(old.hour == null ? 12 : old.hour) === String(h) ? 'selected' : '' %>><%= h %>시</option>
+                <% } %>
+              </select>
+              <select name="minute" id="mi" aria-label="분">
+                <% for (var mn = 0; mn < 60; mn++) { %>
+                  <option value="<%= mn %>" <%= String(old.minute || 0) === String(mn) ? 'selected' : '' %>><%= mn %>분</option>
+                <% } %>
+              </select>
+            </div>
+            <label class="chk" style="margin:9px 0 0">
+              <input type="checkbox" name="hourUnknown" id="unk" <%= old.hourUnknown ? 'checked' : '' %>>
+              <span>태어난 시각을 모릅니다 <span class="tiny">(시주를 빼고 계산합니다)</span></span>
+            </label>
           </div>
-        </details>
+  
+          <details class="more" <%= old.region ? 'open' : '' %>>
+            <summary>정확도 높이기 (출생지역)</summary>
+            <div class="in">
+              <label for="rg">태어난 지역</label>
+              <select name="region" id="rg">
+                <option value="">고르지 않음 (보정하지 않음)</option>
+                <% regions.forEach(function(r){ %>
+                  <option value="<%= r.name %>" <%= old.region === r.name ? 'selected' : '' %>><%= r.name %> (<%= r.correctionMinutes >= 0 ? '+' : '' %><%= r.correctionMinutes %>분)</option>
+                <% }); %>
+              </select>
+              <p class="tiny" style="margin:8px 0 0;line-height:1.8">한국 표준시는 동경 135도 기준이라
+                실제 태어난 지역의 진태양시와 최대 30분 넘게 차이가 납니다.
+                경계 시각에 태어났다면 시주가 바뀔 수 있습니다.</p>
+            </div>
+          </details>
+  
+          <button class="btn" type="submit">내 만세력 보기</button>
+          <p class="tiny" style="text-align:center;margin:11px 0 0">
+            넣으신 생년월일시는 저장하지 않습니다.</p>
+        </div>
+      </form>
+    </section>
+  </div>
 
-        <button class="btn" type="submit">내 만세력 보기</button>
-        <p class="tiny" style="text-align:center;margin:11px 0 0">
-          넣으신 생년월일시는 저장하지 않습니다.</p>
+  <div class="main">
+    <section class="sec">
+      <span class="eyebrow">무료 범위</span>
+      <h2 class="sec-t">돈을 내야 보이는 것을 숨기지 않았습니다</h2>
+      <p class="sec-lead">만세력은 아끼지 않고 다 보여줍니다.
+        유료는 사람이 직접 읽고 쓰는 해석뿐입니다.</p>
+      <div class="feat">
+        <%
+          var feats = [
+            ['오늘의 운세', '오늘의 일진과 내 일간의 관계로 매일 새로 계산합니다. 점수·키워드·행운의 색과 시간까지.'],
+            ['만세력 원국', '천간·지지·십성·지장간·십이운성·십이신살·공망·신살까지 전부.'],
+            ['오행과 십성', '무엇이 넘치고 무엇이 비었는지, 신강한지 신약한지, 용신은 무엇인지.'],
+            ['대운·세운', '십 년 단위 큰 흐름과 올해·이번 달의 간지를 한눈에.'],
+            ['사주 풀이', '표를 못 읽어도 되도록 여러 단락으로 풀어 씁니다.'],
+          ];
+        %>
+        <% feats.forEach(function(f, i){ %>
+          <div class="feat-row">
+            <span class="feat-no"><%= String(i + 1).padStart(2, '0') %></span>
+            <div><b><%= f[0] %></b><span><%= f[1] %></span></div>
+          </div>
+        <% }); %>
       </div>
-    </form>
-  </section>
+    </section>
+  
+    <section class="sec">
+      <span class="eyebrow">차별점</span>
+      <h2 class="sec-t">진태양시까지 맞춥니다</h2>
+      <p style="font-size:14.5px;color:var(--ink2);line-height:1.9">
+        한국 표준시는 동경 135도를 기준으로 쓰지만 우리나라는 그보다 서쪽에 있습니다.
+        서울에서 태어났다면 실제 하늘의 시각은 시계보다 <b>32분 늦습니다.</b>
+        경계 시각에 태어난 사람은 이 보정 하나로 <b>시주가 통째로 바뀝니다.</b>
+        위에서 태어난 지역을 골라주시면 맞춰 계산합니다.<br>
+        <a href="<%= base %>/guide/jintaeyangsi" style="color:var(--gold-d);font-weight:700">왜 필요한지 자세히 →</a></p>
+    </section>
+  </div>
+</div>
 
-  <section class="wrap sec">
-    <span class="eyebrow">무료 범위</span>
-    <h2 class="sec-t">돈을 내야 보이는 것을 숨기지 않았습니다</h2>
-    <p class="sec-lead">만세력은 아끼지 않고 다 보여줍니다.
-      유료는 사람이 직접 읽고 쓰는 해석뿐입니다.</p>
-    <div class="feat">
-      <%
-        var feats = [
-          ['오늘의 운세', '오늘의 일진과 내 일간의 관계로 매일 새로 계산합니다. 점수·키워드·행운의 색과 시간까지.'],
-          ['만세력 원국', '천간·지지·십성·지장간·십이운성·십이신살·공망·신살까지 전부.'],
-          ['오행과 십성', '무엇이 넘치고 무엇이 비었는지, 신강한지 신약한지, 용신은 무엇인지.'],
-          ['대운·세운', '십 년 단위 큰 흐름과 올해·이번 달의 간지를 한눈에.'],
-          ['사주 풀이', '표를 못 읽어도 되도록 여러 단락으로 풀어 씁니다.'],
-        ];
-      %>
-      <% feats.forEach(function(f, i){ %>
-        <div class="feat-row">
-          <span class="feat-no"><%= String(i + 1).padStart(2, '0') %></span>
-          <div><b><%= f[0] %></b><span><%= f[1] %></span></div>
-        </div>
-      <% }); %>
-    </div>
-  </section>
-
-  <section class="wrap sec">
-    <span class="eyebrow">차별점</span>
-    <h2 class="sec-t">진태양시까지 맞춥니다</h2>
-    <p style="font-size:14.5px;color:var(--ink2);line-height:1.9">
-      한국 표준시는 동경 135도를 기준으로 쓰지만 우리나라는 그보다 서쪽에 있습니다.
-      서울에서 태어났다면 실제 하늘의 시각은 시계보다 <b>32분 늦습니다.</b>
-      경계 시각에 태어난 사람은 이 보정 하나로 <b>시주가 통째로 바뀝니다.</b>
-      위에서 태어난 지역을 골라주시면 맞춰 계산합니다.<br>
-      <a href="<%= base %>/guide/jintaeyangsi" style="color:var(--gold-d);font-weight:700">왜 필요한지 자세히 →</a></p>
-  </section>
-
-  <section class="wrap sec">
+  <section class="sec">
     <span class="eyebrow">일주 60갑자</span>
     <h2 class="sec-t">태어난 날의 간지가 곧 나입니다</h2>
     <p class="sec-lead">천간의 오행이 색이 되고, 지지의 동물이 이름이 됩니다.</p>
@@ -198,9 +221,9 @@
         </div>
       <% }); %>
     </div>
-    <p class="tiny" style="margin:12px 0 0">내 일주가 무엇인지는 위에서 생년월일을 넣으시면 바로 나옵니다.<br>
-      <a href="<%= base %>/guide/ilju" style="color:var(--gold-d);font-weight:700">60갑자 전체 보기 →</a></p>
+    <p class="tiny" style="margin:12px 0 0">내 일주가 무엇인지는 위에서 생년월일을 넣으시면 바로 나옵니다.</p>
   </section>
+</div>
 </main>
 
 <footer class="foot">
