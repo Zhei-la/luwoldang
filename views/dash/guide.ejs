@@ -141,18 +141,8 @@
      if (typeof preview !== 'undefined' && preview) p.push('week=' + preview);
      return p.length ? '?' + p.join('&') : '';
    }; %>
-<% if (wkf !== 5) { %>
-  <div class="gd-cats gd-weeks">
-    <a href="/guide/all<%= qs(null) %>" class="gd-cat <%= wkf === null ? 'on' : '' %>">전체</a>
-    <% [1,2,3,4,5,0].forEach(function (w) { %>
-      <% if (wkc[w]) { %>
-        <a href="/guide/all<%= qs(w) %>" class="gd-cat <%= wkf === w ? 'on' : '' %>">
-          <%= WK[w] %><span class="n"><%= wkc[w] %></span>
-        </a>
-      <% } %>
-    <% }); %>
-  </div>
-<% } %>
+<%# 총정리에는 주차별(1~4주차) 글이 오지 않는다. 주차 탭은 여기서 뜻이 없어 뺐다.
+    주차별 자료는 「주차 판」(/guide) 에서 본다. %>
 
 <div class="gd-cats">
   <a href="/guide/all<%= wkf !== null ? '?wk=' + wkf : '' %>" class="gd-cat <%= !catId ? 'on' : '' %>">전체</a>

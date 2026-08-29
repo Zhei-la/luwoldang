@@ -86,12 +86,20 @@ async function weekBoard(user, myWeek) {
   });
 }
 
+/* 분류 옆에 붙는 개수.
+   총정리 화면에서만 쓰는 숫자다. 거기엔 주차별(1~4주차) 글이 안 뜨므로
+   세는 것도 빼야 한다. 안 그러면 「기초 8」 인데 3개만 보인다.
+   ⚠️ 설명을 SQL 안에 주석으로 넣지 말 것 — 시험에 쓰는 pg-mem 이
+      주석 속 한글을 못 읽어 통째로 터진다. */
 async function cats() {
   const { rows } = await pool.query(`
-    SELECT c.id, c.name, c.sort,
-           (SELECT COUNT(*)::int FROM guide_posts p
-             WHERE p.cat_id = c.id AND p.published) AS n
+    SELECT c.id, c.name, c.sort, COUNT(p.id)::int AS n
       FROM guide_cats c
+      LEFT JOIN guide_posts p
+        ON p.cat_id = c.id
+       AND p.published
+       AND COALESCE(p.week,0) NOT IN (1,2,3,4)
+     GROUP BY c.id, c.name, c.sort
      ORDER BY c.sort, c.id
   `);
   return rows;
@@ -108,7 +116,9 @@ router.get('/guide/all', requireAuth, requireApproved, async (req, res, next) =>
     const wkFilter = req.query.wk !== undefined && req.query.wk !== '' ? Number(req.query.wk) : null;
     const q = String(req.query.q || '').trim();
 
-    const where = ['p.published'];
+    /* 총정리는 분류로 찾아보는 곳이다. 주차별(1~4주차) 글은 여기 뜨지 않는다.
+       그건 주차 판에서만 본다. 「언제나」(0)와 「총정리」(5)만 모은다. */
+    const where = ['p.published', 'COALESCE(p.week,0) NOT IN (1,2,3,4)'];
     const args = [];
     if (catId) { args.push(catId); where.push(`p.cat_id = $${args.length}`); }
     if (q) {
@@ -264,6 +274,11 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
       });
     }
 
+    /* 「목록」 을 누르면 온 곳으로 돌아간다.
+       주차별 글이면 그 주차 목록으로, 아니면 총정리로.
+       전에는 무조건 주차 판(/guide)으로 가서 다시 찾아 들어가야 했다. */
+    const backTo = (pw >= 1 && pw <= 4) ? '/guide/week/' + pw : '/guide/all';
+
     /* 조회수와 열람 기록은 관리자가 볼 때는 남기지 않는다 */
     if (req.user.role !== 'admin') {
       pool.query('UPDATE guide_posts SET views = views + 1 WHERE id = $1', [post.id]).catch(() => {});
@@ -280,6 +295,7 @@ router.get('/guide/:id(\\d+)', requireAuth, requireApproved, async (req, res, ne
     /* 좁은 화면에서는 짧게 — 길면 글 위로 넘어온다 */
     const markShort = '루월당 · ' + who;
     res.render('dash/guide-view', {
+      backTo,
       user: req.user, active: 'guide', post,
       bodyHtml: post.format === 'md' ? render(post.body) : gh.sanitize(post.body),
       mark,

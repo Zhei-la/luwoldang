@@ -175,7 +175,7 @@
 </style>
 
 <div class="gv-bar">
-  <a href="/guide">← 목록</a>
+  <a href="<%= typeof backTo !== 'undefined' ? backTo : '/guide' %>">← 목록</a>
   <% if (user.role === 'admin') { %>
     <a href="/admin/guide/edit/<%= post.id %>" class="edit">수정하기</a>
     <a href="/admin/guide">관리</a>
@@ -341,7 +341,7 @@
 </div>
 
 <div class="gv-foot">
-  <a href="/guide" class="gv-btn">목록으로</a>
+  <a href="<%= typeof backTo !== 'undefined' ? backTo : '/guide' %>" class="gv-btn">목록으로</a>
   <% if (user.role === 'admin') { %>
     <a href="/admin/guide/edit/<%= post.id %>" class="gv-btn main">이 글 고치기</a>
   <% } %>
