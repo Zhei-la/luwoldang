@@ -20,6 +20,7 @@ const { whoami, publishPost } = require('../services/threads/publish');
 const { numberParts, formOf } = require('../services/threads/length');
 const { checkPost } = require('../services/threads/guideline');
 const { HOOKS } = require('../services/threads/hooks');
+const { ALL: TOPIC_LIST } = require('../services/threads/topics');
 
 const guard = [requireAuth, requireApproved];
 
@@ -66,6 +67,7 @@ router.get('/threads', ...guard, async (req, res, next) => {
       trashCount: trash,
       hookTotal: HOOKS.length,
       hookUsed: Object.keys(ledger).length,
+      topics: TOPIC_LIST,
       dailyLimit: store.DAILY_LIMIT,
       usedToday: await store.countToday(req.user.id),
     });

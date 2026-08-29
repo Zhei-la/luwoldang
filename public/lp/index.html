@@ -194,53 +194,72 @@ blockquote{margin:0;padding:30px 32px;background:var(--ink);color:#fff;border-ra
 .note.jade{background:var(--jade-soft);border-color:transparent}
 .note.jade .t{color:var(--jade)}
 
-/* 후기 — 세로로 쌓지 않고 옆으로 넘겨서 본다 */
-.revbox{position:relative;margin:0 -22px;min-width:0}
-.revs{display:flex;gap:14px;min-width:0;overflow-x:auto;overflow-y:hidden;
+/* 옆으로 넘겨 보는 칸 — 후기와 프로그램 화면이 같은 코드를 쓴다 */
+.swipebox{position:relative;margin:0 -22px;min-width:0}
+.swipe{display:flex;gap:14px;min-width:0;overflow-x:auto;overflow-y:hidden;
   scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
   padding:4px 22px 12px;scrollbar-width:none;cursor:grab}
-.revs::-webkit-scrollbar{display:none}
-.revs.grabbing{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
-.rev{flex:0 0 min(80vw,320px);scroll-snap-align:center;height:430px;
+.swipe::-webkit-scrollbar{display:none}
+.swipe.grabbing{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
+/* 카드 — 높이를 맞춰야 넘길 때 깔끔하다 */
+.swipe>*{flex:0 0 min(80vw,320px);scroll-snap-align:center;
   background:var(--card);border:1.5px solid var(--rule);border-radius:14px;
   padding:18px;display:flex;flex-direction:column;gap:10px}
-.rev .stars{font-size:14px;letter-spacing:.16em;color:var(--fire-ink);flex:none}
-.rev p{font-size:15px;line-height:1.7;color:var(--ink-2);flex:none;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.rev.noimg p{-webkit-line-clamp:13;flex:1}
-.rev .shot{display:block;flex:1;min-height:0;border:1px solid var(--rule-soft);
-  border-radius:9px;overflow:hidden;background:var(--paper)}
-.rev .shot img{display:block;width:100%;height:100%;object-fit:contain}
-.rev .thumbs{display:flex;gap:6px;flex:none}
-.rev .thumbs a{display:block;width:42px;height:42px;border:1px solid var(--rule-soft);
-  border-radius:6px;overflow:hidden;background:var(--paper)}
-.rev .thumbs img{display:block;width:100%;height:100%;object-fit:cover}
-.rev .who{font-size:13.5px;color:var(--ink-3);font-weight:600;flex:none}
 /* 넘기기 단추 — 마우스 쓰는 화면에서만 */
-.revnav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+.swipenav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;
   width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule);
   background:#fff;color:var(--ink);font-size:22px;line-height:1;cursor:pointer;
   display:none;align-items:center;justify-content:center;font-family:inherit;
   box-shadow:0 3px 10px rgba(27,21,18,.12)}
-.revnav:hover{border-color:var(--fire);color:var(--fire-ink)}
-.revnav[disabled]{opacity:.3;cursor:default}
-.revnav.prev{left:-4px} .revnav.next{right:-4px}
-@media(hover:hover) and (min-width:760px){.revnav{display:flex}}
-.revfoot{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-3);font-weight:600}
-.revfoot b{color:var(--ink)}
-.revfoot .hint{margin-left:auto;font-weight:500}
+.swipenav:hover{border-color:var(--fire);color:var(--fire-ink)}
+.swipenav[disabled]{opacity:.3;cursor:default}
+.swipenav.prev{left:-4px} .swipenav.next{right:-4px}
+@media(hover:hover) and (min-width:760px){.swipenav{display:flex}}
+.swipefoot{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-3);font-weight:600}
+.swipefoot b{color:var(--ink)}
+.swipefoot .hint{margin-left:auto;font-weight:500}
+
+/* 사진 한 장 — 누르면 크게 본다 */
+.shot{display:block;flex:1;min-height:0;border:1px solid var(--rule-soft);
+  border-radius:9px;overflow:hidden;background:var(--paper);cursor:zoom-in;
+  padding:0;width:100%}
+.shot img{display:block;width:100%;height:100%;object-fit:contain}
+.thumbs{display:flex;gap:6px;flex:none}
+.thumbs button{display:block;width:42px;height:42px;border:1px solid var(--rule-soft);
+  border-radius:6px;overflow:hidden;background:var(--paper);cursor:zoom-in;padding:0}
+.thumbs img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* 후기 카드 */
+.rev{height:430px}
+.rev .stars{font-size:14px;letter-spacing:.16em;color:var(--fire-ink);flex:none}
+.rev p{font-size:15px;line-height:1.7;color:var(--ink-2);flex:none;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rev.noimg p{-webkit-line-clamp:13;flex:1}
+.rev .who{font-size:13.5px;color:var(--ink-3);font-weight:600;flex:none}
 .revmore{display:inline-flex;align-items:center;gap:8px;font-size:16px;color:var(--fire-ink);
   font-weight:700;text-decoration:none;border-bottom:2px solid var(--fire);padding-bottom:2px;align-self:flex-start}
 
-/* 프로그램 실제 화면 */
-.shots{display:flex;flex-direction:column;gap:26px}
-.shots .sh{background:var(--card);border:1.5px solid var(--rule);border-radius:14px;padding:22px}
-.shots .sh h3{font-size:19px;font-weight:700;margin-bottom:8px}
-.shots .sh p{font-size:15.5px;color:var(--ink-3);line-height:1.7;margin-bottom:14px}
-.shots .imgs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.shots .imgs.one{grid-template-columns:1fr}
-@media(max-width:600px){.shots .imgs{grid-template-columns:1fr}}
-.shots .imgs img{display:block;width:100%;height:auto;border-radius:9px;border:1px solid var(--rule-soft)}
+/* 프로그램 실제 화면 카드 */
+.sh{height:460px}
+.sh h3{font-size:17px;font-weight:700;line-height:1.4;flex:none}
+.sh p{font-size:14.5px;color:var(--ink-3);line-height:1.6;flex:none;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* 사진 크게 보기 — 새 페이지로 나가지 않고 이 위에 덮는다 */
+.viewer{position:fixed;inset:0;z-index:200;background:rgba(27,21,18,.92);
+  display:none;align-items:center;justify-content:center;padding:16px}
+.viewer.open{display:flex}
+.viewer img{max-width:100%;max-height:calc(100vh - 120px);object-fit:contain;
+  border-radius:8px;background:#fff}
+.viewer .close{position:absolute;top:14px;right:14px;width:46px;height:46px;
+  border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;
+  font-size:26px;line-height:1;cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center}
+.viewer .close:hover{background:rgba(255,255,255,.3)}
+.viewer .cap{position:absolute;left:0;right:0;bottom:22px;text-align:center;
+  color:rgba(255,255,255,.9);font-size:14.5px;padding:0 20px;line-height:1.6}
+.viewer .step{position:absolute;top:22px;left:0;right:0;text-align:center;
+  color:rgba(255,255,255,.75);font-size:13.5px;font-weight:600}
 
 /* 전자책 */
 .ebookbox{background:var(--card);border:2px solid var(--rule);border-radius:16px;padding:28px;
@@ -437,12 +456,12 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
   <div class="wrap stack">
     <div class="eyebrow"><s></s>직접 남겨주신 후기</div>
     <h2 class="head">말이 아니라<br><span class="mark">인증</span>으로 보여드립니다</h2>
-    <div class="revbox">
-      <div class="revs" id="revwrap"></div>
-      <button class="revnav prev" type="button" aria-label="이전 후기">&lsaquo;</button>
-      <button class="revnav next" type="button" aria-label="다음 후기">&rsaquo;</button>
+    <div class="swipebox">
+      <div class="swipe" id="revwrap"></div>
+      <button class="swipenav prev" type="button" aria-label="이전 후기">&lsaquo;</button>
+      <button class="swipenav next" type="button" aria-label="다음 후기">&rsaquo;</button>
     </div>
-    <div class="revfoot"><span><b id="revNow">1</b> / <span id="revTotal">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
+    <div class="swipefoot"><span><b class="now">1</b> / <span class="total">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
     <a class="revmore" href="https://cafe.naver.com/f-e/cafes/30688236/menus/4?viewType=L" target="_blank" rel="noopener">네이버 카페에서 더 보기 →</a>
   </div>
 </section>
@@ -533,7 +552,12 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
     <div class="eyebrow"><s></s>직접 보세요</div>
     <h2 class="head">말로만 하지 않습니다.<br><span class="mark">실제 화면</span>입니다</h2>
     <p class="body">수강하시면 바로 쓰시게 될 프로그램의 실제 모습입니다.</p>
-    <div class="shots" id="shotlist"></div>
+    <div class="swipebox">
+      <div class="swipe" id="shotlist"></div>
+      <button class="swipenav prev" type="button" aria-label="이전 화면">&lsaquo;</button>
+      <button class="swipenav next" type="button" aria-label="다음 화면">&rsaquo;</button>
+    </div>
+    <div class="swipefoot"><span><b class="now">1</b> / <span class="total">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
   </div>
 </section>
 
@@ -694,6 +718,7 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
 
 </main>
 
+<!-- 사진 크게 보기 — 사진을 누르면 여기에 뜬다 -->,<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="사진 크게 보기">,  <button class="close" type="button" aria-label="닫기">&times;</button>,  <div class="step" id="viewerStep"></div>,  <img id="viewerImg" src="" alt="">,  <div class="cap" id="viewerCap"></div>,</div>,
 <div class="buybar">
   <div class="in">
     <div class="pr"><span class="lbl"><span data-lp="cohort">3기</span> 사전예약가</span><span class="val money"><span data-lp="price">70</span>만원</span></div>
@@ -996,17 +1021,20 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
       if (!list.length) return;               /* 사진이 없으면 칸째로 감춘 채로 둔다 */
       shotBox.innerHTML = list.map(function(sh){
         var imgs = sh.imgs || [];
+        var name = sh.title || '프로그램 화면';
+        var first = imgs[0], rest = imgs.slice(1);
         return '<div class="sh">' +
           (sh.title ? '<h3>' + esc(sh.title) + '</h3>' : '') +
           (sh.body ? '<p>' + esc(sh.body).replace(/\n/g,'<br>') + '</p>' : '') +
-          '<div class="imgs' + (imgs.length === 1 ? ' one' : '') + '">' + imgs.map(function(u){
-            return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
-                   '<img src="' + esc(u) + '" alt="' + esc(sh.title || '프로그램 화면') + '" loading="lazy"></a>';
-          }).join('') + '</div>' +
+          (first ? shotBtn(first, name, imgs, 0) : '') +
+          (rest.length ? '<div class="thumbs">' + rest.map(function(u, k){
+            return thumbBtn(u, name, imgs, k + 1);
+          }).join('') + '</div>' : '') +
         '</div>';
       }).join('');
       document.getElementById('shotsec').style.display = '';
       showReveals();
+      initSwipe(shotBox);
     })
     .catch(function(){});
 
@@ -1025,48 +1053,51 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
         return '<div class="rev' + (first ? '' : ' noimg') + '">' +
           '<div class="stars">★★★★★</div>' +
           (r.body ? '<p>' + esc(r.body).replace(/\n/g,'<br>') + '</p>' : '') +
-          (first ? '<a class="shot" href="' + esc(first) + '" target="_blank" rel="noopener">' +
-                   '<img src="' + esc(first) + '" alt="수강생 인증" loading="lazy"></a>' : '') +
-          (rest.length ? '<div class="thumbs">' + rest.map(function(u){
-            return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
-                   '<img src="' + esc(u) + '" alt="수강생 인증" loading="lazy"></a>';
+          (first ? shotBtn(first, r.who || '수강생 인증', imgs, 0) : '') +
+          (rest.length ? '<div class="thumbs">' + rest.map(function(u, k){
+            return thumbBtn(u, r.who || '수강생 인증', imgs, k + 1);
           }).join('') + '</div>' : '') +
           (r.who ? '<div class="who">— ' + esc(r.who) + '</div>' : '') +
         '</div>';
       }).join('');
       sec.style.display = '';
       showReveals();
-      initRevSwipe();
+      initSwipe(document.getElementById('revwrap'));
     })
     .catch(function(){ /* 못 읽어오면 감춘 채로 둔다 */ });
 
   /* ── 후기 옆으로 넘기기 ──
      폰에서는 손가락으로, 마우스에서는 끌거나 단추로 넘긴다. */
-  function initRevSwipe(){
-    var strip = wrap;
-    var cards = strip.querySelectorAll('.rev');
+  /* ── 옆으로 넘겨 보는 칸 ──
+     후기와 프로그램 화면이 같이 쓴다.
+     폰에서는 손가락으로, 마우스에서는 끌거나 좌우 단추로 넘긴다. */
+  function initSwipe(strip){
+    if (!strip) return;
+    var cards = strip.children;
     if (!cards.length) return;
 
-    var now = document.getElementById('revNow');
-    var total = document.getElementById('revTotal');
-    var prev = document.querySelector('.revnav.prev');
-    var next = document.querySelector('.revnav.next');
-    total.textContent = cards.length;
+    var box  = strip.closest('.swipebox');
+    var foot = box && box.parentNode ? box.parentNode.querySelector('.swipefoot') : null;
+    var now   = foot ? foot.querySelector('.now') : null;
+    var total = foot ? foot.querySelector('.total') : null;
+    var prev = box ? box.querySelector('.swipenav.prev') : null;
+    var next = box ? box.querySelector('.swipenav.next') : null;
+    if (total) total.textContent = cards.length;
 
     function step(){ return cards[0].offsetWidth + 14; }   /* 카드 한 장 + 사이 간격 */
 
     function paint(){
       var i = Math.round(strip.scrollLeft / step()) + 1;
-      now.textContent = Math.min(Math.max(i, 1), cards.length);
+      if (now) now.textContent = Math.min(Math.max(i, 1), cards.length);
       var end = strip.scrollWidth - strip.clientWidth - 2;
-      prev.disabled = strip.scrollLeft <= 2;
-      next.disabled = strip.scrollLeft >= end;
+      if (prev) prev.disabled = strip.scrollLeft <= 2;
+      if (next) next.disabled = strip.scrollLeft >= end;
     }
     strip.addEventListener('scroll', paint, { passive: true });
     paint();
 
-    prev.addEventListener('click', function(){ strip.scrollBy({ left: -step(), behavior: 'smooth' }); });
-    next.addEventListener('click', function(){ strip.scrollBy({ left:  step(), behavior: 'smooth' }); });
+    if (prev) prev.addEventListener('click', function(){ strip.scrollBy({ left: -step(), behavior: 'smooth' }); });
+    if (next) next.addEventListener('click', function(){ strip.scrollBy({ left:  step(), behavior: 'smooth' }); });
 
     /* 마우스로 끌어서 넘기기 — 손가락은 브라우저가 알아서 한다 */
     var down = false, startX = 0, startLeft = 0, moved = false;
@@ -1093,6 +1124,70 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
       if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
     }, true);
   }
+
+  /* ── 사진 크게 보기 ──
+     새 페이지로 나가면 뒤로가기가 막막하다. 이 화면 위에 덮고 X 로 닫는다. */
+  var viewer = document.getElementById('viewer');
+  var vImg = document.getElementById('viewerImg');
+  var vCap = document.getElementById('viewerCap');
+  var vStep = document.getElementById('viewerStep');
+  var vList = [], vAt = 0, vName = '';
+
+  function shotBtn(url, name, all, idx){
+    return '<button type="button" class="shot" data-img="' + esc(url) + '"' +
+           ' data-set="' + esc((all || []).join('|')) + '" data-at="' + idx + '"' +
+           ' data-name="' + esc(name) + '" aria-label="크게 보기">' +
+           '<img src="' + esc(url) + '" alt="' + esc(name) + '" loading="lazy"></button>';
+  }
+  function thumbBtn(url, name, all, idx){
+    return '<button type="button" data-img="' + esc(url) + '"' +
+           ' data-set="' + esc((all || []).join('|')) + '" data-at="' + idx + '"' +
+           ' data-name="' + esc(name) + '" aria-label="크게 보기">' +
+           '<img src="' + esc(url) + '" alt="' + esc(name) + '" loading="lazy"></button>';
+  }
+
+  function showAt(i){
+    if (!vList.length) return;
+    vAt = (i + vList.length) % vList.length;
+    vImg.src = vList[vAt];
+    vImg.alt = vName;
+    vCap.textContent = vName;
+    vStep.textContent = vList.length > 1 ? (vAt + 1) + ' / ' + vList.length : '';
+  }
+  function openViewer(btn){
+    var set = (btn.getAttribute('data-set') || '').split('|').filter(Boolean);
+    vList = set.length ? set : [btn.getAttribute('data-img')];
+    vName = btn.getAttribute('data-name') || '';
+    showAt(Number(btn.getAttribute('data-at') || 0));
+    viewer.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    var c = viewer.querySelector('.close');
+    if (c) c.focus();
+  }
+  function closeViewer(){
+    viewer.classList.remove('open');
+    document.body.style.overflow = '';
+    vImg.src = '';
+  }
+
+  /* 사진은 나중에 그려지므로 문서 전체에서 받는다 */
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-img]');
+    if (!b) return;
+    e.preventDefault();
+    openViewer(b);
+  });
+  viewer.addEventListener('click', function(e){
+    /* 사진 자체를 누르면 다음 장으로, 바깥이나 X 를 누르면 닫는다 */
+    if (e.target === vImg) { if (vList.length > 1) showAt(vAt + 1); return; }
+    closeViewer();
+  });
+  document.addEventListener('keydown', function(e){
+    if (!viewer.classList.contains('open')) return;
+    if (e.key === 'Escape') closeViewer();
+    if (e.key === 'ArrowRight') showAt(vAt + 1);
+    if (e.key === 'ArrowLeft') showAt(vAt - 1);
+  });
 })();
 </script>
 

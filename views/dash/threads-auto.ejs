@@ -95,6 +95,15 @@
 #ta .ta-num b{display:block;font-size:22px;font-weight:800;color:var(--ink)}
 #ta .ta-num span{font-size:12.5px;color:var(--dim)}
 
+#ta .ta-pick{margin-top:16px;border-top:1px solid var(--line2);padding-top:14px}
+#ta .ta-pick-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#ta .ta-pick-top b{font-size:14px;color:var(--ink2);margin-right:auto}
+#ta .ta-chips{display:flex;flex-wrap:wrap;gap:7px}
+#ta .ta-chip{border:1px solid var(--line);background:#fff;color:var(--ink2);
+  border-radius:100px;padding:7px 14px;font-size:13.5px;font-weight:600;
+  cursor:pointer;font-family:inherit}
+#ta .ta-chip:hover{border-color:var(--gold);color:var(--gold-d);background:var(--sub)}
+#ta .ta-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 #ta .ta-empty{text-align:center;color:var(--dim);font-size:14px;padding:34px 10px;line-height:1.8}
 #ta .ta-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
   border-top-color:#fff;border-radius:50%;animation:taspin .7s linear infinite}
@@ -114,8 +123,8 @@
   <!-- ══════════ 글 만들기 ══════════ -->
   <section class="ta-panel" id="p-make">
     <% if (!hasKey) { %>
-      <div class="ta-msg warn">글을 만들려면 Claude API 키가 필요합니다. <b>설정</b> 탭에서 먼저 넣어주세요.
-저장한 키는 본인만 씁니다. 요금도 본인 Anthropic 계정으로 나갑니다.</div>
+      <div class="ta-msg warn">글을 만들려면 OpenAI 키가 필요합니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.
+무료사주·PDF 가 쓰는 그 키를 그대로 씁니다. 여기서 따로 넣으실 것은 없습니다.</div>
     <% } %>
 
     <div class="ta-card">
@@ -125,7 +134,9 @@
       <div class="ta-row">
         <div style="flex:2">
           <label for="taTopic">주제</label>
-          <input type="text" id="taTopic" placeholder="예: 역마살, 공망, 삼재, 궁합" maxlength="120" <%= hasKey ? '' : 'disabled' %>>
+          <input type="text" id="taTopic" name="threadsTopic" placeholder="예: 역마살, 공망, 삼재, 궁합"
+                 maxlength="120" autocomplete="off" autocapitalize="off" spellcheck="false"
+                 data-lpignore="true" data-form-type="other" <%= hasKey ? '' : 'disabled' %>>
         </div>
         <div style="max-width:130px">
           <label for="taLimit">글 개수</label>
@@ -142,6 +153,15 @@
       <p class="ta-sub" style="margin:12px 0 0">
         3개 45초 · 5개 1분 · 8개 3분쯤 걸립니다. 오늘 <b id="taUsed"><%= usedToday %></b>/<%= dailyLimit %>번 썼습니다.
       </p>
+
+      <div class="ta-pick">
+        <div class="ta-pick-top">
+          <b>뭘 쓸지 막히면</b>
+          <button class="ta-btn ghost sm" type="button" id="taRoll">주제 뽑기</button>
+          <button class="ta-btn ghost sm" type="button" id="taMore">다른 것 보기</button>
+        </div>
+        <div class="ta-chips" id="taChips"></div>
+      </div>
     </div>
 
     <div id="taOut"></div>
@@ -326,6 +346,49 @@
            '<button class="ta-btn danger sm ta-del">지우기</button>';
   }
 
+  /* ── 주제 고르기 ──
+     "오늘 뭐 쓰지" 에서 멈추지 않게, 사주에서 이야깃거리가 되는 것들을
+     섞어서 보여준다. 눌러 넣거나 「주제 뽑기」로 하나를 바로 받는다. */
+  var TOPICS = <%- JSON.stringify(topics) %>;
+  var topicEl = $('#taTopic');
+
+  function shuffle(a){
+    var x = a.slice();
+    for (var i = x.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = x[i]; x[i] = x[j]; x[j] = t;
+    }
+    return x;
+  }
+
+  function drawChips(){
+    var box = $('#taChips');
+    if (!box) return;
+    box.innerHTML = shuffle(TOPICS).slice(0, 8).map(function(t){
+      return '<button type="button" class="ta-chip">' + esc(t) + '</button>';
+    }).join('');
+    box.querySelectorAll('.ta-chip').forEach(function(c){
+      c.addEventListener('click', function(){
+        box.querySelectorAll('.ta-chip').forEach(function(x){ x.classList.remove('on'); });
+        c.classList.add('on');
+        topicEl.value = c.textContent;
+        topicEl.focus();
+      });
+    });
+  }
+  drawChips();
+
+  $('#taMore') && $('#taMore').addEventListener('click', drawChips);
+  $('#taRoll') && $('#taRoll').addEventListener('click', function(){
+    var t = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+    topicEl.value = t;
+    $('#taChips').querySelectorAll('.ta-chip').forEach(function(x){
+      x.classList.toggle('on', x.textContent === t);
+    });
+    topicEl.focus();
+  });
+
+
   /* ══════════ 만들기 ══════════ */
   var out = $('#taOut'), goBtn = $('#taGo'), batch = null;
 
@@ -454,16 +517,14 @@
     list.querySelectorAll('.ta-pub').forEach(function(b){
       b.addEventListener('click', function(){
         var el = b.closest('.ta-post');
-        if (!confirm('지금 스레드에 올릴까요?
-올리고 나면 되돌릴 수 없습니다.')) return;
+        if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
         b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 올리는 중';
         post('/api/threads/posts/' + el.dataset.id + '/publish', {}).then(function(r){
           if (!r.j.ok) {
             b.disabled = false; b.textContent = '지금 올리기';
             alert(r.j.error); loadList(); return;
           }
-          alert('올렸습니다.' + (r.j.permalink ? '
-' + r.j.permalink : ''));
+          alert('올렸습니다.' + (r.j.permalink ? '\n' + r.j.permalink : ''));
           loadList();
         });
       });
@@ -541,8 +602,7 @@
     var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 확인 중';
     post('/api/threads/connect', { token: t }).then(function(r){
       b.disabled = false; b.textContent = '계정 확인하고 잇기';
-      if (!r.j.ok) { msg($('#taTokenMsg'), 'err', r.j.error + (r.j.hint ? '
-' + r.j.hint : '')); return; }
+      if (!r.j.ok) { msg($('#taTokenMsg'), 'err', r.j.error + (r.j.hint ? '\n' + r.j.hint : '')); return; }
       msg($('#taTokenMsg'), 'ok', '@' + (r.j.username || '') + ' 계정에 연결됐습니다. 화면을 새로 불러옵니다.');
       setTimeout(function(){ location.reload(); }, 900);
     });
