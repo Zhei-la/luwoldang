@@ -131,16 +131,6 @@
   .cta .btn.gold{background:var(--cta-ac);color:var(--cta-ac-fg)}
   .cta .err{background:rgba(200,60,40,.16);color:var(--cta-fg)}
   .cta .ok{background:rgba(60,160,100,.18);color:var(--cta-fg)}
-
-  /* 넓은 화면 — 칸을 두 줄로 벌린다. 원국·오늘의 운세는 넓게 쓰고
-     나머지는 나란히 놓는다. 폰에서는 그대로 한 줄이다. */
-  @media (min-width:960px){
-    .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start}
-    .rgrid > .wide{grid-column:1 / -1}
-    .flow .in{flex-wrap:wrap}
-    .flow{overflow:visible;margin:0;padding:0}
-    .flow .cell{width:calc(20% - 6px)}
-  }
 </style>
 
 <main class="wrap">
@@ -152,7 +142,7 @@
   </section>
 
   <% if (today) { %>
-    <div class="td wide">
+    <div class="td">
       <p class="dl">오늘의 운세 · <%= today.dateLabel %></p>
       <p class="gz2">오늘은 <b><%= today.ganzhi %></b> 일입니다<%= today.ganzhiHanja ? ' (' + today.ganzhiHanja + ')' : '' %></p>
       <div class="band">
@@ -174,8 +164,7 @@
     </div>
   <% } %>
 
-  <div class="rgrid">
-  <div class="card wide">
+  <div class="card">
     <span class="eyebrow">原局</span>
     <h2 class="sec-t">만세력 원국</h2>
     <div class="wg-wrap">
@@ -336,7 +325,7 @@
   <% } %>
 
   <% if ((reading.blocks || []).length) { %>
-    <div class="card wide">
+    <div class="card">
       <span class="eyebrow">풀어 쓴 해석</span>
       <h2 class="sec-t">사주 풀이</h2>
       <% reading.blocks.forEach(function(b){ %>
@@ -348,8 +337,6 @@
       <% }); %>
     </div>
   <% } %>
-
-  </div><!-- /rgrid -->
 
   <div class="more-box">
     <span class="eyebrow">여기서부터는 사람이 읽습니다</span>
