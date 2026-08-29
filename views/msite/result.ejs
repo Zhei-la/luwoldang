@@ -1,0 +1,288 @@
+<%
+  var EL = { 목:'mok', 화:'hwa', 토:'to', 금:'geum', 수:'su' };
+  var who = name ? name + '님' : '이 사주';
+%>
+<%- include('_head', {
+  siteName: siteName,
+  pageTitle: (reading.alias ? reading.alias + ' · ' : '') + siteName,
+  pageDesc: reading.tagline || '내 사주 원국과 오늘의 운세를 무료로 봅니다.',
+}) %>
+
+<style>
+  .hero{padding:26px 0 8px}
+  .hero .al{font-size:13px;letter-spacing:.1em;color:var(--gold-d);font-weight:800;margin:0 0 6px}
+  .hero h1{font-size:27px;margin:0 0 8px}
+  .hero .tg{font-size:15px;color:var(--dim);margin:0 0 4px}
+  .hero .bt{font-size:12.5px;color:var(--faint);margin:10px 0 0}
+
+  /* 원국 표 — 좁은 화면에서 옆으로 넘긴다 */
+  .wg-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
+  table.wg{width:100%;min-width:340px;border-collapse:separate;border-spacing:6px 0}
+  table.wg th{font-size:11.5px;color:var(--faint);font-weight:700;padding:0 0 7px;text-align:center}
+  table.wg td{text-align:center;vertical-align:top}
+  .gz{border-radius:12px;padding:11px 4px;border:1px solid transparent}
+  .gz .h{font-size:29px;font-weight:800;line-height:1.15;font-family:serif}
+  .gz .k{font-size:12px;margin-top:2px;opacity:.8}
+  .gz .t{font-size:11.5px;margin-top:5px;font-weight:700;opacity:.9}
+  .gz.mok{background:var(--mok-bg);color:var(--mok)}
+  .gz.hwa{background:var(--hwa-bg);color:var(--hwa)}
+  .gz.to{background:var(--to-bg);color:var(--to)}
+  .gz.geum{background:var(--geum-bg);color:var(--geum)}
+  .gz.su{background:var(--su-bg);color:var(--su)}
+  .gz.non{background:#F4F1EA;color:var(--faint)}
+  .gz.day{border-color:var(--gold)}
+  .wg .gap{height:6px}
+  .wg .jj{font-size:11px;color:var(--faint);line-height:1.65;padding-top:6px}
+
+  /* 오늘의 운세 */
+  .td{background:linear-gradient(160deg,#2C2620,#3D352B);color:#fff;border-radius:15px;
+    padding:22px 20px;margin-bottom:14px}
+  .td .dl{font-size:12px;color:#C9BFAE;margin:0 0 3px}
+  .td .gz2{font-size:13px;color:#C9BFAE;margin:0 0 14px}
+  .td .band{display:flex;align-items:baseline;gap:9px;margin-bottom:12px}
+  .td .band b{font-size:26px;font-weight:800}
+  .td .band span{font-size:13px;color:#C9BFAE}
+  .td .bar{height:7px;border-radius:100px;background:rgba(255,255,255,.16);overflow:hidden;
+    margin-bottom:14px}
+  .td .bar i{display:block;height:100%;border-radius:100px;background:var(--gold)}
+  .td p{color:#EDE7DC;margin:0 0 12px;font-size:14.5px;line-height:1.85}
+  .td .lucky{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+  .td .lucky span{background:rgba(255,255,255,.1);border-radius:100px;padding:5px 12px;
+    font-size:12.5px;color:#EDE7DC}
+
+  /* 오행 막대 */
+  .els{display:flex;flex-direction:column;gap:9px}
+  .el{display:flex;align-items:center;gap:10px}
+  .el .n{width:22px;font-size:14px;font-weight:800;flex:none;text-align:center}
+  .el .b{flex:1;height:9px;background:var(--line2);border-radius:100px;overflow:hidden}
+  .el .b i{display:block;height:100%;border-radius:100px}
+  .el .v{width:64px;font-size:12px;color:var(--faint);text-align:right;flex:none}
+  /* 글자에는 글자색만, 막대에는 배경색만.
+     둘을 한 줄에 적으면 글자가 배경과 같은 색이 돼 안 보인다. */
+  .el.mok .n{color:var(--mok)}  .el.mok .b i{background:var(--mok)}
+  .el.hwa .n{color:var(--hwa)}  .el.hwa .b i{background:var(--hwa)}
+  .el.to  .n{color:var(--to)}   .el.to  .b i{background:var(--to)}
+  .el.geum .n{color:var(--geum)} .el.geum .b i{background:var(--geum)}
+  .el.su  .n{color:var(--su)}   .el.su  .b i{background:var(--su)}
+
+  .blk{border-top:1px solid var(--line2);padding-top:16px;margin-top:16px}
+  .blk:first-of-type{border-top:0;padding-top:0;margin-top:0}
+  .blk .no{font-size:11px;letter-spacing:.12em;color:var(--gold-d);font-weight:800}
+  .blk h3{font-size:16px;font-weight:800;margin:3px 0 8px}
+  .blk .bd{font-size:14.5px;color:var(--ink2);line-height:1.9}
+  .blk .bd b{color:var(--ink)}
+
+  .kv{display:flex;flex-wrap:wrap;gap:7px}
+  .kv span{background:#F7F4ED;border:1px solid var(--line2);border-radius:100px;
+    padding:5px 12px;font-size:12.5px;color:var(--ink2)}
+  .kv span b{color:var(--ink)}
+
+  /* 모집 — 다 보여준 다음에 나온다 */
+  .cta{background:var(--navy);color:#fff;border-radius:15px;padding:24px 20px;margin:20px 0 14px}
+  .cta h2{color:#fff;font-size:19px;margin:0 0 8px}
+  .cta p{color:#C9BFAE;font-size:14px;margin:0 0 16px;line-height:1.85}
+  .cta ul{margin:0 0 18px;padding:0;list-style:none}
+  .cta li{color:#EDE7DC;font-size:14px;padding-left:19px;position:relative;margin-bottom:7px}
+  .cta li:before{content:'✓';position:absolute;left:0;color:var(--gold);font-weight:800}
+  .cta label{color:#9A9384}
+  .cta input,.cta textarea{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);
+    color:#fff}
+  .cta input::placeholder,.cta textarea::placeholder{color:#7C7566}
+  .cta .chk{color:#C9BFAE}
+  .cta .chk b{color:#fff}
+  .cta a{color:var(--gold)}
+  .cta .fine{font-size:12px;color:#7C7566;line-height:1.8;margin:12px 0 0}
+</style>
+
+<main class="wrap">
+  <section class="hero">
+    <% if (reading.alias) { %><p class="al"><%= reading.alias %></p><% } %>
+    <h1><%= reading.tagline || (who + '의 사주') %></h1>
+    <% if (reading.iljuBody) { %><p class="tg"><%= reading.iljuBody %></p><% } %>
+    <p class="bt"><%= name ? name + ' · ' : '' %><%= birthLabel %></p>
+  </section>
+
+  <% if (today) { %>
+    <div class="td">
+      <p class="dl">오늘의 운세 · <%= today.dateLabel %></p>
+      <p class="gz2">오늘은 <b><%= today.ganzhi %></b> 일입니다<%= today.ganzhiHanja ? ' (' + today.ganzhiHanja + ')' : '' %></p>
+      <div class="band">
+        <b><%= today.band %></b>
+        <span><%= today.score %>점 · <%= today.keyword %></span>
+      </div>
+      <div class="bar"><i style="width:<%= Math.max(4, Math.min(100, today.score)) %>%"></i></div>
+      <% if (today.bandLine) { %><p><%= today.bandLine %></p><% } %>
+      <% if (today.text) { %><p><%= today.text %></p><% } %>
+      <% if (today.relText) { %><p><%= today.relText %></p><% } %>
+      <% if (today.lucky) { %>
+        <div class="lucky">
+          <% if (today.lucky.color) { %><span>행운의 색 <b><%= today.lucky.color %></b></span><% } %>
+          <% if (today.lucky.direction) { %><span>방위 <b><%= today.lucky.direction %></b></span><% } %>
+          <% if (today.lucky.hour) { %><span>시간 <b><%= today.lucky.hour %></b></span><% } %>
+          <% if (today.lucky.item) { %><span>지니면 좋은 것 <b><%= today.lucky.item %></b></span><% } %>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <div class="card">
+    <h2>내 사주 원국</h2>
+    <div class="wg-wrap">
+      <table class="wg">
+        <tr><% wonguk.forEach(function(p){ %><th><%= p.key %>주</th><% }); %></tr>
+        <tr>
+          <% wonguk.forEach(function(p){ %>
+            <td><div class="gz <%= p.unknown ? 'non' : (EL[p.stemElem] || '') %> <%= p.key === '일' ? 'day' : '' %>">
+              <div class="h"><%= p.unknown ? '?' : p.stemHanja %></div>
+              <div class="k"><%= p.unknown ? '모름' : p.stemKo %></div>
+              <div class="t"><%= p.unknown ? '' : p.stemTenGod %></div>
+            </div></td>
+          <% }); %>
+        </tr>
+        <tr><td class="gap" colspan="<%= wonguk.length %>"></td></tr>
+        <tr>
+          <% wonguk.forEach(function(p){ %>
+            <td><div class="gz <%= p.unknown ? 'non' : (EL[p.branchElem] || '') %>">
+              <div class="h"><%= p.unknown ? '?' : p.branchHanja %></div>
+              <div class="k"><%= p.unknown ? '모름' : p.branchKo %></div>
+              <div class="t"><%= p.unknown ? '' : p.branchTenGod %></div>
+            </div></td>
+          <% }); %>
+        </tr>
+        <tr>
+          <% wonguk.forEach(function(p){ %>
+            <td class="jj"><% if (!p.unknown) { (p.jijanggan || []).forEach(function(j){ %><div><%= j %></div><% }); } %></td>
+          <% }); %>
+        </tr>
+      </table>
+    </div>
+    <div class="kv" style="margin-top:16px">
+      <span>일간 <b><%= consult.일간 %> (<%= consult.일간오행 %>)</b></span>
+      <span>격국 <b><%= consult.격국 %></b></span>
+      <span><b><%= consult.신강약 %></b></span>
+      <span>용신 <b><%= consult.용신 %></b></span>
+      <% if (consult.현재대운 && consult.현재대운.간지) { %><span>현재 대운 <b><%= consult.현재대운.간지 %></b> <%= consult.현재대운.나이 %>세부터</span><% } %>
+      <% if (consult.올해세운 && consult.올해세운.간지) { %><span><%= consult.올해세운.년도 %>년 <b><%= consult.올해세운.간지 %></b></span><% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>오행 균형</h2>
+    <div class="els">
+      <% reading.elements.forEach(function(e){ %>
+        <div class="el <%= EL[e.name] || '' %>">
+          <span class="n"><%= e.name %></span>
+          <span class="b"><i style="width:<%= Math.max(2, e.pct) %>%"></i></span>
+          <span class="v"><%= e.count %>개 · <%= e.state %></span>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <% if ((reading.blocks || []).length) { %>
+    <div class="card">
+      <h2>무료 풀이</h2>
+      <% reading.blocks.forEach(function(b){ %>
+        <div class="blk">
+          <div class="no"><%= b.no %></div>
+          <h3><%= b.title %></h3>
+          <div class="bd"><%- b.html %></div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <div class="cta" id="join">
+    <% if (joined) { %>
+      <h2>보내드렸습니다</h2>
+      <p>남겨주신 번호로 연락드리겠습니다. 감사합니다.</p>
+    <% } else { %>
+      <h2>사주를 제대로 배워보고 싶다면</h2>
+      <p>여기까지는 계산이 해준 것입니다.
+        스스로 읽고 풀이할 수 있게 되는 과정을 안내해드립니다.</p>
+      <ul>
+        <li>만세력을 스스로 읽고 해석하는 법</li>
+        <li>실제 사례로 배우는 대운·세운 풀이</li>
+        <li>수료 후 개인 만세력 페이지 제공</li>
+      </ul>
+
+      <form id="jf">
+        <div class="fld">
+          <label for="jn">이름</label>
+          <input type="text" name="name" id="jn" maxlength="30" required
+                 placeholder="홍길동" autocomplete="name">
+        </div>
+        <div class="fld">
+          <label for="jp">연락처</label>
+          <input type="tel" name="phone" id="jp" maxlength="20" required
+                 placeholder="010-1234-5678" inputmode="numeric" autocomplete="tel">
+        </div>
+        <div class="fld">
+          <label for="jm">궁금한 점 <span style="font-weight:500;letter-spacing:0">— 안 적으셔도 됩니다</span></label>
+          <textarea name="memo" id="jm" maxlength="500" placeholder="수업 일정이 궁금합니다"></textarea>
+        </div>
+
+        <label class="chk">
+          <input type="checkbox" name="agree" id="ja" required>
+          <span><b>[필수]</b> 상담 안내를 위해 이름·연락처를 수집하는 데 동의합니다.
+            보관 기간은 <b>1년</b>이며, 상담 외의 용도로 쓰지 않습니다.</span>
+        </label>
+
+        <div id="jmsg"></div>
+        <button class="btn gold" type="submit"><%= t.button_text || '상담 안내 받기' %></button>
+        <p class="fine">만 14세 이상만 신청하실 수 있습니다.
+          <% if (t.kakao_consult_link) { %>보내시면 곧바로 카카오톡 상담창이 열립니다.<% } %></p>
+      </form>
+    <% } %>
+  </div>
+
+  <p style="font-size:12.5px;color:var(--faint);line-height:1.85;margin:0 0 8px">
+    이 풀이는 사주 명리의 일반적인 해석을 계산해 보여드리는 것입니다.
+    의료·법률·투자 판단의 근거로 쓰지 마세요.</p>
+  <a class="btn ghost" href="/saju@<%= slug %>">다른 사주 보기</a>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <%= siteName %><br>
+    무료 만세력 · 오늘의 운세
+  </div>
+</footer>
+
+<script>
+(function(){
+  var f = document.getElementById('jf');
+  if (!f) return;
+  var msg = document.getElementById('jmsg');
+  function say(kind, t){
+    msg.innerHTML = '<div class="' + kind + '">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+  }
+  f.addEventListener('submit', function(e){
+    e.preventDefault();
+    var b = f.querySelector('button[type=submit]');
+    b.disabled = true; b.textContent = '보내는 중…';
+    var body = new URLSearchParams();
+    ['name','phone','memo'].forEach(function(k){ body.set(k, f.elements[k].value); });
+    body.set('agree', f.elements.agree.checked ? 'on' : '');
+
+    fetch('/saju@<%= slug %>/join', {
+      method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body:body
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok) {
+        b.disabled = false; b.textContent = '<%= t.button_text || "상담 안내 받기" %>';
+        say('err', j.error || '보내지 못했습니다. 잠시 뒤 다시 해주세요.');
+        return;
+      }
+      /* 식기 전에 바로 이야기가 시작되도록 카톡으로 넘긴다 */
+      if (j.kakao) { location.href = j.kakao; return; }
+      say('ok', '보내드렸습니다. 남겨주신 번호로 연락드리겠습니다.');
+      b.textContent = '보냈습니다';
+    }).catch(function(){
+      b.disabled = false; b.textContent = '<%= t.button_text || "상담 안내 받기" %>';
+      say('err', '연결이 끊겼습니다. 잠시 뒤 다시 해주세요.');
+    });
+  });
+})();
+</script>
+</body>
+</html>

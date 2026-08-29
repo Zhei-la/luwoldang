@@ -24,6 +24,7 @@ const guideRouter = require('./routes/guide');     // 사주 자료집
 const boardRouter = require('./routes/board');     // 공지사항 · 문의하기
 const lpReviewRouter = require('./routes/lpReview'); // 판매 페이지 후기
 const manseLinkRouter = require('./routes/manseLink'); // 만세력 연동
+const msiteRouter = require('./routes/msite'); // 공개 만세력 (교육생 개인 링크)
 const { router: reviewRoutes } = require('./routes/reviews');
 const { requireAuth } = require('./middleware/auth');
 const app = express();
@@ -105,6 +106,9 @@ app.use('/', lpReviewRouter);
 /* 만세력 연동 — /api/manse/lead 는 로그인 없이 열려 있어야 한다.
    leads 라우터의 requireAuth 가 /api/* 를 가로채므로 반드시 그보다 먼저. */
 app.use('/', manseLinkRouter);
+/* 공개 만세력 — /saju@아이디 · /@아이디 (로그인 없음).
+   없는 아이디면 next() 로 넘기므로 뒤에 붙은 라우터를 가로막지 않는다. */
+app.use('/', msiteRouter);
 // 스레드 자동화 — /threads, /threads/manual, /api/threads/*
 // (leads 라우터의 requireAuth 가 /api/* 를 가로채므로 반드시 그보다 먼저)
 app.use('/', threadsAutoRouter);

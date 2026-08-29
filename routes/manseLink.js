@@ -67,9 +67,16 @@ const admin = [requireAuth, requireApproved, requireAdmin];
 
 router.get('/admin/manse', ...admin, async (req, res, next) => {
   try {
-    const [link, students, recent] = await Promise.all([
+    /* 프록시 뒤에 있으므로 x-forwarded-proto 를 본다 */
+    const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+    const [link, students, links, recent] = await Promise.all([
       manse.getKey(),
       manse.studentJson(),
+      pool.query(
+        `SELECT name, site_name, slug FROM users
+          WHERE status = 'approved' AND slug IS NOT NULL AND slug <> ''
+          ORDER BY name`
+      ),
       pool.query(
         `SELECT l.id, l.name, l.phone, l.recruiter, l.created_at, u.name AS teacher
            FROM leads l LEFT JOIN users u ON u.id = l.teacher_id
@@ -77,8 +84,6 @@ router.get('/admin/manse', ...admin, async (req, res, next) => {
           ORDER BY l.created_at DESC LIMIT 20`
       ),
     ]);
-    /* 프록시 뒤에 있으므로 x-forwarded-proto 를 본다 */
-    const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
     res.render('dash/admin-manse', {
       user: req.user,
       active: 'admin-manse',
@@ -86,6 +91,8 @@ router.get('/admin/manse', ...admin, async (req, res, next) => {
       hookUrl: proto + '://' + req.get('host') + '/api/manse/lead?key=' + link.hook_key,
       students,
       studentText: JSON.stringify(students, null, 2),
+      links: links.rows,
+      baseUrl: proto + '://' + req.get('host'),
       recent: recent.rows,
     });
   } catch (e) { next(e); }

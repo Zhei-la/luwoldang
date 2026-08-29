@@ -30,6 +30,28 @@
   </p>
 </div>
 
+<!-- 무료 만세력 — 요금이 안 나가는 미끼 링크 -->
+<div class="settings-block">
+  <h2 class="section-h">무료 만세력 링크 <span style="font-size:12px;color:#2F7A55;font-weight:700">새로 생겼습니다</span></h2>
+  <p class="block-desc">
+    손님이 생년월일만 넣으면 <b>원국 네 기둥 · 오늘의 운세 · 짧은 풀이</b>가 바로 나오는 페이지입니다.
+    다 보여준 다음 아래에서 상담을 권하고, 번호를 남기면 <b>내 신청자 목록</b>에 「만세력」으로 쌓입니다.
+    <br><b>이 페이지는 AI 를 쓰지 않아 손님이 아무리 많이 와도 요금이 0원입니다.</b>
+    무료사주(위 링크)는 볼 때마다 OpenAI 요금이 나가니, 널리 뿌리실 때는 이쪽이 낫습니다.
+  </p>
+  <div class="share-row">
+    <input class="fi share-input" id="manseUrl" type="text"
+           value="<%= baseUrl %>/saju@<%= user.slug %>" readonly>
+    <button class="btn btn-approve" type="button" onclick="copyManse()">복사</button>
+    <a class="btn btn-ghost" href="/saju@<%= user.slug %>" target="_blank">미리보기</a>
+  </div>
+  <p class="block-desc" style="margin-top:8px">
+    짧게 쓰고 싶으면 <b><%= baseUrl %>/@<%= user.slug %></b> 도 똑같이 열립니다.
+    문자로 보낼 때 편합니다.<br>
+    상담 신청 뒤 넘어갈 곳은 아래 <b>카카오톡 상담 링크</b>를 씁니다. 비워두면 안내 문구만 나옵니다.
+  </p>
+</div>
+
 <!-- 설정 폼 -->
 <form method="post" action="/free-saju-settings" class="settings-form">
   <div class="settings-block">
@@ -357,7 +379,14 @@
     };
   }
 
-  function copyShare() {
+  function copyManse(){
+  var el = document.getElementById('manseUrl');
+  el.select(); el.setSelectionRange(0, 99999);
+  if (navigator.clipboard) navigator.clipboard.writeText(el.value);
+  else document.execCommand('copy');
+  alert('무료 만세력 링크를 복사했습니다.');
+}
+function copyShare() {
     var el = document.getElementById('shareUrl');
     el.select();
     el.setSelectionRange(0, 99999);

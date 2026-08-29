@@ -65,6 +65,12 @@
   table.mn-tbl th { font-size:11.5px; letter-spacing:.05em; color:#9A9384; font-weight:700; }
   table.mn-tbl td.no { color:#B5AE9E; }
   .mn-wrap { overflow-x:auto; }
+  .mn-mini{width:100%;min-width:230px;padding:7px 9px;border:1px solid var(--beige);
+    border-radius:8px;font-size:12.5px;font-family:ui-monospace,Menlo,monospace;
+    background:#fff;color:var(--ink);outline:none}
+  .mn-mini-btn{padding:7px 13px;background:var(--navy);color:#fff;border:0;border-radius:8px;
+    font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .mn-mini-btn.ok{background:#2F7A55}
   .mn-empty { padding:20px; text-align:center; color:#9A9384; font-size:13.5px; line-height:1.8; }
 
   .mn-adv { margin-top:22px; }
@@ -75,19 +81,36 @@
     border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
 </style>
 
-<% var 켜짐 = (link.total || 0) > 0; %>
+<div class="mn-top on">
+  <p class="st">루월당 안에 들어왔습니다</p>
+  <p class="ds">만세력을 따로 어디에 올리실 필요가 없습니다.
+    교육생 <b>각자의 링크</b>로 바로 열립니다.
+    손님이 번호를 남기면 그 교육생의 <b>신청자 목록</b>에 「만세력」으로 쌓입니다.
+    <br><b>AI 를 쓰지 않아 손님이 아무리 많이 와도 요금이 0원입니다.</b>
+    무료사주는 볼 때마다 OpenAI 요금이 나가니, 널리 뿌릴 때는 이쪽이 낫습니다.</p>
+</div>
 
-<div class="mn-top <%= 켜짐 ? 'on' : 'off' %>">
-  <% if (켜짐) { %>
-    <p class="st">연결돼 있습니다</p>
-    <p class="ds">지금까지 <b><%= link.total %>건</b>이 만세력에서 넘어왔습니다.
-      새로 들어오면 <b>신청자 목록</b>의 「만세력」 갈래에 쌓이고 알림도 갑니다.
-      더 하실 일은 없습니다.</p>
+<div class="mn-card">
+  <h3>교육생 링크 (<%= links.length %>명)</h3>
+  <p class="why">각자에게 나눠주시면 됩니다.
+    교육생 본인도 <b>「무료사주 · 웹사이트 설정」</b>에서 직접 복사할 수 있습니다.</p>
+  <% if (links.length) { %>
+    <div class="mn-wrap">
+      <table class="mn-tbl">
+        <tr><th>교육생</th><th>링크</th><th></th></tr>
+        <% links.forEach(function(u2, i){ %>
+          <tr>
+            <td><%= u2.site_name || u2.name %></td>
+            <td><input class="mn-mini" id="ml<%= i %>" readonly
+                       value="<%= baseUrl %>/saju@<%= u2.slug %>"></td>
+            <td><button type="button" class="mn-mini-btn" data-copy="#ml<%= i %>">복사</button></td>
+          </tr>
+        <% }); %>
+      </table>
+    </div>
   <% } else { %>
-    <p class="st">아직 연결 전입니다</p>
-    <p class="ds">아직 만세력에서 넘어온 신청이 <b>한 건도 없습니다.</b>
-      <br><b>만세력 프로그램이 어딘가에서 켜져 있어야</b> 이 설정이 의미가 있습니다.
-      아직 안 올리셨다면 지금 여기서 하실 일은 없습니다. 그대로 두셔도 됩니다.</p>
+    <div class="mn-empty">아직 링크를 줄 교육생이 없습니다.<br>
+      승인된 교육생에게 무료사주 주소가 있어야 목록에 나옵니다.</div>
   <% } %>
 </div>
 
@@ -113,13 +136,12 @@
   </div>
 </details>
 
-<div class="mn-step">
-  <div class="hd"><span class="no">1</span><h3>만세력을 인터넷에 올린다</h3></div>
-  <p class="why">받으신 만세력 폴더는 지금 <b>내 컴퓨터에서만</b> 도는 상태입니다
-    (<code>서버켜기.bat</code>). 그러면 컴퓨터를 끄는 동안 손님이 못 들어옵니다.
-    <br><b>이게 먼저입니다.</b> 어디에 올릴지 정해지기 전까지는 아래 2·3번을 해도
-    아무 일도 일어나지 않습니다. 정하시면 말씀해주세요, 이어서 도와드리겠습니다.</p>
-</div>
+<details class="mn-adv" style="margin-top:4px">
+  <summary>만세력을 밖에 따로 올렸다면 — 연동 설정</summary>
+  <div class="in">
+    <p class="why" style="margin-bottom:16px">받으셨던 만세력 프로그램을
+      <b>따로 어디에 올리신 경우에만</b> 필요합니다.
+      위 링크를 쓰실 거라면 여기는 건드리지 않으셔도 됩니다.</p>
 
 <div class="mn-step">
   <div class="hd"><span class="no">2</span><h3>주소를 만세력에 알려준다</h3></div>
@@ -162,6 +184,9 @@
     제대로 됐으면 아래 표에 바로 뜹니다. 안 뜨면 2번 주소를 다시 확인하시고,
     만세력 서버를 껐다 켜셨는지 보세요.</p>
 </div>
+
+  </div>
+</details>
 
 <div class="mn-card">
   <h3>넘어온 신청</h3>

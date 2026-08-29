@@ -1,0 +1,124 @@
+<%- include('_head', {
+  siteName: siteName,
+  pageTitle: siteName + ' · 무료 만세력과 오늘의 운세',
+  pageDesc: '생년월일만 넣으면 내 사주 원국과 오늘의 운세를 무료로 봅니다. 가입도 결제도 없습니다.',
+}) %>
+
+<main class="wrap sec">
+  <h1>생년월일만 넣으면<br>내 사주가 바로 나옵니다</h1>
+  <p class="lead">가입도, 결제도, 이메일도 없습니다.
+    원국 네 기둥과 오늘의 운세, 그리고 짧은 풀이까지 무료로 보여드립니다.</p>
+
+  <% if (err) { %><div class="err"><%= err %></div><% } %>
+
+  <form method="post" action="/saju@<%= slug %>" id="f">
+    <div class="card">
+      <h2><span class="no">1</span>언제 태어나셨나요</h2>
+
+      <div class="fld">
+        <label for="cal">양력 · 음력</label>
+        <select name="calendar" id="cal">
+          <option value="양력" <%= old.calendar === '음력' ? '' : 'selected' %>>양력</option>
+          <option value="음력" <%= old.calendar === '음력' ? 'selected' : '' %>>음력</option>
+        </select>
+      </div>
+
+      <div class="fld">
+        <label>생년월일</label>
+        <div class="row">
+          <input type="number" name="year" placeholder="1990" inputmode="numeric"
+                 min="1900" max="2100" required value="<%= old.year || '' %>">
+          <input type="number" name="month" placeholder="5" inputmode="numeric"
+                 min="1" max="12" required value="<%= old.month || '' %>">
+          <input type="number" name="day" placeholder="12" inputmode="numeric"
+                 min="1" max="31" required value="<%= old.day || '' %>">
+        </div>
+      </div>
+
+      <label class="chk" id="leapBox" style="display:none">
+        <input type="checkbox" name="leap" <%= old.leap ? 'checked' : '' %>>
+        <span>윤달에 태어났습니다</span>
+      </label>
+
+      <div class="fld">
+        <label>태어난 시각</label>
+        <div class="row">
+          <input type="number" name="hour" placeholder="14시" inputmode="numeric"
+                 min="0" max="23" id="hh" value="<%= old.hour || '' %>">
+          <input type="number" name="minute" placeholder="30분" inputmode="numeric"
+                 min="0" max="59" id="mm" value="<%= old.minute || '' %>">
+        </div>
+      </div>
+
+      <label class="chk">
+        <input type="checkbox" name="hourUnknown" id="unk" <%= old.hourUnknown ? 'checked' : '' %>>
+        <span>태어난 시각을 모릅니다 <b style="font-weight:700">— 시주를 빼고 봅니다</b></span>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2><span class="no">2</span>몇 가지만 더</h2>
+
+      <div class="fld">
+        <label for="g">성별</label>
+        <select name="gender" id="g">
+          <option value="female" <%= old.gender === 'male' ? '' : 'selected' %>>여자</option>
+          <option value="male" <%= old.gender === 'male' ? 'selected' : '' %>>남자</option>
+        </select>
+      </div>
+
+      <div class="fld">
+        <label for="rg">태어난 지역 <span style="font-weight:500;letter-spacing:0">— 몰라도 됩니다</span></label>
+        <select name="region" id="rg">
+          <option value="">고르지 않음</option>
+          <% regions.forEach(function(r){ %>
+            <option value="<%= r %>" <%= old.region === r ? 'selected' : '' %>><%= r %></option>
+          <% }); %>
+        </select>
+        <p style="font-size:12.5px;color:var(--faint);margin:7px 0 0;line-height:1.7">
+          지역을 고르면 <b>진태양시</b>로 맞춰 계산합니다. 시각이 경계에 걸릴 때 기둥이 달라질 수 있습니다.</p>
+      </div>
+
+      <div class="fld" style="margin-bottom:0">
+        <label for="nm">이름 <span style="font-weight:500;letter-spacing:0">— 안 적으셔도 됩니다</span></label>
+        <input type="text" name="name" id="nm" maxlength="20" placeholder="홍길동"
+               value="<%= old.name || '' %>">
+      </div>
+    </div>
+
+    <button class="btn" type="submit">내 사주 보기</button>
+    <p style="font-size:12.5px;color:var(--faint);text-align:center;margin:12px 0 0">
+      넣으신 생년월일은 저장하지 않습니다. 계산에만 씁니다.</p>
+  </form>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <%= siteName %><br>
+    무료 만세력 · 오늘의 운세
+  </div>
+</footer>
+
+<script>
+(function(){
+  var unk = document.getElementById('unk');
+  var hh = document.getElementById('hh'), mm = document.getElementById('mm');
+  function sync(){
+    hh.disabled = mm.disabled = unk.checked;
+    hh.style.opacity = mm.style.opacity = unk.checked ? '.45' : '1';
+  }
+  unk.addEventListener('change', sync); sync();
+
+  /* 윤달은 음력일 때만 물어본다. 양력에 윤달을 물으면 헷갈린다. */
+  var cal = document.getElementById('cal'), leap = document.getElementById('leapBox');
+  function calSync(){ leap.style.display = cal.value === '음력' ? 'flex' : 'none'; }
+  cal.addEventListener('change', calSync); calSync();
+
+  document.getElementById('f').addEventListener('submit', function(e){
+    var b = e.target.querySelector('button[type=submit]');
+    b.disabled = true; b.textContent = '계산하는 중…';
+  });
+})();
+</script>
+</body>
+</html>
