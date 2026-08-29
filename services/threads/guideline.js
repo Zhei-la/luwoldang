@@ -131,6 +131,26 @@ function checkPost(post) {
     detail: '최대 ' + maxTerms + '개',
   });
 
+  /* 길이가 제일 중요하다. 지침은 3~6문장, 되도록 3~5문장이다.
+     글자 수는 500자까지 되지만 그건 스레드가 막는 한계일 뿐 목표가 아니다.
+     목록이 있는 정보형은 줄이 늘어나므로 산문 문장만 센다. */
+  const sentences = parts.map(proseSentences);
+  const tooLong = sentences.findIndex((n) => n > 6);
+  rows.push({
+    label: '한 편이 3~6문장',
+    ok: tooLong === -1,
+    hard: false,
+    detail: sentences.join(' · ') + '문장',
+  });
+
+  /* 연재는 하지 않기로 했다. 할 말이 많으면 글 개수를 늘린다. */
+  rows.push({
+    label: '한 편, 길어도 두 편',
+    ok: parts.length <= 2,
+    hard: false,
+    detail: parts.length + '편',
+  });
+
   if (post.form === 'chain' && lengths.length >= 3) {
     const mountain = lengths[0] < lengths[1] && lengths[1] > lengths[lengths.length - 1];
     rows.push({
