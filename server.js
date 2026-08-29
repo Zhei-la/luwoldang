@@ -98,6 +98,9 @@ app.use(shareRoutes);   // /r/:token — 내담자가 로그인 없이 리포트
 app.use(reviewRoutes);
   // 후기 (/r/:token/review 는 공개, /reviews 는 교육생)
 app.use(pushRouter);      // 브라우저 알림
+// 판매 페이지 후기·설정·사진 — /api/lp/*, /lp/rimg/:id (로그인 없이 열린다)
+// 로그인 검사가 걸린 라우터(leads 등)보다 반드시 먼저 붙어야 한다.
+app.use('/', lpReviewRouter);
 app.use('/', freeRouter);
 // 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
 app.use('/admin', adminRouter);
@@ -117,8 +120,6 @@ app.use('/', threadsRouter);
 app.use('/', guideRouter);
 // 공지사항 · 문의하기 — /notice, /support, /admin/notice, /admin/support
 app.use('/', boardRouter);
-// 판매 페이지 후기 — /api/lp/reviews (누구나), /admin/lp-reviews (관리자)
-app.use('/', lpReviewRouter);
 // 멘트 메모장 기기 간 연동
 app.use('/', require('./routes/memo'));
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
