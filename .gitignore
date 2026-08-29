@@ -1,3 +1,6 @@
 node_modules/
 .env
 *.log
+
+# 시험할 때 화면을 그려 담아두는 곳 — 커밋하면 안 된다
+public/_t/
