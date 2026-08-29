@@ -60,6 +60,8 @@ async function initDb() {
 
   // 무료사주 PDF 업셀 설정 (프리미엄 안내 · Q&A · 할인문구 · 후기이미지 · 만세력 해설)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS free_promo JSONB;`);
+  /* 공개 만세력 페이지 색. 교육생마다 다르게 보이게 한다. */
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS msite_theme TEXT;`);
 
   // 상담 신청 (랜딩 폼)
   await pool.query(`

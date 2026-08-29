@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const msiteTheme = require('../services/msiteTheme');
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { getPromo, normalizePromo } = require('../services/freePromo');
@@ -53,6 +54,8 @@ router.get('/free-saju-settings', (req, res) => {
     mailReady: require('../services/mail').mailReady(req.user),
     saved: req.query.saved === '1',
     slugError: SLUG_ERR[req.query.slugerr] || null,
+    themes: msiteTheme.list(),
+    themeNow: msiteTheme.clean(req.user.msite_theme),
   });
 });
 
@@ -61,7 +64,8 @@ router.post('/free-saju-settings', async (req, res, next) => {
     const { site_name, kakao_consult_link, consult_message, button_text,
             openai_key, mail_local, mail_name, mail_reply,
             pdf_cta_text, pdf_cta_desc, promo_json, review_notice, review_link,
-            bank_name, bank_account, bank_holder, bank_notice } = req.body;
+            bank_name, bank_account, bank_holder, bank_notice,
+            msite_theme } = req.body;
 
     // 무료 PDF 업셀 설정 (프리미엄 안내 · Q&A · 후기 이미지 · 할인 문구)
     if (promo_json) {
@@ -90,8 +94,8 @@ router.post('/free-saju-settings', async (req, res, next) => {
            mail_local = $5, mail_name = $6, mail_reply = $7,
            pdf_cta_text = $8, pdf_cta_desc = $9, review_on = $10, review_notice = $11,
            bank_name = $12, bank_account = $13, bank_holder = $14, bank_notice = $15,
-           review_link = $16
-       WHERE id = $17`,
+           review_link = $16, msite_theme = $17
+       WHERE id = $18`,
       [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
        local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null,
        (pdf_cta_text || '').trim() || null, (pdf_cta_desc || '').trim() || null, reviewOn,
@@ -101,6 +105,7 @@ router.post('/free-saju-settings', async (req, res, next) => {
        (bank_holder || '').trim() || null,
        (bank_notice || '').trim() || null,
        (review_link || '').trim() || null,
+       msiteTheme.clean(msite_theme),
        req.user.id]
     );
 

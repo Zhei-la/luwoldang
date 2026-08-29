@@ -8,13 +8,13 @@
 <meta property="og:title" content="<%= pageTitle %>">
 <meta property="og:description" content="<%= pageDesc %>">
 <meta property="og:type" content="website">
-<link rel="icon" href="/img/favicon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23241F18%27/%3E%3Ctext x=%2732%27 y=%2745%27 font-size=%2738%27 text-anchor=%27middle%27 fill=%27%23fff%27 font-family=%27serif%27%3E命%3C/text%3E%3C/svg%3E">
 <style>
   /* 손님이 보는 화면이다. 대시보드 css 를 쓰지 않고 여기서 끝낸다. */
+  /* 색은 교육생이 「웹사이트 설정」에서 고른 것으로 들어온다.
+     다섯 벌 중 하나이고, 전부 글씨가 읽히는지 확인한 것들이다. */
   :root{
-    --ink:#241F18; --ink2:#4A4438; --dim:#7C7566; --faint:#A8A192;
-    --line:#E6DFD1; --line2:#F0EAE0; --bg:#FBF8F2; --card:#fff;
-    --gold:#B08D57; --gold-d:#8A6F3C; --navy:#241F18;
+    <%= themeVars %>;
     --mok:#3E7D5A; --hwa:#C0503C; --to:#B08D57; --geum:#6B7A8A; --su:#3C5A80;
     --mok-bg:#EDF5F0; --hwa-bg:#FBEDEA; --to-bg:#F7F1E6; --geum-bg:#EEF1F4; --su-bg:#EBF0F7;
   }
@@ -49,7 +49,11 @@
     font-weight:700;margin:0 0 6px}
   input[type=text],input[type=tel],input[type=number],select,textarea{
     width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;
-    font-size:16px;font-family:inherit;background:#fff;color:var(--ink);outline:none}
+    font-size:16px;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
+  /* 어두운 색을 고르면 바탕도 어두워진다.
+     #fff 로 박아두면 흰 바탕에 흰 글씨가 돼 아무것도 안 보인다. */
+  input::placeholder,textarea::placeholder{color:var(--faint);opacity:1}
+  select option{background:var(--card);color:var(--ink)}
   input:focus,select:focus,textarea:focus{border-color:var(--gold)}
   textarea{min-height:80px;resize:vertical;line-height:1.7}
   .row{display:flex;gap:8px}
@@ -65,7 +69,7 @@
     text-align:center;text-decoration:none}
   .btn:disabled{opacity:.5;cursor:default}
   .btn.gold{background:var(--gold)}
-  .btn.ghost{background:#fff;color:var(--ink2);border:1px solid var(--line)}
+  .btn.ghost{background:var(--card);color:var(--ink2);border:1px solid var(--line)}
 
   .err{background:#FBEDEA;color:#9A3B2B;border-radius:10px;padding:12px 14px;
     font-size:14px;margin-bottom:16px;line-height:1.7}

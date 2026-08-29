@@ -134,6 +134,12 @@ app.use('/', require('./routes/memo'));
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)
 app.use('/', coversRouter);   // 교육생: 내 PDF 표지
 app.use('/', pagesRouter);
+/* 맨 주소로 들어오는 공개 만세력 — 새도메인.kr/kimdosa
+   ⚠️ 모든 주소를 다 잡을 수 있어 제일 마지막에 둔다.
+      앞에 붙은 진짜 주소들이 먼저 이기고, 남는 것만 여기로 온다.
+      그리고 승인된 교육생 아이디일 때만 응답한다. */
+app.use('/', msiteRouter.tail);
+
 // 에러 핸들러
 app.use((err, req, res, next) => {
   console.error(err);

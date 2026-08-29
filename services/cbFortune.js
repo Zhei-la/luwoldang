@@ -36,6 +36,7 @@ __export(fortune_entry_exports, {
   LOCKED_TEASER: () => LOCKED_TEASER,
   STEM_COLOR: () => STEM_COLOR,
   YONGSIN: () => YONGSIN,
+  allIlju: () => allIlju,
   buildReading: () => buildReading,
   gradeOf: () => gradeOf,
   hanjaEl: () => hanjaEl,
@@ -1910,6 +1911,9 @@ function ilju(ganzhi) {
     body: ""
   };
 }
+function allIlju() {
+  return [...MAP.values()];
+}
 
 // src/web/josa.ts
 var PAIRS = {
@@ -2191,6 +2195,7 @@ var ILGAN_LIST = Object.values(ILGAN);
   LOCKED_TEASER,
   STEM_COLOR,
   YONGSIN,
+  allIlju,
   buildReading,
   gradeOf,
   hanjaEl,

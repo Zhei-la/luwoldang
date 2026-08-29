@@ -3,7 +3,7 @@
   var who = name ? name + '님' : '이 사주';
 %>
 <%- include('_head', {
-  siteName: siteName,
+  siteName: siteName, themeVars: themeVars,
   pageTitle: (reading.alias ? reading.alias + ' · ' : '') + siteName,
   pageDesc: reading.tagline || '내 사주 원국과 오늘의 운세를 무료로 봅니다.',
 }) %>
@@ -265,7 +265,7 @@
     ['name','phone','memo'].forEach(function(k){ body.set(k, f.elements[k].value); });
     body.set('agree', f.elements.agree.checked ? 'on' : '');
 
-    fetch('/saju@<%= slug %>/join', {
+    fetch('<%= joinTo %>', {
       method:'POST', headers:{'content-type':'application/x-www-form-urlencoded'}, body:body
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok) {

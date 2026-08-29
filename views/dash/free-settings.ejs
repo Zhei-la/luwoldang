@@ -52,8 +52,53 @@
   </p>
 </div>
 
+<style>
+  .th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:4px}
+  .th-grid label{position:relative;cursor:pointer;display:block}
+  .th-grid input{position:absolute;opacity:0;width:0;height:0}
+  .th-card{border:2px solid var(--beige);border-radius:12px;overflow:hidden;background:#fff}
+  .th-grid input:checked + .th-card{border-color:var(--gold)}
+  .th-grid input:focus-visible + .th-card{outline:2px solid var(--gold);outline-offset:2px}
+  .th-top{height:58px;position:relative;display:flex;align-items:center;padding:0 11px;gap:7px}
+  .th-dot{width:20px;height:20px;border-radius:6px;flex:none}
+  .th-bar{height:7px;border-radius:100px;flex:1}
+  .th-body{padding:9px 11px 11px}
+  .th-body b{display:block;font-size:14px;font-weight:800;color:var(--ink)}
+  .th-body span{display:block;font-size:11.5px;color:#9A9384;line-height:1.6;margin-top:2px}
+  .th-on{position:absolute;top:7px;right:9px;font-size:11px;font-weight:800;color:#fff;
+    background:rgba(0,0,0,.35);border-radius:100px;padding:2px 8px;display:none}
+  .th-grid input:checked + .th-card .th-on{display:block}
+</style>
+
+</div>
+
 <!-- 설정 폼 -->
 <form method="post" action="/free-saju-settings" class="settings-form">
+<div class="settings-block">
+  <h2 class="section-h">무료 만세력 색</h2>
+  <p class="block-desc">위 링크로 열리는 페이지의 색입니다.
+    <b>다 똑같으면 금방 티가 나니</b> 자기 것으로 골라두세요.
+    다섯 벌 다 글씨가 잘 읽히는지 확인해둔 것들입니다.
+    <br>고른 뒤 아래 <b>저장</b>을 누르셔야 반영됩니다.</p>
+  <div class="th-grid">
+    <% themes.forEach(function(th){ %>
+      <label>
+        <input type="radio" name="msite_theme" value="<%= th.key %>"
+               <%= themeNow === th.key ? 'checked' : '' %>>
+        <div class="th-card">
+          <div class="th-top" style="background:<%= th.bg %>">
+            <span class="th-on">고름</span>
+            <span class="th-dot" style="background:<%= th.gold %>"></span>
+            <span class="th-bar" style="background:<%= th.ink %>;opacity:.75"></span>
+          </div>
+          <div class="th-body">
+            <b><%= th.name %></b>
+            <span><%= th.hint %></span>
+          </div>
+        </div>
+      </label>
+    <% }); %>
+  </div>
   <div class="settings-block">
     <h2 class="section-h">사이트 정보</h2>
 
