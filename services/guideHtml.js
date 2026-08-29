@@ -14,6 +14,8 @@
 const ALLOW = {
   h2: ['class'], h3: ['class'], h4: ['class'],
   p: ['class'], br: [], hr: [],
+  /* 크롬은 엔터를 치면 <div> 를 만든다. 이걸 안 받아주면 문단이 통째로 붙어버린다. */
+  div: ['class'],
   strong: [], b: [], em: [], i: [], u: [], s: [], del: [],
   ul: [], ol: [], li: ['class'],
   blockquote: ['class'], pre: ['class'], code: [],

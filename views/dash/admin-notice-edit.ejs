@@ -38,7 +38,7 @@
   #geBody h2 { font-family:"Nanum Myeongjo",serif; font-size:21px; margin:30px 0 12px;
     padding-bottom:8px; border-bottom:1px solid var(--beige); }
   #geBody h3 { font-size:17.5px; margin:24px 0 10px; color:#8A6F3C; }
-  #geBody p { margin:0 0 14px; }
+  #geBody p, #geBody div { margin:0 0 14px; }
   #geBody ul, #geBody ol { margin:0 0 14px; padding-left:24px; }
   #geBody li { margin-bottom:6px; }
   #geBody blockquote { margin:0 0 15px; padding:13px 16px; background:#FBF8F1;
@@ -468,6 +468,9 @@
     return out;
   }
 
+  /* 브라우저마다 엔터로 만드는 태그가 다르다. p 로 통일해 둔다. */
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
+
   ed.addEventListener('paste', function (e) {
     var dt = e.clipboardData;
     if (!dt) return;
@@ -692,6 +695,15 @@
   function cleanBody() {
     var tmp = document.createElement('div');
     tmp.innerHTML = ed.innerHTML;
+    /* 크롬이 엔터로 만든 <div> 를 <p> 로 바꾼다.
+       그냥 두면 문단 구분이 흐려지고, 예전에는 통째로 붙어버렸다. */
+    tmp.querySelectorAll('div').forEach(function (d) {
+      if (d.querySelector('div, p, ul, ol, pre, blockquote, figure, table')) return;
+      var np = document.createElement('p');
+      if (d.getAttribute('class')) np.setAttribute('class', d.getAttribute('class'));
+      np.innerHTML = d.innerHTML || '<br>';
+      d.replaceWith(np);
+    });
     tmp.querySelectorAll('figure.sel').forEach(function (f) { f.classList.remove('sel'); });
     /* 아직 못 받아온 사진은 빈칸으로 남으므로 빼고 저장한다 */
     tmp.querySelectorAll('img[data-remote], img[data-inline]').forEach(function (im) {
