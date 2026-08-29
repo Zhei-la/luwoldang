@@ -709,6 +709,106 @@ async function initDb() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_cover_set_items ON cover_set_items(set_key, type);`);
 
+
+  /* ── 스레드 자동화 ──────────────────────────────────
+   * 원본 도구는 1인용이라 JSON 파일에 담았다.
+   * 여기는 교육생이 여럿이므로 전부 user_id 로 갈라 담는다.
+   *
+   * ⚠️ 통째로 try 로 감쌌다. initDb 가 실패하면 process.exit 로 서버가
+   *    아예 안 뜨는데, 곁다리 기능 하나 때문에 사이트 전체가 내려가면 안 된다.
+   *    여기서 실패하면 스레드 자동화만 꺼지고 나머지는 그대로 돈다. */
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_posts (
+        id            TEXT PRIMARY KEY,
+        user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        topic         TEXT,
+        situation     TEXT,
+        hooks         JSONB DEFAULT '[]'::jsonb,
+        post_type     TEXT,
+        form          TEXT DEFAULT 'single',
+        parts         JSONB DEFAULT '[]'::jsonb,
+        reply_type    TEXT,
+        cta           BOOLEAN DEFAULT FALSE,
+        cut_note      TEXT,
+        status        TEXT DEFAULT 'draft',
+        scheduled_for TIMESTAMPTZ,
+        zernio_id     TEXT,
+        permalink     TEXT,
+        published_at  TIMESTAMPTZ,
+        saved_at      TIMESTAMPTZ,
+        error         TEXT,
+        auto          BOOLEAN DEFAULT FALSE,
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_posts ON th_posts(user_id, status, created_at DESC);`);
+
+    /* 한 번에 만든 묶음 — 어떤 후킹을 훑었는지 남긴다 */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_batches (
+        id         TEXT PRIMARY KEY,
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        topic      TEXT,
+        situation  TEXT,
+        hook_scan  JSONB DEFAULT '[]'::jsonb,
+        unusable   JSONB DEFAULT '[]'::jsonb,
+        post_ids   JSONB DEFAULT '[]'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    /* 지운 글 — 바로 없애지 않고 묶음째 담아둔다 (최근 20묶음) */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_trash (
+        id         SERIAL PRIMARY KEY,
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        posts      JSONB NOT NULL,
+        deleted_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    /* 후킹 원장 — 이게 소재 재고다. 최근에 쓴 건 후순위로 밀린다. */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_hooks (
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        hook_id    INTEGER NOT NULL,
+        last_used  TIMESTAMPTZ,
+        used_count INTEGER DEFAULT 0,
+        PRIMARY KEY (user_id, hook_id)
+      );
+    `);
+
+    /* 교육생별 설정 — API 키는 본인 것을 쓴다 (무료사주 OpenAI 키와 같은 방식) */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_settings (
+        user_id           INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        cta_link          TEXT,
+        anthropic_key     TEXT,
+        zernio_key        TEXT,
+        zernio_account_id TEXT,
+        allow_publish     BOOLEAN DEFAULT FALSE,
+        voice_pack        JSONB,
+        facts             JSONB DEFAULT '[]'::jsonb
+      );
+    `);
+
+    /* 하루 사용량 — 실수로 수백 번 돌려 본인 요금이 나가는 걸 막는다 */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_runs (
+        id      SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        topic   TEXT,
+        ran_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_runs ON th_runs(user_id, ran_at DESC);`);
+
+    console.log('[DB] 스레드 자동화 준비 완료');
+  } catch (e) {
+    console.error('[DB] 스레드 자동화 테이블 만들기 실패 — 이 기능만 꺼집니다:', e.message);
+  }
+
   console.log('[DB] 준비 완료');
 }
 

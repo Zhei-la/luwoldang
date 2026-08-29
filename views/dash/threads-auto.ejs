@@ -1,0 +1,443 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '스레드 자동화' }) %>
+
+<style>
+/* ══════════════════════════════════════════════════════════
+ * 스레드 자동화 — 주제 하나로 글을 만들고 지침에 맞는지 본다.
+ * 모든 규칙을 #ta 안에 가둔다. 밖으로 새면 대시보드가 깨진다.
+ * ══════════════════════════════════════════════════════════ */
+#ta{
+  --line:#E6DFD0; --line2:#F0EBDF; --ink:#2B2621; --ink2:#5C5449; --dim:#8A8071;
+  --paper:#FFFDF8; --sub:#F7F3EA;
+  --gold:#B59A62; --gold-d:#8A7340;
+  --ok:#1F7A52; --ok-bg:#E8F3ED;
+  --no:#B3401F; --no-bg:#FBEAE4;
+  --warn:#8A6A12; --warn-bg:#FAF2DC;
+  font-size:15px; color:var(--ink);
+}
+#ta *{box-sizing:border-box}
+#ta .ta-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+#ta h2{font-size:17px;font-weight:700;margin:0 0 4px}
+#ta .ta-sub{font-size:13.5px;color:var(--dim);line-height:1.6;margin-bottom:14px}
+
+/* 탭 */
+#ta .ta-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+#ta .ta-tab{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:100px;
+  padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+#ta .ta-tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+#ta .ta-panel[hidden]{display:none}
+
+/* 입력 */
+#ta label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+#ta input[type=text],#ta input[type=password],#ta textarea,#ta select{
+  width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;
+  font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
+#ta textarea{line-height:1.7;resize:vertical}
+#ta input:focus,#ta textarea:focus,#ta select:focus{outline:0;border-color:var(--gold)}
+#ta .ta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+#ta .ta-row>div{flex:1;min-width:150px}
+
+/* 단추 */
+#ta .ta-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--gold);color:#fff;border:0;border-radius:9px;padding:12px 20px;
+  font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+#ta .ta-btn:hover{background:var(--gold-d)}
+#ta .ta-btn[disabled]{opacity:.5;cursor:default}
+#ta .ta-btn.ghost{background:#fff;color:var(--ink2);border:1px solid var(--line)}
+#ta .ta-btn.ghost:hover{background:var(--sub);color:var(--ink)}
+#ta .ta-btn.sm{padding:8px 14px;font-size:13.5px}
+#ta .ta-btn.danger{background:#fff;color:var(--no);border:1px solid var(--no)}
+
+/* 알림 */
+#ta .ta-msg{border-radius:9px;padding:13px 15px;font-size:14px;line-height:1.7;margin-bottom:14px;white-space:pre-wrap}
+#ta .ta-msg.err{background:var(--no-bg);color:var(--no)}
+#ta .ta-msg.ok{background:var(--ok-bg);color:var(--ok)}
+#ta .ta-msg.warn{background:var(--warn-bg);color:var(--warn)}
+
+/* 글 카드 */
+#ta .ta-post{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:14px;overflow:hidden}
+#ta .ta-post.picked{border-color:var(--gold);box-shadow:0 0 0 2px rgba(181,154,98,.18)}
+#ta .ta-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:13px 16px;background:var(--sub);border-bottom:1px solid var(--line2)}
+#ta .ta-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:100px;background:#fff;border:1px solid var(--line);color:var(--ink2)}
+#ta .ta-tag.form{background:var(--ink);color:#fff;border-color:var(--ink)}
+#ta .ta-head .ta-sp{margin-left:auto;display:flex;gap:6px;align-items:center}
+#ta .ta-body{padding:16px}
+#ta .ta-part{border-left:3px solid var(--line);padding:0 0 0 14px;margin-bottom:16px}
+#ta .ta-part:last-child{margin-bottom:0}
+#ta .ta-part .no{font-size:12px;font-weight:700;color:var(--dim);margin-bottom:6px}
+#ta .ta-part .txt{font-size:15px;line-height:1.85;white-space:pre-wrap;word-break:keep-all}
+#ta .ta-part .len{font-size:12px;color:var(--dim);margin-top:6px}
+#ta .ta-part .len.over{color:var(--no);font-weight:700}
+
+/* 점검 결과 */
+#ta .ta-check{border-top:1px solid var(--line2);padding:14px 16px;background:var(--paper)}
+#ta .ta-chk{display:flex;gap:9px;align-items:baseline;font-size:13.5px;line-height:1.6;padding:3px 0}
+#ta .ta-chk i{font-style:normal;flex:none;width:16px;font-weight:700}
+#ta .ta-chk.pass i{color:var(--ok)}
+#ta .ta-chk.fail i{color:var(--no)}
+#ta .ta-chk.soft i{color:var(--warn)}
+#ta .ta-chk b{font-weight:600;color:var(--ink)}
+#ta .ta-chk span{color:var(--dim)}
+#ta .ta-verdict{font-size:13.5px;font-weight:700;padding:8px 12px;border-radius:8px;margin-bottom:10px;display:inline-block}
+#ta .ta-verdict.ok{background:var(--ok-bg);color:var(--ok)}
+#ta .ta-verdict.no{background:var(--no-bg);color:var(--no)}
+
+/* 후킹 스캔 */
+#ta .ta-hooks{display:flex;flex-wrap:wrap;gap:6px}
+#ta .ta-hook{font-size:12.5px;padding:5px 10px;border-radius:100px;border:1px solid var(--line);background:#fff;color:var(--dim)}
+#ta .ta-hook.usable{border-color:var(--ok);color:var(--ok);background:var(--ok-bg);font-weight:600}
+#ta .ta-hook.combinable{border-color:var(--gold);color:var(--gold-d);font-weight:600}
+#ta .ta-hook.blocked{opacity:.55;text-decoration:line-through}
+
+/* 숫자 요약 */
+#ta .ta-nums{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+#ta .ta-num{flex:1;min-width:110px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+#ta .ta-num b{display:block;font-size:22px;font-weight:800;color:var(--ink)}
+#ta .ta-num span{font-size:12.5px;color:var(--dim)}
+
+#ta .ta-empty{text-align:center;color:var(--dim);font-size:14px;padding:34px 10px;line-height:1.8}
+#ta .ta-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
+  border-top-color:#fff;border-radius:50%;animation:taspin .7s linear infinite}
+@keyframes taspin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#ta .ta-spin{animation:none}}
+</style>
+
+<div id="ta">
+
+  <div class="ta-tabs" role="tablist">
+    <button class="ta-tab" role="tab" aria-selected="true"  data-panel="make">글 만들기</button>
+    <button class="ta-tab" role="tab" aria-selected="false" data-panel="queue">내 원고 <span id="taCount"><%= posts.length %></span></button>
+    <button class="ta-tab" role="tab" aria-selected="false" data-panel="setup">설정</button>
+    <a class="ta-tab" style="text-decoration:none" href="/threads/manual">직접 쓰기 도구</a>
+  </div>
+
+  <!-- ══════════ 글 만들기 ══════════ -->
+  <section class="ta-panel" id="p-make">
+    <% if (!hasKey) { %>
+      <div class="ta-msg warn">글을 만들려면 Claude API 키가 필요합니다. <b>설정</b> 탭에서 먼저 넣어주세요.
+저장한 키는 본인만 씁니다. 요금도 본인 Anthropic 계정으로 나갑니다.</div>
+    <% } %>
+
+    <div class="ta-card">
+      <h2>주제 하나만 적어주세요</h2>
+      <p class="ta-sub">후킹 26가지를 전부 훑어보고, 쓸 만한 각도를 골라 글을 만듭니다.
+        최근에 쓴 후킹은 뒤로 밀리니 같은 소재가 반복되지 않습니다.</p>
+      <div class="ta-row">
+        <div style="flex:2">
+          <label for="taTopic">주제</label>
+          <input type="text" id="taTopic" placeholder="예: 역마살, 공망, 삼재, 궁합" maxlength="120" <%= hasKey ? '' : 'disabled' %>>
+        </div>
+        <div style="max-width:130px">
+          <label for="taLimit">글 개수</label>
+          <select id="taLimit">
+            <option value="3" selected>3개</option>
+            <option value="5">5개</option>
+            <option value="8">8개</option>
+          </select>
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="ta-btn" id="taGo" <%= hasKey ? '' : 'disabled' %>>만들기</button>
+        </div>
+      </div>
+      <p class="ta-sub" style="margin:12px 0 0">
+        3개 45초 · 5개 1분 · 8개 3분쯤 걸립니다. 오늘 <b id="taUsed"><%= usedToday %></b>/<%= dailyLimit %>번 썼습니다.
+      </p>
+    </div>
+
+    <div id="taOut"></div>
+  </section>
+
+  <!-- ══════════ 내 원고 ══════════ -->
+  <section class="ta-panel" id="p-queue" hidden>
+    <div class="ta-nums">
+      <div class="ta-num"><b><%= posts.length %></b><span>저장된 글</span></div>
+      <div class="ta-num"><b><%= hookUsed %>/<%= hookTotal %></b><span>써본 후킹</span></div>
+      <div class="ta-num"><b id="taTrash"><%= trashCount %></b><span>휴지통 묶음</span></div>
+    </div>
+
+    <div class="ta-card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="ta-btn ghost sm" id="taReload">새로고침</button>
+      <button class="ta-btn ghost sm" id="taRestore" <%= trashCount ? '' : 'disabled' %>>방금 지운 것 되살리기</button>
+      <span class="ta-sub" style="margin:0 0 0 auto">지운 글은 휴지통에 남습니다</span>
+    </div>
+
+    <div id="taList"></div>
+  </section>
+
+  <!-- ══════════ 설정 ══════════ -->
+  <section class="ta-panel" id="p-setup" hidden>
+    <div class="ta-card">
+      <h2>Claude API 키</h2>
+      <p class="ta-sub">글은 본인 키로 만들어집니다. 요금도 본인 Anthropic 계정으로 나갑니다.
+        루월당은 키를 대신 쓰지 않습니다. <b>console.anthropic.com</b> 에서 발급받으세요.</p>
+      <label for="taKey">키</label>
+      <input type="password" id="taKey" placeholder="<%= hasKey ? '넣어두셨습니다. 바꾸려면 새로 입력하세요' : 'sk-ant- 로 시작합니다' %>" autocomplete="off">
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="ta-btn" id="taSaveKey">저장</button>
+        <button class="ta-btn ghost" id="taTestKey">연결 확인</button>
+        <% if (hasKey) { %><button class="ta-btn danger" id="taClearKey">키 지우기</button><% } %>
+      </div>
+      <div id="taKeyMsg"></div>
+    </div>
+
+    <div class="ta-card">
+      <h2>신청 안내 링크</h2>
+      <p class="ta-sub">글 마지막에 신청을 안내할 때 쓰는 주소입니다. 비워두면 링크 없이 만듭니다.</p>
+      <input type="text" id="taCta" value="<%= settings.ctaLink || '' %>" placeholder="https://..." maxlength="300">
+      <div style="margin-top:12px"><button class="ta-btn" id="taSaveCta">저장</button></div>
+      <div id="taCtaMsg"></div>
+    </div>
+
+    <div class="ta-card">
+      <h2>발행</h2>
+      <p class="ta-sub">스레드로 바로 올리는 기능은 아직 열려 있지 않습니다.
+        지금은 글을 만들고 다듬는 데까지 쓰실 수 있고, 만든 글은 복사해서 올리시면 됩니다.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var esc = function(s){ return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+  /* ── 탭 ── */
+  var tabs = document.querySelectorAll('#ta .ta-tab[data-panel]');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.setAttribute('aria-selected', String(x===b)); });
+      ['make','queue','setup'].forEach(function(k){
+        $('#p-'+k).hidden = (k !== b.dataset.panel);
+      });
+      if (b.dataset.panel === 'queue') loadList();
+    });
+  });
+
+  /* ── 서버와 이야기하기 ── */
+  function post(url, body){
+    return fetch(url, {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify(body||{})
+    }).then(function(r){ return r.json().then(function(j){ return { status:r.status, j:j }; }); });
+  }
+  function msg(box, kind, text){
+    box.innerHTML = '<div class="ta-msg '+kind+'">'+esc(text)+'</div>';
+  }
+
+  /* ── 점검 결과 그리기 ── */
+  function checkHtml(c){
+    if (!c) return '';
+    var rows = c.rows.map(function(r){
+      var cls = r.ok ? 'pass' : (r.hard ? 'fail' : 'soft');
+      var mark = r.ok ? '✓' : (r.hard ? '✕' : '!');
+      return '<div class="ta-chk '+cls+'"><i>'+mark+'</i><div><b>'+esc(r.label)+'</b>'+
+             (r.detail ? ' <span>'+esc(r.detail)+'</span>' : '')+'</div></div>';
+    }).join('');
+    var v = c.passHard
+      ? '<div class="ta-verdict ok">지침 통과</div>'
+      : '<div class="ta-verdict no">고쳐야 올릴 수 있습니다</div>';
+    return '<div class="ta-check">'+v+rows+'</div>';
+  }
+
+  function partsHtml(p){
+    return p.preview.map(function(t, i){
+      var len = p.lengths[i];
+      return '<div class="ta-part"><div class="no">'+(p.preview.length>1?(i+1)+'편':'본문')+'</div>'+
+             '<div class="txt">'+esc(t)+'</div>'+
+             '<div class="len'+(len>500?' over':'')+'">'+len+' / 500자</div></div>';
+    }).join('');
+  }
+
+  function headHtml(p, extra){
+    var formName = { single:'단일', pair:'본문+댓글', chain:'연재 '+p.parts.length+'편' }[p.form] || p.form;
+    return '<div class="ta-head">'+
+      '<span class="ta-tag form">'+esc(formName)+'</span>'+
+      (p.postType ? '<span class="ta-tag">'+esc(p.postType)+'</span>' : '')+
+      (p.hookNames||[]).map(function(h){ return '<span class="ta-tag">'+esc(h)+'</span>'; }).join('')+
+      (p.cta ? '<span class="ta-tag">신청 안내</span>' : '')+
+      '<span class="ta-sp">'+(extra||'')+'</span></div>';
+  }
+
+  /* ══════════ 만들기 ══════════ */
+  var out = $('#taOut'), goBtn = $('#taGo'), batch = null;
+
+  goBtn && goBtn.addEventListener('click', function(){
+    var topic = $('#taTopic').value.trim();
+    if (!topic) { msg(out, 'err', '주제를 적어주세요.'); return; }
+    var limit = Number($('#taLimit').value);
+
+    goBtn.disabled = true;
+    goBtn.innerHTML = '<span class="ta-spin"></span> 만드는 중';
+    msg(out, 'warn', '후킹 26가지를 훑어보고 글을 쓰는 중입니다. 창을 닫지 마세요.\n' +
+                     (limit>=8 ? '8개는 3분쯤 걸립니다.' : limit>=5 ? '1분쯤 걸립니다.' : '45초쯤 걸립니다.'));
+
+    post('/api/threads/generate', { topic: topic, limit: limit }).then(function(r){
+      goBtn.disabled = false; goBtn.textContent = '만들기';
+      if (!r.j.ok) {
+        msg(out, 'err', r.j.error + (r.j.hint ? '\n\n' + r.j.hint : ''));
+        return;
+      }
+      $('#taUsed').textContent = r.j.usedToday;
+      batch = r.j.batch;
+      drawBatch(batch);
+    }).catch(function(){
+      goBtn.disabled = false; goBtn.textContent = '만들기';
+      msg(out, 'err', '연결이 끊겼습니다. 다시 시도해주세요.');
+    });
+  });
+
+  function drawBatch(b){
+    var scan = (b.hookScan||[]).map(function(h){
+      return '<span class="ta-hook '+esc(h.verdict||'')+'" title="'+esc(h.angle||h.reason||'')+'">'+
+             esc(h.id)+'. '+esc(h.name)+'</span>';
+    }).join('');
+
+    var posts = b.posts.map(function(p, i){
+      return '<div class="ta-post picked" data-i="'+i+'">'+
+        headHtml(p, '<label style="font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:pointer">'+
+                    '<input type="checkbox" class="ta-pick" checked> 저장</label>')+
+        '<div class="ta-body">'+partsHtml(p)+
+          (p.cutNote ? '<p class="ta-sub" style="margin:12px 0 0">끊은 곳 — '+esc(p.cutNote)+'</p>' : '')+
+        '</div>'+ checkHtml(p.check) +'</div>';
+    }).join('');
+
+    out.innerHTML =
+      (b.warning ? '<div class="ta-msg warn">'+esc(b.warning)+'</div>' : '') +
+      '<div class="ta-card"><h2>후킹 '+ (b.hookScan||[]).length +'가지를 훑었습니다</h2>'+
+        '<p class="ta-sub">초록은 바로 쓸 수 있는 것, 금색은 다른 것과 엮으면 되는 것, 흐린 것은 이번 주제에 안 맞는 것입니다.</p>'+
+        '<div class="ta-hooks">'+scan+'</div>'+
+        ((b.unusable||[]).length
+          ? '<p class="ta-sub" style="margin-top:14px"><b>자료가 있어야 열리는 후킹</b><br>'+
+            b.unusable.map(function(u){ return esc(u.name)+' — '+esc(u.unlock); }).join('<br>')+'</p>'
+          : '')+
+      '</div>'+
+      '<div class="ta-card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+        '<b style="font-size:15px">글 '+b.posts.length+'개를 만들었습니다</b>'+
+        '<span class="ta-sub" style="margin:0">고른 것만 저장됩니다. 저장하지 않으면 후킹도 쓴 것으로 치지 않습니다.</span>'+
+        '<button class="ta-btn" id="taSave" style="margin-left:auto">고른 글 저장하기</button>'+
+      '</div>'+
+      posts;
+
+    out.querySelectorAll('.ta-pick').forEach(function(c){
+      c.addEventListener('change', function(){
+        c.closest('.ta-post').classList.toggle('picked', c.checked);
+      });
+    });
+
+    $('#taSave').addEventListener('click', function(){
+      var chosen = [];
+      out.querySelectorAll('.ta-post').forEach(function(el){
+        if ($('.ta-pick', el).checked) chosen.push(batch.posts[Number(el.dataset.i)]);
+      });
+      if (!chosen.length) { alert('저장할 글을 골라주세요.'); return; }
+
+      var btn = this; btn.disabled = true; btn.textContent = '저장하는 중';
+      post('/api/threads/save', { batch: batch, posts: chosen }).then(function(r){
+        btn.disabled = false; btn.textContent = '고른 글 저장하기';
+        if (!r.j.ok) { alert(r.j.error); return; }
+        msg(out, 'ok', r.j.saved + '개를 저장했습니다. 「내 원고」 탭에서 볼 수 있습니다.');
+        $('#taCount').textContent = Number($('#taCount').textContent) + r.j.saved;
+        batch = null;
+      });
+    });
+  }
+
+  /* ══════════ 내 원고 ══════════ */
+  var list = $('#taList');
+
+  function loadList(){
+    list.innerHTML = '<div class="ta-empty">불러오는 중…</div>';
+    fetch('/api/threads/posts').then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok) { list.innerHTML = '<div class="ta-empty">불러오지 못했습니다.</div>'; return; }
+      if (!j.posts.length) {
+        list.innerHTML = '<div class="ta-empty">아직 저장한 글이 없습니다.<br>「글 만들기」에서 주제를 적어보세요.</div>';
+        return;
+      }
+      list.innerHTML = j.posts.map(function(p){
+        return '<div class="ta-post" data-id="'+esc(p.id)+'">'+
+          headHtml(p, '<button class="ta-btn ghost sm ta-rw">다시 쓰기</button>'+
+                      '<button class="ta-btn danger sm ta-del">지우기</button>')+
+          '<div class="ta-body">'+
+            '<p class="ta-sub" style="margin:0 0 12px">주제 — '+esc(p.topic||'')+
+              (p.situation ? ' · '+esc(p.situation) : '')+'</p>'+
+            partsHtml(p)+
+          '</div>'+ checkHtml(p.check) +'</div>';
+      }).join('');
+      wireList();
+    });
+  }
+
+  function wireList(){
+    list.querySelectorAll('.ta-del').forEach(function(b){
+      b.addEventListener('click', function(){
+        var el = b.closest('.ta-post');
+        if (!confirm('이 글을 지울까요? 휴지통에 남아 되살릴 수 있습니다.')) return;
+        post('/api/threads/delete', { ids: [el.dataset.id] }).then(function(r){
+          if (!r.j.ok) { alert(r.j.error); return; }
+          el.remove();
+          $('#taTrash').textContent = r.j.trash;
+          $('#taRestore').disabled = !r.j.trash;
+          $('#taCount').textContent = Math.max(0, Number($('#taCount').textContent) - 1);
+        });
+      });
+    });
+    list.querySelectorAll('.ta-rw').forEach(function(b){
+      b.addEventListener('click', function(){
+        var el = b.closest('.ta-post');
+        b.disabled = true; b.innerHTML = '<span class="ta-spin"></span>';
+        post('/api/threads/posts/' + el.dataset.id + '/rewrite', {}).then(function(r){
+          b.disabled = false; b.textContent = '다시 쓰기';
+          if (!r.j.ok) { alert(r.j.error + (r.j.hint ? '\n\n' + r.j.hint : '')); return; }
+          loadList();
+        });
+      });
+    });
+  }
+
+  $('#taReload') && $('#taReload').addEventListener('click', loadList);
+  $('#taRestore') && $('#taRestore').addEventListener('click', function(){
+    post('/api/threads/restore', {}).then(function(r){
+      if (!r.j.ok) { alert(r.j.error); return; }
+      alert(r.j.restored + '개를 되살렸습니다.');
+      $('#taTrash').textContent = r.j.trash;
+      $('#taRestore').disabled = !r.j.trash;
+      loadList();
+    });
+  });
+
+  /* ══════════ 설정 ══════════ */
+  $('#taSaveKey') && $('#taSaveKey').addEventListener('click', function(){
+    var k = $('#taKey').value.trim();
+    if (!k) { msg($('#taKeyMsg'), 'err', '키를 넣어주세요.'); return; }
+    post('/api/threads/settings', { anthropicKey: k }).then(function(r){
+      if (!r.j.ok) { msg($('#taKeyMsg'), 'err', r.j.error); return; }
+      $('#taKey').value = '';
+      msg($('#taKeyMsg'), 'ok', '저장했습니다. 「연결 확인」으로 실제로 되는지 보실 수 있습니다.');
+      goBtn && (goBtn.disabled = false);
+      $('#taTopic') && ($('#taTopic').disabled = false);
+    });
+  });
+
+  $('#taTestKey') && $('#taTestKey').addEventListener('click', function(){
+    var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin" style="border-top-color:#8A7340"></span> 확인 중';
+    post('/api/threads/test-key', { anthropicKey: $('#taKey').value.trim() }).then(function(r){
+      b.disabled = false; b.textContent = '연결 확인';
+      msg($('#taKeyMsg'), r.j.ok ? 'ok' : 'err', r.j.message || r.j.error || '');
+    });
+  });
+
+  $('#taClearKey') && $('#taClearKey').addEventListener('click', function(){
+    if (!confirm('저장된 키를 지울까요? 글 만들기를 못 쓰게 됩니다.')) return;
+    post('/api/threads/settings', { anthropicKey: '' }).then(function(){ location.reload(); });
+  });
+
+  $('#taSaveCta') && $('#taSaveCta').addEventListener('click', function(){
+    post('/api/threads/settings', { ctaLink: $('#taCta').value.trim() }).then(function(r){
+      msg($('#taCtaMsg'), r.j.ok ? 'ok' : 'err', r.j.ok ? '저장했습니다.' : r.j.error);
+    });
+  });
+})();
+</script>
+
+<%- include('../partials/dash-bottom') %>
