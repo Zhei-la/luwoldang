@@ -23,6 +23,7 @@ const threadsAutoRouter = require('./routes/threadsAuto'); // 스레드 도구
 const guideRouter = require('./routes/guide');     // 사주 자료집
 const boardRouter = require('./routes/board');     // 공지사항 · 문의하기
 const lpReviewRouter = require('./routes/lpReview'); // 판매 페이지 후기
+const manseLinkRouter = require('./routes/manseLink'); // 만세력 연동
 const { router: reviewRoutes } = require('./routes/reviews');
 const { requireAuth } = require('./middleware/auth');
 const app = express();
@@ -101,6 +102,9 @@ app.use(pushRouter);      // 브라우저 알림
 // 판매 페이지 후기·설정·사진 — /api/lp/*, /lp/rimg/:id (로그인 없이 열린다)
 // 로그인 검사가 걸린 라우터(leads 등)보다 반드시 먼저 붙어야 한다.
 app.use('/', lpReviewRouter);
+/* 만세력 연동 — /api/manse/lead 는 로그인 없이 열려 있어야 한다.
+   leads 라우터의 requireAuth 가 /api/* 를 가로채므로 반드시 그보다 먼저. */
+app.use('/', manseLinkRouter);
 // 스레드 자동화 — /threads, /threads/manual, /api/threads/*
 // (leads 라우터의 requireAuth 가 /api/* 를 가로채므로 반드시 그보다 먼저)
 app.use('/', threadsAutoRouter);

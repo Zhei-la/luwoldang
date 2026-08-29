@@ -66,7 +66,7 @@ router.use(requireAuth, requireApproved);
 /* ===== 신청자 목록 ===== */
 router.get('/leads', async (req, res, next) => {
   try {
-    const filter = req.query.f || 'all'; // all | 상담신청 | 무료사주 | 미발송 | 발송완료
+    const filter = req.query.f || 'all'; // all | 상담신청 | 무료사주 | 만세력 | 미발송 | 발송완료
     const { rows } = await pool.query(
       `SELECT l.*,
               p.id AS pdf_id, p.type AS pdf_type, p.mail_sent, p.sent_at
@@ -84,7 +84,9 @@ router.get('/leads', async (req, res, next) => {
     // 이메일 발송이든, 카톡으로 직접 전달했든 '전달 완료'로 본다
     const done = (r) => r.mail_sent || r.delivered_at;
 
+    /* 만세력에서 넘어온 것도 상담 신청이다. 따로 볼 수도 있게 갈래를 하나 더 둔다. */
     if (filter === '상담신청') leads = rows.filter((r) => r.source !== '무료사주');
+    else if (filter === '만세력') leads = rows.filter((r) => r.source === '만세력');
     else if (filter === '무료사주') leads = rows.filter((r) => r.source === '무료사주');
     else if (filter === '미발송') leads = rows.filter((r) => !done(r));
     else if (filter === '발송완료') leads = rows.filter((r) => done(r));
@@ -93,6 +95,7 @@ router.get('/leads', async (req, res, next) => {
       all: rows.length,
       상담신청: rows.filter((r) => r.source !== '무료사주').length,
       무료사주: rows.filter((r) => r.source === '무료사주').length,
+      만세력: rows.filter((r) => r.source === '만세력').length,
       미발송: rows.filter((r) => !done(r)).length,
       발송완료: rows.filter((r) => done(r)).length,
     };

@@ -84,6 +84,30 @@ async function initDb() {
 
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source TEXT DEFAULT '상담신청';`);
 
+  /* ── 만세력 연동 ──────────────────────────────────────────
+     만세력 쪽에서 손님이 번호를 남기면 이리로 넘어온다.
+     같은 건이 두 번 오는 일이 있어(그쪽은 재시도하지 않지만 사람이 다시 누를 수 있다)
+     저쪽 접수번호를 그대로 받아두고 겹치면 무시한다. */
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS manse_id TEXT;`);
+  await pool.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_manse ON leads(manse_id) WHERE manse_id IS NOT NULL;`
+  );
+  /* 누가 데려왔는지. 아이디가 우리 교육생과 안 맞아도 값은 남겨둔다 —
+     나중에 사람이 보고 손으로 옮길 수 있어야 한다. */
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS recruiter TEXT;`);
+
+  /* 만세력이 우리 주소를 부를 때 쓰는 열쇠. 한 줄만 둔다.
+     환경변수로 두면 관리자가 직접 못 바꾸고, 새로 만들 때마다 배포가 필요하다. */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS manse_link (
+      id         INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+      hook_key   TEXT NOT NULL,
+      total      INTEGER DEFAULT 0,
+      last_at    TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   // 랜딩 페이지 방문 기록 (방문자 통계용)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS page_visits (

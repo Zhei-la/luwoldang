@@ -287,6 +287,7 @@ a.lead-row:hover { background:#fdfbf6; }
 .src { display:inline-block; font-size:10.5px; border-radius:5px; padding:1px 7px; margin-left:5px; font-weight:600; }
 .src.free { background:#eef4fb; color:#3f6fae; border:1px solid #c3d5ea; }
 .src.paid { background:#fbf3e2; color:#a8790f; border:1px solid #ecd9ab; }
+.src.manse { background:#eef6f0; color:#2f7a55; border:1px solid #bfdcc9; }
 
 .badge-sent { display:inline-block; font-size:11px; font-weight:700; background:#eef6ef; color:#3d7a4e; border:1px solid #bcd9c2; border-radius:6px; padding:2px 9px; margin-left:6px; }
 .badge-todo { display:inline-block; font-size:11px; font-weight:700; background:#fbf7ee; color:#8a8574; border:1px solid var(--beige); border-radius:6px; padding:2px 9px; margin-left:6px; }

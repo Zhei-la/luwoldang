@@ -1,0 +1,169 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '만세력 연동' }) %>
+
+<style>
+  .ml-note { background:var(--card); border:1px solid var(--beige); border-left:3px solid var(--gold);
+    border-radius:0 12px 12px 0; padding:14px 17px; margin-bottom:18px;
+    font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
+  .ml-note b { color:var(--ink); }
+
+  .ml-card { background:var(--card); border:1px solid var(--beige); border-radius:14px;
+    padding:20px; margin-bottom:18px; }
+  .ml-card h3 { margin:0 0 6px; font-size:16px; font-weight:800; }
+  .ml-card .hint { margin:0 0 14px; font-size:13px; color:#6B6656; line-height:1.75;
+    word-break:keep-all; }
+  .ml-card .hint b { color:var(--ink); }
+
+  .ml-step { display:flex; gap:11px; margin-bottom:13px; align-items:baseline; }
+  .ml-step .n { flex:none; width:22px; height:22px; border-radius:50%; background:var(--gold);
+    color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center;
+    justify-content:center; }
+  .ml-step .t { font-size:14px; line-height:1.8; color:#4A4438; word-break:keep-all; }
+  .ml-step .t b { color:var(--ink); }
+  .ml-step code { background:#fff; border:1px solid var(--beige); border-radius:5px;
+    padding:1px 6px; font-size:13px; }
+
+  /* 단추가 글상자 높이만큼만 놓여야 한다.
+     stretch 로 두면 수강생 목록 옆에서 세로로 버티게 늘어난다. */
+  .ml-copy { display:flex; gap:8px; align-items:flex-start; margin-top:4px; }
+  .ml-copy input, .ml-copy textarea { flex:1; min-width:0; padding:11px 13px;
+    border:1px solid var(--beige); border-radius:10px; font-size:13.5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#fff;
+    color:var(--ink); outline:none; }
+  .ml-copy textarea { min-height:220px; resize:vertical; line-height:1.7; }
+  .ml-copy button { flex:none; padding:0 18px; height:42px; background:var(--navy); color:#fff;
+    border:0; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;
+    font-family:inherit; }
+  .ml-copy button.done { background:#2F7A55; }
+
+  .ml-row { display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  .ml-ghost { padding:9px 16px; background:#fff; border:1px solid var(--beige); color:#6B6656;
+    border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .ml-ghost:hover { border-color:var(--gold); color:#8A6F3C; }
+  .ml-danger { border-color:#D9B4B4; color:#A05252; }
+
+  .ml-stat { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  /* > 를 빼면 안의 .v · .k 까지 같은 테두리를 두른다 */
+  .ml-stat > div { flex:1; min-width:120px; background:var(--card); border:1px solid var(--beige);
+    border-radius:12px; padding:14px 16px; }
+  .ml-stat .v { font-size:22px; font-weight:800; color:var(--ink); }
+  .ml-stat .k { font-size:12px; color:#9A9384; margin-top:3px; }
+
+  table.ml-tbl { width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.ml-tbl th, table.ml-tbl td { padding:9px 10px; border-bottom:1px solid var(--beige);
+    text-align:left; color:#4A4438; }
+  table.ml-tbl th { font-size:11.5px; letter-spacing:.05em; color:#9A9384; font-weight:700; }
+  table.ml-tbl td.no { color:#B5AE9E; }
+  .ml-wrap { overflow-x:auto; }
+  .ml-empty { padding:22px; text-align:center; color:#9A9384; font-size:13.5px; }
+</style>
+
+<div class="ml-note">
+  <b>만세력(사주 한 장)</b> 에서 손님이 번호를 남기면 이리로 넘어와
+  <b>신청자 목록</b>에 「만세력」 갈래로 쌓입니다.
+  수강생 링크로 들어온 손님은 <b>그 수강생 앞으로</b> 자동으로 붙습니다.
+  <br>만세력이 저쪽에서 돌고 있어야 하고, 아래 두 가지를 그쪽 폴더에 넣어주셔야 합니다.
+</div>
+
+<div class="ml-stat">
+  <div><div class="v"><%= link.total || 0 %></div><div class="k">지금까지 넘어온 건</div></div>
+  <div><div class="v"><%= students.수강생.length %></div><div class="k">링크를 줄 수 있는 교육생</div></div>
+  <div>
+    <div class="v" style="font-size:15px;padding-top:5px">
+      <%= link.last_at ? new Date(link.last_at).toLocaleString('ko-KR', { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }) : '아직 없음' %>
+    </div>
+    <div class="k">마지막으로 받은 때</div>
+  </div>
+</div>
+
+<div class="ml-card">
+  <h3>① 연동 주소</h3>
+  <p class="hint">만세력 폴더의 <b>설정.json</b> 을 메모장으로 열어
+    <code>"연동주소"</code> 의 따옴표 안에 <b>이 주소를 통째로</b> 붙여넣으세요.
+    붙여넣은 뒤에는 만세력 서버를 껐다 켜야 반영됩니다.</p>
+  <div class="ml-copy">
+    <input type="text" id="mlUrl" readonly value="<%= hookUrl %>">
+    <button type="button" data-copy="#mlUrl">복사</button>
+  </div>
+  <p class="hint" style="margin:12px 0 0">
+    주소 뒤의 <code>key=</code> 가 <b>열쇠입니다.</b> 이게 있어야 아무나 우리 신청자 목록에
+    글을 넣지 못합니다. <b>남에게 보내지 마세요.</b>
+    새어나갔다 싶으면 아래에서 새로 만드시면 되고, 그러면 만세력 설정.json 도 새 주소로
+    바꿔주셔야 합니다.</p>
+  <div class="ml-row">
+    <form method="post" action="/admin/manse/reset"
+          onsubmit="return confirm('열쇠를 새로 만들까요?\n\n지금 쓰는 주소는 그 즉시 막힙니다.\n만세력 설정.json 도 새 주소로 바꿔주셔야 합니다.')">
+      <button class="ml-ghost ml-danger" type="submit">열쇠 새로 만들기</button>
+    </form>
+  </div>
+</div>
+
+<div class="ml-card">
+  <h3>② 수강생 목록</h3>
+  <p class="hint">만세력 폴더의 <b>수강생.json</b> 을 열어 <b>전체를 지우고</b> 아래 내용을 붙여넣으세요.
+    루월당에 등록된 교육생을 그대로 뽑은 것입니다.
+    <br><b>아이디를 손으로 맞추지 마세요.</b> 한 글자만 달라도 그 링크로 들어온 손님이
+    엉뚱한 사람에게 붙거나 관리자 앞으로 떨어집니다. 교육생이 늘면 이 화면에서 다시 복사하시면 됩니다.</p>
+  <div class="ml-copy">
+    <textarea id="mlStu" readonly><%= studentText %></textarea>
+    <button type="button" data-copy="#mlStu">복사</button>
+  </div>
+  <% if (students.수강생.length) { %>
+    <p class="hint" style="margin:12px 0 0">이렇게 링크가 만들어집니다 —
+      <code>만세력주소/saju@<%= students.수강생[0].아이디 %></code>
+      (<%= students.수강생[0].이름 %>님)</p>
+  <% } else { %>
+    <p class="hint" style="margin:12px 0 0">아직 링크를 줄 교육생이 없습니다.
+      승인된 교육생에게 무료사주 주소(slug)가 있어야 목록에 나옵니다.</p>
+  <% } %>
+</div>
+
+<div class="ml-card">
+  <h3>최근에 넘어온 신청</h3>
+  <p class="hint">잘 연결됐는지 확인하는 자리입니다. 만세력에서 시험 삼아 한 건 넣어보시면
+    여기에 바로 뜹니다. 실제 처리는 <b>신청자 목록</b>에서 하시면 됩니다.</p>
+  <% if (recent.length) { %>
+    <div class="ml-wrap">
+      <table class="ml-tbl">
+        <tr><th>때</th><th>이름</th><th>번호</th><th>데려온 사람</th><th>누구 앞으로</th></tr>
+        <% recent.forEach(function(r){ %>
+          <tr>
+            <td><%= new Date(r.created_at).toLocaleString('ko-KR', { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }) %></td>
+            <td><a href="/leads/<%= r.id %>"><%= r.name %></a></td>
+            <td><%= r.phone || '' %></td>
+            <td<%= r.recruiter ? '' : ' class="no"' %>><%= r.recruiter || '기본 페이지' %></td>
+            <td><%= r.teacher || '' %></td>
+          </tr>
+        <% }); %>
+      </table>
+    </div>
+  <% } else { %>
+    <div class="ml-empty">아직 넘어온 신청이 없습니다.</div>
+  <% } %>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('[data-copy]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var el = document.querySelector(b.dataset.copy);
+      el.select();
+      el.setSelectionRange(0, 99999);          /* 폰에서는 select() 만으로 안 잡힌다 */
+      var done = function(){
+        var t = b.textContent;
+        b.textContent = '복사됨';
+        b.classList.add('done');
+        setTimeout(function(){ b.textContent = t; b.classList.remove('done'); }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(el.value).then(done, function(){
+          try { document.execCommand('copy'); done(); } catch(e){ alert('직접 복사해주세요.'); }
+        });
+      } else {
+        try { document.execCommand('copy'); done(); } catch(e){ alert('직접 복사해주세요.'); }
+      }
+    });
+  });
+})();
+</script>
+
+<%- include('../partials/dash-bottom') %>
