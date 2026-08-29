@@ -244,9 +244,9 @@ async function markHooksUsed(userId, ids) {
 
 const DEFAULT_SETTINGS = {
   ctaLink: '',
-  threadsToken: '',
-  threadsUserId: '',
-  threadsUsername: '',
+  zernioKey: '',
+  zernioAccountId: '',
+  zernioUsername: '',
   allowPublish: false,      // 발행은 기본 잠금
   voicePack: null,
   facts: [],
@@ -258,9 +258,9 @@ async function getSettings(userId) {
   if (!r) return Object.assign({}, DEFAULT_SETTINGS);
   return {
     ctaLink: r.cta_link || '',
-    threadsToken: r.threads_token || '',
-    threadsUserId: r.threads_user_id || '',
-    threadsUsername: r.threads_username || '',
+    zernioKey: r.zernio_key || '',
+    zernioAccountId: r.zernio_account_id || '',
+    zernioUsername: r.threads_username || '',
     allowPublish: !!r.allow_publish,
     voicePack: r.voice_pack || null,
     facts: r.facts || [],
@@ -269,9 +269,9 @@ async function getSettings(userId) {
 
 const SETTING_COLS = {
   ctaLink: ['cta_link', (v) => String(v || '')],
-  threadsToken: ['threads_token', (v) => String(v || '')],
-  threadsUserId: ['threads_user_id', (v) => String(v || '')],
-  threadsUsername: ['threads_username', (v) => String(v || '')],
+  zernioKey: ['zernio_key', (v) => String(v || '')],
+  zernioAccountId: ['zernio_account_id', (v) => String(v || '')],
+  zernioUsername: ['threads_username', (v) => String(v || '')],
   allowPublish: ['allow_publish', (v) => !!v],
   voicePack: ['voice_pack', (v) => (v ? JSON.stringify(v) : null)],
   facts: ['facts', (v) => JSON.stringify(v || [])],

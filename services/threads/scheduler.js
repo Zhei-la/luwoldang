@@ -1,109 +1,76 @@
 /* ============================================================
- * services/threads/scheduler.js — 예약한 글을 때가 되면 올린다
+ * services/threads/scheduler.js — 예약한 글이 올라갔는지 확인한다
  *
- * 1분마다 예약 시각이 지난 글을 찾아 올린다.
- * 브라우저가 아니라 서버에서 돌기 때문에, 창을 닫아도 올라간다.
- * (예전 도구는 브라우저에서 돌아서 창을 닫으면 아무 일도 안 일어났다)
+ * 예약 자체는 Zernio 가 맡는다. 정한 시각이 되면 Zernio 가 올린다.
+ * 우리 서버가 꺼져 있어도, 다시 떠도 상관없다.
  *
- * 지켜야 할 것
- *  - 같은 글을 두 번 올리지 않는다. 집어들 때 상태를 먼저 바꾼다.
- *  - 한 사람이 막혀도 다른 사람 것은 계속 올린다.
- *  - 컨테이너가 다시 떠도 예약은 DB 에 있으므로 그대로 이어진다.
+ * 그래서 여기서 하는 일은 하나다 —
+ * 예약해둔 글이 실제로 올라갔는지 물어보고 화면에 표시를 맞춘다.
+ * 우리가 직접 올리지 않으므로 두 번 올라갈 걱정이 없다.
  * ============================================================ */
 
 const { pool } = require('../../db');
-const { publishPost } = require('./publish');
-const { numberParts } = require('./length');
-const { checkPost } = require('./guideline');
+const zernio = require('./zernio');
 
-const EVERY_MS = 60 * 1000;
+const EVERY_MS = 5 * 60 * 1000;     // 5분마다. 급할 것 없다.
 let timer = null;
 let running = false;
 
-/** 때가 된 글을 집어든다. 집어들면서 바로 sending 으로 바꿔 두 번 올리는 걸 막는다. */
-async function claimDue(limit) {
+/** 예약해둔 것 중 시각이 지난 글을 가져온다 */
+async function dueRows(limit) {
   const { rows } = await pool.query(
-    `UPDATE th_posts SET status = 'sending'
-      WHERE id IN (
-        SELECT id FROM th_posts
-         WHERE status = 'scheduled' AND scheduled_for <= NOW()
-         ORDER BY scheduled_for
-         LIMIT $1
-         FOR UPDATE SKIP LOCKED
-      )
-      RETURNING *`,
-    [limit || 5]
+    `SELECT p.*, s.zernio_key
+       FROM th_posts p
+       JOIN th_settings s ON s.user_id = p.user_id
+      WHERE p.status = 'scheduled'
+        AND p.scheduled_for <= NOW()
+        AND p.zernio_id IS NOT NULL
+        AND s.zernio_key <> ''
+      ORDER BY p.scheduled_for
+      LIMIT $1`,
+    [limit || 20]
   );
   return rows;
 }
 
-async function settingsOf(userId) {
-  const { rows } = await pool.query('SELECT * FROM th_settings WHERE user_id = $1', [userId]);
-  return rows[0] || null;
-}
-
-async function sendOne(row) {
-  const s = await settingsOf(row.user_id);
-
-  /* 발행 잠금은 서버에서 본다. 화면만 막으면 우회된다. */
-  if (!s || !s.allow_publish) {
-    await pool.query(
-      `UPDATE th_posts SET status='failed', error=$2 WHERE id=$1`,
-      [row.id, '자동 발행이 꺼져 있습니다. 설정에서 켜주세요.']
-    );
-    return { ok: false };
-  }
-  if (!s.threads_token || !s.threads_user_id) {
-    await pool.query(
-      `UPDATE th_posts SET status='failed', error=$2 WHERE id=$1`,
-      [row.id, '스레드 토큰이 등록되어 있지 않습니다.']
-    );
-    return { ok: false };
-  }
-
-  const parts = row.parts || [];
-  const form = row.form;
-  const shown = form === 'chain' ? numberParts(parts) : parts;
-
-  /* 올리기 직전에 지침을 한 번 더 본다. 저장 뒤에 고쳤을 수 있다. */
-  const check = checkPost({ postType: row.post_type, form, parts });
-  if (!check.passHard) {
-    const bad = check.rows.filter((r) => r.hard && !r.ok).map((r) => r.label).join(', ');
-    await pool.query(
-      `UPDATE th_posts SET status='failed', error=$2 WHERE id=$1`,
-      [row.id, '지침에 걸려 올리지 않았습니다 — ' + bad]
-    );
-    return { ok: false };
-  }
-
+async function checkOne(row) {
   try {
-    const out = await publishPost(s.threads_token, s.threads_user_id, shown);
-    await pool.query(
-      `UPDATE th_posts
-          SET status='published', zernio_id=$2, permalink=$3, published_at=NOW(), error=NULL
-        WHERE id=$1`,
-      [row.id, out.rootId, out.permalink]
-    );
-    return { ok: true };
+    const out = await zernio.getStatus(row.zernio_key, row.zernio_id);
+    const st = String(out.status || '').toLowerCase();
+
+    if (st === 'published' || st === 'posted' || st === 'success' || out.permalink) {
+      await pool.query(
+        `UPDATE th_posts SET status='published', permalink=$2, published_at=NOW(), error=NULL
+          WHERE id=$1`,
+        [row.id, out.permalink || null]
+      );
+      return 'published';
+    }
+    if (st === 'failed' || st === 'error') {
+      await pool.query(
+        `UPDATE th_posts SET status='failed', error=$2 WHERE id=$1`,
+        [row.id, 'Zernio 에서 올리지 못했습니다. Zernio 대시보드를 확인해주세요.']
+      );
+      return 'failed';
+    }
+    return 'waiting';          /* 아직 처리 중이면 다음 회차에 다시 본다 */
   } catch (e) {
-    await pool.query(
-      `UPDATE th_posts SET status='failed', error=$2 WHERE id=$1`,
-      [row.id, String(e.message || e).slice(0, 500)]
-    );
-    return { ok: false, error: e.message };
+    /* 물어보다 실패한 것뿐이다. 글 상태는 건드리지 않는다. */
+    return 'unknown';
   }
 }
 
 async function tick() {
-  if (running) return;                    // 앞 회차가 아직 돌고 있으면 건너뛴다
+  if (running) return;
   running = true;
   try {
-    const due = await claimDue(5);
-    for (const row of due) {
-      try { await sendOne(row); }
-      catch (e) { console.error('[스레드] 발행 중 오류:', e.message); }
+    const rows = await dueRows(20);
+    let done = 0;
+    for (const r of rows) {
+      const out = await checkOne(r);
+      if (out === 'published' || out === 'failed') done++;
     }
-    if (due.length) console.log('[스레드] 예약 발행 ' + due.length + '건 처리');
+    if (done) console.log('[스레드] 예약 글 ' + done + '건 상태 갱신');
   } catch (e) {
     console.error('[스레드] 예약 확인 실패:', e.message);
   } finally {
@@ -115,7 +82,7 @@ function start() {
   if (timer) return;
   timer = setInterval(tick, EVERY_MS);
   if (timer.unref) timer.unref();
-  console.log('[스레드] 예약 발행 감시 시작 (1분 주기)');
+  console.log('[스레드] 예약 글 상태 확인 시작 (5분 주기)');
 }
 
 function stop() {
@@ -123,4 +90,4 @@ function stop() {
   timer = null;
 }
 
-module.exports = { start, stop, tick, sendOne, claimDue };
+module.exports = { start, stop, tick, checkOne, dueRows };

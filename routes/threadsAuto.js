@@ -5,8 +5,8 @@
  *   → 저장 → 스레드에 바로 올리거나 시간을 정해 예약.
  *
  * 글은 교육생 본인 OpenAI 키로 만든다 (무료사주가 쓰는 그 키).
- * 발행은 교육생 본인 스레드 장기 토큰으로 서버에서 올린다.
- * 예약은 서버 스케줄러가 1분마다 확인하므로 창을 닫아도 올라간다.
+ * 올리는 건 Zernio 가 대신한다 — 페이스북 개발자 등록·심사·토큰 갱신이 없다.
+ * 예약도 Zernio 가 맡아서, 우리 서버가 꺼져 있어도 제 시각에 나간다.
  * ============================================================ */
 
 const express = require('express');
@@ -15,8 +15,8 @@ const { requireAuth, requireApproved } = require('../middleware/auth');
 
 const store = require('../services/threads/store');
 const pipeline = require('../services/threads/pipeline');
+const zernio = require('../services/threads/zernio');
 const { testKey } = require('../services/threads/llm');
-const { whoami, publishPost } = require('../services/threads/publish');
 const { numberParts, formOf } = require('../services/threads/length');
 const { checkPost } = require('../services/threads/guideline');
 const { HOOKS } = require('../services/threads/hooks');
@@ -32,11 +32,12 @@ function fail(res, e, status) {
   });
 }
 
-/** 생성 계열 오류를 상태 코드로 옮긴다 */
-function aiFail(res, e, next) {
-  if (e.code === 'NO_KEY') return fail(res, e, 400);
+/** 바깥과 이야기하다 난 오류를 상태 코드로 옮긴다 */
+function outsideFail(res, e, next) {
+  if (e.code === 'NO_KEY' || e.code === 'NO_ACCOUNT') return fail(res, e, 400);
   if (e.code === 'NOT_FOUND') return fail(res, e, 404);
   if (String(e.code || '').startsWith('API_')) return fail(res, e, 502);
+  if (String(e.code || '').startsWith('ZERNIO_')) return fail(res, e, 502);
   if (e.code === 'TIMEOUT' || e.code === 'NETWORK') return fail(res, e, 504);
   if (e.name === 'ParseError' || e.code === 'EMPTY') return fail(res, e, 422);
   return next(e);
@@ -57,9 +58,10 @@ router.get('/threads', ...guard, async (req, res, next) => {
       user: req.user,
       active: 'threads',
       hasKey: !!req.user.openai_key,
-      threads: {
-        connected: !!(settings.threadsToken && settings.threadsUserId),
-        username: settings.threadsUsername,
+      zernio: {
+        hasKey: !!settings.zernioKey,
+        connected: !!(settings.zernioKey && settings.zernioAccountId),
+        username: settings.zernioUsername,
         allowPublish: settings.allowPublish,
       },
       settings: { ctaLink: settings.ctaLink },
@@ -74,7 +76,7 @@ router.get('/threads', ...guard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/* 예전 수동 도구는 여기로 옮겨 뒀다 */
+/* 예전 수동 도구 — 탭에서는 감췄고 토큰 안내 때문에 주소만 남겨둔다 */
 router.get('/threads/manual', ...guard, (req, res) => {
   res.render('dash/threads', { user: req.user, active: 'threads' });
 });
@@ -90,8 +92,9 @@ router.get('/api/threads/settings', ...guard, async (req, res, next) => {
         ctaLink: s.ctaLink,
         allowPublish: s.allowPublish,
         hasOpenaiKey: !!req.user.openai_key,
-        threadsConnected: !!(s.threadsToken && s.threadsUserId),
-        threadsUsername: s.threadsUsername,
+        zernioHasKey: !!s.zernioKey,
+        zernioConnected: !!(s.zernioKey && s.zernioAccountId),
+        zernioUsername: s.zernioUsername,
         facts: s.facts,
       },
     });
@@ -124,36 +127,68 @@ router.post('/api/threads/test-key', ...guard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/* ── 스레드 계정 잇기 ─────────────────────────────── */
+/* ── Zernio 잇기 ──────────────────────────────────── */
 
-/** 장기 토큰을 등록한다. 누구 계정인지 확인해서 같이 담는다. */
+/**
+ * 열쇠를 넣는다. 넣자마자 연결된 스레드 계정을 물어와 돌려준다.
+ * 계정이 하나뿐이면 그것으로 바로 정한다.
+ */
 router.post('/api/threads/connect', ...guard, async (req, res, next) => {
   try {
-    const token = String((req.body && req.body.token) || '').trim();
-    if (!token) return fail(res, { message: '토큰을 넣어주세요.' });
-    if (token.length < 20) return fail(res, { message: '토큰이 너무 짧습니다. 장기 토큰을 다시 확인해주세요.' });
+    const key = String((req.body && req.body.key) || '').trim();
+    if (!key) return fail(res, { message: 'Zernio 열쇠를 넣어주세요.' });
 
-    let me;
-    try {
-      me = await whoami(token);
-    } catch (e) {
-      return fail(res, { message: e.message, hint: '토큰이 만료됐거나 권한이 없을 수 있습니다.' }, 400);
+    const out = await zernio.check(key);
+    if (!out.ok) return fail(res, { message: out.message }, 400);
+
+    const patch = { zernioKey: key };
+    if (out.accounts.length === 1) {
+      patch.zernioAccountId = out.accounts[0].id;
+      patch.zernioUsername = out.accounts[0].username;
     }
-    if (!me.id) return fail(res, { message: '토큰으로 계정을 확인하지 못했습니다.' });
+    await store.saveSettings(req.user.id, patch);
+
+    res.json({
+      ok: true,
+      accounts: out.accounts,
+      chosen: patch.zernioAccountId || '',
+      message: out.message,
+    });
+  } catch (e) { outsideFail(res, e, next); }
+});
+
+/** 연결된 스레드 계정을 다시 물어본다 */
+router.get('/api/threads/accounts', ...guard, async (req, res, next) => {
+  try {
+    const s = await store.getSettings(req.user.id);
+    if (!s.zernioKey) return fail(res, { message: 'Zernio 열쇠를 먼저 넣어주세요.' });
+    const accounts = await zernio.listAccounts(s.zernioKey);
+    res.json({ ok: true, accounts: accounts, chosen: s.zernioAccountId });
+  } catch (e) { outsideFail(res, e, next); }
+});
+
+/** 어느 계정에 올릴지 고른다 */
+router.post('/api/threads/account', ...guard, async (req, res, next) => {
+  try {
+    const id = String((req.body && req.body.id) || '').trim();
+    if (!id) return fail(res, { message: '계정을 골라주세요.' });
+
+    const s = await store.getSettings(req.user.id);
+    const accounts = await zernio.listAccounts(s.zernioKey);
+    const hit = accounts.find((a) => String(a.id) === id);
+    if (!hit) return fail(res, { message: '그 계정을 찾지 못했습니다. 목록을 새로 불러와 주세요.' });
 
     await store.saveSettings(req.user.id, {
-      threadsToken: token,
-      threadsUserId: String(me.id),
-      threadsUsername: me.username || '',
+      zernioAccountId: hit.id, zernioUsername: hit.username,
     });
-    res.json({ ok: true, username: me.username, id: me.id });
-  } catch (e) { next(e); }
+    res.json({ ok: true, username: hit.username });
+  } catch (e) { outsideFail(res, e, next); }
 });
 
 router.post('/api/threads/disconnect', ...guard, async (req, res, next) => {
   try {
     await store.saveSettings(req.user.id, {
-      threadsToken: '', threadsUserId: '', threadsUsername: '', allowPublish: false,
+      zernioKey: '', zernioAccountId: '', zernioUsername: '', allowPublish: false,
     });
     res.json({ ok: true });
   } catch (e) { next(e); }
@@ -187,7 +222,7 @@ router.post('/api/threads/generate', ...guard, async (req, res, next) => {
     await store.markRun(req.user.id, topic);
     const out = await pipeline.generate(req.user.id, req.user.openai_key, topic, limit);
     res.json({ ok: true, batch: out, usedToday: used + 1, dailyLimit: store.DAILY_LIMIT });
-  } catch (e) { aiFail(res, e, next); }
+  } catch (e) { outsideFail(res, e, next); }
 });
 
 router.post('/api/threads/save', ...guard, async (req, res, next) => {
@@ -232,7 +267,7 @@ router.post('/api/threads/posts/:id/rewrite', ...guard, async (req, res, next) =
     await store.markRun(req.user.id, '다시쓰기');
     const p = await pipeline.rewrite(req.user.id, req.user.openai_key, req.params.id);
     res.json({ ok: true, post: pipeline.view(p) });
-  } catch (e) { aiFail(res, e, next); }
+  } catch (e) { outsideFail(res, e, next); }
 });
 
 router.post('/api/threads/delete', ...guard, async (req, res, next) => {
@@ -251,16 +286,19 @@ router.post('/api/threads/restore', ...guard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/* ── 발행 ─────────────────────────────────────────── */
+/* ── 올리기 ───────────────────────────────────────── */
 
-/** 올리기 전에 꼭 확인하는 것들. 화면과 서버가 같은 기준을 쓴다. */
+/** 올리기 전에 꼭 보는 것들. 화면과 서버가 같은 기준을 쓴다. */
 async function readyToSend(userId, post) {
   const s = await store.getSettings(userId);
-  if (!s.threadsToken || !s.threadsUserId) {
-    return { ok: false, why: '스레드 계정이 연결되어 있지 않습니다. 설정에서 토큰을 등록해주세요.' };
+  if (!s.zernioKey) {
+    return { ok: false, why: 'Zernio 열쇠가 없습니다. 설정에서 먼저 이어주세요.' };
+  }
+  if (!s.zernioAccountId) {
+    return { ok: false, why: '올릴 스레드 계정을 고르지 않았습니다. 설정에서 골라주세요.' };
   }
   if (!s.allowPublish) {
-    return { ok: false, why: '발행이 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
+    return { ok: false, why: '올리기가 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
   }
   const check = checkPost(post);
   if (!check.passHard) {
@@ -275,18 +313,20 @@ router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) =
   try {
     const post = await store.getPost(req.user.id, req.params.id);
     if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
-    if (post.status === 'published') {
-      return fail(res, { message: '이미 올린 글입니다.' }, 409);
-    }
+    if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
 
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
-    const parts = post.form === 'chain' ? numberParts(post.parts) : post.parts;
     try {
-      const out = await publishPost(ready.settings.threadsToken, ready.settings.threadsUserId, parts);
+      const out = await zernio.send({
+        apiKey: ready.settings.zernioKey,
+        accountId: ready.settings.zernioAccountId,
+        parts: post.form === 'chain' ? numberParts(post.parts) : post.parts,
+        mode: 'publish',
+      });
       const saved = await store.updatePost(req.user.id, post.id, {
-        status: 'published', zernioId: out.rootId, permalink: out.permalink,
+        status: 'published', zernioId: out.id, permalink: out.permalink,
         publishedAt: new Date().toISOString(), error: null,
       });
       res.json({ ok: true, post: pipeline.view(saved), permalink: out.permalink });
@@ -299,7 +339,7 @@ router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) =
   } catch (e) { next(e); }
 });
 
-/** 시간을 정해 예약한다. 서버가 1분마다 확인해 올린다. */
+/** 시간을 정해 예약한다. 그 시각에 올리는 건 Zernio 가 맡는다. */
 router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) => {
   try {
     const when = new Date(String((req.body && req.body.at) || ''));
@@ -313,21 +353,47 @@ router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) 
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
-    const saved = await store.updatePost(req.user.id, post.id, {
-      status: 'scheduled', scheduledFor: when.toISOString(), error: null,
-    });
-    res.json({ ok: true, post: pipeline.view(saved) });
+    try {
+      const out = await zernio.send({
+        apiKey: ready.settings.zernioKey,
+        accountId: ready.settings.zernioAccountId,
+        parts: post.form === 'chain' ? numberParts(post.parts) : post.parts,
+        mode: 'schedule',
+        scheduledFor: when.toISOString(),
+      });
+      const saved = await store.updatePost(req.user.id, post.id, {
+        status: 'scheduled', scheduledFor: when.toISOString(),
+        zernioId: out.id, error: null,
+      });
+      res.json({ ok: true, post: pipeline.view(saved) });
+    } catch (e) {
+      return fail(res, { message: e.message }, 502);
+    }
   } catch (e) { next(e); }
 });
 
-/** 예약을 물린다 */
+/** 예약을 물린다. Zernio 쪽 예약도 같이 지운다. */
 router.post('/api/threads/posts/:id/unschedule', ...guard, async (req, res, next) => {
   try {
     const post = await store.getPost(req.user.id, req.params.id);
     if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
     if (post.status !== 'scheduled') return fail(res, { message: '예약된 글이 아닙니다.' });
+
+    if (post.zernioId) {
+      const s = await store.getSettings(req.user.id);
+      /* Zernio 쪽에서 못 지워도 우리 쪽 예약은 푼다.
+         못 지운 채로 두면 화면에는 없는데 올라가버린다 — 그건 더 나쁘다. */
+      try { await zernio.remove(s.zernioKey, post.zernioId); }
+      catch (e) {
+        return fail(res, {
+          message: 'Zernio 에서 예약을 지우지 못했습니다: ' + e.message,
+          hint: 'zernio.com 대시보드에서 직접 지워주세요. 그대로 두면 제 시각에 올라갑니다.',
+        }, 502);
+      }
+    }
+
     const saved = await store.updatePost(req.user.id, post.id, {
-      status: 'draft', scheduledFor: null,
+      status: 'draft', scheduledFor: null, zernioId: null,
     });
     res.json({ ok: true, post: pipeline.view(saved) });
   } catch (e) { next(e); }
