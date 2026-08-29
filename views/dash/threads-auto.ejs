@@ -167,31 +167,50 @@
   <!-- ══════════ 설정 ══════════ -->
   <section class="ta-panel" id="p-setup" hidden>
     <div class="ta-card">
-      <h2>Claude API 키</h2>
-      <p class="ta-sub">글은 본인 키로 만들어집니다. 요금도 본인 Anthropic 계정으로 나갑니다.
-        루월당은 키를 대신 쓰지 않습니다. <b>console.anthropic.com</b> 에서 발급받으세요.</p>
-      <label for="taKey">키</label>
-      <input type="password" id="taKey" placeholder="<%= hasKey ? '넣어두셨습니다. 바꾸려면 새로 입력하세요' : 'sk-ant- 로 시작합니다' %>" autocomplete="off">
-      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <button class="ta-btn" id="taSaveKey">저장</button>
+      <h2>글 만들기 — OpenAI 키</h2>
+      <p class="ta-sub">「무료사주 · API 설정」에 등록해두신 <b>OpenAI 키를 그대로 씁니다.</b>
+        따로 넣으실 것이 없습니다. 요금도 무료사주·PDF와 같은 계정에서 나갑니다.</p>
+      <% if (hasKey) { %>
+        <div class="ta-msg ok">키가 등록되어 있습니다.</div>
         <button class="ta-btn ghost" id="taTestKey">연결 확인</button>
-        <% if (hasKey) { %><button class="ta-btn danger" id="taClearKey">키 지우기</button><% } %>
-      </div>
+      <% } else { %>
+        <div class="ta-msg err">아직 OpenAI 키가 없습니다.
+「무료사주 · API 설정」에서 먼저 등록해주세요. 등록하면 여기서도 바로 쓰입니다.</div>
+        <a class="ta-btn" href="/free-saju-settings">API 설정으로 가기</a>
+      <% } %>
       <div id="taKeyMsg"></div>
     </div>
 
     <div class="ta-card">
-      <h2>신청 안내 링크</h2>
-      <p class="ta-sub">글 마지막에 신청을 안내할 때 쓰는 주소입니다. 비워두면 링크 없이 만듭니다.</p>
-      <input type="text" id="taCta" value="<%= settings.ctaLink || '' %>" placeholder="https://..." maxlength="300">
-      <div style="margin-top:12px"><button class="ta-btn" id="taSaveCta">저장</button></div>
-      <div id="taCtaMsg"></div>
+      <h2>스레드 계정 잇기</h2>
+      <% if (threads.connected) { %>
+        <div class="ta-msg ok">@<%= threads.username || 연결됨 %> 계정에 연결되어 있습니다.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="ta-btn ghost" id="taReconnect">토큰 다시 등록</button>
+          <button class="ta-btn danger" id="taDisconnect">연결 끊기</button>
+        </div>
+      <% } else { %>
+        <p class="ta-sub">스레드에 자동으로 올리려면 <b>장기 토큰</b>이 필요합니다.
+          한 번 등록하면 60일 동안 쓰고, 그 뒤에 다시 받으시면 됩니다.
+          받는 방법은 <a href="/threads/manual" style="color:var(--gold-d);font-weight:700">직접 쓰기 도구</a>의 토큰 안내에 그대로 있습니다.</p>
+      <% } %>
+      <div id="taTokenWrap" <%= threads.connected ? 'style="display:none"' : '' %>>
+        <label for="taToken" style="margin-top:12px">장기 토큰</label>
+        <input type="password" id="taToken" placeholder="THQVJ... 로 시작하는 긴 문자열" autocomplete="off">
+        <div style="margin-top:12px"><button class="ta-btn" id="taConnect">계정 확인하고 잇기</button></div>
+      </div>
+      <div id="taTokenMsg"></div>
     </div>
 
     <div class="ta-card">
-      <h2>발행</h2>
-      <p class="ta-sub">스레드로 바로 올리는 기능은 아직 열려 있지 않습니다.
-        지금은 글을 만들고 다듬는 데까지 쓰실 수 있고, 만든 글은 복사해서 올리시면 됩니다.</p>
+      <h2>스레드에 올리기 허용</h2>
+      <p class="ta-sub">꺼두면 아무것도 올라가지 않습니다. 예약해둔 글도 나가지 않습니다.
+        처음 써보실 때는 꺼둔 채로 글만 만들어 보시고, 확인이 끝나면 켜세요.</p>
+      <label style="display:flex;gap:10px;align-items:center;cursor:pointer;font-size:15px;font-weight:700">
+        <input type="checkbox" id="taAllow" <%= threads.allowPublish ? "checked" : "" %> style="width:18px;height:18px">
+        올리기를 허용합니다
+      </label>
+      <div id="taAllowMsg" style="margin-top:10px"></div>
     </div>
   </section>
 </div>
@@ -257,6 +276,54 @@
       (p.hookNames||[]).map(function(h){ return '<span class="ta-tag">'+esc(h)+'</span>'; }).join('')+
       (p.cta ? '<span class="ta-tag">신청 안내</span>' : '')+
       '<span class="ta-sp">'+(extra||'')+'</span></div>';
+  }
+
+  var CONNECTED = <%= threads.connected ? 'true' : 'false' %>;
+  var ALLOWED   = <%= threads.allowPublish ? 'true' : 'false' %>;
+
+  var STATUS = {
+    draft:     { t:'초안',   c:'' },
+    scheduled: { t:'예약됨', c:'ok' },
+    sending:   { t:'올리는 중', c:'ok' },
+    published: { t:'올림',   c:'ok' },
+    failed:    { t:'실패',   c:'no' }
+  };
+
+  function statusTag(p){
+    var s = STATUS[p.status] || STATUS.draft;
+    var extra = '';
+    if (p.status === 'scheduled' && p.scheduledFor) extra = ' ' + when(p.scheduledFor);
+    return '<span class="ta-tag" style="' +
+      (s.c==='ok' ? 'background:var(--ok-bg);color:var(--ok);border-color:transparent' :
+       s.c==='no' ? 'background:var(--no-bg);color:var(--no);border-color:transparent' : '') +
+      '">' + esc(s.t + extra) + '</span>';
+  }
+
+  function when(iso){
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString('ko-KR', { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' });
+    } catch(e){ return ''; }
+  }
+
+  /* 상태에 따라 쓸 수 있는 단추가 다르다 */
+  function actionBtns(p){
+    if (p.status === 'published') {
+      return (p.permalink ? '<a class="ta-btn ghost sm" target="_blank" rel="noopener" href="'+esc(p.permalink)+'">스레드에서 보기</a>' : '') +
+             '<button class="ta-btn danger sm ta-del">지우기</button>';
+    }
+    if (p.status === 'scheduled') {
+      return '<button class="ta-btn ghost sm ta-unsched">예약 취소</button>' +
+             '<button class="ta-btn danger sm ta-del">지우기</button>';
+    }
+    var can = CONNECTED && ALLOWED && p.check && p.check.passHard;
+    var why = !CONNECTED ? '스레드 계정을 먼저 이어주세요'
+            : !ALLOWED   ? '설정에서 올리기를 허용해주세요'
+            : (p.check && !p.check.passHard) ? '지침에 걸려 올릴 수 없습니다' : '';
+    return '<button class="ta-btn sm ta-pub" ' + (can ? '' : 'disabled title="'+esc(why)+'"') + '>지금 올리기</button>' +
+           '<button class="ta-btn ghost sm ta-sched" ' + (can ? '' : 'disabled title="'+esc(why)+'"') + '>예약</button>' +
+           '<button class="ta-btn ghost sm ta-rw">다시 쓰기</button>' +
+           '<button class="ta-btn danger sm ta-del">지우기</button>';
   }
 
   /* ══════════ 만들기 ══════════ */
@@ -356,9 +423,10 @@
       }
       list.innerHTML = j.posts.map(function(p){
         return '<div class="ta-post" data-id="'+esc(p.id)+'">'+
-          headHtml(p, '<button class="ta-btn ghost sm ta-rw">다시 쓰기</button>'+
-                      '<button class="ta-btn danger sm ta-del">지우기</button>')+
+          headHtml(p, statusTag(p) +
+                      actionBtns(p))+
           '<div class="ta-body">'+
+            (p.error ? '<div class="ta-msg err" style="margin-bottom:12px">'+esc(p.error)+'</div>' : '') +
             '<p class="ta-sub" style="margin:0 0 12px">주제 — '+esc(p.topic||'')+
               (p.situation ? ' · '+esc(p.situation) : '')+'</p>'+
             partsHtml(p)+
@@ -382,6 +450,56 @@
         });
       });
     });
+    /* 지금 올리기 */
+    list.querySelectorAll('.ta-pub').forEach(function(b){
+      b.addEventListener('click', function(){
+        var el = b.closest('.ta-post');
+        if (!confirm('지금 스레드에 올릴까요?
+올리고 나면 되돌릴 수 없습니다.')) return;
+        b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 올리는 중';
+        post('/api/threads/posts/' + el.dataset.id + '/publish', {}).then(function(r){
+          if (!r.j.ok) {
+            b.disabled = false; b.textContent = '지금 올리기';
+            alert(r.j.error); loadList(); return;
+          }
+          alert('올렸습니다.' + (r.j.permalink ? '
+' + r.j.permalink : ''));
+          loadList();
+        });
+      });
+    });
+
+    /* 예약 — 시간을 정해두면 서버가 올린다 */
+    list.querySelectorAll('.ta-sched').forEach(function(b){
+      b.addEventListener('click', function(){
+        var el = b.closest('.ta-post');
+        var d = new Date(Date.now() + 60*60*1000);
+        var pad = function(n){ return String(n).padStart(2,'0'); };
+        var def = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+        var v = prompt('언제 올릴까요?  (예: ' + def + ')', def);
+        if (!v) return;
+        var at = new Date(v.replace(' ', 'T'));
+        if (isNaN(at.getTime())) { alert('시간을 알아듣지 못했습니다. 2026-09-01 21:00 처럼 적어주세요.'); return; }
+        b.disabled = true;
+        post('/api/threads/posts/' + el.dataset.id + '/schedule', { at: at.toISOString() }).then(function(r){
+          b.disabled = false;
+          if (!r.j.ok) { alert(r.j.error); return; }
+          loadList();
+        });
+      });
+    });
+
+    /* 예약 물리기 */
+    list.querySelectorAll('.ta-unsched').forEach(function(b){
+      b.addEventListener('click', function(){
+        var el = b.closest('.ta-post');
+        post('/api/threads/posts/' + el.dataset.id + '/unschedule', {}).then(function(r){
+          if (!r.j.ok) { alert(r.j.error); return; }
+          loadList();
+        });
+      });
+    });
+
     list.querySelectorAll('.ta-rw').forEach(function(b){
       b.addEventListener('click', function(){
         var el = b.closest('.ta-post');
@@ -407,29 +525,45 @@
   });
 
   /* ══════════ 설정 ══════════ */
-  $('#taSaveKey') && $('#taSaveKey').addEventListener('click', function(){
-    var k = $('#taKey').value.trim();
-    if (!k) { msg($('#taKeyMsg'), 'err', '키를 넣어주세요.'); return; }
-    post('/api/threads/settings', { anthropicKey: k }).then(function(r){
-      if (!r.j.ok) { msg($('#taKeyMsg'), 'err', r.j.error); return; }
-      $('#taKey').value = '';
-      msg($('#taKeyMsg'), 'ok', '저장했습니다. 「연결 확인」으로 실제로 되는지 보실 수 있습니다.');
-      goBtn && (goBtn.disabled = false);
-      $('#taTopic') && ($('#taTopic').disabled = false);
-    });
-  });
-
+  /* OpenAI 키는 무료사주 설정에서 관리한다. 여기서는 되는지만 본다. */
   $('#taTestKey') && $('#taTestKey').addEventListener('click', function(){
     var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin" style="border-top-color:#8A7340"></span> 확인 중';
-    post('/api/threads/test-key', { anthropicKey: $('#taKey').value.trim() }).then(function(r){
+    post('/api/threads/test-key', {}).then(function(r){
       b.disabled = false; b.textContent = '연결 확인';
       msg($('#taKeyMsg'), r.j.ok ? 'ok' : 'err', r.j.message || r.j.error || '');
     });
   });
 
-  $('#taClearKey') && $('#taClearKey').addEventListener('click', function(){
-    if (!confirm('저장된 키를 지울까요? 글 만들기를 못 쓰게 됩니다.')) return;
-    post('/api/threads/settings', { anthropicKey: '' }).then(function(){ location.reload(); });
+  /* 스레드 계정 잇기 */
+  $('#taConnect') && $('#taConnect').addEventListener('click', function(){
+    var t = $('#taToken').value.trim();
+    if (!t) { msg($('#taTokenMsg'), 'err', '토큰을 넣어주세요.'); return; }
+    var b = this; b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 확인 중';
+    post('/api/threads/connect', { token: t }).then(function(r){
+      b.disabled = false; b.textContent = '계정 확인하고 잇기';
+      if (!r.j.ok) { msg($('#taTokenMsg'), 'err', r.j.error + (r.j.hint ? '
+' + r.j.hint : '')); return; }
+      msg($('#taTokenMsg'), 'ok', '@' + (r.j.username || '') + ' 계정에 연결됐습니다. 화면을 새로 불러옵니다.');
+      setTimeout(function(){ location.reload(); }, 900);
+    });
+  });
+
+  $('#taReconnect') && $('#taReconnect').addEventListener('click', function(){
+    $('#taTokenWrap').style.display = '';
+  });
+
+  $('#taDisconnect') && $('#taDisconnect').addEventListener('click', function(){
+    if (!confirm('연결을 끊을까요? 예약해둔 글도 올라가지 않습니다.')) return;
+    post('/api/threads/disconnect', {}).then(function(){ location.reload(); });
+  });
+
+  /* 올리기 허용 — 꺼두면 서버가 막는다 */
+  $('#taAllow') && $('#taAllow').addEventListener('change', function(){
+    var on = this.checked;
+    post('/api/threads/settings', { allowPublish: on }).then(function(r){
+      msg($('#taAllowMsg'), r.j.ok ? 'ok' : 'err',
+        r.j.ok ? (on ? '이제 올릴 수 있습니다.' : '올리기를 잠갔습니다.') : r.j.error);
+    });
   });
 
   $('#taSaveCta') && $('#taSaveCta').addEventListener('click', function(){

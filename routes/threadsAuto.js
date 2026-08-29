@@ -1,12 +1,12 @@
 /* ============================================================
  * routes/threadsAuto.js — 스레드 자동화
  *
- * 주제 한 단어 → 후킹 26개 스캔 → 글 생성 → 미리보기 → 지침 점검 → 저장.
+ * 주제 한 단어 → 후킹 26개 스캔 → 글 생성 → 미리보기 → 지침 점검
+ *   → 저장 → 스레드에 바로 올리거나 시간을 정해 예약.
  *
- * 생성은 교육생 본인 Claude 키로 나간다. 서버 키를 쓰지 않는다.
- * 미리보기 단계에서는 아무것도 저장하지 않는다. 고른 것만 남는다.
- *
- * (발행·예약은 다음 단계에서 붙인다. 지금은 만들고 다듬는 데까지다.)
+ * 글은 교육생 본인 OpenAI 키로 만든다 (무료사주가 쓰는 그 키).
+ * 발행은 교육생 본인 스레드 장기 토큰으로 서버에서 올린다.
+ * 예약은 서버 스케줄러가 1분마다 확인하므로 창을 닫아도 올라간다.
  * ============================================================ */
 
 const express = require('express');
@@ -15,39 +15,57 @@ const { requireAuth, requireApproved } = require('../middleware/auth');
 
 const store = require('../services/threads/store');
 const pipeline = require('../services/threads/pipeline');
-const { testKey, looksLikeKey } = require('../services/threads/llm');
+const { testKey } = require('../services/threads/llm');
+const { whoami, publishPost } = require('../services/threads/publish');
+const { numberParts, formOf } = require('../services/threads/length');
+const { checkPost } = require('../services/threads/guideline');
 const { HOOKS } = require('../services/threads/hooks');
 
 const guard = [requireAuth, requireApproved];
 
-/** 오류를 화면이 알아들을 모양으로 */
 function fail(res, e, status) {
-  const msg = (e && e.message) || '알 수 없는 오류입니다.';
-  const hint = (e && e.hint) || '';
-  res.status(status || 400).json({ ok: false, error: msg, hint });
+  res.status(status || 400).json({
+    ok: false,
+    error: (e && e.message) || '알 수 없는 오류입니다.',
+    hint: (e && e.hint) || '',
+  });
+}
+
+/** 생성 계열 오류를 상태 코드로 옮긴다 */
+function aiFail(res, e, next) {
+  if (e.code === 'NO_KEY') return fail(res, e, 400);
+  if (e.code === 'NOT_FOUND') return fail(res, e, 404);
+  if (String(e.code || '').startsWith('API_')) return fail(res, e, 502);
+  if (e.code === 'TIMEOUT' || e.code === 'NETWORK') return fail(res, e, 504);
+  if (e.name === 'ParseError' || e.code === 'EMPTY') return fail(res, e, 422);
+  return next(e);
 }
 
 /* ── 화면 ─────────────────────────────────────────── */
 
 router.get('/threads', ...guard, async (req, res, next) => {
   try {
-    const [settings, posts, trash] = await Promise.all([
+    const [settings, posts, trash, ledger] = await Promise.all([
       store.getSettings(req.user.id),
       store.getPosts(req.user.id),
       store.trashCount(req.user.id),
+      store.getLedger(req.user.id),
     ]);
-    const ledger = await store.getLedger(req.user.id);
-    const used = Object.keys(ledger).length;
 
     res.render('dash/threads-auto', {
       user: req.user,
       active: 'threads',
-      hasKey: !!settings.anthropicKey,
-      settings: { ctaLink: settings.ctaLink, allowPublish: settings.allowPublish },
+      hasKey: !!req.user.openai_key,
+      threads: {
+        connected: !!(settings.threadsToken && settings.threadsUserId),
+        username: settings.threadsUsername,
+        allowPublish: settings.allowPublish,
+      },
+      settings: { ctaLink: settings.ctaLink },
       posts: posts.map(pipeline.view),
       trashCount: trash,
       hookTotal: HOOKS.length,
-      hookUsed: used,
+      hookUsed: Object.keys(ledger).length,
       dailyLimit: store.DAILY_LIMIT,
       usedToday: await store.countToday(req.user.id),
     });
@@ -64,16 +82,15 @@ router.get('/threads/manual', ...guard, (req, res) => {
 router.get('/api/threads/settings', ...guard, async (req, res, next) => {
   try {
     const s = await store.getSettings(req.user.id);
-    /* 키는 통째로 돌려주지 않는다. 들어 있는지와 끝 네 자리만 */
     res.json({
       ok: true,
       s: {
         ctaLink: s.ctaLink,
         allowPublish: s.allowPublish,
-        hasKey: !!s.anthropicKey,
-        keyTail: s.anthropicKey ? s.anthropicKey.slice(-4) : '',
+        hasOpenaiKey: !!req.user.openai_key,
+        threadsConnected: !!(s.threadsToken && s.threadsUserId),
+        threadsUsername: s.threadsUsername,
         facts: s.facts,
-        hasVoice: !!s.voicePack,
       },
     });
   } catch (e) { next(e); }
@@ -83,37 +100,60 @@ router.post('/api/threads/settings', ...guard, async (req, res, next) => {
   try {
     const b = req.body || {};
     const patch = {};
-
     if (typeof b.ctaLink === 'string') patch.ctaLink = b.ctaLink.trim().slice(0, 300);
     if (typeof b.allowPublish === 'boolean') patch.allowPublish = b.allowPublish;
-
-    if (typeof b.anthropicKey === 'string') {
-      const k = b.anthropicKey.trim();
-      if (k && !looksLikeKey(k)) {
-        return fail(res, { message: 'Claude API 키는 sk-ant- 로 시작합니다. 다시 확인해주세요.' });
-      }
-      patch.anthropicKey = k;          // 빈 문자열이면 지우는 뜻
-    }
-
     if (Array.isArray(b.facts)) {
       patch.facts = b.facts
-        .map((f) => ({ text: String(f && f.text || f || '').trim().slice(0, 300) }))
-        .filter((f) => f.text)
-        .slice(0, 50);
+        .map((f) => ({ text: String((f && f.text) || f || '').trim().slice(0, 300) }))
+        .filter((f) => f.text).slice(0, 50);
     }
-
-    const s = await store.saveSettings(req.user.id, patch);
-    res.json({ ok: true, hasKey: !!s.anthropicKey });
+    await store.saveSettings(req.user.id, patch);
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
-/** 키가 진짜 되는지 가장 짧은 질문으로 확인 */
+/** OpenAI 키가 진짜 되는지 (무료사주에 등록한 그 키를 그대로 본다) */
 router.post('/api/threads/test-key', ...guard, async (req, res, next) => {
   try {
-    const s = await store.getSettings(req.user.id);
-    const key = (req.body && req.body.anthropicKey || '').trim() || s.anthropicKey;
-    if (!key) return fail(res, { message: '확인할 키가 없습니다.' });
-    res.json(await testKey(key));
+    if (!req.user.openai_key) {
+      return fail(res, { message: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.' });
+    }
+    res.json(await testKey(req.user.openai_key));
+  } catch (e) { next(e); }
+});
+
+/* ── 스레드 계정 잇기 ─────────────────────────────── */
+
+/** 장기 토큰을 등록한다. 누구 계정인지 확인해서 같이 담는다. */
+router.post('/api/threads/connect', ...guard, async (req, res, next) => {
+  try {
+    const token = String((req.body && req.body.token) || '').trim();
+    if (!token) return fail(res, { message: '토큰을 넣어주세요.' });
+    if (token.length < 20) return fail(res, { message: '토큰이 너무 짧습니다. 장기 토큰을 다시 확인해주세요.' });
+
+    let me;
+    try {
+      me = await whoami(token);
+    } catch (e) {
+      return fail(res, { message: e.message, hint: '토큰이 만료됐거나 권한이 없을 수 있습니다.' }, 400);
+    }
+    if (!me.id) return fail(res, { message: '토큰으로 계정을 확인하지 못했습니다.' });
+
+    await store.saveSettings(req.user.id, {
+      threadsToken: token,
+      threadsUserId: String(me.id),
+      threadsUsername: me.username || '',
+    });
+    res.json({ ok: true, username: me.username, id: me.id });
+  } catch (e) { next(e); }
+});
+
+router.post('/api/threads/disconnect', ...guard, async (req, res, next) => {
+  try {
+    await store.saveSettings(req.user.id, {
+      threadsToken: '', threadsUserId: '', threadsUsername: '', allowPublish: false,
+    });
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
@@ -124,6 +164,12 @@ router.post('/api/threads/generate', ...guard, async (req, res, next) => {
     const topic = String((req.body && req.body.topic) || '').trim();
     if (!topic) return fail(res, { message: '주제를 적어주세요.' });
     if (topic.length > 120) return fail(res, { message: '주제가 너무 깁니다. 한두 단어면 충분합니다.' });
+    if (!req.user.openai_key) {
+      return fail(res, {
+        message: 'OpenAI 키가 없습니다.',
+        hint: '「무료사주 · API 설정」에서 등록하시면 여기서도 바로 쓰입니다. 따로 넣지 않으셔도 됩니다.',
+      });
+    }
 
     let limit = Number((req.body && req.body.limit) || 3);
     if (!(limit >= 1 && limit <= 8)) limit = 3;
@@ -132,30 +178,23 @@ router.post('/api/threads/generate', ...guard, async (req, res, next) => {
     if (used >= store.DAILY_LIMIT) {
       return fail(res, {
         message: '오늘은 ' + store.DAILY_LIMIT + '번까지 만들 수 있습니다.',
-        hint: '내일 다시 열립니다. 생성은 본인 Claude 키로 나가기 때문에 실수로 많이 돌지 않게 막아두었습니다.',
+        hint: '내일 다시 열립니다. 생성은 본인 OpenAI 키로 나가기 때문에 실수로 많이 돌지 않게 막아두었습니다.',
       }, 429);
     }
 
     await store.markRun(req.user.id, topic);
-    const out = await pipeline.generate(req.user.id, topic, limit);
+    const out = await pipeline.generate(req.user.id, req.user.openai_key, topic, limit);
     res.json({ ok: true, batch: out, usedToday: used + 1, dailyLimit: store.DAILY_LIMIT });
-  } catch (e) {
-    if (e.code === 'NO_KEY') return fail(res, e, 400);
-    if (String(e.code || '').startsWith('API_')) return fail(res, e, 502);
-    if (e.code === 'TIMEOUT' || e.code === 'NETWORK') return fail(res, e, 504);
-    if (e.name === 'ParseError' || e.code === 'EMPTY') return fail(res, e, 422);
-    next(e);
-  }
+  } catch (e) { aiFail(res, e, next); }
 });
 
-/** 미리보기에서 고른 것만 저장 */
 router.post('/api/threads/save', ...guard, async (req, res, next) => {
   try {
     const b = req.body || {};
     const chosen = Array.isArray(b.posts) ? b.posts : [];
     if (!chosen.length) return fail(res, { message: '저장할 글을 골라주세요.' });
     const out = await pipeline.saveChosen(req.user.id, b.batch || {}, chosen);
-    res.json({ ok: true, saved: out.saved });
+    res.json({ ok: true, saved: out.saved, ids: out.ids });
   } catch (e) { next(e); }
 });
 
@@ -168,22 +207,11 @@ router.get('/api/threads/posts', ...guard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get('/api/threads/posts/:id', ...guard, async (req, res, next) => {
-  try {
-    const p = await store.getPost(req.user.id, req.params.id);
-    if (!p) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
-    res.json({ ok: true, post: pipeline.view(p) });
-  } catch (e) { next(e); }
-});
-
-/** 편 내용을 직접 고친다 */
 router.post('/api/threads/posts/:id', ...guard, async (req, res, next) => {
   try {
-    const parts = (req.body && req.body.parts || [])
-      .map((t) => String(t == null ? '' : t)).map((t) => t.trim()).filter(Boolean);
+    const parts = ((req.body && req.body.parts) || [])
+      .map((t) => String(t == null ? '' : t).trim()).filter(Boolean);
     if (!parts.length) return fail(res, { message: '본문이 비어 있습니다.' });
-
-    const { formOf } = require('../services/threads/length');
     const p = await store.updatePost(req.user.id, req.params.id, {
       parts, form: formOf(parts.length),
     });
@@ -192,40 +220,114 @@ router.post('/api/threads/posts/:id', ...guard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/** 다른 버전으로 다시 쓰기 */
 router.post('/api/threads/posts/:id/rewrite', ...guard, async (req, res, next) => {
   try {
+    if (!req.user.openai_key) return fail(res, { message: 'OpenAI 키가 없습니다.' });
     const used = await store.countToday(req.user.id);
     if (used >= store.DAILY_LIMIT) {
       return fail(res, { message: '오늘은 ' + store.DAILY_LIMIT + '번까지 만들 수 있습니다.' }, 429);
     }
     await store.markRun(req.user.id, '다시쓰기');
-    const p = await pipeline.rewrite(req.user.id, req.params.id);
+    const p = await pipeline.rewrite(req.user.id, req.user.openai_key, req.params.id);
     res.json({ ok: true, post: pipeline.view(p) });
-  } catch (e) {
-    if (e.code === 'NOT_FOUND') return fail(res, e, 404);
-    if (e.code === 'NO_KEY') return fail(res, e, 400);
-    if (String(e.code || '').startsWith('API_')) return fail(res, e, 502);
-    if (e.name === 'ParseError' || e.code === 'EMPTY') return fail(res, e, 422);
-    next(e);
-  }
+  } catch (e) { aiFail(res, e, next); }
 });
 
-/** 지우기 — 휴지통을 거친다 */
 router.post('/api/threads/delete', ...guard, async (req, res, next) => {
   try {
-    const ids = (req.body && req.body.ids || []).map(String).filter(Boolean);
+    const ids = ((req.body && req.body.ids) || []).map(String).filter(Boolean);
     if (!ids.length) return fail(res, { message: '지울 글을 골라주세요.' });
     const out = await store.deletePosts(req.user.id, ids);
     res.json({ ok: true, deleted: out.deleted, trash: await store.trashCount(req.user.id) });
   } catch (e) { next(e); }
 });
 
-/** 가장 최근에 버린 묶음 되살리기 */
 router.post('/api/threads/restore', ...guard, async (req, res, next) => {
   try {
     const out = await store.restoreLatest(req.user.id);
     res.json({ ok: true, restored: out.restored, trash: await store.trashCount(req.user.id) });
+  } catch (e) { next(e); }
+});
+
+/* ── 발행 ─────────────────────────────────────────── */
+
+/** 올리기 전에 꼭 확인하는 것들. 화면과 서버가 같은 기준을 쓴다. */
+async function readyToSend(userId, post) {
+  const s = await store.getSettings(userId);
+  if (!s.threadsToken || !s.threadsUserId) {
+    return { ok: false, why: '스레드 계정이 연결되어 있지 않습니다. 설정에서 토큰을 등록해주세요.' };
+  }
+  if (!s.allowPublish) {
+    return { ok: false, why: '발행이 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
+  }
+  const check = checkPost(post);
+  if (!check.passHard) {
+    const bad = check.rows.filter((r) => r.hard && !r.ok).map((r) => r.label).join(', ');
+    return { ok: false, why: '지침에 걸립니다 — ' + bad };
+  }
+  return { ok: true, settings: s };
+}
+
+/** 지금 바로 올린다 */
+router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) => {
+  try {
+    const post = await store.getPost(req.user.id, req.params.id);
+    if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    if (post.status === 'published') {
+      return fail(res, { message: '이미 올린 글입니다.' }, 409);
+    }
+
+    const ready = await readyToSend(req.user.id, post);
+    if (!ready.ok) return fail(res, { message: ready.why });
+
+    const parts = post.form === 'chain' ? numberParts(post.parts) : post.parts;
+    try {
+      const out = await publishPost(ready.settings.threadsToken, ready.settings.threadsUserId, parts);
+      const saved = await store.updatePost(req.user.id, post.id, {
+        status: 'published', zernioId: out.rootId, permalink: out.permalink,
+        publishedAt: new Date().toISOString(), error: null,
+      });
+      res.json({ ok: true, post: pipeline.view(saved), permalink: out.permalink });
+    } catch (e) {
+      await store.updatePost(req.user.id, post.id, {
+        status: 'failed', error: String(e.message || e).slice(0, 500),
+      });
+      return fail(res, { message: e.message }, 502);
+    }
+  } catch (e) { next(e); }
+});
+
+/** 시간을 정해 예약한다. 서버가 1분마다 확인해 올린다. */
+router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) => {
+  try {
+    const when = new Date(String((req.body && req.body.at) || ''));
+    if (isNaN(when.getTime())) return fail(res, { message: '시간을 정해주세요.' });
+    if (when.getTime() < Date.now() - 60000) return fail(res, { message: '지난 시각으로는 예약할 수 없습니다.' });
+
+    const post = await store.getPost(req.user.id, req.params.id);
+    if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
+
+    const ready = await readyToSend(req.user.id, post);
+    if (!ready.ok) return fail(res, { message: ready.why });
+
+    const saved = await store.updatePost(req.user.id, post.id, {
+      status: 'scheduled', scheduledFor: when.toISOString(), error: null,
+    });
+    res.json({ ok: true, post: pipeline.view(saved) });
+  } catch (e) { next(e); }
+});
+
+/** 예약을 물린다 */
+router.post('/api/threads/posts/:id/unschedule', ...guard, async (req, res, next) => {
+  try {
+    const post = await store.getPost(req.user.id, req.params.id);
+    if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    if (post.status !== 'scheduled') return fail(res, { message: '예약된 글이 아닙니다.' });
+    const saved = await store.updatePost(req.user.id, post.id, {
+      status: 'draft', scheduledFor: null,
+    });
+    res.json({ ok: true, post: pipeline.view(saved) });
   } catch (e) { next(e); }
 });
 

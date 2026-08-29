@@ -139,6 +139,13 @@ initDb()
     } catch (e) {
       console.error('[개인정보] 스케줄 시작 실패:', e.message);
     }
+    // 예약한 스레드 글을 때가 되면 서버가 올린다 (1분 주기)
+    // 브라우저가 아니라 서버에서 돌기 때문에 창을 닫아도 올라간다.
+    try {
+      require('./services/threads/scheduler').start();
+    } catch (e) {
+      console.error('[스레드] 예약 감시 시작 실패:', e.message);
+    }
     app.listen(PORT, () => console.log(`서버 실행: http://localhost:${PORT}`));
   })
   .catch((e) => {

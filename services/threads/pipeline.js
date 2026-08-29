@@ -10,7 +10,7 @@
 
 const store = require('./store');
 const { buildPrompt, buildRewritePrompt } = require('./prompt');
-const { runClaude } = require('./llm');
+const { runAi } = require('./llm');
 const { parseLoose, normalize } = require('./parse');
 const { checkPost } = require('./guideline');
 const { formOf, threadsLength, numberParts } = require('./length');
@@ -47,7 +47,7 @@ function decorate(p, topic, situation) {
  * 주제 하나로 글을 만든다. 저장은 하지 않는다.
  * 반환 { topic, situation, hookScan, unusable, posts: [...], warning }
  */
-async function generate(userId, topic, limit) {
+async function generate(userId, openaiKey, topic, limit) {
   const settings = await store.getSettings(userId);
   const ledger = await store.getLedger(userId);
 
@@ -59,7 +59,7 @@ async function generate(userId, topic, limit) {
     limit,
   });
 
-  const { text, usage } = await runClaude(settings.anthropicKey, prompt);
+  const { text, usage } = await runAi(openaiKey, prompt);
 
   const parsed = parseLoose(text);
   const norm = normalize(parsed.data);
@@ -117,7 +117,7 @@ async function saveChosen(userId, batch, chosen) {
 }
 
 /** 저장된 글을 다른 버전으로 다시 쓴다 */
-async function rewrite(userId, id) {
+async function rewrite(userId, openaiKey, id) {
   const post = await store.getPost(userId, id);
   if (!post) {
     const e = new Error('글을 찾지 못했습니다.');
@@ -126,7 +126,7 @@ async function rewrite(userId, id) {
   }
   const settings = await store.getSettings(userId);
   const prompt = buildRewritePrompt(post, settings.voicePack);
-  const { text } = await runClaude(settings.anthropicKey, prompt, { maxTokens: 8000 });
+  const { text } = await runAi(openaiKey, prompt, { maxTokens: 8000 });
 
   const parsed = parseLoose(text);
   const parts = (parsed.data && parsed.data.parts || [])

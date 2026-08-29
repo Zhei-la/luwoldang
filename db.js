@@ -804,6 +804,13 @@ async function initDb() {
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_runs ON th_runs(user_id, ran_at DESC);`);
 
+    /* 스레드에 올릴 때 쓰는 장기 토큰. 교육생이 직접 발급해 등록한다. */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS threads_token TEXT;`);
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS threads_user_id TEXT;`);
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS threads_username TEXT;`);
+    /* 예약 글을 빨리 찾기 위한 색인 */
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_due ON th_posts(status, scheduled_for);`);
+
     console.log('[DB] 스레드 자동화 준비 완료');
   } catch (e) {
     console.error('[DB] 스레드 자동화 테이블 만들기 실패 — 이 기능만 꺼집니다:', e.message);
