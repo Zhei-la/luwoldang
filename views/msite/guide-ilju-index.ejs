@@ -5,6 +5,7 @@
 }) %>
 
 <%- include('_guide-css') %>
+<%- include('_nav') %>
 
 <main>
   <section class="wrap sec">
@@ -12,7 +13,6 @@
     <h1>태어난 날의 간지가<br>곧 나입니다</h1>
     <p class="lead">천간의 오행이 색이 되고, 지지의 동물이 이름이 됩니다.
       내 일주가 무엇인지는 생년월일만 넣으면 바로 나옵니다.</p>
-    <a class="btn" href="<%= base || '/' %>">내 일주 무료로 확인하기</a>
   </section>
 
   <section class="wrap sec">
@@ -31,6 +31,7 @@
       </div>
     <% }); %>
   </section>
+  <%- include('_back') %>
 </main>
 
 <%- include('_guide-foot') %>

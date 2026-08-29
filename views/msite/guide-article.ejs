@@ -1,0 +1,54 @@
+<%- include('_head', {
+  siteName: siteName, themeVars: themeVars,
+  pageTitle: a.title, pageDesc: a.summary,
+}) %>
+
+<%- include('_guide-css') %>
+<%- include('_nav') %>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow"><a href="<%= base %>/guide">사주 공부</a></span>
+    <h1><%= a.title %></h1>
+    <p class="lead" style="margin-bottom:0"><%= a.summary %></p>
+  </section>
+
+  <section class="wrap" style="padding-bottom:8px">
+    <div class="card art">
+      <%
+        /* 'h' 로 시작하면 소제목, 'l' 로 시작하면 목록. 원본이 정한 규칙이다. */
+        var open = false;
+        a.body.forEach(function(line){
+          var kind = line[0], text = line.slice(1);
+          if (kind === 'l') {
+            if (!open) { %><ul><% open = true; }
+            %><li><%= text %></li><%
+          } else {
+            if (open) { %></ul><% open = false; }
+            if (kind === 'h') { %><h2><%= text %></h2><% }
+            else { %><p><%= line %></p><% }
+          }
+        });
+        if (open) { %></ul><% }
+      %>
+    </div>
+  </section>
+
+  <%- include('_back') %>
+
+  <% if (others.length) { %>
+    <section class="wrap sec">
+      <h2 class="sec-t">이어서 읽기</h2>
+      <div class="list">
+        <% others.forEach(function(o){ %>
+          <a class="it" href="<%= base %>/guide/<%= o.slug %>" style="display:block">
+            <b style="font-size:14.5px;display:block;margin-bottom:3px"><%= o.title %></b>
+            <span style="font-size:12.5px;color:var(--faint);line-height:1.7"><%= o.summary %></span>
+          </a>
+        <% }); %>
+      </div>
+    </section>
+  <% } %>
+</main>
+
+<%- include('_guide-foot') %>

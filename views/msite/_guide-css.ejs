@@ -38,4 +38,39 @@
   .grp{margin-bottom:22px}
   .grp h3{font-size:15px;font-weight:800;margin:0 0 9px;color:var(--ink)}
   .grp h3 small{font-weight:600;color:var(--faint);font-size:12.5px;margin-left:6px}
+
+  /* 돌아오기 칸 */
+  .backbox{border:1px solid var(--gold);border-radius:15px;background:var(--card);
+    padding:24px 20px;text-align:center}
+  .backbox h3{font-size:18px;font-weight:800;margin:0 0 8px}
+  .backbox p{font-size:14px;color:var(--dim);margin:0 0 16px;line-height:1.85}
+  .backbox .btn{display:inline-block;width:auto;padding:13px 26px;background:var(--gold);
+    color:#fff;border-radius:11px;font-weight:800;text-decoration:none}
+
+  /* 위쪽 차림표 */
+  .mnav{border-bottom:1px solid var(--line);background:var(--card)}
+  .mnav .wrap{display:flex;gap:16px;padding-top:11px;padding-bottom:11px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch}
+  .mnav a{font-size:13.5px;font-weight:700;color:var(--dim);text-decoration:none;
+    white-space:nowrap}
+  .mnav a:hover{color:var(--gold-d)}
+
+  /* 개념 해설 글 */
+  .art h2{font-size:17px;font-weight:800;margin:26px 0 9px;color:var(--ink)}
+  .art h2:first-child{margin-top:0}
+  .art p{font-size:15px;line-height:1.95;color:var(--ink2);margin:0 0 14px}
+  .art ul{margin:0 0 14px;padding:0;list-style:none}
+  .art li{font-size:14.5px;line-height:1.9;color:var(--ink2);padding-left:15px;
+    position:relative;margin-bottom:8px}
+  .art li:before{content:'·';position:absolute;left:3px;color:var(--gold);font-weight:800}
+
+  /* 일간 열 개 */
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+  .chip{display:block;text-align:center;padding:12px 8px;border:1px solid var(--line);
+    border-radius:11px;background:var(--card);text-decoration:none}
+  .chip b{display:block;font-size:17px;font-family:serif;font-weight:800}
+  .chip span{display:block;font-size:11px;color:var(--faint);margin-top:3px}
+  .chip:hover{border-color:var(--gold)}
+  .chip.mok b{color:var(--mok)} .chip.hwa b{color:var(--hwa)} .chip.to b{color:var(--to)}
+  .chip.geum b{color:var(--geum)} .chip.su b{color:var(--su)}
 </style>

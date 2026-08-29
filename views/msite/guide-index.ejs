@@ -1,0 +1,57 @@
+<%- include('_head', {
+  siteName: siteName, themeVars: themeVars,
+  pageTitle: '사주 공부 — 만세력을 읽을 수 있게',
+  pageDesc: '만세력·신강신약·용신·대운·진태양시. 결과 화면이 전부 읽히도록 기초부터 정리했습니다.',
+}) %>
+
+<%- include('_guide-css') %>
+<%- include('_nav') %>
+
+<main>
+  <section class="wrap sec">
+    <span class="eyebrow">아는 만큼 보입니다</span>
+    <h1>사주 공부</h1>
+    <p class="lead" style="margin-bottom:0">만세력을 읽을 수 있게 되면,
+      남의 풀이에 끌려다니지 않게 됩니다.</p>
+  </section>
+
+  <section class="wrap sec">
+    <span class="eyebrow">基礎</span>
+    <h2 class="sec-t">기초 개념</h2>
+    <p class="sec-lead">여기부터 읽으면 결과 화면이 전부 읽힙니다.</p>
+    <div class="list">
+      <% articles.forEach(function(a){ %>
+        <a class="it" href="<%= base %>/guide/<%= a.slug %>" style="display:block">
+          <b style="font-size:14.5px;display:block;margin-bottom:3px"><%= a.title %></b>
+          <span style="font-size:12.5px;color:var(--faint);line-height:1.7"><%= a.summary %></span>
+        </a>
+      <% }); %>
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <span class="eyebrow">日干</span>
+    <h2 class="sec-t">일간 10가지</h2>
+    <p class="sec-lead">태어난 날의 첫 글자가 사주에서 「나」입니다.</p>
+    <div class="chips">
+      <% ilgan.forEach(function(g){ %>
+        <a class="chip <%= EL[g.elem] %>" href="<%= base %>/guide/ilgan/<%= encodeURIComponent(g.stem) %>">
+          <b><%= g.stem %><%= g.hanja %></b>
+          <span><%= g.elem %> · <%= g.yinYang %></span>
+        </a>
+      <% }); %>
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <span class="eyebrow">日柱</span>
+    <h2 class="sec-t">일주 60가지</h2>
+    <p class="sec-lead">태어난 날의 간지 두 글자.
+      사주에서 가장 개인적인 자리입니다.</p>
+    <a class="btn ghost" href="<%= base %>/guide/ilju">60갑자 전체 보기</a>
+  </section>
+
+  <%- include('_back') %>
+</main>
+
+<%- include('_guide-foot') %>

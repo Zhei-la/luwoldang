@@ -337,11 +337,50 @@ async function guideIlgan(req, res, next) {
   } catch (e) { next(e); }
 }
 
+
+/** 사주 공부 첫 화면 */
+async function guideIndex(req, res, next) {
+  try {
+    const t = await teacherOf(req.params.slug);
+    if (!t) return next();
+    res.render('msite/guide-index', {
+      t, siteName: siteName(t), slug: t.slug,
+      themeVars: theme.cssVars(t.msite_theme),
+      base: basePath(req, t),
+      articles: fortune.ARTICLES,
+      ilgan: fortune.ILGAN_LIST,
+      EL: { 목: 'mok', 화: 'hwa', 토: 'to', 금: 'geum', 수: 'su' },
+    });
+  } catch (e) { next(e); }
+}
+
+/** 개념 해설 글 하나 — /guide/jintaeyangsi 같은 것 */
+async function guideArticle(req, res, next) {
+  try {
+    const t = await teacherOf(req.params.slug);
+    if (!t) return next();
+    const slug = String(req.params.article || '').trim();
+    const a = fortune.ARTICLES.find((x) => x.slug === slug);
+    /* 없는 글이면 다음 라우터로 넘긴다 */
+    if (!a) return next();
+    res.render('msite/guide-article', {
+      t, siteName: siteName(t), slug: t.slug,
+      themeVars: theme.cssVars(t.msite_theme),
+      base: basePath(req, t),
+      a, others: fortune.ARTICLES.filter((x) => x.slug !== slug),
+    });
+  } catch (e) { next(e); }
+}
+
 /** 한 라우터에 설명 페이지 세 개를 붙인다. 주소 모양마다 다시 쓰지 않으려고 함수로 뺐다. */
 function addGuide(r, pre) {
+  r.get(pre + '/guide', guideIndex);
+  /* ilju·ilgan 을 먼저 잡아야 한다. 뒤에 두면 /guide/ilju 를
+     「ilju 라는 글」 로 찾다가 못 찾고 404 가 된다. */
   r.get(pre + '/guide/ilju', guideIljuIndex);
   r.get(pre + '/guide/ilju/:ganzhi', guideIlju);
   r.get(pre + '/guide/ilgan/:stem', guideIlgan);
+  r.get(pre + '/guide/:article', guideArticle);
 }
 
 /* ── 어느 주소로 들어와도 알아듣는다 ────────────────
@@ -402,11 +441,14 @@ router.use(async (req, res, next) => {
   if (req.method === 'POST' && req.path === '/join') return join(req, res, next);
   if (req.method === 'GET') {
     /* 서브도메인은 이름이 주소에 없으므로 여기서 갈라준다 */
+    if (req.path === '/guide') return guideIndex(req, res, next);
     if (req.path === '/guide/ilju') return guideIljuIndex(req, res, next);
     let m = req.path.match(/^\/guide\/ilju\/(.+)$/);
     if (m) { req.params.ganzhi = m[1]; return guideIlju(req, res, next); }
     m = req.path.match(/^\/guide\/ilgan\/(.+)$/);
     if (m) { req.params.stem = m[1]; return guideIlgan(req, res, next); }
+    m = req.path.match(/^\/guide\/([A-Za-z0-9-]+)$/);
+    if (m) { req.params.article = m[1]; return guideArticle(req, res, next); }
   }
   next();
 });

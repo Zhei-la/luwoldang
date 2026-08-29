@@ -48,6 +48,8 @@
     white-space:nowrap}
 </style>
 
+<%- include('_nav') %>
+
 <main>
   <section class="wrap sec">
     <span class="eyebrow">무료 만세력 · 오늘의 운세</span>
@@ -179,7 +181,8 @@
       한국 표준시는 동경 135도를 기준으로 쓰지만 우리나라는 그보다 서쪽에 있습니다.
       서울에서 태어났다면 실제 하늘의 시각은 시계보다 <b>32분 늦습니다.</b>
       경계 시각에 태어난 사람은 이 보정 하나로 <b>시주가 통째로 바뀝니다.</b>
-      위에서 태어난 지역을 골라주시면 맞춰 계산합니다.</p>
+      위에서 태어난 지역을 골라주시면 맞춰 계산합니다.<br>
+      <a href="<%= base %>/guide/jintaeyangsi" style="color:var(--gold-d);font-weight:700">왜 필요한지 자세히 →</a></p>
   </section>
 
   <section class="wrap sec">
@@ -195,7 +198,8 @@
         </div>
       <% }); %>
     </div>
-    <p class="tiny" style="margin:12px 0 0">내 일주가 무엇인지는 위에서 생년월일을 넣으시면 바로 나옵니다.</p>
+    <p class="tiny" style="margin:12px 0 0">내 일주가 무엇인지는 위에서 생년월일을 넣으시면 바로 나옵니다.<br>
+      <a href="<%= base %>/guide/ilju">60갑자 전체 보기 →</a></p>
   </section>
 </main>
 
