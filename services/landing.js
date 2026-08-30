@@ -847,7 +847,12 @@ ${sticky}
  * 로고 줄과 신청 완료 문구도 옛 이름이 박혀 있으면 같이 고친다.
  */
 function withName(S, name) {
-  const nm = String(name || '').trim() || '사주 상담';
+  /* 손님이 화면 맨 위에서 보는 이름이 곧 이 사이트의 이름이다.
+     로고 줄을 「운결담」으로 고쳐 놓고 설정의 사주 이름은 안 채운 경우가
+     많아, 로고 줄을 먼저 본다. */
+  const logo = ((S && S.blocks) || []).find((b) => b && b.type === 'logobar');
+  const pick = (v) => String(v == null ? '' : v).trim();
+  const nm = pick(logo && logo.text) || pick(name) || '사주 상담';
   const out = Object.assign({}, S);
   const meta = Object.assign({}, out.meta);
   const t = String(meta.title || '').trim();
