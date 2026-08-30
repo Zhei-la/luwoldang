@@ -23,6 +23,7 @@ const { pool } = require('../db');
 const fortune = require('../services/cbFortune');
 const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
+const solarTime = require('../services/solarTime');
 const theme = require('../services/msiteTheme');
 const guest = require('../services/guestSite');
 /* 「사주 공부」 글은 따로 둔다. cbFortune 은 묶어 만든 파일이라 손대지 않는다. */
@@ -132,7 +133,10 @@ function readBirth(b) {
       isLunar: lunar,
       isLeapMonth: b.calendar === '음력 윤달' || b.leap === 'on' || b.leap === '1',
       gender: b.gender === 'male' ? 'male' : 'female',
-      correctionMinutes: region ? region.correctionMinutes : 0,
+        /* ⚠️ 태어난 때에 따라 표준자오선이 달라 보정분이 바뀐다.
+         1954~61년생에게 32분을 빼면 시주가 한 시진 밀린다. */
+      correctionMinutes: region
+        ? solarTime.adjust(region.correctionMinutes, year, month, day) : 0,
       birthRegionLabel: region ? region.name : '',
       name: String(b.name || '').trim().slice(0, 20),
     },

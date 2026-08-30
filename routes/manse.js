@@ -13,6 +13,7 @@
  * ============================================================ */
 
 const express = require('express');
+const solarTime = require('../services/solarTime');
 const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const engine = require('../services/cbEngine');
@@ -66,7 +67,12 @@ function toInfo(p) {
     gender: p.gender === 'female' ? 'female' : 'male',
     hourUnknown: !!p.hourUnknown,
     ganjiSelect: typeof p.ganjiSelect === 'string' ? p.ganjiSelect : '',
-    correctionMinutes: typeof p.correctionMinutes === 'number' ? p.correctionMinutes : undefined,
+    /* ⚠️ 화면은 지금 기준(135도)으로 적힌 보정분을 보낸다.
+       1954-03-21~1961-08-09 는 표준자오선이 127.5도라 30분을 되돌려야
+       한다. 안 하면 그때 태어난 분의 시주가 한 시진 밀린다. */
+    correctionMinutes: typeof p.correctionMinutes === 'number'
+      ? solarTime.adjust(p.correctionMinutes, Number(p.year), Number(p.month), Number(p.day))
+      : undefined,
     birthRegionLabel: typeof p.birthRegionLabel === 'string' ? p.birthRegionLabel : undefined,
   };
 }

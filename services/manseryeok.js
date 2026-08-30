@@ -140,6 +140,19 @@ function hourBranchIndex(hh, mm) {
 
 const pad = function (n) { return String(n).padStart(2, '0'); };
 
+/* 엔진은 한글 간지(「경오」)를 내고 이 파일은 한자(「庚午」)로 다룬다.
+   ⚠️ 「신」은 천간 辛 이면서 지지 申 이다. 표 하나로 바꾸면 신사(辛巳)가
+      申巳 가 된다. 앞자리는 천간, 뒷자리는 지지로 자리를 보고 바꾼다. */
+const KO2GAN = {};
+Object.keys(GAN_KO).forEach((h) => { KO2GAN[GAN_KO[h]] = h; });
+const KO2JI = {};
+Object.keys(JI_KO).forEach((h) => { KO2JI[JI_KO[h]] = h; });
+function KO_TO_HANJA(s) {
+  const t = String(s || '');
+  if (t.length !== 2) return t;
+  return (KO2GAN[t[0]] || t[0]) + (KO2JI[t[1]] || t[1]);
+}
+
 function calcSaju(o) {
   const birthDate = o.birthDate;
   const birthTime = o.birthTime;
@@ -209,22 +222,35 @@ function calcSaju(o) {
     pHour = 22; // 날짜 안 넘김
   }
 
+  /* ⚠️ 네 기둥은 만세력 계산기(명리학자 엔진)와 똑같은 값을 쓴다.
+     예전에는 여기서 lunar-javascript 로 따로 뽑았는데, 두 계산기가
+     절입 시각을 몇 시간 다르게 잡아서 절기 경계에 태어난 분의 월주가
+     서로 다르게 나왔다. 손님과 교육생이 다른 사주를 보는 셈이었다.
+     (3000건 중 9건, 전부 절입 경계)
+
+     · 보정(지역시·서머타임)은 위에서 계산한 correction 을 그대로 넘긴다.
+       여기서 시각을 미리 빼서 넘기면 두 번 빠진다.
+     · 하루 경계도 엔진에 맡긴다('jasi' = 밤 11시부터 다음 날).
+       위 py/pm/pd 계산은 더 이상 기둥에 쓰이지 않는다.
+     · 시각을 모르면 시주는 예전처럼 비워 둔다. */
+  /* 음력 표시 글자는 예전대로 뽑는다. 기둥에는 안 쓴다. */
   const lunarForPillars = Solar.fromYmdHms(py, pm, pd, pHour, pMin, 0).getLunar();
-  const ec = lunarForPillars.getEightChar();
 
-  const yearP = ec.getYear();
-  const monthP = ec.getMonth();
-  const dayP = ec.getDay();
+  const 엔진 = require('./cbEngine');
+  const m4 = 엔진.명식표상세({
+    year: sy, month: sm, day: sd,
+    hour: timeKnown ? hh : 12,
+    minute: timeKnown ? mm : 0,
+    hourUnknown: !timeKnown,
+    isLunar: false, isLeapMonth: false,
+    gender: (gender === '남' || gender === 'male') ? 'male' : 'female',
+    correctionMinutes: correction,
+  }, 'jasi', '미적용', {}).raw.m;
 
-  // 4) 시주 — 지역시/서머타임 보정된 실제 시각 + 정시 경계
-  let hourP = null;
-  if (timeKnown) {
-    const bIdx = hourBranchIndex(ahh, amm);
-    const dayStemIdx = GAN.indexOf(dayP[0]);
-    const startStemIdx = (dayStemIdx % 5) * 2;
-    const hourStemIdx = (startStemIdx + bIdx) % 10;
-    hourP = GAN[hourStemIdx] + JI[bIdx];
-  }
+  const yearP = KO_TO_HANJA(m4.year);
+  const monthP = KO_TO_HANJA(m4.month);
+  const dayP = KO_TO_HANJA(m4.day);
+  const hourP = timeKnown ? KO_TO_HANJA(m4.hour) : null;
 
   // 5) 오행
   const arr = [yearP, monthP, dayP, hourP].filter(Boolean);
