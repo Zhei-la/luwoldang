@@ -163,6 +163,35 @@
   .cta .ptf{display:flex;flex-direction:column;gap:7px;margin-top:10px}
   .cta .ptf[hidden]{display:none}   /* display 를 준 칸은 hidden 이 안 먹는다 */
   .cta .ptw{margin-bottom:14px}
+
+  /* 입금 계좌 안내 — 웹사이트 상담 신청과 같은 모양 */
+  .cta .bk-done{font-size:15px;font-weight:700;color:var(--cta-fg);line-height:1.8;margin-bottom:14px}
+  .cta .bk-card{background:rgba(127,127,127,.14);border:1px solid rgba(127,127,127,.32);
+    border-radius:13px;padding:18px 17px}
+  .cta .bk-hd{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--cta-ac);
+    margin-bottom:14px}
+  .cta .bk-amt{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 9px;
+    padding-bottom:14px;margin-bottom:12px;border-bottom:1px solid rgba(127,127,127,.28)}
+  .cta .bk-amt .lb{font-size:12.5px;color:var(--cta-fg);opacity:.6;width:100%}
+  .cta .bk-amt .num{font-size:25px;font-weight:800;color:var(--cta-ac)}
+  .cta .bk-amt .pd{font-size:13px;color:var(--cta-fg);opacity:.7}
+  .cta .bk-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:14.5px}
+  .cta .bk-row .k{flex:0 0 62px;font-size:12.5px;color:var(--cta-fg);opacity:.55}
+  .cta .bk-row .v{color:var(--cta-fg);font-weight:700;word-break:break-all}
+  .cta .bk-row .v.acc{font-size:16px;letter-spacing:.02em}
+  .cta .bk-copy{flex:none;margin-left:auto;padding:6px 12px;border-radius:8px;
+    border:1px solid rgba(127,127,127,.4);background:transparent;color:var(--cta-fg);
+    font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
+  .cta .bk-copy:hover{border-color:var(--cta-ac);color:var(--cta-ac)}
+  .cta .bk-ok{display:block;width:100%;margin-top:14px;padding:15px;border:0;
+    border-radius:11px;background:var(--cta-ac);color:var(--cta-ac-fg);
+    font-size:16px;font-weight:800;font-family:inherit;cursor:pointer}
+  .cta .bk-stay{margin:12px 0 0;font-size:12.5px;line-height:1.85;
+    color:var(--cta-fg);opacity:.55;text-align:center}
+  .cta .bk-thanks{padding:22px 4px;text-align:center;font-size:15.5px;font-weight:700;
+    line-height:1.9;color:var(--cta-fg)}
+  .cta .bk-note{margin-top:12px;padding-top:12px;border-top:1px solid rgba(127,127,127,.28);
+    font-size:13px;line-height:1.85;color:var(--cta-fg);opacity:.72;word-break:keep-all}
   .cta .err{background:rgba(200,60,40,.16);color:var(--cta-fg)}
   .cta .ok{background:rgba(60,160,100,.18);color:var(--cta-fg)}
 </style>
@@ -429,7 +458,10 @@
 
       <%# 웹사이트 「상담 신청」과 같은 칸을 받는다. 그래야 사주 신청자 목록으로
           바로 넘어간다. 방금 만세력에 넣으신 값은 미리 채워 둔다. %>
-      <form id="jf">
+      <%# ⚠️ onsubmit="return false" 를 태그에 직접 건다.
+          아래 스크립트가 한 번이라도 실패하면 폼이 그대로 전송돼
+          만세력 입력 화면으로 튕겨 나간다. 그때도 안 넘어가게 막는 자물쇠다. %>
+      <form id="jf" onsubmit="return false">
         <div class="fld">
           <label for="jn">이름 <i>*</i></label>
           <input type="text" name="name" id="jn" maxlength="30" required
@@ -562,10 +594,14 @@
   var f = document.getElementById('jf');
   if (!f) return;
   var msg = document.getElementById('jmsg');
+  /* ⚠️ 교육생이 적은 글이라 따옴표나 줄바꿈이 들어 있을 수 있다.
+     스크립트 안에 그대로 박으면 그 한 글자에 화면 전체가 죽는다.
+     JSON 으로 넘겨 글자 그대로만 쓴다. */
+  var DONE = <%- JSON.stringify(af.done || '접수되었습니다.').split('<').join('\\u003c') %>;
   function say(kind, t){
     msg.innerHTML = '<div class="' + kind + '">' +
-      String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/
-/g,'<br>') + '</div>';
+      String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .split(String.fromCharCode(10)).join('<br>') + '</div>';
   }
 
   /* 시간을 모른다고 하면 시각 칸을 비우고 잠근다 */
@@ -609,21 +645,76 @@
         return;
       }
       b.textContent = '신청 완료';
-      /* 계좌를 넣어 두셨으면 입금 안내를 그 자리에서 보여준다 — 웹사이트와 같다 */
+      /* 계좌를 넣어 두셨으면 입금 안내를 그 자리에 펼친다 —
+         웹사이트 상담 신청과 같은 카드다. 초록 글 한 줄로는 눈에 안 들어온다. */
       if (j.bank) {
-        var t = j.bank;
-        var lines = ['<%= af.done %>'];
-        if (t.amount) lines.push('금액 ' + t.amount.toLocaleString() + '원' +
-          (t.product ? ' (' + t.product + ')' : ''));
-        lines.push([t.bankName, t.account, t.holder].filter(Boolean).join(' '));
-        if (t.notice) lines.push(t.notice);
-        say('ok', lines.join('
-'));
+        var k = j.bank;
+        var esc2 = function (v) {
+          return String(v == null ? '' : v).replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        };
+        var row = function (name, val, extra) {
+          if (!val) return '';
+          return '<div class="bk-row"><span class="k">' + name + '</span>' +
+            '<span class="v' + (extra ? ' acc" data-acc' : '"') + '>' + esc2(val) + '</span>' +
+            (extra ? '<button type="button" class="bk-copy" data-copy>복사</button>' : '') + '</div>';
+        };
+        var html = '<div class="bk">' +
+          '<div class="bk-done">' + esc2(DONE) + '</div>' +
+          '<div class="bk-card">' +
+            '<div class="bk-hd">입금 계좌 안내</div>' +
+            (k.amount ? '<div class="bk-amt"><span class="lb">입금하실 금액</span>' +
+              '<span class="num">' + k.amount.toLocaleString('ko-KR') + '원</span>' +
+              (k.product ? '<span class="pd">' + esc2(k.product) + '</span>' : '') + '</div>' : '') +
+            row('은행', k.bankName) +
+            row('계좌번호', k.account, true) +
+            row('예금주', k.holder) +
+            (k.notice ? '<div class="bk-note">' + esc2(k.notice) + '</div>' : '') +
+          '</div>' +
+          '<button type="button" class="bk-ok" data-ok>확인</button>' +
+          '</div>';
+        var box = f.parentNode;
+        box.innerHTML = html;
+
+        /* 「확인」 — 눌러도 화면을 떠나지 않는다.
+           손님이 방금 본 만세력을 계속 보고 있어야 한다. */
+        var okBtn = box.querySelector('[data-ok]');
+        if (okBtn) okBtn.addEventListener('click', function () {
+          box.innerHTML = '<div class="bk-thanks">신청이 접수되었습니다.<br>' +
+            '입금이 확인되는 대로 연락드리겠습니다.</div>';
+        });
+
+        /* 계좌번호 복사 — 숫자만 남겨야 바로 붙여넣어진다 */
+        var cp = box.querySelector('[data-copy]');
+        if (cp) cp.addEventListener('click', function () {
+          var txt = (box.querySelector('[data-acc]').textContent || '').replace(/[^0-9]/g, '');
+          var done2 = function () {
+            cp.textContent = '복사됨';
+            setTimeout(function () { cp.textContent = '복사'; }, 1600);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt).then(done2, function () { alert(txt); });
+          } else { alert(txt); }
+        });
         return;
       }
-      /* 식기 전에 바로 이야기가 시작되도록 카톡으로 넘긴다 */
-      if (j.kakao) { location.href = j.kakao; return; }
-      say('ok', '<%= af.done %>');
+      /* ⚠️ 예전에는 여기서 카톡으로 바로 넘겼다. 그러면 손님이 방금 본
+         만세력을 잃는다. 화면은 그대로 두고 눌러서 갈 수 있게만 한다. */
+      var box2 = f.parentNode;
+      if (j.kakao) {
+        box2.innerHTML = '<div class="bk">' +
+          '<div class="bk-done">' + (function (v) {
+            return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          })(DONE) + '</div>' +
+          '<a class="bk-ok" href="' + String(j.kakao).replace(/"/g, '&quot;') +
+          '" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">' +
+          '카카오톡으로 상담하기</a>' +
+          '<p class="bk-stay">이 창은 그대로 두셔도 됩니다. 방금 보신 만세력은 여기 남아 있습니다.</p>' +
+          '</div>';
+        return;
+      }
+      box2.innerHTML = '<div class="bk"><div class="bk-thanks">' +
+        String(DONE).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div></div>';
     }).catch(function(){
       b.disabled = false; b.textContent = was;
       say('err', '연결이 끊겼습니다. 잠시 뒤 다시 해주세요.');
