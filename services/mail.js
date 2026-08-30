@@ -37,7 +37,7 @@ function mailLocal(teacher) {
 }
 
 function fromName(teacher) {
-  return (teacher && (teacher.mail_name || teacher.site_name || teacher.name)) || '사주 풀이';
+  return (teacher && (teacher.mail_name || siteNameOf(teacher))) || '사주 풀이';
 }
 
 function fromEmail(teacher) {
@@ -216,7 +216,7 @@ function buildFreeSajuHtml({ teacher, saju, result, input, upsell, baseUrl, shar
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fffdf8;border:1px solid #E9E0CF;border-radius:14px;overflow:hidden;font-family:-apple-system,'Malgun Gothic',sans-serif">
 
   <tr><td style="padding:32px 24px 8px;text-align:center">
-    <h1 style="margin:0 0 6px;font-size:22px;color:#252522">${esc(teacher.site_name || '무료 사주')}</h1>
+    <h1 style="margin:0 0 6px;font-size:22px;color:#252522">${esc(siteNameOf(teacher) || '무료 사주')}</h1>
     <div style="width:42px;height:2px;background:#B59A62;margin:0 auto 14px"></div>
     <p style="margin:0;font-size:14px;color:#6b6656"><b>${esc(input.name)}</b>님의 무료 사주 풀이입니다.</p>
     ${kw ? `<div style="margin-top:16px">${kw}</div>` : ''}
@@ -499,7 +499,7 @@ function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
   const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
     .map((x) => `<p style="margin:0 0 11px;font-size:14.5px;line-height:1.85;color:#3d3a33">${esc(x)}</p>`).join('');
 
-  const brand = esc(teacher.site_name || teacher.name || '사주 풀이');
+  const brand = esc(siteNameOf(teacher) || '사주 풀이');
 
   const cards = items.map((it) => `
     <tr><td style="padding:0 24px 12px">
