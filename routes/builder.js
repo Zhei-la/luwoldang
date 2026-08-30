@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
-const { defaultLanding } = require('../services/landing');
+const { defaultLanding, withName } = require('../services/landing');
 
 router.use(requireAuth, requireApproved);
 
@@ -18,7 +18,8 @@ router.get('/builder', (req, res) => {
 
 // 현재 랜딩 JSON 불러오기
 router.get('/api/landing', (req, res) => {
-  const S = req.user.landing || defaultLanding(req.user.site_name || req.user.name);
+  const S = withName(req.user.landing || defaultLanding(req.user.site_name || req.user.name),
+                     req.user.site_name || req.user.name);
   res.json(S);
 });
 

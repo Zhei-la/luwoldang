@@ -18,7 +18,7 @@ function localTimeFlag(b) {
 }
 
 const { generateFreeSaju, UPSELL } = require('../services/ai');
-const { renderLanding, defaultLanding } = require('../services/landing');
+const { renderLanding, defaultLanding, withName } = require('../services/landing');
 const { sendFreeSaju } = require('../services/mail');
 const { notify } = require('../services/push');
 const { buildFreePdfHtml } = require('../services/freePdf');
@@ -86,7 +86,9 @@ router.get('/s/:slug', async (req, res, next) => {
       }
     } catch (e) { /* noop */ }
 
-    const S = teacher.landing || defaultLanding(teacher.site_name || teacher.name);
+    /* 사주 이름을 바꾸면 탭 제목과 카톡 미리보기도 따라오게 한다 */
+    const S = withName(teacher.landing || defaultLanding(teacher.site_name || teacher.name),
+                       teacher.site_name || teacher.name);
 
     // 실제 신청 내역 (가짜 아님)
     const leads = await pool.query(

@@ -834,6 +834,28 @@ ${sticky}
 </html>`;
 }
 
+/**
+ * 저장해 둔 랜딩에 지금 쓰는 사주 이름을 입힌다.
+ *
+ * meta.title 은 웹사이트를 처음 만들 때 「이름 — 사주 풀이」로 한 번 적히고
+ * 그대로 굳는다. 그래서 나중에 사주 이름을 바꿔도 브라우저 탭과 카톡
+ * 링크 미리보기에는 옛 이름이 계속 떴다. 고칠 칸도 없었다.
+ *
+ * 여기서 자동으로 만들어진 제목(「무엇 — 사주 풀이」)만 지금 이름으로
+ * 다시 쓴다. 나중에 손으로 적은 제목이 생기면 그건 건드리지 않는다.
+ *
+ * 로고 줄과 신청 완료 문구도 옛 이름이 박혀 있으면 같이 고친다.
+ */
+function withName(S, name) {
+  const nm = String(name || '').trim() || '사주 상담';
+  const out = Object.assign({}, S);
+  const meta = Object.assign({}, out.meta);
+  const t = String(meta.title || '').trim();
+  if (!t || /\s—\s사주\s*풀이$/.test(t)) meta.title = nm + ' — 사주 풀이';
+  out.meta = meta;
+  return out;
+}
+
 // 기본 랜딩 (교육생이 아직 안 꾸몄을 때)
 function defaultLanding(name) {
   const uid = () => Math.random().toString(36).slice(2, 9);
@@ -863,4 +885,4 @@ function defaultLanding(name) {
   };
 }
 
-module.exports = { renderLanding, defaultLanding, SKINS };
+module.exports = { renderLanding, defaultLanding, withName, SKINS };
