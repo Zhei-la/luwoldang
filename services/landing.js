@@ -835,6 +835,27 @@ ${sticky}
 }
 
 /**
+ * 이 교육생의 사주 이름 — 손님에게 보일 이름 하나.
+ *
+ * 빌더에서 로고 줄만 고쳐 놓고 설정의 사주 이름 칸은 안 채우는 경우가 많다.
+ * 그러면 곳마다 다른 이름이 떠서 손님 눈에는 다른 곳처럼 보인다.
+ * 손님이 화면 맨 위에서 보는 이름(로고 줄)을 첫째로 친다.
+ *
+ * @param {object} teacher  users 한 줄 (landing, site_name, name)
+ */
+function siteNameOf(teacher) {
+  const t = teacher || {};
+  const pick = (v) => String(v == null ? '' : v).trim();
+  let logo = '';
+  try {
+    const L = typeof t.landing === 'string' ? JSON.parse(t.landing) : t.landing;
+    const b = ((L && L.blocks) || []).find((x) => x && x.type === 'logobar');
+    logo = pick(b && b.text);
+  } catch (e) { /* 아직 웹사이트를 안 만들었으면 아래로 내려간다 */ }
+  return logo || pick(t.site_name) || pick(t.name);
+}
+
+/**
  * 저장해 둔 랜딩에 지금 쓰는 사주 이름을 입힌다.
  *
  * meta.title 은 웹사이트를 처음 만들 때 「이름 — 사주 풀이」로 한 번 적히고
@@ -850,9 +871,7 @@ function withName(S, name) {
   /* 손님이 화면 맨 위에서 보는 이름이 곧 이 사이트의 이름이다.
      로고 줄을 「운결담」으로 고쳐 놓고 설정의 사주 이름은 안 채운 경우가
      많아, 로고 줄을 먼저 본다. */
-  const logo = ((S && S.blocks) || []).find((b) => b && b.type === 'logobar');
-  const pick = (v) => String(v == null ? '' : v).trim();
-  const nm = pick(logo && logo.text) || pick(name) || '사주 상담';
+  const nm = siteNameOf({ landing: S, name }) || '사주 상담';
   const out = Object.assign({}, S);
   const meta = Object.assign({}, out.meta);
   const t = String(meta.title || '').trim();
@@ -890,4 +909,4 @@ function defaultLanding(name) {
   };
 }
 
-module.exports = { renderLanding, defaultLanding, withName, SKINS };
+module.exports = { renderLanding, defaultLanding, withName, siteNameOf, SKINS };

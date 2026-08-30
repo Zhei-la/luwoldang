@@ -80,18 +80,9 @@ function priceOf(product) {
 
 /** 화면 맨 위에 보일 이름 */
 function siteName(t) {
-  /* 웹사이트 로고 줄에 적어 둔 이름을 먼저 쓴다.
-     빌더에서 이름을 고쳐 놓고 설정의 사주 이름 칸은 안 채우는 경우가 많아,
-     그러면 만세력에만 계정 이름이 떠서 손님 눈에는 다른 곳처럼 보인다.
-     웹사이트·만세력·링크 미리보기가 같은 이름을 쓰게 맞춘다. */
-  const pick = (v) => String(v == null ? '' : v).trim();
-  let logo = '';
-  try {
-    const L = typeof t.landing === 'string' ? JSON.parse(t.landing) : t.landing;
-    const b = ((L && L.blocks) || []).find((x) => x && x.type === 'logobar');
-    logo = pick(b && b.text);
-  } catch (e) { /* 아직 웹사이트를 안 만들었으면 아래로 내려간다 */ }
-  return logo || pick(t.site_name) || pick(t.name) || '사주 한 장';
+  /* 웹사이트·무료사주와 같은 규칙을 쓴다 (services/landing.js).
+     곳마다 다른 이름이 뜨면 손님 눈에는 다른 곳처럼 보인다. */
+  return require('../services/landing').siteNameOf(t) || '사주 한 장';
 }
 
 const num = (v) => {

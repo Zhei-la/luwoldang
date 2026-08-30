@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= teacher.site_name || '무료 사주' %> · 결과</title>
+  <title><%= (typeof siteName !== 'undefined' && siteName) || teacher.site_name || '무료 사주' %> · 결과</title>
   <link rel="stylesheet" href="/css/free.css">
 </head>
 <body class="free-body">
@@ -19,7 +19,7 @@
 
       <% } else { %>
         <div class="moon"></div>
-        <h1 class="free-title"><%= teacher.site_name || '무료 사주' %></h1>
+        <h1 class="free-title"><%= (typeof siteName !== 'undefined' && siteName) || teacher.site_name || '무료 사주' %></h1>
         <div class="free-line"></div>
 
         <!-- 원국 표 -->

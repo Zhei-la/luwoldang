@@ -18,7 +18,7 @@ function localTimeFlag(b) {
 }
 
 const { generateFreeSaju, UPSELL } = require('../services/ai');
-const { renderLanding, defaultLanding, withName } = require('../services/landing');
+const { renderLanding, defaultLanding, withName, siteNameOf } = require('../services/landing');
 const { sendFreeSaju } = require('../services/mail');
 const { notify } = require('../services/push');
 const { buildFreePdfHtml } = require('../services/freePdf');
@@ -186,7 +186,8 @@ router.get('/s/:slug/free', async (req, res, next) => {
     const teacher = await findTeacher(req.params.slug);
     if (!teacher) return res.status(404).render('free/notfound');
     if (guest.bounce(req, res)) return;
-    res.render('free/input', { teacher, error: null, form: {} });
+    res.render('free/input', {
+      teacher, siteName: siteNameOf(teacher), error: null, form: {} });
   } catch (e) {
     next(e);
   }
@@ -202,13 +203,13 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
 
     if (!name || !birthDate || !agree) {
       return res.status(400).render('free/input', {
-        teacher, error: '이름, 생년월일, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
+      teacher, siteName: siteNameOf(teacher), error: '이름, 생년월일, 개인정보 수집 동의는 모두 필수입니다.', form: req.body,
       });
     }
 
     if (!teacher.openai_key) {
       return res.render('free/result', {
-        teacher, saju: null, result: null, input: null, logId: null, upsell: UPSELL, mailSent: false,
+      teacher, siteName: siteNameOf(teacher), saju: null, result: null, input: null, logId: null, upsell: UPSELL, mailSent: false,
         error: '현재 무료사주가 준비 중입니다. 잠시 후 다시 시도해주세요.',
       });
     }
@@ -235,7 +236,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
       });
     } catch (e) {
       return res.status(400).render('free/input', {
-        teacher, error: '생년월일 형식을 확인해주세요.', form: req.body,
+      teacher, siteName: siteNameOf(teacher), error: '생년월일 형식을 확인해주세요.', form: req.body,
       });
     }
 
@@ -245,7 +246,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     } catch (err) {
       console.error('[AI] 무료사주 생성 실패:', err.message);
       return res.render('free/result', {
-        teacher, saju, result: null, input: client, logId: null, upsell: UPSELL, mailSent: false,
+      teacher, siteName: siteNameOf(teacher), saju, result: null, input: client, logId: null, upsell: UPSELL, mailSent: false,
         error: '사주 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       });
     }
@@ -277,7 +278,7 @@ router.post('/s/:slug/free/result', async (req, res, next) => {
     //   (교육생이 직접 만드는 무료사주 PDF 발송은 그대로 유지)
 
     res.render('free/result', {
-      teacher, saju, result, input: client, mailSent: false,
+      teacher, siteName: siteNameOf(teacher), saju, result, input: client, mailSent: false,
       logId: log.rows[0].id, upsell: UPSELL, error: null,
     });
   } catch (e) {
