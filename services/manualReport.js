@@ -97,6 +97,41 @@ function parsePasted(text) {
   return { chapters: chapters.filter((c) => c.blocks.length || c.title) };
 }
 
+/* 본문이 이만큼도 안 되면 안 쓴 것으로 본다 */
+const MIN_BODY = 30;
+
+/**
+ * 빈 소제목·빈 장을 걷어낸다.
+ *
+ *   GPT 가 소제목을 몇 개 빠뜨리는 일이 있는데, 예전에는 목차에 있는 소제목을
+ *   전부 만들어 두는 바람에 제목만 있고 본문이 빈 칸이 PDF 에 그대로 실렸다.
+ *
+ *   · 붙여넣은 글에 아예 없던 소제목  → 본문이 비어 있으므로 빠진다
+ *   · 소제목은 있는데 본문이 너무 짧음 → 빠진다
+ *   · 한 장의 소제목이 전부 빠지면      → 그 장도 빠진다
+ *
+ *   장 번호는 배열 순서로 매겨지므로, 장이 빠지면 번호는 알아서 다시 매겨진다.
+ *   순서는 그대로 두고 "있는 것만" 남긴다.
+ */
+function pruneEmpty(sections) {
+  let dropped = 0;          // 빠진 소제목 수
+  const droppedChapters = []; // 통째로 빠진 장 제목
+
+  const kept = [];
+  (sections || []).forEach((ch) => {
+    const blocks = (ch.blocks || []).filter((b) => {
+      const body = String((b && b.body) || '').trim();
+      if (body.length >= MIN_BODY) return true;
+      dropped++;
+      return false;
+    });
+    if (blocks.length) kept.push(Object.assign({}, ch, { blocks }));
+    else droppedChapters.push(ch.title || '(제목 없음)');
+  });
+
+  return { sections: kept, dropped, droppedChapters };
+}
+
 /**
  * 붙여넣은 글 → 저장할 sections
  *
@@ -112,7 +147,9 @@ function buildFromPaste(type, question, text) {
   const sections = blankSections(type, question);
   const parsed = parsePasted(text).chapters;
 
-  if (!parsed.length) return { sections, matched: 0, total: sections.length, extra: 0 };
+  if (!parsed.length) {
+    return { sections: [], matched: 0, total: 0, extra: 0, dropped: 0, droppedChapters: [] };
+  }
 
   const used = new Array(parsed.length).fill(false);
   let matched = 0;
@@ -165,7 +202,18 @@ function buildFromPaste(type, question, text) {
     extra++;
   });
 
-  return { sections, matched, total: sections.length, extra };
+  /* 안 채워진 소제목·장을 걷어낸다.
+     붙여넣은 글에 없는 것을 빈 칸으로 PDF 에 싣지 않기 위해서다. */
+  const pruned = pruneEmpty(sections);
+
+  return {
+    sections: pruned.sections,
+    matched,
+    total: pruned.sections.length,
+    extra,
+    dropped: pruned.dropped,
+    droppedChapters: pruned.droppedChapters,
+  };
 }
 
-module.exports = { blankSections, parsePasted, buildFromPaste, outlineFor };
+module.exports = { blankSections, parsePasted, buildFromPaste, outlineFor, pruneEmpty, MIN_BODY };

@@ -304,10 +304,19 @@ router.post('/leads/:id/pdf/blank', async (req, res) => {
     const question = (lead.question || lead.memo || '').trim();
     const text = typeof b.text === 'string' ? b.text : '';
 
-    let sections, matched = 0;
+    let sections, matched = 0, dropped = 0, droppedChapters = [];
     if (text.trim()) {
       const r = buildFromPaste(type, question, text);
       sections = r.sections; matched = r.matched;
+      dropped = r.dropped || 0;
+      droppedChapters = r.droppedChapters || [];
+      // 붙여넣긴 했는데 쓸 만한 본문이 하나도 없으면, 빈 리포트를 만들지 않고 알려준다
+      if (!sections.length) {
+        return res.status(400).json({
+          ok: false,
+          error: '붙여넣은 글에서 본문을 찾지 못했습니다. 장은 ## 로, 소제목은 ### 로 시작하는지 확인해주세요.',
+        });
+      }
     } else {
       sections = blankSections(type, question);
     }
@@ -317,8 +326,14 @@ router.post('/leads/:id/pdf/blank', async (req, res) => {
       [req.user.id, lead.id, type, JSON.stringify(sections), JSON.stringify(sajuMetaOf(lead))]
     );
 
-    console.log('[PDF] 직접 작성 리포트 생성 — lead', lead.id, type, '채운 장', matched, '/', sections.length);
-    res.json({ ok: true, pdfId: ins.rows[0].id, chapters: sections.length, matched });
+    console.log('[PDF] 직접 작성 리포트 생성 — lead', lead.id, type,
+      '채운 장', matched, '/', sections.length,
+      dropped ? `· 빈 소제목 ${dropped}개 뺌` : '',
+      droppedChapters.length ? `· 빈 장 ${droppedChapters.length}개 뺌 (${droppedChapters.join(', ')})` : '');
+    res.json({
+      ok: true, pdfId: ins.rows[0].id, chapters: sections.length, matched,
+      dropped, droppedChapters,
+    });
   } catch (e) {
     console.error('[PDF] 직접 작성 실패:', e.message);
     res.status(500).json({ ok: false, error: e.message });
