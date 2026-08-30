@@ -472,6 +472,21 @@ const PDF_SYSTEM = `당신은 30년 경력의 사주 명리학 상담가입니�
 
 ## 문체 — 반드시 지킬 것
 
+### 이름 표기 — ⭐ 반드시 이 모양으로
+- **성과 이름을 붙여 쓰고, "님" 도 붙여 씁니다.**
+  ⭕ 백유진님        ← 성 + 이름 + 님, 전부 붙여 씀
+  ❌ 백유진 님       ← "님" 을 띄어 쓰면 안 됩니다
+  ❌ 유진님          ← 성을 빼면 안 됩니다
+  ❌ 백유진          ← "님" 이 없으면 안 됩니다
+- 한 리포트 안에서 표기가 섞이면 안 됩니다. 처음부터 끝까지 같은 모양입니다.
+
+### 성별 대명사 금지
+- **"그는", "그녀는", "그의", "그녀의" 를 쓰지 마세요.**
+  성별을 잘못 짚으면 손님이 바로 알아챕니다.
+- 대신 이름을 쓰거나 주어를 생략합니다.
+  ❌ "그는 결정을 미루는 편입니다"
+  ⭕ "백유진님은 결정을 미루는 편입니다" / "결정을 미루는 편입니다"
+
 ### 이름 사용 — ⭐ 매우 중요
 - **이름은 되도록 쓰지 마세요.** 안 써도 누구 이야기인지 다 압니다.
 - **첫 문장부터 바로 본론으로.** "○○님은" 으로 시작하지 마세요.
@@ -672,7 +687,9 @@ ${(() => {
     const jj = (x.jijanggan || []).map((g) => g.ko).join('');
     return `${label}: ${x.stem.ko}(${x.stem.el}, ${x.stem.god}) / ${x.branch.ko}(${x.branch.el}, ${x.branch.god}) · 12운성 ${x.unseong || '-'} · 지장간 ${jj || '-'}`;
   };
-  return [pl('year','년주'), pl('month','월주'), pl('day','일주'), pl('hour','시주')].join('\\n');
+  // \\n 으로 이어 붙이는 바람에 상대방 원국 네 줄이 한 줄로 뭉쳐 있었다.
+  // 본인 원국만 제대로 보이고 상대 쪽은 읽기 어려운 상태였다.
+  return [pl('year','년주'), pl('month','월주'), pl('day','일주'), pl('hour','시주')].join('\n');
 })()}
 
 [상대방 중심 기운]
@@ -1007,6 +1024,66 @@ function rawName(text, name) {
   return m ? m.length : 0;
 }
 
+/* ── 이름 표기 ──
+ *
+ *   한 리포트 안에 "백유진님 / 백유진 님 / 유진님 / 유진 님" 네 가지가
+ *   섞여 나온 적이 있다. 붙여 쓴 "백유진님" 하나로 통일한다. */
+function nameForm(text, name) {
+  const t = String(text);
+  const nm = String(name || '').trim();
+  if (nm.length < 2) return null;
+  const bad = [];
+
+  // ① "백유진 님" — 님을 띄어 씀
+  const spaced = (t.match(new RegExp(nm + '\\s+님', 'g')) || []).length;
+  if (spaced) bad.push(`"${nm} 님" 처럼 띄어 쓴 곳 ${spaced}군데`);
+
+  // ② "유진님" — 성을 뺌 (성이 한 글자인 한국 이름 기준)
+  const given = nm.slice(1);
+  if (given.length >= 1) {
+    // 앞에 성이 안 붙은 경우만 센다
+    const re = new RegExp('(^|[^가-힣])' + given + '\\s*님', 'g');
+    const short = (t.match(re) || []).length;
+    if (short) bad.push(`성을 뺀 "${given}님" ${short}군데`);
+  }
+
+  if (!bad.length) return null;
+  return `이름 표기가 섞였습니다 (${bad.join(', ')}) — 전부 "${nm}님" 으로, 성·이름·님을 붙여 쓰세요`;
+}
+
+/* ── 성별 대명사 ──
+ *   성별 정보가 확실하지 않은데 "그는/그녀는" 을 쓰면 바로 들통난다. */
+function genderPronoun(body) {
+  const t = String(body);
+  const hits = t.match(/(^|[^가-힣])(그|그녀)(는|가|의|를|에게|와|과|도)(?=[\s,.])/g) || [];
+  if (!hits.length) return null;
+  return `성별 대명사 ${hits.length}회 ("${hits[0].trim()}") — 이름을 쓰거나 주어를 생략하세요`;
+}
+
+/* ── 궁합에서 한쪽만 이름 ──
+ *
+ *   02장이 "백유진님" 35회 / "홍수민님" 0회 / "상대방" 34회였다.
+ *   두 사람이 같이 읽는 글인데 한쪽만 이름이 있으면 안 된다.
+ *   "상대방" 자체는 이름을 한 번 부른 뒤 받는 말로 쓰면 자연스럽다. */
+function bothNames(body, name, partnerName) {
+  const nm = String(name || '').trim();
+  const pn = String(partnerName || '').trim();
+  if (nm.length < 2 || pn.length < 2) return null;
+  const t = String(body);
+  const cnt = (x) => (t.match(new RegExp(x, 'g')) || []).length;
+  const a = cnt(nm), b = cnt(pn);
+  if (a > 0 && b > 0) return null;
+  if (a === 0 && b === 0) {
+    return `두 분 이름이 이 장에 하나도 없습니다 — "${nm}님" 과 "${pn}님" 이 각각 한 번은 나와야 합니다`;
+  }
+  const missing = a === 0 ? nm : pn;
+  const shown = a === 0 ? pn : nm;
+  const other = (t.match(/상대방|상대분/g) || []).length;
+  return `"${missing}님" 이 이 장에 한 번도 없습니다 (${shown}님만 ${Math.max(a, b)}회`
+    + (other ? `, "상대방" ${other}회` : '')
+    + `) — 두 분이 같이 읽는 글이니 이름을 각각 한 번은 부르세요`;
+}
+
 /** 같은 어미가 연속으로 반복되는지 검사 */
 function sameEnding(body) {
   const sents = String(body).split(/(?<=[다요][.!?])\s+/).map((x) => x.trim()).filter(Boolean);
@@ -1098,8 +1175,25 @@ function checkStyle(body, name, opts) {
   if (e) issues.push(e);
   const raw = rawName(body, name);
   if (raw > 0) issues.push(`이름 반말 호칭 ${raw}회 ("${name}은/는") — "${name}님은"으로 고치거나, 이름을 뺄 거면 조사까지 같이 빼고 문장을 다시 쓰세요 (조사만 남기면 안 됩니다)`);
+  const nf = nameForm(body, name);
+  if (nf) issues.push(nf);
+  const gp = genderPronoun(body);
+  if (gp) issues.push(gp);
+  // 궁합은 두 분 이름이 각각 한 번은 나와야 한다
+  if (opts && opts.partnerName) {
+    const bn = bothNames(body, name, opts.partnerName);
+    if (bn) issues.push(`[내용] ${bn}`);
+  }
+  /* 궁합은 두 분을 계속 구분해 불러야 해서 이름이 더 나온다.
+     여기서 1번으로 묶어버리면 모델이 "상대방"·"그는" 으로 도망가고,
+     그게 바로 한쪽만 이름이 나오는 문제의 원인이었다. */
+  const nameCap = (opts && opts.partnerName) ? 4 : 1;
   const n = countName(body, name);
-  if (n > 1) issues.push(`이름 ${n}회 반복 (챕터당 1번 이하, 나머지는 주어 생략)`);
+  if (n > nameCap) {
+    issues.push(nameCap === 1
+      ? `이름 ${n}회 반복 (챕터당 1번 이하, 나머지는 주어 생략)`
+      : `이름 ${n}회 반복 — 궁합이라도 한 장에 ${nameCap}번이면 충분합니다. 나머지는 "상대방" 이나 주어 생략으로 받으세요`);
+  }
 
   return issues;
 }
@@ -1217,12 +1311,67 @@ const CARD_SYSTEM = `당신은 30년 경력의 사주 명리학자입니다.
   "thread": "리포트를 관통하는 이야기 한 줄"
 }`;
 
+/* ── 궁합 카드 — 두 사람을 나눠서 정리한다 ──
+ *
+ *   연인궁합에서 03·04·09장은 "본인이 계획적, 상대가 즉흥적"이라 쓰고
+ *   06·08·12장은 정반대로 쓰는 사고가 있었다.
+ *   장을 동시에 만드니 각 장이 알아서 누가 어느 쪽인지 정해버린 것이다.
+ *
+ *   그래서 궁합이면 카드에 [본인]/[상대]/[두 사람의 대비]를 따로 담고,
+ *   모든 장이 그 대비를 그대로 따르게 한다. */
+const PAIR_CARD_SYSTEM = `당신은 30년 경력의 사주 명리학자입니다.
+두 사람의 명식을 읽고, 궁합 리포트 전체가 따를 뼈대를 정리합니다. 본문은 쓰지 않습니다.
+
+- **받은 자료에 있는 것만** 씁니다. 없는 것을 지어내지 마세요.
+- 오행 개수는 위에 드린 [오행 분포] 숫자를 **그대로** 옮깁니다. 새로 세지 마세요.
+- 없는 오행은 "아예 없음"과 "지장간에만 있음"을 구분해서 씁니다.
+- 성향 한 줄에는 **그렇게 본 근거 글자**를 반드시 넣습니다.
+  (예: "일지 묘목이 겁재라 결론은 본인이 납득해야 움직입니다")
+- **[두 사람의 대비]가 이 리포트에서 가장 중요합니다.**
+  감정 표현·결정 방식·속도에서 **누가 어느 쪽인지** 한 줄씩 분명히 못 박으세요.
+  여기가 흔들리면 장마다 두 사람이 뒤바뀝니다.
+- 두 사람이 비슷하면 비슷하다고 쓰되, 그중 **상대적으로 어느 쪽이 더 그런지**를 밝히세요.
+- 겪은 일을 짐작하지 마세요. 타고난 구조와 흐름만 봅니다.
+- 한국어로만, 한자 없이 씁니다.
+
+반드시 아래 JSON으로만 답합니다. 다른 텍스트는 넣지 마세요.
+{
+  "pair": true,
+  "meName": "본인 이름",
+  "youName": "상대 이름",
+  "me":  { "ilgan": "일간", "gangyak": "강약", "gyeok": "격국", "yongsin": "용신",
+           "ohaeng": "오행 개수", "eopsneun": "없는 오행·십성", "seonghyang": "성향 한 줄 (근거 글자 포함)" },
+  "you": { "ilgan": "일간", "gangyak": "강약", "gyeok": "격국", "yongsin": "용신",
+           "ohaeng": "오행 개수", "eopsneun": "없는 오행·십성", "seonghyang": "성향 한 줄 (근거 글자 포함)" },
+  "daebi": {
+    "gamjeong": "감정 표현 — 누가 겉으로 드러내고 누가 안으로 삭이는지",
+    "gyeoljeong": "결정 방식 — 누가 계획적이고 누가 즉흥적인지",
+    "sokdo": "속도 — 누가 빠르고 누가 느린지"
+  },
+  "thread": "이 궁합을 관통하는 이야기 한 줄"
+}`;
+
 /** 결론 카드 만들기 — 실패하면 null 을 돌려주고, 부르는 쪽은 카드 없이 진행한다 */
 async function buildCard({ type, client, saju, partner, partnerSaju, openaiKey, model }) {
   const info = sajuBlock(client, saju, partner, partnerSaju, type);
+  const isPair = !!(partner && partnerSaju);
+
   const out = await callAI({
-    system: CARD_SYSTEM,
-    user: `${info}
+    system: isPair ? PAIR_CARD_SYSTEM : CARD_SYSTEM,
+    user: isPair
+      ? `${info}
+
+[정리할 것]
+두 분의 "${type}" 리포트를 쓰기 전에, 위 두 명식을 읽고 뼈대를 잡아주세요.
+본인은 "${client.name}", 상대는 "${(partner && partner.name) || '상대방'}" 입니다.
+meName 과 youName 에 이 이름을 그대로 넣으세요.
+
+**[두 사람의 대비]를 특히 분명히 못 박아 주세요.**
+감정 표현·결정 방식·속도에서 누가 어느 쪽인지 헷갈리게 쓰면
+장마다 두 사람이 뒤바뀝니다. 이름을 넣어 "○○님이 ~하고 △△님이 ~하다"로 쓰세요.
+
+본문은 쓰지 말고 정리만 하세요.`
+      : `${info}
 
 [정리할 것]
 이 사람의 "${type}" 리포트를 쓰기 전에, 위 명식을 읽고 뼈대를 잡아주세요.
@@ -1230,15 +1379,66 @@ async function buildCard({ type, client, saju, partner, partnerSaju, openaiKey, 
 본문은 쓰지 말고 정리만 하세요.`,
     openaiKey,
     model,
-    maxTokens: 1000,
+    maxTokens: isPair ? 1400 : 1000,
   });
-  // 최소한 일간이라도 있어야 카드로 쓴다
-  return (out && (out.ilgan || out.thread)) ? out : null;
+
+  if (!out) return null;
+  if (isPair) {
+    // 두 사람 정리가 안 왔으면 카드로 쓰지 않는다 (반쪽 카드가 더 위험하다)
+    if (!out.me || !out.you || !out.daebi) return null;
+    return Object.assign({}, out, {
+      pair: true,
+      meName: out.meName || client.name,
+      youName: out.youName || (partner && partner.name) || '상대방',
+    });
+  }
+  return (out.ilgan || out.thread) ? out : null;
+}
+
+/** 궁합 카드 — 두 사람과 대비를 그린다 */
+function renderPairCard(c) {
+  const row = (k, v) => {
+    const t = String(v == null ? '' : v).replace(/\s*\n\s*/g, ' ').trim();
+    return t ? `· ${k} : ${t}\n` : '';
+  };
+  const side = (p) => row('일간', p.ilgan) + row('강약', p.gangyak) + row('격국', p.gyeok)
+    + row('용신', p.yongsin) + row('오행 개수', p.ohaeng) + row('없는 것', p.eopsneun)
+    + row('성향', p.seonghyang);
+  const me = c.meName, you = c.youName;
+  const d = c.daebi || {};
+
+  return `
+════════════════════════════════════
+[결론 카드 — 이 리포트 전체가 따르는 뼈대입니다]
+
+[본인 — ${me}님]
+${side(c.me || {})}
+[상대 — ${you}님]
+${side(c.you || {})}
+[두 사람의 대비] ★ 이것이 가장 중요합니다
+${row('감정 표현', d.gamjeong)}${row('결정 방식', d.gyeoljeong)}${row('속도', d.sokdo)}${row('관통하는 이야기', c.thread)}
+⚠️ **두 사람을 헷갈리면 그 장은 실패입니다.**
+1. 카드의 **[두 사람의 대비]를 모든 장에서 그대로** 지킵니다.
+2. 카드에서 "본인이 신중하고 상대가 즉흥적"이라고 했으면
+   **어느 장에서도 반대로 쓰지 않습니다.** 마지막 장에서 특히 뒤집히기 쉽습니다.
+3. 누가 어느 쪽인지 헷갈리면, 쓰기 전에 위 [두 사람의 대비]를 다시 읽으세요.
+4. 카드에 "없다"고 적힌 오행·십성은 이 장에서도 없습니다.
+5. 카드의 오행 개수·강약·용신을 그대로 씁니다. 다시 세지 마세요.
+
+⚠️ **두 분 이름이 이 장에 각각 한 번은 나와야 합니다.**
+   "${me}님" 과 "${you}님" 둘 다 나와야 합니다.
+   한쪽만 이름을 부르고 다른 쪽을 계속 "상대방"이라고만 하면 안 됩니다.
+   ✗ "${me}님은 상대방의 활기찬 모습에서 매력을 느낍니다"
+   ⭕ "${me}님은 ${you}님의 활기찬 모습에서 매력을 느낍니다"
+   이름을 한 번 부른 뒤 받는 말로 "상대방"을 쓰는 것은 괜찮습니다.
+════════════════════════════════════
+`;
 }
 
 /** 카드를 장 프롬프트에 끼워 넣을 모양으로 만든다 */
 function renderCard(c) {
   if (!c) return '';
+  if (c.pair) return renderPairCard(c);
   const row = (k, v) => {
     const t = String(v == null ? '' : v).replace(/\s*\n\s*/g, ' ').trim();
     return t ? `· ${k} : ${t}\n` : '';
@@ -1274,12 +1474,18 @@ const REVIEW_MAX = 5;      // 다시 쓸 장은 최대 5개까지
 const REVIEW_SYSTEM = `당신은 사주 리포트 감수자입니다.
 리포트 한 편의 각 장 앞부분을 받아, **다시 써야 할 장만** 골라냅니다.
 
-세 가지만 봅니다. 그 밖의 것은 지적하지 마세요.
+아래만 봅니다. 그 밖의 것은 지적하지 마세요.
 1. **결론 카드와 어긋나는 장** — 카드에 없다고 한 것을 있다고 썼거나,
    강약·오행 개수·용신이 카드와 다르거나, 카드의 강점·약점과 반대로 쓴 장
 2. **장끼리 서로 반대되는 장** — 4장에서 "결단력이 뛰어나다"고 하고
    5장에서 "우유부단하다"고 하는 식
 3. **사주 글자가 하나도 없고 누구에게나 맞는 말만 있는 장**
+4. **(궁합일 때) 두 사람이 뒤바뀐 장** ★ 가장 심각합니다
+   카드의 [두 사람의 대비]와 반대로 쓴 장을 찾으세요.
+   카드가 "본인이 계획적, 상대가 즉흥적"이라고 했는데
+   어떤 장이 "본인이 즉흥적, 상대가 계획적"이라고 썼으면 그 장입니다.
+   **마지막 장을 반드시 확인하세요.** 거기서 가장 자주 뒤집힙니다.
+   두 사람 중 한쪽 이름만 나오고 다른 쪽을 계속 "상대방"이라고만 한 장도 고르세요.
 
 문장이 어색하다, 분량이 짧다, 표현이 아쉽다 같은 것은 **보지 마세요.**
 애매하면 넘어가세요. 확실히 어긋난 것만 고릅니다.
@@ -1339,6 +1545,10 @@ ${renderCard(card) || '\n(결론 카드 없음 — 2번·3번만 보세요)\n'}
 [각 장 앞부분]
 ${digest}
 
+${card && card.pair ? `⚠️ 이것은 궁합 리포트입니다. 본인은 "${card.meName}님", 상대는 "${card.youName}님" 입니다.
+   위 [두 사람의 대비]와 반대로 쓴 장을 특히 잘 찾으세요.
+   마지막 ${chapters.length}장은 반드시 확인하세요.
+` : ''}
 위 ${chapters.length}개 장 중에서 다시 써야 할 장만 고르세요.
 redo 의 각 줄은 "3장|이유" 형식입니다. 문제가 없으면 빈 배열로 답하세요.
 많아야 ${REVIEW_MAX}개까지만 고르세요. 확실히 어긋난 것만 고릅니다.`;
@@ -1518,7 +1728,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
   // 문체 검사 → 문제 있으면 1회 재작성
   const problems = [];
   blocks.forEach((b, i) => {
-    const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '' });
+    const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '', partnerName: (partner && partner.name) || '' });
     if (issues.length) problems.push(`- "${b.sub}": ${issues.join(', ')}`);
   });
 
@@ -1530,7 +1740,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     const badIdx = [];
     const probs = [];
     blocks.forEach((b, bi) => {
-      const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '' });
+      const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '', partnerName: (partner && partner.name) || '' });
       if (issues.length) {
         badIdx.push(bi);
         probs.push(`- "${b.sub}": ${issues.join(', ')}`);
