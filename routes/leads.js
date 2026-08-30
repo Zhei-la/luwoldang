@@ -1418,7 +1418,9 @@ async function downloadPdf(req, res) {
     const cover = await resolveCover(req.user.id, pdf.type);
     const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
     const token = await ensureToken(pdf.id);
-    const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
+    /* 손님이 눌러 여는 주소다. 루월당 주소가 아니라 손님 주소로 나가야 한다.
+       /r/:token 은 손님 주소에서도 열리게 서버에 먼저 걸어 두었다. */
+    const reviewUrl = guest.base(req) + '/r/' + token + '#rvwWrap';
     const html = pdf.type === FREE
       ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
       : buildReportHtml({

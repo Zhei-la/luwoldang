@@ -16,6 +16,7 @@
  * ============================================================ */
 
 const express = require('express');
+const guest = require('../services/guestSite');
 const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
@@ -180,7 +181,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
     const { ensureToken } = require('./share');
     const token = await ensureToken(pdf.id);
-    const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
+    const reviewUrl = guest.base(req) + '/r/' + token + '#rvwWrap';
     const inner = buildReportHtml({
       type: pdf.type,
       client,
@@ -362,7 +363,7 @@ async function downloadWithCover(req, res) {
       const bgPaper = await resolveBgPaper(req.user.id, pdf.type);
       const { ensureToken } = require('./share');
       const token = await ensureToken(pdf.id);
-      const reviewUrl = (process.env.BASE_URL || 'https://www.luwolsaju.com') + '/r/' + token + '#rvwWrap';
+      const reviewUrl = guest.base(req) + '/r/' + token + '#rvwWrap';
       html = buildReportHtml({
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
