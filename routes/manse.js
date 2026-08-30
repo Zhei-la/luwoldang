@@ -71,6 +71,26 @@ function toInfo(p) {
   };
 }
 
+/**
+ * 일간 칸에도 십성을 적어 준다.
+ *
+ * 엔진은 십성(천간) 줄의 일간 자리에 십성 대신 「일간(나)」라고만 쓴다.
+ * 그래서 네 칸 중 한 칸만 십성이 비어 보인다. 다른 만세력은 여기에도 십성이 뜬다.
+ * 일간은 저와 같은 천간이라 십성으로는 늘 <b>비견</b>이다 —
+ * 오행도 음양도 같으니 정의상 그렇다.
+ *
+ * ⚠️ 엔진 파일(cbEngine.js)은 명리학자가 준 것이라 손대지 않는다.
+ *    내보내기 직전에 글자만 바꾼다.
+ */
+function 일간십성(out) {
+  if (!out || typeof out !== 'string') return out;
+  return out
+    /* 표(PDF·컬러) — 십성 줄의 일간 칸 */
+    .split('<td>일간(나)</td>').join('<td>비견 (나)</td>')
+    /* LLM 에 넘기는 글 — 기둥 설명 줄 */
+    .split('(일간, 나)').join('(일간, 나 · 십성 비견)');
+}
+
 const boundary = (b) => (b === 'split' ? 'splitJasi' : 'jasi');
 const 야자라벨 = (b) => (b === 'split' ? '적용(야자시)' : '미적용');
 
@@ -86,7 +106,8 @@ router.post('/api/manse/myeongsik', (req, res) => {
       연애상태: typeof b['연애상태'] === 'string' ? b['연애상태'] : '',
     });
     res.json({
-      ok: true, text: r.text, pdfHtml: r.pdfHtml, colorHtml: r.colorHtml,
+      ok: true,
+      text: 일간십성(r.text), pdfHtml: 일간십성(r.pdfHtml), colorHtml: 일간십성(r.colorHtml),
       name: String(b.name || '').trim(),
     });
   } catch (e) {
@@ -106,7 +127,8 @@ router.post('/api/manse/gunghap', (req, res) => {
       boundary(b.jasi), 야자라벨(b.jasi),
       { concern: typeof b.concern === 'string' ? b.concern : '' });
     res.json({
-      ok: true, text: r.text, pdfHtml: r.pdfHtml, colorHtml: r.colorHtml,
+      ok: true,
+      text: 일간십성(r.text), pdfHtml: 일간십성(r.pdfHtml), colorHtml: 일간십성(r.colorHtml),
       person1Name: p1.name.trim(), person2Name: p2.name.trim(),
     });
   } catch (e) {
