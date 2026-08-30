@@ -27,6 +27,8 @@ const theme = require('../services/msiteTheme');
 const guest = require('../services/guestSite');
 /* 「사주 공부」 글은 따로 둔다. cbFortune 은 묶어 만든 파일이라 손대지 않는다. */
 const articles = require('../services/msiteArticles');
+/* 풀어 쓴 해석을 두껍게 하고, 맛보기를 사람마다 다르게 만든다 */
+const mreading = require('../services/msiteReading');
 const { notify } = require('../services/push');
 
 /* ── 도우미 ───────────────────────────────────────── */
@@ -221,7 +223,7 @@ async function showResult(req, res, next) {
     }
 
     const c = r.raw.consult;
-    const reading = fortune.buildReading(c);
+    const reading = mreading.enrich(c, fortune.buildReading(c), r.raw.wonguk || []);
 
     /* 오늘의 운세 — 용신/기신은 이미 계산돼 있으니 그대로 쓴다 */
     let today = null;
@@ -262,7 +264,8 @@ async function showResult(req, res, next) {
       regions: REGIONS,
       wolun: r.raw.월운목록 || [],
       /* 여기서부턴는 사람이 읽어야 하는 곳이라는 걸 보여준다 */
-      teaser: fortune.LOCKED_TEASER,
+      /* 예전에는 누구에게나 똑같은 글이 나갔다. 이 사람 사주에서 뽑아 쓴다. */
+      teaser: mreading.teaserOf(c),
       base: basePath(req, t),
       consult: c,
       reading,

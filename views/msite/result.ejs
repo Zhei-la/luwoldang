@@ -196,7 +196,7 @@
   <% } %>
 
   <div class="card">
-    <span class="eyebrow">原局</span>
+    <span class="eyebrow">원국</span>
     <h2 class="sec-t">만세력 원국</h2>
     <div class="wg-wrap">
       <%# 줄 이름을 왼쪽에 붙였다. 없으면 아래 작은 글씨 줄들이 무엇인지 알 수 없다. %>
@@ -265,7 +265,7 @@
 
   <% if (c.신살 || (c.합 && c.합.length) || (c.충형파해 && c.충형파해.length)) { %>
     <div class="card">
-      <span class="eyebrow">神煞</span>
+      <span class="eyebrow">신살</span>
       <h2 class="sec-t">신살과 관계</h2>
       <div class="sal">
         <% 기둥.forEach(function(k){ var v = (c.신살 || {})[k] || []; %>
@@ -290,7 +290,7 @@
   <% } %>
 
   <div class="card">
-    <span class="eyebrow">五行</span>
+    <span class="eyebrow">오행</span>
     <h2 class="sec-t">오행과 십성</h2>
     <div class="els">
       <% reading.elements.forEach(function(e){ %>
@@ -311,7 +311,7 @@
   </div>
 
   <div class="card">
-    <span class="eyebrow">身强身弱 · 用神</span>
+    <span class="eyebrow">신강·신약과 용신</span>
     <h2 class="sec-t">내 힘과, 나에게 이로운 기운</h2>
     <div class="kv">
       <span class="on"><b><%= c.신강약 %></b></span>
@@ -331,7 +331,7 @@
 
   <% if (c.대운목록 && c.대운목록.length) { %>
     <div class="card">
-      <span class="eyebrow">大運</span>
+      <span class="eyebrow">대운</span>
       <h2 class="sec-t">십 년 단위의 큰 흐름</h2>
       <p style="font-size:13.5px;color:var(--dim);margin:0 0 13px">
         <%= c.대운수 %>세부터 <%= c.대운방향 %>합니다. 금색이 지금 지나고 있는 대운입니다.</p>
@@ -349,7 +349,7 @@
 
   <% if (c.세운목록 && c.세운목록.length) { %>
     <div class="card">
-      <span class="eyebrow">歲運</span>
+      <span class="eyebrow">세운</span>
       <h2 class="sec-t">해마다의 흐름</h2>
       <div class="flow"><div class="in">
         <% c.세운목록.forEach(function(d){ %>
@@ -365,7 +365,7 @@
 
   <% if (wolun && wolun.length) { %>
     <div class="card">
-      <span class="eyebrow">月運</span>
+      <span class="eyebrow">월운</span>
       <h2 class="sec-t">달마다의 흐름</h2>
       <div class="flow"><div class="in">
         <% wolun.forEach(function(d){ %>
