@@ -24,6 +24,7 @@ const fortune = require('../services/cbFortune');
 const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
 const theme = require('../services/msiteTheme');
+const guest = require('../services/guestSite');
 /* 「사주 공부」 글은 따로 둔다. cbFortune 은 묶어 만든 파일이라 손대지 않는다. */
 const articles = require('../services/msiteArticles');
 const { notify } = require('../services/push');
@@ -36,13 +37,45 @@ async function teacherOf(slug) {
   if (!s) return null;
   const { rows } = await pool.query(
     `SELECT id, name, site_name, slug, kakao_consult_link, consult_message, button_text,
-            msite_theme
+            msite_theme, landing,
+            bank_name, bank_account, bank_holder, bank_notice
        FROM users
       WHERE LOWER(slug) = $1 AND status = 'approved'
       LIMIT 1`,
     [s]
   );
   return rows[0] || null;
+}
+
+/**
+ * 신청란 설정을 「내 웹사이트」에서 그대로 가져온다.
+ *
+ * 상품 목록·금액·동의 문구·단추 글자를 만세력에서 따로 관리하면
+ * 두 곳이 어긋난다. 웹사이트에서 한 번만 고치면 여기도 따라오게 한다.
+ */
+function applyForm(t) {
+  let block = null;
+  try {
+    const L = typeof t.landing === 'string' ? JSON.parse(t.landing) : t.landing;
+    const blocks = (L && L.blocks) || [];
+    block = blocks.find((b) => b && b.type === 'form') || null;
+  } catch (e) { /* 아직 웹사이트를 안 만들었으면 기본값으로 */ }
+  const b = block || {};
+  return {
+    title: b.title || '사주 신청',
+    products: Array.isArray(b.products) ? b.products.filter(Boolean) : [],
+    agree: b.agree || '수집항목: 이름, 생년월일, 연락처 · 수집목적: 상담 제공 · 보유기간: 상담 완료 후 1년',
+    submit: b.submit || t.button_text || '내 사주 신청하기',
+    done: b.done || '접수되었습니다. 풀이가 끝나는 대로 연락드리겠습니다.',
+  };
+}
+
+/** 상품명에 적힌 금액만 뽑는다 — '정밀 풀이 (29,800원)' → 29800 */
+function priceOf(product) {
+  const m = String(product || '').match(/([\d,]{3,})\s*원/);
+  if (!m) return null;
+  const n = parseInt(m[1].replace(/,/g, ''), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 /** 화면 맨 위에 보일 이름 */
@@ -151,6 +184,7 @@ async function showInput(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();          // 없는 아이디면 다른 라우터에게 넘긴다
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
 
     res.render('msite/input', Object.assign(pageBits(req, t), { err: '', old: {} }));
   } catch (e) { next(e); }
@@ -161,6 +195,7 @@ async function showResult(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
 
     const b = readBirth(req.body || {});
     if (b.why) {
@@ -209,6 +244,20 @@ async function showResult(req, res, next) {
       wonguk: r.raw.wonguk || [],
       /* 밤 11시 태생만 하루 경계가 결과를 바꾼다. 그때만 알려준다. */
       jasiNote: !b.input.hourUnknown && b.input.hour === 23,
+      /* 신청란 — 방금 넣으신 값이 그대로 담겨 있어 다시 적지 않아도 된다 */
+      af: applyForm(t),
+      pre: {
+        name: b.input.name || '',
+        gender: b.input.gender === 'male' ? '남' : '여',
+        year: b.input.year, month: b.input.month, day: b.input.day,
+        cal: b.input.isLunar ? (b.input.isLeapMonth ? '윤달' : '음력') : '양력',
+        hour: b.input.hourUnknown ? ''
+          : String(b.input.hour).padStart(2, '0') + ':' + String(b.input.minute).padStart(2, '0'),
+        hourUnknown: !!b.input.hourUnknown,
+        region: b.regionName || '',
+        localTime: !!b.input.correctionMinutes,
+      },
+      regions: REGIONS,
       wolun: r.raw.월운목록 || [],
       /* 여기서부턴는 사람이 읽어야 하는 곳이라는 걸 보여준다 */
       teaser: fortune.LOCKED_TEASER,
@@ -227,12 +276,18 @@ async function join(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
 
     const b = req.body || {};
-    const name = String(b.name || '').trim().slice(0, 60);
+    const cut = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+    const name = cut(b.name, 60);
     const digits = String(b.phone || '').replace(/[^0-9]/g, '');
     if (!name || digits.length < 9) {
       return res.status(400).json({ ok: false, error: '이름과 연락처를 확인해주세요.' });
+    }
+    const email = cut(b.email, 120);
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ ok: false, error: '이메일 형식을 확인해주세요.' });
     }
     if (b.agree !== 'on' && b.agree !== true && b.agree !== '1') {
       return res.status(400).json({ ok: false, error: '개인정보 수집에 동의해주셔야 합니다.' });
@@ -241,23 +296,47 @@ async function join(req, res, next) {
       ? digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7)
       : digits;
 
+    /* 만세력에서 이미 받은 생년월일·시각·지역이 그대로 따라온다.
+       손님이 두 번 적지 않아도 되고, 신청자 목록에 바로 채워진다. */
+    const birth = [b.year, b.month, b.day].map((x) => cut(x, 4)).filter(Boolean).join('-');
+
     const memo = ['만세력 · ' + siteName(t) + ' 링크로 들어옴'];
-    if (String(b.memo || '').trim()) memo.unshift(String(b.memo).trim().slice(0, 500));
+    if (cut(b.memo, 500)) memo.unshift(cut(b.memo, 500));
 
     const { rows } = await pool.query(
-      `INSERT INTO leads (teacher_id, name, phone, memo, status, source, recruiter)
-       VALUES ($1,$2,$3,$4,'접수완료','만세력',$5) RETURNING id`,
-      [t.id, name, phone, memo.join('\n'), t.slug]
+      `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region,
+                          phone, email, product, memo, status, source, recruiter,
+                          partner_name, partner_gender, partner_birth, partner_hour,
+                          partner_calendar, partner_region, use_local_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'접수완료','만세력',$12,
+               $13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+      [t.id, name, cut(b.gender, 4) || null, birth || null, cut(b.cal, 8) || null,
+       cut(b.hour, 12) || null, cut(b.region, 40) || null,
+       phone, email || null, cut(b.product, 80) || null, memo.join('\n'), t.slug,
+       cut(b.partner_name, 60) || null, cut(b.partner_gender, 4) || null,
+       cut(b.partner_birth, 40) || null, cut(b.partner_hour, 20) || null,
+       cut(b.partner_birth, 40) ? (cut(b.partner_calendar, 8) || '양력') : null,
+       cut(b.partner_region, 40) || null,
+       b.useLocalSolarTime === 'on' || b.useLocalSolarTime === '1']
     );
 
     notify(t.id, {
       title: '만세력에서 신청이 들어왔어요',
-      body: name + '님이 번호를 남겼습니다',
+      body: name + '님' + (cut(b.product, 40) ? ' · ' + cut(b.product, 40) : ''),
       url: '/leads/' + rows[0].id,
     });
 
-    /* 식기 전에 바로 이야기가 시작되도록 카톡으로 넘긴다 */
-    res.json({ ok: true, kakao: t.kakao_consult_link || '' });
+    /* 계좌를 넣어 두셨으면 입금 안내를 함께 내려보낸다 — 웹사이트와 똑같이.
+       계좌가 없으면 예전처럼 카톡으로 넘긴다. */
+    let bank = null;
+    if (t.bank_account) {
+      bank = {
+        bankName: t.bank_name || '', account: t.bank_account, holder: t.bank_holder || '',
+        notice: t.bank_notice || '입금자명을 신청하신 분 성함으로 남겨주세요. 확인되는 대로 작업을 시작합니다.',
+        product: cut(b.product, 80), amount: priceOf(b.product),
+      };
+    }
+    res.json({ ok: true, bank, kakao: bank ? '' : (t.kakao_consult_link || '') });
   } catch (e) { next(e); }
 }
 
@@ -274,6 +353,7 @@ async function guideIljuIndex(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
     const all = fortune.allIlju();
     const groups = Object.keys(fortune.ILGAN).map((stem) => {
       const g = fortune.ILGAN[stem];
@@ -297,6 +377,7 @@ async function guideIlju(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
 
     const ganzhi = decodeURIComponent(String(req.params.ganzhi || '')).trim();
     const info = fortune.ilju(ganzhi);
@@ -329,6 +410,7 @@ async function guideIlgan(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
 
     const stem = decodeURIComponent(String(req.params.stem || '')).trim();
     const g = fortune.ILGAN[stem];
@@ -350,6 +432,7 @@ async function guideIndex(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
     res.render('msite/guide-index', {
       t, siteName: siteName(t), slug: t.slug,
       themeVars: theme.cssVars(t.msite_theme),
@@ -366,6 +449,7 @@ async function guideArticle(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
     const slug = String(req.params.article || '').trim();
     const a = articles.ARTICLES.find((x) => x.slug === slug);
     /* 없는 글이면 다음 라우터로 넘긴다 */
@@ -442,6 +526,7 @@ router.use(async (req, res, next) => {
   if (!slug) return next();
   const t = await teacherOf(slug).catch(() => null);
   if (!t) return next();
+  if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
   req.params.slug = slug;
   req._msiteRoot = true;   /* 앞자리가 없는 주소다 */
   if (req.method === 'GET' && req.path === '/') return showInput(req, res, next);

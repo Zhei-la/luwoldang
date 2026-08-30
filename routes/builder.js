@@ -11,7 +11,8 @@ router.get('/builder', (req, res) => {
   res.render('dash/builder', {
     user: req.user,
     active: 'free',
-    baseUrl: process.env.BASE_URL || '',
+    /* 손님에게 보여줄 주소다. 루월당 주소가 아니라 손님 주소를 쓴다. */
+    baseUrl: require('../services/guestSite').base(req),
   });
 });
 

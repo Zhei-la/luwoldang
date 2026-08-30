@@ -71,6 +71,7 @@ router.get('/s/:slug', async (req, res, next) => {
   try {
     const teacher = await findTeacher(req.params.slug);
     if (!teacher) return res.status(404).render('free/notfound');
+    if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
 
     // 방문 기록 (통계용) — IP+UA 로 중복 대충 거름, 실패해도 페이지엔 영향 없음
     try {
@@ -182,6 +183,7 @@ router.get('/s/:slug/free', async (req, res, next) => {
   try {
     const teacher = await findTeacher(req.params.slug);
     if (!teacher) return res.status(404).render('free/notfound');
+    if (guest.bounce(req, res)) return;
     res.render('free/input', { teacher, error: null, form: {} });
   } catch (e) {
     next(e);

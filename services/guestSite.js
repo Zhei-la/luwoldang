@@ -42,6 +42,25 @@ function base(req) {
 }
 
 /**
+ * 루월당 주소로 들어온 손님 화면을 손님 주소로 넘긴다.
+ *
+ * 링크 만드는 자리만 고쳐서는 부족하다. 이미 스레드·문자·북마크로
+ * 퍼져 있는 옛 주소(luwolsaju.com/아무개)는 그대로 열려서
+ * 주소창에 루월당이 그대로 보인다. 그래서 열릴 때 넘겨준다.
+ *
+ * @returns {boolean} 넘겼으면 true. true 면 호출한 쪽은 바로 끝내야 한다.
+ */
+function bounce(req, res) {
+  const h = host();
+  if (!h) return false;              // 손님 주소를 안 정했으면 아무것도 안 한다
+  if (isGuest(req)) return false;    // 이미 손님 주소면 그대로 둔다
+  /* POST 는 307 로 넘겨야 보낸 값이 살아서 따라간다 */
+  const code = req.method === 'GET' || req.method === 'HEAD' ? 301 : 307;
+  res.redirect(code, 'https://' + h + req.originalUrl);
+  return true;
+}
+
+/**
  * 손님 주소에서 열면 안 되는 곳으로 왔을 때 보여줄 화면.
  *
  * 루월당이라는 말이 한 글자도 나오면 안 된다.
@@ -74,4 +93,4 @@ function block(req, res) {
 </body></html>`);
 }
 
-module.exports = { host, isGuest, base, block };
+module.exports = { host, isGuest, base, block, bounce };
