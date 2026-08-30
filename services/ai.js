@@ -1174,8 +1174,188 @@ function outBudget(blockCount) {
   return Math.min(6000, Math.max(1500, n * 900));
 }
 
-async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters }) {
+/* ══════════════════════════════════════════════
+ * 결론 카드 — 장을 만들기 전에 뼈대를 한 번 못 박는다
+ *
+ *   장은 CONCURRENCY 개씩 동시에 만들어진다. 서로 뭘 썼는지 모른다.
+ *   그래서 4장에서 "금 기운이 부족하다", 11장에서 "금 기운이 단단하다"가
+ *   같이 나오는 사고가 있었다.
+ *
+ *   지침에 "앞 장에서 한 말을 뒤에서 받으세요"가 있어도
+ *   볼 자료가 없으니 지킬 수가 없었다. 그래서 먼저 카드를 만들고
+ *   모든 장에 같은 카드를 넘긴다.
+ * ══════════════════════════════════════════════ */
+
+const CARD_SYSTEM = `당신은 30년 경력의 사주 명리학자입니다.
+받은 명식을 읽고, 리포트 전체가 따를 뼈대를 정리합니다. 리포트 본문은 쓰지 않습니다.
+
+- **받은 자료에 있는 것만** 씁니다. 없는 것을 지어내지 마세요.
+- 오행 개수는 위에 드린 [오행 분포] 숫자를 **그대로** 옮깁니다. 새로 세지 마세요.
+- 없는 오행은 [오행 분포]에 적힌 대로 씁니다.
+  "아예 없음"과 "지장간에만 있음"을 반드시 구분하세요.
+- 격국은 월지를 기준으로 잡습니다.
+- 용신·희신·기신은 신강·신약과 조후(태어난 계절)를 같이 보고 정합니다.
+- 강점·약점과 "관통하는 이야기"는 **이 사람에게만 해당되는 말**로 씁니다.
+  아무한테나 붙는 말을 쓰면 리포트 전체가 무너집니다.
+- 겪은 일을 짐작하지 마세요. 타고난 구조와 앞으로의 흐름만 봅니다.
+- 한국어로만, 한자 없이 씁니다.
+
+반드시 아래 JSON으로만 답합니다. 다른 텍스트는 넣지 마세요.
+{
+  "ilgan": "일간 (예: 신금)",
+  "gangyak": "강약 (예: 신약)",
+  "gyeok": "격국과 그렇게 본 근거 한 줄",
+  "yongsin": "용신",
+  "huisin": "희신",
+  "gisin": "기신",
+  "ohaeng": "오행 개수 (예: 목 1 화 2 토 3 금 2 수 0)",
+  "eopsneun": "여덟 글자에 없는 오행과 십성 (지장간에만 있는 것은 그렇게 밝힐 것)",
+  "ganghan": "가장 강한 십성",
+  "gangjeom": "강점 한 줄",
+  "yakjeom": "약점 한 줄",
+  "daewoon": "현재 대운과 그 성격 한 줄",
+  "thread": "리포트를 관통하는 이야기 한 줄"
+}`;
+
+/** 결론 카드 만들기 — 실패하면 null 을 돌려주고, 부르는 쪽은 카드 없이 진행한다 */
+async function buildCard({ type, client, saju, partner, partnerSaju, openaiKey, model }) {
   const info = sajuBlock(client, saju, partner, partnerSaju, type);
+  const out = await callAI({
+    system: CARD_SYSTEM,
+    user: `${info}
+
+[정리할 것]
+이 사람의 "${type}" 리포트를 쓰기 전에, 위 명식을 읽고 뼈대를 잡아주세요.
+"관통하는 이야기"는 "${type}"에 맞춰 잡습니다.
+본문은 쓰지 말고 정리만 하세요.`,
+    openaiKey,
+    model,
+    maxTokens: 1000,
+  });
+  // 최소한 일간이라도 있어야 카드로 쓴다
+  return (out && (out.ilgan || out.thread)) ? out : null;
+}
+
+/** 카드를 장 프롬프트에 끼워 넣을 모양으로 만든다 */
+function renderCard(c) {
+  if (!c) return '';
+  const row = (k, v) => {
+    const t = String(v == null ? '' : v).replace(/\s*\n\s*/g, ' ').trim();
+    return t ? `· ${k} : ${t}\n` : '';
+  };
+  return `
+════════════════════════════════════
+[결론 카드 — 이 리포트 전체가 따르는 뼈대입니다]
+${row('일간', c.ilgan)}${row('강약', c.gangyak)}${row('격국', c.gyeok)}${row('용신', c.yongsin)}${row('희신', c.huisin)}${row('기신', c.gisin)}${row('오행 개수', c.ohaeng)}${row('여덟 글자에 없는 것', c.eopsneun)}${row('가장 강한 십성', c.ganghan)}${row('강점', c.gangjeom)}${row('약점', c.yakjeom)}${row('현재 대운', c.daewoon)}${row('관통하는 이야기', c.thread)}
+⚠️ **카드를 어기면 이 장은 실패입니다.**
+1. 카드에 "없다"고 적힌 오행·십성은 **이 장에서도 없습니다.**
+   없는 것을 있는 것처럼 쓰지 마세요. (예: 재성이 없다고 적혀 있으면
+   "재물복을 타고났다"고 쓸 수 없습니다)
+2. 카드의 **오행 개수·강약·용신을 그대로** 씁니다. 다시 세거나 바꾸지 마세요.
+3. 카드의 **강점·약점과 반대되는 말**을 하지 마세요.
+   ("결단력이 좋다"가 강점이면 "우유부단하다"고 쓸 수 없습니다)
+4. 카드와 어긋나는 문장이 **하나라도** 있으면 이 장은 실패입니다.
+
+맡은 소제목에서 [관통하는 이야기]를 다른 각도로 한 번은 다시 꺼내세요.
+════════════════════════════════════
+`;
+}
+
+/* ══════════════════════════════════════════════
+ * 검수 — 다 만든 뒤 전체를 한 번 훑고, 어긋난 장만 다시 쓴다
+ *
+ *   본문 전문을 넣으면 입력 비용이 3배가 된다.
+ *   장마다 앞부분만 모아도 어긋남은 다 드러나므로 앞부분만 보낸다.
+ * ══════════════════════════════════════════════ */
+
+const REVIEW_HEAD = 320;   // 장마다 검수에 넣을 앞부분 글자 수
+const REVIEW_MAX = 5;      // 다시 쓸 장은 최대 5개까지
+
+const REVIEW_SYSTEM = `당신은 사주 리포트 감수자입니다.
+리포트 한 편의 각 장 앞부분을 받아, **다시 써야 할 장만** 골라냅니다.
+
+세 가지만 봅니다. 그 밖의 것은 지적하지 마세요.
+1. **결론 카드와 어긋나는 장** — 카드에 없다고 한 것을 있다고 썼거나,
+   강약·오행 개수·용신이 카드와 다르거나, 카드의 강점·약점과 반대로 쓴 장
+2. **장끼리 서로 반대되는 장** — 4장에서 "결단력이 뛰어나다"고 하고
+   5장에서 "우유부단하다"고 하는 식
+3. **사주 글자가 하나도 없고 누구에게나 맞는 말만 있는 장**
+
+문장이 어색하다, 분량이 짧다, 표현이 아쉽다 같은 것은 **보지 마세요.**
+애매하면 넘어가세요. 확실히 어긋난 것만 고릅니다.
+
+반드시 아래 JSON으로만 답합니다. 다른 텍스트는 넣지 마세요.
+redo 의 각 줄은 "N장|이유" 형식입니다.
+
+{ "redo": ["3장|카드에 재성이 없다는데 재물복을 타고났다고 씀", "7장|4장과 반대되는 말"] }
+
+문제가 없으면 빈 배열로 답합니다.
+
+{ "redo": [] }`;
+
+/** 검수용 요약 — 장마다 앞부분만 모은다 */
+function reviewDigest(chapters) {
+  return chapters.map((ch, i) => {
+    const body = (ch && Array.isArray(ch.blocks))
+      ? ch.blocks.map((b) => String((b && b.body) || '')).join(' ')
+      : '';
+    const head = body.replace(/\s+/g, ' ').trim().slice(0, REVIEW_HEAD);
+    return `${i + 1}장 「${(ch && ch.title) || ''}」\n${head || '(내용 없음)'}`;
+  }).join('\n\n');
+}
+
+/** 검수 답 파싱 — 형식에 안 맞거나 범위 밖 장 번호는 버린다
+ *
+ *  모델이 배열 대신 한 덩어리 글로 답하는 경우가 있어 둘 다 받는다.
+ *  "없음" 한 줄로 답하는 경우도 그냥 형식 불일치로 걸러진다. */
+function parseReview(out, total) {
+  let lines = [];
+  if (Array.isArray(out)) lines = out;
+  else if (out && Array.isArray(out.redo)) lines = out.redo;
+  else if (out && typeof out.redo === 'string') lines = out.redo.split(/\r?\n/);
+  else if (typeof out === 'string') lines = out.split(/\r?\n/);
+  else return [];
+
+  const seen = new Set();
+  const res = [];
+  lines.forEach((raw) => {
+    const line = String(raw == null ? '' : raw);
+    const m = line.trim().match(/^(\d{1,2})\s*장\s*\|\s*(.+)$/);
+    if (!m) return;                            // 형식에 안 맞으면 무시
+    const idx = Number(m[1]) - 1;
+    if (!(idx >= 0 && idx < total)) return;    // 범위 밖 장 번호면 무시
+    if (seen.has(idx)) return;
+    seen.add(idx);
+    res.push({ index: idx, reason: m[2].trim().slice(0, 200) });
+  });
+  return res.slice(0, REVIEW_MAX);
+}
+
+/** 전체 검수 — 실패하면 빈 배열(= 검수 없이 진행) */
+async function reviewReport({ type, chapters, card, openaiKey, model }) {
+  const digest = reviewDigest(chapters);
+  const user = `리포트 종류: ${type}
+${renderCard(card) || '\n(결론 카드 없음 — 2번·3번만 보세요)\n'}
+[각 장 앞부분]
+${digest}
+
+위 ${chapters.length}개 장 중에서 다시 써야 할 장만 고르세요.
+redo 의 각 줄은 "3장|이유" 형식입니다. 문제가 없으면 빈 배열로 답하세요.
+많아야 ${REVIEW_MAX}개까지만 고르세요. 확실히 어긋난 것만 고릅니다.`;
+
+  const out = await callAI({
+    system: REVIEW_SYSTEM,
+    user,
+    openaiKey,
+    model,
+    maxTokens: 700,
+  });
+  return parseReview(out, chapters.length);
+}
+
+
+async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters, card, redoReason }) {
+  const info = sajuBlock(client, saju, partner, partnerSaju, type) + renderCard(card);
   const subs = chapter.sub || [];
 
   /* ── 종합사주 vs 전문 리포트 — 역할을 분명히 나눈다 ──
@@ -1267,8 +1447,20 @@ async function generateChapter({ type, chapter, index, total, client, saju, part
 - 단정("~하게 됩니다")은 피하고 흐름과 경향으로 씁니다.
 - 답을 회피하지 마세요. 물어본 것에 대해 최선을 다해 답하세요.` : '';
 
-  const user = `${info}
+  /* 검수에 걸려서 다시 쓰는 경우 — 왜 걸렸는지 알려줘야 같은 실수를 안 한다 */
+  const redoBlock = redoReason ? `
 
+[⚠️ 이 장은 다시 쓰는 것입니다]
+먼저 쓴 글이 아래 문제로 걸렸습니다.
+
+  ${redoReason}
+
+**이 문제를 반복하지 마세요.** 위 [결론 카드]를 다시 읽고, 카드와 어긋나지 않게 쓰세요.
+분량과 소제목은 그대로 유지합니다.
+` : '';
+
+  const user = `${info}
+${redoBlock}
 ${fieldBlock(type)}
 ${roleBlock}${summaryBlock}
 ${mapBlock}
@@ -1609,6 +1801,21 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
     : `[PDF] "${type}" — 남긴 질문 없음 (총 ${chapters.length}장)`);
   const out = new Array(chapters.length);
 
+  /* ① 결론 카드 — 장을 만들기 전에 뼈대를 한 번 못 박는다.
+     장은 동시에 여러 개 만들어져서 서로 뭘 썼는지 모른다.
+     카드가 없으면 4장과 11장이 반대되는 말을 해도 막을 길이 없다. */
+  if (onProgress) await onProgress(0, chapters.length, '사주 정리 중');
+  let card = null;
+  try {
+    card = await buildCard({ type, client, saju, partner, partnerSaju, openaiKey, model });
+    console.log(card
+      ? `[PDF] 결론 카드 — ${String(card.thread || card.ilgan || '').slice(0, 50)}`
+      : '[PDF] 결론 카드를 받지 못해 카드 없이 진행합니다.');
+  } catch (e) {
+    // 카드가 없어도 리포트는 나와야 한다 (예전과 똑같이 동작)
+    console.error('[PDF] 결론 카드 생성 실패 — 카드 없이 진행합니다:', e.message);
+  }
+
   let cursor = 0;
   let done = 0;
 
@@ -1623,6 +1830,7 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
         type, chapter: ch, index: i, total: chapters.length,
         client, saju, partner, partnerSaju, openaiKey, model,
         allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
+        card,                    // 모든 장이 같은 뼈대를 보고 쓴다
       };
 
       try {
@@ -1651,7 +1859,49 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
     Array.from({ length: Math.min(rateLimited ? 1 : CONCURRENCY, chapters.length) }, worker)
   );
 
-  if (onProgress) onProgress(chapters.length, chapters.length, '완료');
+  /* ② 검수 — 다 만든 뒤 전체를 한 번 훑고, 어긋난 장만 골라낸다.
+     본문 전문이 아니라 장마다 앞부분만 보낸다 (전문을 넣으면 입력 비용이 3배). */
+  let redo = [];
+  try {
+    if (onProgress) await onProgress(chapters.length, chapters.length, '검수 중');
+    redo = await reviewReport({ type, chapters: out, card, openaiKey, model });
+    console.log(redo.length
+      ? `[PDF] 검수 — 다시 쓸 장 ${redo.length}개: ${redo.map((r) => (r.index + 1) + '장').join(', ')}`
+      : '[PDF] 검수 — 어긋난 장 없음');
+  } catch (e) {
+    // 검수가 실패해도 리포트는 그대로 나간다
+    console.error('[PDF] 검수 실패 — 검수 없이 진행합니다:', e.message);
+    redo = [];
+  }
+
+  /* ③ 재작성 — 걸린 장만 다시 만든다.
+     한 장이라도 실패하면 원래 장을 그대로 둔다. */
+  for (let k = 0; k < redo.length; k++) {
+    const { index: ri, reason } = redo[k];
+    const ch = chapters[ri];
+    if (!ch) continue;
+    if (onProgress) await onProgress(chapters.length, chapters.length, `${ri + 1}장 다시 쓰는 중`);
+    try {
+      const fixed = await generateChapter({
+        type, chapter: ch, index: ri, total: chapters.length,
+        client, saju, partner, partnerSaju, openaiKey, model,
+        allChapters: chapters, card, redoReason: reason,
+      });
+      // 빈 껍데기가 오면 원래 장을 지키는 것이 낫다
+      const hasBody = fixed && Array.isArray(fixed.blocks)
+        && fixed.blocks.some((b) => String((b && b.body) || '').trim().length > 30);
+      if (hasBody) {
+        out[ri] = fixed;
+        console.log(`[PDF] ${ri + 1}장 다시 씀 — ${reason.slice(0, 40)}`);
+      } else {
+        console.error(`[PDF] ${ri + 1}장 다시 쓰기 결과가 비어 원래 글을 둡니다.`);
+      }
+    } catch (e) {
+      console.error(`[PDF] ${ri + 1}장 다시 쓰기 실패 — 원래 글을 둡니다:`, e.message);
+    }
+  }
+
+  if (onProgress) await onProgress(chapters.length, chapters.length, '완료');
   return out;
 }
 
