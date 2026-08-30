@@ -207,6 +207,8 @@ async function showResult(req, res, next) {
         (b.input.hourUnknown ? ' · 시간 모름' : ' ' + b.input.hour + '시 ' + b.input.minute + '분') +
         (b.regionName ? ' · ' + b.regionName : ''),
       wonguk: r.raw.wonguk || [],
+      /* 밤 11시 태생만 하루 경계가 결과를 바꾼다. 그때만 알려준다. */
+      jasiNote: !b.input.hourUnknown && b.input.hour === 23,
       wolun: r.raw.월운목록 || [],
       /* 여기서부턴는 사람이 읽어야 하는 곳이라는 걸 보여준다 */
       teaser: fortune.LOCKED_TEASER,
