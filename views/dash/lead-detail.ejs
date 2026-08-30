@@ -10,6 +10,10 @@
 <!-- 신청자 정보 -->
 <div class="settings-block">
   <h2 class="section-h">신청자 정보
+    <%# 이 분 정보를 그대로 만세력 계산기에 넣어 연다. 같은 걸 두 번 안 적게 한다. %>
+    <% if (lead.birth) { %>
+      <a class="edit-btn manse-btn" href="/manse?from=<%= lead.id %>">만세력 넣기</a>
+    <% } %>
     <button type="button" class="edit-btn" id="btnEditLead">정보 수정</button>
   </h2>
 
@@ -722,6 +726,10 @@
   .edit-btn{padding:7px 14px;background:var(--card);border:1px solid #ddd2b8;border-radius:8px;
     font-size:13px;font-weight:700;color:#8a6f3c;cursor:pointer}
   .edit-btn:hover{border-color:#B59A62;background:#fbf6ec}
+  /* 만세력 넣기 — 정보 수정 옆에 나란히 둔다 */
+  .section-h .manse-btn{margin-right:6px;text-decoration:none;display:inline-block;
+    background:var(--navy);border-color:var(--navy);color:#fff}
+  .section-h .manse-btn:hover{background:#24304a;border-color:#24304a;color:#fff}
   .ed-warn{font-size:13px;color:#8a6f3c;background:#fbf6ec;border:1px solid #ecdfc4;
     border-radius:9px;padding:11px 13px;margin-bottom:14px;line-height:1.6}
   .ed-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
