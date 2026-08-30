@@ -125,15 +125,17 @@
           </label>
         </div>
 
+        <%# 지역을 안 고르면 보정이 0이 되어 시계 시각 그대로 계산된다.
+            한국에서 태어났다면 그건 늘 30분쯤 틀린 값이라, 서울을 기본으로 둔다. %>
         <details class="more" <%= old.region ? 'open' : '' %>>
-          <summary>정확도 높이기 (출생지역)</summary>
+          <summary>태어난 지역 — 지금은 <b><%= old.region || '서울특별시' %></b> 기준</summary>
           <div class="in">
             <label for="rg">태어난 지역</label>
             <select name="region" id="rg">
-              <option value="">고르지 않음 (보정하지 않음)</option>
               <% regions.forEach(function(r){ %>
-                <option value="<%= r.name %>" <%= old.region === r.name ? 'selected' : '' %>><%= r.name %> (<%= r.correctionMinutes >= 0 ? '+' : '' %><%= r.correctionMinutes %>분)</option>
+                <option value="<%= r.name %>" <%= (old.region ? old.region === r.name : r.name === '서울특별시') ? 'selected' : '' %>><%= r.name %> (<%= r.correctionMinutes >= 0 ? '+' : '' %><%= r.correctionMinutes %>분)</option>
               <% }); %>
+              <option value="" <%= old.region === '' && old.year ? 'selected' : '' %>>보정하지 않음 (시계 시각 그대로)</option>
             </select>
             <p class="tiny" style="margin:8px 0 0;line-height:1.8">한국 표준시는 동경 135도 기준이라
               실제 태어난 지역의 진태양시와 최대 30분 넘게 차이가 납니다.

@@ -34,6 +34,8 @@
   .gz .h{font-size:27px;font-weight:800;line-height:1.15;font-family:serif}
   .gz .k{font-size:14px;font-weight:700;margin-top:3px;opacity:.95}
   .gz .t{font-size:11.5px;margin-top:5px;font-weight:700;opacity:.9}
+  .gz .t .me{display:inline-block;margin-left:4px;padding:0 5px;border-radius:100px;
+    background:var(--gold);color:#fff;font-size:10px;font-weight:800;vertical-align:1px}
   .gz.mok{background:var(--mok-bg);color:var(--mok)}
   .gz.hwa{background:var(--hwa-bg);color:var(--hwa)}
   .gz.to{background:var(--to-bg);color:var(--to)}
@@ -213,7 +215,10 @@
             <td><div class="gz <%= p.unknown ? 'non' : (EL[p.stemElem] || '') %> <%= p.key === '일' ? 'day' : '' %>">
               <div class="h"><%= p.unknown ? '?' : p.stemHanja %></div>
               <div class="k"><%= p.unknown ? '모름' : p.stemKo %></div>
-              <div class="t"><%= p.unknown ? '' : p.stemTenGod %></div>
+              <%# 엔진은 일간 자리에 십성 대신 「일간」이라고 적는다.
+                  다른 만세력처럼 십성(비견)도 같이 보여준다 — 일간은 저와 같은
+                  천간이니 십성으로는 늘 비견이다. 「나」는 그 옆에 작게 붙인다. %>
+              <div class="t"><% if (!p.unknown) { %><%= p.stemTenGod === '일간' ? '비견' : p.stemTenGod %><% if (p.key === '일') { %><span class="me">나</span><% } %><% } %></div>
             </div></td>
           <% }); %>
         </tr>

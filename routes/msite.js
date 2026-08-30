@@ -118,7 +118,12 @@ function readBirth(b) {
     }
   }
 
-  const region = REGIONS.find((r) => r.name === b.region);
+  /* 지역을 안 고르면 보정이 0이 되어 시계 시각 그대로 계산된다.
+     한국에서 태어났다면 그건 늘 30분쯤 틀린 값이고, 간지로 고를 때와도
+     시주가 달라진다. 그래서 처음 들어온 손님에게는 서울을 기본으로 쓴다.
+     화면에서 「보정하지 않음」을 고르면 그때는 0 이 된다. */
+  const wantRegion = b.region == null ? '서울특별시' : b.region;
+  const region = REGIONS.find((r) => r.name === wantRegion);
 
   return {
     input: {

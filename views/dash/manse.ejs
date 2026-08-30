@@ -241,6 +241,8 @@
 
 
 /* 지역시 보정 체크박스 */
+#manse-app .corr-note { margin:7px 0 0; font-size:12px; line-height:1.75; color:#8A8574; }
+#manse-app .corr-note b { color:#4A4438; }
 #manse-app .corr-chk { display:flex; align-items:center; gap:6px; margin-top:6px;
   font-size:13px; color:#444; font-weight:500; cursor:pointer; white-space:normal; }
 #manse-app .corr-chk input { width:17px; height:17px; flex:0 0 auto; cursor:pointer; }
@@ -411,14 +413,16 @@
       </div>
       <div class="field">
         <label for="birthRegionSearch">출생지역</label>
-        <input type="text" id="birthRegionSearch" class="region-search-input" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
+        <input type="text" id="birthRegionSearch" class="region-search-input" value="서울특별시" placeholder="지역명 검색 (예: 서울)" autocomplete="off">
         <div class="region-suggest" id="birthRegionSuggest"></div>
         <div class="region-warning" id="birthRegionWarning">목록에서 지역을 선택하세요</div>
       </div>
       <div class="field">
         <label for="birthCorrectionManual">보정(분)</label>
-        <input type="number" id="birthCorrectionManual" class="region-manual-input" placeholder="예: -23" step="1">
+        <input type="number" id="birthCorrectionManual" class="region-manual-input" value="-32" placeholder="예: -23" step="1">
         <label class="corr-chk"><input type="checkbox" id="birthUseCorrection" checked autocomplete="off"> 지역시(진태양시) 보정 사용</label>
+        <p class="corr-note">기본값은 <b>서울 −32분</b>입니다. 태어난 지역을 고르면 그 값으로 바뀝니다.<br>
+          ⚠️ 보정을 끄면 시계 시각 그대로 계산해서, <b>간지선택으로 넣었을 때와 시주가 달라집니다.</b></p>
       </div>
       <div class="field">
         <label for="seyunRange">세운</label>
