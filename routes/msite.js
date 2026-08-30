@@ -553,6 +553,31 @@ router.use(async (req, res, next) => {
  *    server.js 에서 제일 마지막에 붙인다.
  *    그래야 /leads 같은 진짜 주소가 먼저 이긴다.
  */
+/**
+ * 루월당 주소로 들어온 짧은 손님 주소(/아무개)를 손님 주소로 넘긴다.
+ *
+ * 짧은 주소는 tail 라우터가 맨 끝에서 받는데, 그 앞에 로그인 검사가 걸린
+ * 라우터들이 있어서 손님이 루월당 첫 화면으로 튕겨 나갔다. 그래서 앞에서 잡는다.
+ *
+ * 조심한 것
+ *   · 로그인한 사람은 건드리지 않는다. 교육생이 /notice 같은 데를 볼 때
+ *     혹시라도 가로채지 않게 한다.
+ *   · 손님 화면 모양의 주소(/아무개, /아무개/guide…, /아무개/join)만 본다.
+ *   · 진짜 교육생 아이디일 때만 넘긴다.
+ */
+async function shortBounce(req, res, next) {
+  try {
+    if (!guest.host() || guest.isGuest(req)) return next();
+    if (req.session && req.session.userId) return next();
+    const m = req.path.match(/^\/([A-Za-z0-9-]{2,40})(?:\/(?:guide|join)(?:\/.*)?)?\/?$/);
+    if (!m) return next();
+    const t = await teacherOf(m[1]);
+    if (!t) return next();
+    if (guest.bounce(req, res)) return;
+    next();
+  } catch (e) { next(); }
+}
+
 const tail = express.Router();
 tail.get('/:slug', showInput);
 tail.post('/:slug', showResult);
@@ -561,3 +586,4 @@ addGuide(tail, '/:slug');
 
 module.exports = router;
 module.exports.tail = tail;
+module.exports.shortBounce = shortBounce;
