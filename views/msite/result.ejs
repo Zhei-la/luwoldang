@@ -28,6 +28,9 @@
   .gz{border-radius:12px;padding:11px 4px}
   /* 한자를 못 읽는 분도 한글만 보고 알 수 있게, 한글을 조금 키우고
      한자는 조금 줄여 둘의 차이를 좁혔다. */
+  .rd-more{margin:22px 0 0;padding:16px 17px;border-radius:12px;
+    background:var(--line2);font-size:14px;line-height:1.9;color:var(--dim)}
+  .rd-more b{color:var(--ink2)}
   .gz .h{font-size:27px;font-weight:800;line-height:1.15;font-family:serif}
   .gz .k{font-size:14px;font-weight:700;margin-top:3px;opacity:.95}
   .gz .t{font-size:11.5px;margin-top:5px;font-weight:700;opacity:.9}
@@ -392,6 +395,10 @@
           <div class="bd"><%- b.html %></div>
         </div>
       <% }); %>
+      <%# 여기까지가 계산이 해준 것이라는 걸 분명히 해 둔다 %>
+      <p class="rd-more">여기까지는 <b>계산이 뽑아낸 것</b>입니다.
+        사주를 신청하시면 이 여덟 글자를 사람이 직접 읽고,
+        <b>지금 무엇을 결정해야 하는지</b>까지 훨씬 자세히 풀어 적어 보내드립니다.</p>
     </div>
   <% } %>
 
