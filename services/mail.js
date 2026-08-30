@@ -21,6 +21,10 @@
 
 const RESEND_URL = 'https://api.resend.com/emails';
 
+/* 수강생이 설정한 사주 이름(로고 글자 → 사이트 이름 → 이름 순).
+   이걸 안 가져와서 ReferenceError 가 났고, 그 바람에 묶음 메일이 통째로 죽었다. */
+const { siteNameOf } = require('./landing');
+
 function apiKey(teacher) {
   return (teacher && teacher.mail_key) || process.env.RESEND_KEY || null;
 }
@@ -275,7 +279,13 @@ module.exports = { sendFreeSaju, buildFreeSajuHtml, mailReady, sendMail, fromAdd
  * ============================================================ */
 /* 사주 원국 표 — 여러 메일 템플릿이 같이 쓴다 */
 function sajuTable(input, saju) {
+  /* 만세력이 반쪽만 만들어져 오는 일이 있다.
+     그때 여기서 예외가 나면 메일 본문이 통째로 날아가고,
+     "리포트가 준비되었습니다" 한 줄짜리 대체 메일이 손님에게 간다.
+     표는 없어도 되지만 메일은 살아야 하므로, 모자란 게 있으면 표만 접는다. */
   if (!saju || !saju.pillars) return '';
+  if (!saju.detail || !saju.elements || !Array.isArray(saju.strong) || !Array.isArray(saju.weak)) return '';
+  if (!['hour', 'day', 'month', 'year'].every((k) => saju.detail[k])) return '';
   const EL_COLOR = { 목: '#2e8b57', 화: '#cf4038', 토: '#b8860b', 금: '#6b7684', 수: '#2f6bb0' };
   const cols = ['hour', 'day', 'month', 'year'];
   const labels = { hour: '생시', day: '생일', month: '생월', year: '생년' };
@@ -335,16 +345,16 @@ function sajuTable(input, saju) {
 
   return chart;
 }
-function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl }) {
-  const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
-    .map((x) => `<p style="margin:0 0 11px;line-height:1.85;font-size:14.5px;color:#3f3b33">${esc(x)}</p>`).join('');
+/* ── 오행 분포 막대 ──
+ *
+ * 메일 클라이언트는 SVG 를 자주 지우므로 표 + 배경색으로 그린다.
+ * 단일 발송과 묶음 발송이 같은 그림을 쓰도록 함수로 빼두었다. */
+const EL_COLOR = { 목: '#2e8b57', 화: '#cf4038', 토: '#b8860b', 금: '#6b7684', 수: '#2f6bb0' };
+const EL_LABEL = { 목: '목 (木)', 화: '화 (火)', 토: '토 (土)', 금: '금 (金)', 수: '수 (水)' };
 
-  const EL_COLOR = { 목: '#2e8b57', 화: '#cf4038', 토: '#b8860b', 금: '#6b7684', 수: '#2f6bb0' };
-  const cols = ['hour', 'day', 'month', 'year'];
-  const chart = sajuTable(input, saju);
-  /* ── 오행 분포 막대 (메일 클라이언트는 SVG를 자주 지우므로 표+배경색으로 그린다) ── */
-  const EL_LABEL = { 목: '목 (木)', 화: '화 (火)', 토: '토 (土)', 금: '금 (金)', 수: '수 (水)' };
-  const elBars = (saju && saju.elements) ? (() => {
+function elementBars(saju) {
+  if (!saju || !saju.elements) return '';
+  return (() => {
     const e = saju.elements;
     const total = Object.values(e).reduce((a, b) => a + b, 0) || 1;
     const rows = Object.keys(EL_LABEL).map((k) => {
@@ -383,7 +393,53 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
         </td></tr>
       </table>
     </td></tr>`;
-  })() : '';
+  })();
+}
+
+/* ── 다운로드 안내 — 파일 보관 기간을 알려준다 ── */
+function downloadNote() {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="margin-top:20px;background:#f4f4f5;border-radius:8px">
+        <tr><td style="padding:16px 18px;text-align:center;font-size:12.5px;line-height:1.85;color:#6b6b70">
+          <b style="color:#3f3f46">[다운로드 안내]</b><br>
+          파일은 개인정보 보호를 위해 7일간 보관 후 자동 삭제됩니다.<br>
+          기간 내에 반드시 다운로드하여 소장해 주십시오.
+        </td></tr>
+      </table>`;
+}
+
+/* ── 후기 남기기 — 교육생이 링크를 넣어둔 경우에만 ── */
+function reviewBlock(teacher) {
+  const link = String((teacher && teacher.review_link) || '').trim();
+  if (!link) return '';
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px">
+        <tr><td style="text-align:center">
+          ${teacher.review_notice
+            ? `<div style="font-size:13px;color:#6b6b70;line-height:1.8;margin-bottom:10px">${esc(teacher.review_notice)}</div>`
+            : ''}
+          <a href="${esc(link)}" target="_blank" rel="noopener"
+             style="display:inline-block;padding:13px 24px;border:1px solid #B59A62;color:#8a6a2f;
+                    font-weight:700;font-size:14px;text-decoration:none;border-radius:9px">
+            후기 남기러 가기
+          </a>
+        </td></tr>
+      </table>`;
+}
+
+/* ── 문의하기 단추 ── */
+function consultButton(teacher, baseUrl) {
+  return teacher.kakao_consult_link
+    ? `<a href="${esc(teacher.kakao_consult_link)}" style="display:inline-block;padding:14px 26px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">${esc(teacher.button_text || '카카오톡으로 문의하기')}</a>`
+    : `<a href="${esc(baseUrl)}/s/${esc(teacher.slug)}" style="display:inline-block;padding:14px 26px;background:#182234;color:#fff;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">문의하기</a>`;
+}
+
+function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl }) {
+  const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
+    .map((x) => `<p style="margin:0 0 11px;line-height:1.85;font-size:14.5px;color:#3f3b33">${esc(x)}</p>`).join('');
+
+  const chart = sajuTable(input, saju);
+  const elBars = elementBars(saju);
+
 
   /* ── 요약: 첫 챕터의 앞부분만 (전문은 링크에서) ── */
   const firstBody = (() => {
@@ -420,34 +476,13 @@ function buildPdfHtml({ teacher, type, sections, saju, input, baseUrl, shareUrl 
            style="color:#8a6a2f;font-weight:700;text-decoration:underline">PDF 저장하기</a>
         를 눌러주세요.
       </div>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-             style="margin-top:20px;background:#f4f4f5;border-radius:8px">
-        <tr><td style="padding:16px 18px;text-align:center;font-size:12.5px;line-height:1.85;color:#6b6b70">
-          <b style="color:#3f3f46">[다운로드 안내]</b><br>
-          파일은 개인정보 보호를 위해 7일간 보관 후 자동 삭제됩니다.<br>
-          기간 내에 반드시 다운로드하여 소장해 주십시오.
-        </td></tr>
-      </table>
-      ${String((teacher && teacher.review_link) || '').trim() ? `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px">
-        <tr><td style="text-align:center">
-          ${teacher.review_notice
-            ? `<div style="font-size:13px;color:#6b6b70;line-height:1.8;margin-bottom:10px">${esc(teacher.review_notice)}</div>`
-            : ''}
-          <a href="${esc(String(teacher.review_link).trim())}" target="_blank" rel="noopener"
-             style="display:inline-block;padding:13px 24px;border:1px solid #B59A62;color:#8a6a2f;
-                    font-weight:700;font-size:14px;text-decoration:none;border-radius:9px">
-            후기 남기러 가기
-          </a>
-        </td></tr>
-      </table>` : ''}
+      ${downloadNote()}
+      ${reviewBlock(teacher)}
     </td></tr>` : '';
 
   const body = elBars + summary + reportBtn;
 
-  const consultBtn = teacher.kakao_consult_link
-    ? `<a href="${esc(teacher.kakao_consult_link)}" style="display:inline-block;padding:14px 26px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">${esc(teacher.button_text || '카카오톡으로 문의하기')}</a>`
-    : `<a href="${esc(baseUrl)}/s/${esc(teacher.slug)}" style="display:inline-block;padding:14px 26px;background:#182234;color:#fff;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">문의하기</a>`;
+  const consultBtn = consultButton(teacher, baseUrl);
 
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F7F3EA">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F3EA;padding:24px 12px"><tr><td align="center">
@@ -493,82 +528,85 @@ module.exports.buildPdfHtml = buildPdfHtml;
  * ============================================================ */
 
 /**
+ * 묶음 메일
+ *
+ * 단일 발송(buildPdfHtml)과 **같은 본문**을 쓴다.
+ * 예전에는 만세력 표만 넣고 오행 분포·다운로드 안내·후기 칸을 빼먹어서,
+ * 묶어 보내면 메일이 딴판으로 왔다. 이제 리포트 칸만 여러 개로 늘어난다.
+ *
  * @param {object} o { teacher, saju, input, items:[{type, shareUrl}], baseUrl }
  */
 function buildBundleHtml({ teacher, saju, input, items, baseUrl }) {
-  const P = (t) => String(t || '').split(/\n{2,}|\n/).filter(Boolean)
-    .map((x) => `<p style="margin:0 0 11px;font-size:14.5px;line-height:1.85;color:#3d3a33">${esc(x)}</p>`).join('');
+  const list = Array.isArray(items) ? items : [];
+  const name = esc((input && input.name) || '');
+  const types = list.map((x) => esc(x.type)).join(' · ');
 
-  const brand = esc(siteNameOf(teacher) || '사주 풀이');
+  const chart = sajuTable(input, saju);
+  const elBars = elementBars(saju);
 
-  const cards = items.map((it) => `
-    <tr><td style="padding:0 24px 12px">
+  /* 리포트마다 한 칸씩. 단일 발송의 열람 버튼을 그대로 쓴다. */
+  const cards = list.map((it, k) => `
+    <tr><td style="padding:0 24px ${k === list.length - 1 ? '6' : '14'}px">
       <table width="100%" cellpadding="0" cellspacing="0"
-        style="border-collapse:separate;border:1px solid #E9E0CF;border-radius:10px;background:#fff">
-        <tr>
-          <td style="padding:16px 18px">
-            <div style="font-size:16px;font-weight:800;color:#182234;margin-bottom:3px">${esc(it.type)}</div>
-            <div style="font-size:12px;color:#8a8574">PDF 파일로 받아 소장하실 수 있습니다.</div>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:0 18px 16px">
-            <a href="${esc(it.shareUrl)}/report.pdf"
-               style="display:inline-block;padding:11px 18px;background:#B59A62;color:#fff;
-                      font-weight:800;font-size:13.5px;text-decoration:none;border-radius:8px;margin-right:8px">
-              결과 리포트 열람하기
-            </a>
+             style="border-collapse:separate;border:1px solid #E9E0CF;border-radius:10px;background:#fff">
+        <tr><td style="padding:16px 18px 4px;text-align:center">
+          <p style="margin:0;font-size:12px;letter-spacing:.14em;color:#B59A62;font-weight:700">${esc(it.type)}</p>
+        </td></tr>
+        <tr><td style="padding:10px 18px 18px" align="center">
+          <a href="${esc(it.shareUrl)}/report.pdf"
+             style="display:block;padding:15px;background:#B59A62;color:#fff;font-weight:800;
+                    font-size:15px;text-decoration:none;border-radius:10px;text-align:center">
+            결과 리포트 열람하기
+          </a>
+          <div style="margin-top:10px;text-align:center;font-size:12.5px;color:#8a8574;line-height:1.7">
+            화면으로 바로 열립니다. 기기에 파일로 남기시려면
             <a href="${esc(it.shareUrl)}/report.pdf?dl=1"
-               style="display:inline-block;font-size:12.5px;color:#8a6a2f;font-weight:700;text-decoration:underline">
-              PDF 저장하기
-            </a>
-          </td>
-        </tr>
+               style="color:#8a6a2f;font-weight:700;text-decoration:underline">PDF 저장하기</a>
+            를 눌러주세요.
+          </div>
+        </td></tr>
       </table>
     </td></tr>`).join('');
 
-  const consultBtn = teacher.kakao_consult_link
-    ? `<a href="${esc(teacher.kakao_consult_link)}" style="display:inline-block;padding:14px 26px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px">${esc(teacher.button_text || '카카오톡으로 문의하기')}</a>`
-    : '';
+  const tail = `
+    <tr><td style="padding:8px 24px 26px" align="center">
+      ${downloadNote()}
+      ${reviewBlock(teacher)}
+    </td></tr>`;
 
-  return `<!DOCTYPE html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F3EEE3;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#F3EEE3;padding:26px 0">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FBF8F1;border-radius:14px;overflow:hidden">
-
-  <tr><td style="padding:30px 24px 8px;text-align:center">
-    <div style="font-size:12px;letter-spacing:.2em;color:#B59A62;margin-bottom:9px">${brand}</div>
-    <h1 style="margin:0 0 6px;font-size:22px;color:#252522">${esc(input.name)}님의 사주 리포트</h1>
-    <p style="margin:0;font-size:13.5px;color:#8a8574">
-      리포트 ${items.length}편이 준비되었습니다.
-    </p>
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F7F3EA">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F3EA;padding:24px 12px"><tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fffdf8;border:1px solid #E9E0CF;border-radius:14px;overflow:hidden;font-family:-apple-system,'Malgun Gothic',sans-serif">
+  <tr><td style="padding:34px 24px 10px;text-align:center">
+    <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;color:#B59A62;font-weight:700">${types}</p>
+    <h1 style="margin:0 0 6px;font-size:23px;color:#252522">${name}님의 사주 리포트</h1>
+    <div style="width:42px;height:2px;background:#B59A62;margin:12px auto 0"></div>
   </td></tr>
-
-  ${sajuTable(input, saju)}
-
-  <tr><td style="padding:6px 24px 12px">
-    <p style="margin:0;font-size:13px;color:#182234;font-weight:700">받으신 리포트</p>
+  ${chart}
+  ${elBars}
+  <tr><td style="padding:0 24px 10px">
+    <p style="margin:0;font-size:13px;color:#182234;font-weight:700">받으신 리포트 ${list.length}편</p>
   </td></tr>
   ${cards}
-
-  ${consultBtn ? `
-  <tr><td style="padding:14px 24px 30px;text-align:center;border-top:1px solid #EFE7D8">
-    <p style="margin:0 0 12px;font-size:13.5px;color:#6b6656">더 궁금한 점이 있으시면 편하게 문의해주세요.</p>
-    ${consultBtn}
-  </td></tr>` : '<tr><td style="height:24px"></td></tr>'}
-
-</table>
-</td></tr></table>
-</body></html>`;
+  ${tail}
+  <tr><td style="padding:8px 24px 30px;text-align:center;border-top:1px solid #E9E0CF">
+    <p style="margin:16px 0 14px;font-size:13.5px;color:#5a5648;line-height:1.7">${esc((teacher && teacher.consult_message) || '더 궁금한 점이 있으시면 편하게 문의해주세요.')}</p>
+    ${consultButton(teacher, baseUrl)}
+  </td></tr>
+  <tr><td style="padding:16px;background:#fbf7ee;text-align:center;border-top:1px solid #E9E0CF">
+  </td></tr>
+</table></td></tr></table></body></html>`;
 }
 
 async function sendBundle({ to, teacher, saju, input, items, baseUrl }) {
   let html = '';
   try {
     html = buildBundleHtml({ teacher, saju, input, items, baseUrl });
-  } catch (e) { html = ''; }
+  } catch (e) {
+    // 예전에는 여기서 조용히 삼켰다. 그래서 왜 밋밋한 대체 메일이 갔는지 알 수가 없었다.
+    console.error('[MAIL] 묶음 본문 생성 실패 — 대체 메일로 나갑니다:', e.message);
+    html = '';
+  }
   const names = items.map((x) => x.type).join(' · ');
   const firstUrl = (items && items[0] && items[0].shareUrl) || '';
   return sendMail(teacher, {
