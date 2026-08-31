@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 // 랜딩 (비로그인)
 app.get('/', (req, res) => {
   if (req.session.userId) return res.redirect('/home');
-  res.render('landing', {});
+  res.render('landing', { biz: require('./services/bizInfo').bizInfo() });
 });
 // 카카오 로그인
 app.use('/auth', authRoutes);
