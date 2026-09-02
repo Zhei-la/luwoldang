@@ -49,6 +49,41 @@ const TERMS = [
   '갑목', '을목', '병화', '정화', '무토', '기토', '경금', '신금', '임수', '계수',
 ];
 
+/* 사주를 실제로 「가리킨」 말.
+   TERMS 와 달리, 뭉뚱그린 말(사주·일간)은 빼고 무엇인지 짚은 것만 센다.
+   「같은 일간이라면」은 근거가 아니고 「경금 일간은」이 근거다. */
+const POINTED = [
+  '갑목', '을목', '병화', '정화', '무토', '기토', '경금', '신금', '임수', '계수',
+  '역마', '도화', '삼재', '공망', '화개', '백호', '괴강', '천을귀인', '문창',
+  '재성', '관성', '비겁', '식상', '인성', '편재', '정재', '편관', '정관',
+  '비견', '겁재', '식신', '상관', '편인', '정인',
+  '용신', '기신', '대운', '세운', '원국', '지장간', '십이운성', '12운성',
+  '자시', '축시', '진술축미', '삼합', '육합',
+  '쥐띠', '소띠', '범띠', '호랑이띠', '토끼띠', '용띠', '뱀띠',
+  '말띠', '양띠', '원숭이띠', '닭띠', '개띠', '돼지띠',
+];
+
+/* 후킹 이름을 문장에 그대로 붙여 쓴 것.
+   「솔직히 말해서, 사주 보는 게 처음이신가요? 나만 그런 거 아니죠?」처럼
+   각도를 문장으로 착각해 이어 붙이면 알맹이가 없어진다. */
+const HOOK_WORDS = [
+  '솔직히 말해서', '솔직히 말하면', '나만 그런 거 아니죠', '나만 그런가요',
+  '반드시 알아야 할', '꼭 알아야 할', '이것만은 반드시',
+  '진짜 고수들은', '요즘 핫한', '최근 유행하는',
+];
+
+/** 사주를 실제로 가리켰는지 — 가리킨 말이 하나도 없으면 사주 글이 아니다 */
+function pointsToSaju(text) {
+  const t = String(text || '');
+  return POINTED.some((w) => t.indexOf(w) >= 0);
+}
+
+/** 후킹 이름을 문장으로 붙여 쓴 곳 */
+function hookWordsIn(text) {
+  const t = String(text || '');
+  return HOOK_WORDS.filter((w) => t.indexOf(w) >= 0);
+}
+
 /** 겁주는 문장을 찾으면 그 문장 앞부분을 돌려준다. 없으면 null. */
 function scareViolation(text) {
   for (const raw of String(text == null ? '' : text).split(/[.\n]/)) {
@@ -120,6 +155,33 @@ function checkPost(post) {
       detail: hasSolution ? undefined : '"이렇게 하면 된다"로 닫아야 합니다',
     });
   }
+
+  /* 사주를 실제로 가리켰는가.
+     이게 없으면 「사주 보는 게 처음이신가요?」 같은 아무 말이 나간다.
+     무료사주 안내글은 풀이가 아니라 손님을 받는 글이라 뺀다. */
+  const isNotice = post.postType === '브랜딩형' || post.replyType === 'signup';
+  if (!isNotice) {
+    const pointed = parts.some(pointsToSaju);
+    rows.push({
+      label: '사주를 실제로 가리킴',
+      ok: pointed,
+      hard: true,
+      detail: pointed
+        ? undefined
+        : '일간·오행·십성·신살 중 무엇인지 적어야 합니다 (「같은 일간이라면」은 근거가 아닙니다)',
+    });
+  }
+
+  /* 후킹 이름을 문장에 그대로 붙여 쓴 경우 */
+  const hookish = hookWordsIn(parts.join(' '));
+  rows.push({
+    label: '후킹 이름을 문장으로 쓰지 않음',
+    ok: hookish.length === 0,
+    hard: true,
+    detail: hookish.length
+      ? '"' + hookish.join('", "') + '" — 후킹은 각도이지 문장이 아닙니다'
+      : undefined,
+  });
 
   /* ── 소프트 규칙 — 어겨도 발행은 되지만 알려준다 ── */
 
@@ -203,4 +265,4 @@ function checkPost(post) {
   return { rows, passHard, lengths };
 }
 
-module.exports = { checkPost, scareViolation, BANNED, TERMS };
+module.exports = { checkPost, scareViolation, pointsToSaju, hookWordsIn, BANNED, TERMS, POINTED };
