@@ -67,9 +67,18 @@ const POINTED = [
    「솔직히 말해서, 사주 보는 게 처음이신가요? 나만 그런 거 아니죠?」처럼
    각도를 문장으로 착각해 이어 붙이면 알맹이가 없어진다. */
 const HOOK_WORDS = [
-  '솔직히 말해서', '솔직히 말하면', '나만 그런 거 아니죠', '나만 그런가요',
-  '반드시 알아야 할', '꼭 알아야 할', '이것만은 반드시',
-  '진짜 고수들은', '요즘 핫한', '최근 유행하는',
+  '솔직히 말해서', '솔직히 말하면', '솔직히 말씀드리면',
+  '반드시 알아야 할', '꼭 알아야 할', '이것만은 반드시', '반드시 알아두',
+  '진짜 고수들은', '고수들은 이렇게', '요즘 핫한', '최근 유행하는',
+  '이렇게 활용해', '이렇게 쓰면 됩니다만',
+];
+
+/* 「나만 그래?」류는 변형이 많아 정규식으로 잡는다.
+   나만 그런 건가요 / 나만 그런 거 아니죠 / 저만 그런가요 … */
+const HOOK_RE = [
+  { re: /(나|저)만\s*그런\s*(건|거|가|건가)/, name: '나만 그래?' },
+  { re: /여러분은\s*어떤/, name: '어때? 의견 묻기' },
+  { re: /(알아야|아셔야)\s*할\s*(점|것)이\s*있습니다/, name: '반드시' },
 ];
 
 /** 사주를 실제로 가리켰는지 — 가리킨 말이 하나도 없으면 사주 글이 아니다 */
@@ -81,7 +90,40 @@ function pointsToSaju(text) {
 /** 후킹 이름을 문장으로 붙여 쓴 곳 */
 function hookWordsIn(text) {
   const t = String(text || '');
-  return HOOK_WORDS.filter((w) => t.indexOf(w) >= 0);
+  const out = HOOK_WORDS.filter((w) => t.indexOf(w) >= 0);
+  HOOK_RE.forEach((h) => { if (h.re.test(t)) out.push(h.name); });
+  return out;
+}
+
+/* 줄바꿈 —
+   벤치마크에서 터진 글은 전부 한 줄에 한 뜻씩 끊어 놓았다.
+   세 문장을 한 줄에 쭉 이어 쓰면 폰에서 벽처럼 보여 그냥 넘긴다. */
+function needsBreaks(parts) {
+  const bad = [];
+  (parts || []).forEach((p, i) => {
+    const text = String(p || '');
+    const lines = text.split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean);
+    const sents = (text.match(/[.!?][\s]|[.!?]$/g) || []).length;
+    // 문장이 셋 이상인데 줄이 하나면 벽이다
+    if (sents >= 3 && lines.length <= 1) bad.push(i + 1);
+    // 한 줄이 60자를 넘어도 폰에서 두세 줄로 접힌다
+    else if (lines.some((l) => l.length > 60)) bad.push(i + 1);
+  });
+  return bad;
+}
+
+/* 알맹이 없이 뭉뚱그린 말 — 무엇인지 안 밝히고 넘어가는 표현 */
+const VAGUE = [
+  /(것|점|방법|부분)들?이\s*(있|많)/,
+  /방법이\s*많/,
+  /여러\s*가지가\s*있/,
+  /잘\s*대처만\s*하면/,
+  /도움이\s*될\s*(것|거)/,
+];
+function vagueIn(text) {
+  const t = String(text || '');
+  const hit = VAGUE.find((re) => re.test(t));
+  return hit ? (t.match(hit) || [''])[0].trim() : null;
 }
 
 /** 겁주는 문장을 찾으면 그 문장 앞부분을 돌려준다. 없으면 null. */
@@ -171,6 +213,30 @@ function checkPost(post) {
         : '일간·오행·십성·신살 중 무엇인지 적어야 합니다 (「같은 일간이라면」은 근거가 아닙니다)',
     });
   }
+
+  /* 줄바꿈 — 한 줄에 쭉 이어 쓰면 폰에서 벽이 된다 */
+  const wall = needsBreaks(parts);
+  rows.push({
+    label: '한 줄에 한 뜻씩 끊음',
+    ok: wall.length === 0,
+    hard: true,
+    detail: wall.length
+      ? wall.length === parts.length
+        ? '문장마다 줄을 바꿔주세요 (한 줄 60자 넘기지 않기)'
+        : wall.join('·') + '번째 편이 한 줄로 붙어 있습니다'
+      : undefined,
+  });
+
+  /* 알맹이 없이 뭉뚱그린 말 */
+  const vague = parts.map(vagueIn).find(Boolean);
+  rows.push({
+    label: '무엇인지 밝히고 넘어감',
+    ok: !vague,
+    hard: true,
+    detail: vague
+      ? '"' + vague + '" — 무엇인지 적어야 합니다. 「조심할 것들이 있어요」가 아니라 무엇을 조심하는지'
+      : undefined,
+  });
 
   /* 후킹 이름을 문장에 그대로 붙여 쓴 경우 */
   const hookish = hookWordsIn(parts.join(' '));
@@ -265,4 +331,4 @@ function checkPost(post) {
   return { rows, passHard, lengths };
 }
 
-module.exports = { checkPost, scareViolation, pointsToSaju, hookWordsIn, BANNED, TERMS, POINTED };
+module.exports = { checkPost, scareViolation, pointsToSaju, hookWordsIn, needsBreaks, vagueIn, BANNED, TERMS, POINTED };
