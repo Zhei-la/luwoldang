@@ -29,6 +29,14 @@ function apiKey(teacher) {
   return (teacher && teacher.mail_key) || process.env.RESEND_KEY || null;
 }
 
+/* 교육생이 자기 Resend 키를 넣어둔 경우, 그 키는 대개 예전 도메인이나
+   본인 도메인으로 등록돼 있다. 공용 도메인(MAIL_DOMAIN)이 바뀌면
+   "This API key is not authorized to send emails from ..." 로 막힌다.
+   그때는 공용 키로 한 번 더 보내준다. 교육생이 손댈 것 없이 그냥 나간다. */
+function notAuthorized(msg) {
+  return /not authorized to send|domain is not verified|not verified/i.test(String(msg || ''));
+}
+
 function mailDomain() {
   return process.env.MAIL_DOMAIN || null;
 }
@@ -135,9 +143,22 @@ async function sendMail(teacher, opts) {
 
   if (!res.ok) {
     let msg = (data && (data.message || data.error)) || `발송 실패 (HTTP ${res.status})`;
+
+    /* 개인 키가 이 도메인을 못 쓰는 경우 — 공용 키로 한 번 더 보낸다.
+       도메인은 MAIL_DOMAIN 하나로 통일돼 있어서, 개인 키를 넣어둔 교육생은
+       도메인이 바뀌는 순간 메일이 통째로 막힌다. 손님에게 나갈 메일이
+       설정 하나 때문에 안 나가면 안 되므로 여기서 살려준다. */
+    const shared = process.env.RESEND_KEY;
+    if (notAuthorized(msg) && teacher && teacher.mail_key && shared && key !== shared) {
+      console.error(`[MAIL] 개인 키로 ${domain} 발송이 막혀 공용 키로 다시 보냅니다 (${fromEmail(teacher)})`);
+      return sendMail({ ...teacher, mail_key: null }, opts);
+    }
+
     if (res.status === 401) msg = 'API 키가 올바르지 않습니다.';
-    if (/domain is not verified|not verified/i.test(String(msg))) {
-      msg = `도메인(${domain})이 아직 인증되지 않았습니다. Resend에서 인증 완료 후 다시 시도해주세요.`;
+    if (notAuthorized(msg)) {
+      msg = `이 키로는 ${domain} 에서 메일을 보낼 수 없습니다. `
+          + `설정에 개인 Resend 키를 넣어두셨다면 그 칸을 비워주세요. `
+          + `(비우면 공용 키로 나갑니다)`;
     }
     throw new Error(msg);
   }
