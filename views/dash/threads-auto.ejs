@@ -1019,7 +1019,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
           '</span></div>'+
         '<div class="ta-body">'+partsHtml(p)+
           (p.cutNote ? '<p class="ta-sub" style="margin:12px 0 0">끊은 곳 — '+esc(p.cutNote)+'</p>' : '')+
-        (TAIL ? '<div class="ta-msg" style="margin:12px 0 0">맨 뒤에 붙습니다 — ' + esc(TAIL) + '</div>' : '')+
+        (TAIL ? '<div class="ta-msg ta-tailbox" style="margin:12px 0 0">'+
+            '<label style="display:flex;gap:7px;align-items:flex-start;cursor:pointer">'+
+              '<input type="checkbox" class="ta-no-tail" style="margin-top:3px">'+
+              '<span><b>이 글에는 고정멘트를 빼기</b><br>'+
+              '<span style="opacity:.75">맨 뒤에 붙습니다 — ' + esc(TAIL) + '</span></span>'+
+            '</label></div>' : '')+
         '</div>'+ checkHtml(p.check) +'</div>';
     }).join('');
 
@@ -1050,7 +1055,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     $('#taSave').addEventListener('click', function(){
       var chosen = [];
       out.querySelectorAll('.ta-post').forEach(function(el){
-        if ($('.ta-pick-one', el).checked) chosen.push(batch.posts[Number(el.dataset.i)]);
+        if ($('.ta-pick-one', el).checked) {
+          var p = batch.posts[Number(el.dataset.i)];
+          var nt = $('.ta-no-tail', el);           // 고정멘트 빼기 체크
+          p.noTail = !!(nt && nt.checked);
+          chosen.push(p);
+        }
       });
       if (!chosen.length) { alert('저장할 글을 골라주세요.'); return; }
       var btn = this; btn.disabled = true; btn.textContent = '저장하는 중';
@@ -1079,7 +1089,11 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       var mark = el.querySelector(mode === 'schedule' ? '.ta-sched-now' : '.ta-pub-now');
       mark.innerHTML = '<span class="ta-spin"></span> 보내는 중';
 
-      post('/api/threads/save', { batch: batch, posts: [batch.posts[i]] }).then(function(r){
+      var one = batch.posts[i];
+      var ntOne = el.querySelector('.ta-no-tail');
+      one.noTail = !!(ntOne && ntOne.checked);
+
+      post('/api/threads/save', { batch: batch, posts: [one] }).then(function(r){
         if (!r.j.ok || !r.j.ids || !r.j.ids.length) {
           btns.forEach(function(b){ b.disabled = false; });
           mark.textContent = mode === 'schedule' ? '예약' : '지금 올리기';

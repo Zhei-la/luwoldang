@@ -81,10 +81,15 @@ const HOOK_RE = [
   { re: /(알아야|아셔야)\s*할\s*(점|것)이\s*있습니다/, name: '반드시' },
 ];
 
+/* 오행은 한 글자라 그냥 넣으면 「수요일」·「금방」까지 걸린다.
+   기운을 가리키는 자리에 쓰였을 때만 센다. */
+const ELEM_RE = /(목|화|토|금|수)\s*(기운|이 없|가 없|이 많|가 많|이 강|이 약|이 부족|가 부족|을 채|를 채|오행)/;
+
 /** 사주를 실제로 가리켰는지 — 가리킨 말이 하나도 없으면 사주 글이 아니다 */
 function pointsToSaju(text) {
   const t = String(text || '');
-  return POINTED.some((w) => t.indexOf(w) >= 0);
+  if (POINTED.some((w) => t.indexOf(w) >= 0)) return true;
+  return ELEM_RE.test(t);
 }
 
 /** 후킹 이름을 문장으로 붙여 쓴 곳 */
@@ -213,6 +218,17 @@ function checkPost(post) {
         : '일간·오행·십성·신살 중 무엇인지 적어야 합니다 (「같은 일간이라면」은 근거가 아닙니다)',
     });
   }
+
+  /* 한 편으로 끝나야 한다.
+     1/3, 2/3 로 나눠 올리면 뒷편을 아무도 안 본다. */
+  rows.push({
+    label: '한 편으로 끝남',
+    ok: parts.length <= 1,
+    hard: true,
+    detail: parts.length <= 1
+      ? undefined
+      : parts.length + '편으로 나뉘어 있습니다. 한 편에 담거나 덜 중요한 것을 빼주세요',
+  });
 
   /* 줄바꿈 — 한 줄에 쭉 이어 쓰면 폰에서 벽이 된다 */
   const wall = needsBreaks(parts);

@@ -30,6 +30,7 @@ function rowToPost(r) {
     parts: r.parts || [],
     replyType: r.reply_type || undefined,
     cta: !!r.cta,
+    noTail: !!r.no_tail,
     cutNote: r.cut_note || undefined,
     status: r.status,
     scheduledFor: r.scheduled_for ? new Date(r.scheduled_for).toISOString() : undefined,
@@ -78,13 +79,13 @@ async function insertPosts(userId, list) {
       await client.query(
         `INSERT INTO th_posts
            (id, user_id, topic, situation, hooks, post_type, form, parts,
-            reply_type, cta, cut_note, status, auto)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+            reply_type, cta, cut_note, status, auto, no_tail)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
         [
           id, userId, p.topic || '', p.situation || '',
           JSON.stringify(p.hooks || []), p.postType || '', p.form || 'single',
           JSON.stringify(p.parts || []), p.replyType || null, !!p.cta,
-          p.cutNote || null, p.status || 'draft', !!p.auto,
+          p.cutNote || null, p.status || 'draft', !!p.auto, !!p.noTail,
         ]
       );
       made.push(id);
@@ -105,6 +106,7 @@ const PATCHABLE = {
   form: ['form', (v) => v],
   postType: ['post_type', (v) => v],
   cta: ['cta', (v) => !!v],
+  noTail: ['no_tail', (v) => !!v],
   cutNote: ['cut_note', (v) => v],
   status: ['status', (v) => v],
   scheduledFor: ['scheduled_for', (v) => v],

@@ -300,10 +300,28 @@ async function readyToSend(userId, post) {
  */
 async function bodyToSend(userId, post) {
   const settings = await store.getSettings(userId);
-  const t = await tail.build(userId, settings);
   const body = post.form === 'chain' ? numberParts(post.parts) : post.parts;
+
+  /* 이 글은 고정멘트를 빼기로 한 경우.
+     안내 문구가 어울리지 않는 글에도 매번 붙던 것을 글마다 끌 수 있게 했다. */
+  if (post.noTail) {
+    return { parts: body, tail: { text: '', withLink: false, off: true } };
+  }
+
+  const t = await tail.build(userId, settings);
   return { parts: tail.attach(body, t.text), tail: t };
 }
+
+/* 글 하나의 고정멘트를 켜고 끈다 */
+router.post('/api/threads/posts/:id/tail', ...guard, async (req, res, next) => {
+  try {
+    const post = await store.getPost(req.user.id, req.params.id);
+    if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    const off = !!(req.body && (req.body.off === true || req.body.off === 'true'));
+    const saved = await store.updatePost(req.user.id, post.id, { noTail: off });
+    res.json({ ok: true, noTail: off, post: pipeline.view(saved) });
+  } catch (e) { next(e); }
+});
 
 /** 지금 바로 올린다 */
 router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) => {

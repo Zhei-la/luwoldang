@@ -909,6 +909,8 @@ async function initDb() {
     await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS cta_per_week INTEGER DEFAULT 2;`);
     /* 이 글에 링크가 실제로 붙었는지 — 주당 횟수를 세려면 필요하다 */
     await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS link_sent BOOLEAN DEFAULT FALSE;`);
+    /* 글마다 고정멘트를 뺄 수 있게. 어울리지 않는 글에도 매번 붙는 문제가 있었다. */
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS no_tail BOOLEAN DEFAULT FALSE;`);
 
     console.log('[DB] 스레드 자동화 준비 완료');
   } catch (e) {
