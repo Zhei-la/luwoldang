@@ -12,6 +12,7 @@ const store = require('./store');
 const { buildPrompt, buildRewritePrompt } = require('./prompt');
 const { runAi } = require('./llm');
 const { parseLoose, normalize } = require('./parse');
+const copycheck = require('./copycheck');
 const { checkPost } = require('./guideline');
 const { formOf, threadsLength, numberParts } = require('./length');
 const { hookName } = require('./hooks');
@@ -51,15 +52,16 @@ async function generate(userId, openaiKey, topic, limit) {
   const settings = await store.getSettings(userId);
   const ledger = await store.getLedger(userId);
 
-  const prompt = buildPrompt(topic, {
+  const makePrompt = (extra) => buildPrompt(topic, {
     ledger,
     facts: (settings.facts || []).map((f) => f.text || String(f)),
     voicePack: settings.voicePack,
     ctaLink: settings.ctaLink,
     limit,
+    extra,
   });
 
-  const { text, usage } = await runAi(openaiKey, prompt);
+  const { text, usage } = await runAi(openaiKey, makePrompt(''));
 
   const parsed = parseLoose(text);
   const norm = normalize(parsed.data);
@@ -71,8 +73,46 @@ async function generate(userId, openaiKey, topic, limit) {
 
   const v = norm.value;
   const topicOut = v.topic || topic;
-  const posts = v.posts.map(fixShape).filter((p) => p.parts.length)
-    .map((p) => decorate(p, topicOut, v.situation));
+  let posts = v.posts.map(fixShape).filter((p) => p.parts.length);
+
+  /* 벤치마크를 베꼈는지 본다.
+     「짜임새만 빌려라」라고 적어두는 것만으로는 안 지켜진다.
+     눈앞에 원문이 있으면 모델은 그 문장을 가져다 쓴다. 그래서 기계로 잡는다. */
+  let copyNote = null;
+  const bad = copycheck.scan(posts);
+  if (bad.length) {
+    const keep = posts.filter((_, i) => !bad.some((b) => b.index === i));
+    console.log('[스레드] 참고 글을 베낀 글 ' + bad.length + '편 — ' + bad[0].reason);
+
+    if (keep.length) {
+      // 멀쩡한 것이 남았으면 그것만 쓴다. 요금을 또 쓰지 않는다.
+      posts = keep;
+      copyNote = bad.length + '편이 참고 글과 겹쳐서 뺐습니다.';
+    } else {
+      // 전부 베꼈으면 한 번만 다시 만든다
+      try {
+        const again = await runAi(openaiKey, makePrompt(
+          [ '', '[다시 씁니다] 방금 만든 글이 참고 자료를 그대로 가져다 썼습니다.',
+            '걸린 이유: ' + bad[0].reason,
+            '소재를 아예 새로 잡으세요. 다른 일간·다른 신살·다른 상황으로 가야 합니다.',
+            '짜임새만 빌리고 문장은 처음부터 새로 쓰세요.' ].join(String.fromCharCode(10))));
+        const re2 = normalize(parseLoose(again.text).data);
+        if (re2.ok) {
+          const fresh = re2.value.posts.map(fixShape).filter((p) => p.parts.length);
+          const stillBad = copycheck.scan(fresh);
+          posts = fresh.filter((_, i) => !stillBad.some((b) => b.index === i));
+          copyNote = posts.length
+            ? '참고 글과 겹쳐서 다시 만들었습니다.'
+            : '참고 글과 겹쳐 전부 뺐습니다. 다른 주제로 다시 해보세요.';
+        }
+      } catch (e) {
+        console.error('[스레드] 다시 만들기 실패:', e.message);
+        copyNote = '참고 글과 겹쳐 전부 뺐습니다. 다른 주제로 다시 해보세요.';
+      }
+    }
+  }
+
+  posts = posts.map((p) => decorate(p, topicOut, v.situation));
 
   return {
     topic: topicOut,
@@ -80,7 +120,8 @@ async function generate(userId, openaiKey, topic, limit) {
     hookScan: v.hookScan,
     unusable: v.unusable,
     posts,
-    warning: parsed.warning || null,
+    warning: parsed.warning || copyNote || null,
+    copyNote,
     usage,
   };
 }

@@ -10,12 +10,23 @@ const path = require('path');
 const { HOOKS } = require('./hooks');
 
 const GUIDELINE_PATH = path.join(__dirname, 'CONTENT-GUIDELINE.md');
+/* 실제로 터진 글을 유형별로 뜯어본 것. 노션 「사주 글 벤치마킹」에서 옮겨 온다.
+   지침이 「어떻게 쓸까」라면 이건 「이렇게 쓰니 터지더라」다. */
+const BENCHMARK_PATH = path.join(__dirname, 'BENCHMARK.md');
 
 let cached = null;
 function loadGuideline() {
   if (cached) return cached;
   cached = fs.readFileSync(GUIDELINE_PATH, 'utf8');
   return cached;
+}
+
+let benchCached = null;
+function loadBenchmark() {
+  if (benchCached !== null) return benchCached;
+  try { benchCached = fs.readFileSync(BENCHMARK_PATH, 'utf8'); }
+  catch (e) { benchCached = ''; }   // 파일이 없어도 글은 나와야 한다
+  return benchCached;
 }
 
 const SCHEMA = `{
@@ -90,6 +101,15 @@ function buildPrompt(topic, opts) {
 ════════ 지침 ════════
 ${loadGuideline()}
 
+${loadBenchmark() ? `════════ 실제로 터진 글 — 유형과 공식 ════════
+${loadBenchmark()}
+
+⚠️ 위 자료를 쓰는 규칙
+- **짜임새와 말투만 가져온다.** 문장·표현·소재는 가져오지 않는다.
+- 위에 나온 소재는 **이미 쓰인 것**이다. 같은 소재로 쓰면 베낀 글이 된다.
+  다른 일간·다른 신살·다른 상황으로 새로 잡아라.
+- 위 문장을 그대로 옮기거나 몇 글자만 바꿔 쓰면 그 글은 버려진다.
+` : ''}
 ════════ 내 말투 ════════
 ${voiceBlock(o.voicePack)}
 
@@ -103,6 +123,7 @@ ${facts.length
   : '(비어 있음 — 실제 수치·이벤트·사례·개인 소식이 필요한 후킹은 blocked 로 처리하고, 무엇이 있으면 쓸 수 있는지 unlock 에 적어주세요)'}
 
 ${o.ctaLink ? '════════ 신청 안내 ════════\n신청 주소는 시스템이 글 맨 뒤에 따로 붙입니다. 본문에 URL 을 적지 마세요.\ncta: true 로 둔 글은 마지막을 안내하는 문장으로 닫기만 하세요.\n' : ''}
+${o.extra || ''}
 ════════ 주제 ════════
 ${topic}
 
@@ -129,7 +150,10 @@ ${countRule}
 - 신청 유도(cta: true)는 전체 글의 3분의 1 이하로만.
 - 본문에 URL 을 적지 마라. 주소는 시스템이 맨 뒤에 붙인다.
 - 500자는 스레드가 막는 한계일 뿐 목표가 아니다. 그 근처까지 채우지 마라.
-- 타고난 것으로 겁주지 않는다. 경고형은 반드시 해결 문장으로 닫는다.`;
+- 타고난 것으로 겁주지 않는다. 경고형은 반드시 해결 문장으로 닫는다.
+- **사주 근거가 없는 글은 쓰지 마라.** 일간·오행·십성·신살·대운 중
+  적어도 하나는 실제로 가리켜야 한다. 「요즘 힘드시죠」 같은 아무 말은 사주 글이 아니다.
+- **벤치마크에 나온 문장·소재를 다시 쓰지 마라.** 짜임새만 빌린다.`;
 }
 
 /** 같은 자리에서 다른 버전으로 다시 쓰는 프롬프트 */
@@ -161,4 +185,4 @@ ${post.parts.map((t, i) => '--- ' + (i + 1) + '편 ---\n' + t).join('\n\n')}
 { "parts": ["1편 본문", "2편 본문"], "cutNote": "두 편일 때 어디서 끊었는지" }`;
 }
 
-module.exports = { buildPrompt, buildRewritePrompt, loadGuideline, voiceBlock };
+module.exports = { buildPrompt, buildRewritePrompt, loadGuideline, loadBenchmark, voiceBlock };
