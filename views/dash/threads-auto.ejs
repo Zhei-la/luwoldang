@@ -37,7 +37,11 @@
 
 /* 입력 */
 #ta label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px}
-#ta input[type=text],#ta input[type=password],#ta textarea,#ta select{
+/* 사파리는 type=search 를 둥근 캡슐로 그린다. 다른 칸과 모양을 맞춘다. */
+#ta input[type=search]{-webkit-appearance:none;appearance:none}
+#ta input[type=search]::-webkit-search-decoration,
+#ta input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none}
+#ta input[type=text],#ta input[type=password],#ta input[type=search],#ta textarea,#ta select{
   width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;
   font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
 #ta textarea{line-height:1.8;resize:vertical}
@@ -266,9 +270,15 @@
       <div class="ta-row">
         <div style="flex:2">
           <label for="taTopic">주제</label>
-          <input type="text" id="taTopic" name="threadsTopic" placeholder="예: 역마살, 공망, 삼재, 궁합"
+          <%# ⚠️ type=search 로 두는 이유
+                크롬은 autocomplete="off" 를 무시하고, 그냥 글 쓰는 칸에도
+                저장해둔 아이디를 밀어 넣고 「비밀번호를 저장할까요?」를 띄운다.
+                type=search 는 자동완성 대상이 아니라 그 일이 없다.
+                name 도 뗐다 — 보내는 값이 아니라 자바스크립트로만 읽는다. %>
+          <input type="search" id="taTopic" placeholder="예: 역마살, 공망, 삼재, 궁합"
                  maxlength="120" autocomplete="off" autocapitalize="off" spellcheck="false"
-                 data-lpignore="true" data-form-type="other">
+                 autocorrect="off" data-lpignore="true" data-form-type="other"
+                 data-1p-ignore data-bwignore>
         </div>
         <div style="max-width:130px">
           <label for="taLimit">글 개수</label>
