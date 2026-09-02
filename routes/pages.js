@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const msiteTheme = require('../services/msiteTheme');
+const msiteQuota = require('../services/msiteQuota');
 const { pool } = require('../db');
 /* 손님이 보는 링크는 손님 주소로 만든다 */
 const guest = require('../services/guestSite');
@@ -21,9 +22,13 @@ router.get('/home', async (req, res, next) => {
       free:  await q('SELECT COUNT(*)::int AS c FROM free_logs WHERE teacher_id = $1'),
     };
     // 방문자 통계 (교육생: 자기 것 / 관리자: 전체도 함께)
-    const { getStats } = require('../services/stats');
+    const { getStats, homeStats } = require('../services/stats');
     const visit = await getStats(req.user.id);
     const visitAll = req.user.role === 'admin' ? await getStats(null) : null;
+    /* 하루별 · 일주일 비교 — 실패해도 홈은 떠야 한다 */
+    let week = null;
+    try { week = await homeStats(req.user.id, 7); }
+    catch (e) { console.error('[통계] 주간 집계 실패:', e.message); }
     /* 홈에 보여줄 최근 공지 세 건 */
     let notices = [];
     try {
@@ -34,7 +39,7 @@ router.get('/home', async (req, res, next) => {
       notices = r.rows;
     } catch (e) { /* 표가 아직 없으면 그냥 넘어간다 */ }
 
-    res.render('dash/home', { user: req.user, active: 'home', stats, visit, visitAll, notices });
+    res.render('dash/home', { user: req.user, active: 'home', stats, visit, visitAll, notices, week });
   } catch (e) {
     next(e);
   }
@@ -59,6 +64,7 @@ router.get('/free-saju-settings', (req, res) => {
     themes: msiteTheme.list(),
     msiteBase: msiteTheme.baseUrl(req),
     themeNow: msiteTheme.clean(req.user.msite_theme),
+    quotaNow: msiteQuota.clean(req.user.msite_limit),
   });
 });
 
@@ -69,6 +75,18 @@ router.post('/free-saju-settings', async (req, res, next) => {
             pdf_cta_text, pdf_cta_desc, promo_json, review_notice, review_link,
             bank_name, bank_account, bank_holder, bank_notice,
             msite_theme } = req.body;
+
+    /* 만세력 하루 정원 — 남은 자리·할인 안내 */
+    await pool.query('UPDATE users SET msite_limit = $1 WHERE id = $2', [
+      JSON.stringify(msiteQuota.clean({
+        on: req.body.q_on,
+        cap: req.body.q_cap,
+        seed: req.body.q_seed,
+        discount: req.body.q_discount,
+        full: req.body.q_full,
+      })),
+      req.user.id,
+    ]);
 
     // 무료 PDF 업셀 설정 (프리미엄 안내 · Q&A · 후기 이미지 · 할인 문구)
     if (promo_json) {

@@ -62,6 +62,7 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS free_promo JSONB;`);
   /* 공개 만세력 페이지 색. 교육생마다 다르게 보이게 한다. */
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS msite_theme TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS msite_limit JSONB;`);
 
   // 상담 신청 (랜딩 폼)
   await pool.query(`
@@ -120,6 +121,9 @@ async function initDb() {
     );
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_visits_teacher ON page_visits(teacher_id, visited_at);`);
+  // 어느 화면을 봤는지 (site 웹사이트 / manse 만세력 입력 / manse_result 만세력 결과 / guide 사주공부)
+  await pool.query(`ALTER TABLE page_visits ADD COLUMN IF NOT EXISTS kind TEXT;`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_visits_kind ON page_visits(teacher_id, kind, visited_at);`);
 
   // 브라우저 알림 구독 정보 (기기마다 한 줄)
   await pool.query(`

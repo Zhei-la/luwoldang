@@ -82,7 +82,7 @@ router.get('/s/:slug', async (req, res, next) => {
       if (!bot) {
         const crypto = require('crypto');
         const key = crypto.createHash('sha1').update(ip + '|' + ua).digest('hex').slice(0, 16);
-        recordVisit(teacher.id, key);   // await 안 함 (페이지 응답 지연 방지)
+        recordVisit(teacher.id, key, 'site');   // await 안 함 (페이지 응답 지연 방지)
       }
     } catch (e) { /* noop */ }
 

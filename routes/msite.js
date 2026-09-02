@@ -25,6 +25,7 @@ const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
 const solarTime = require('../services/solarTime');
 const theme = require('../services/msiteTheme');
+const quota = require('../services/msiteQuota');
 const guest = require('../services/guestSite');
 /* 「사주 공부」 글은 따로 둔다. cbFortune 은 묶어 만든 파일이라 손대지 않는다. */
 const articles = require('../services/msiteArticles');
@@ -40,7 +41,7 @@ async function teacherOf(slug) {
   if (!s) return null;
   const { rows } = await pool.query(
     `SELECT id, name, site_name, slug, kakao_consult_link, consult_message, button_text,
-            msite_theme, landing,
+            msite_theme, msite_limit, landing,
             bank_name, bank_account, bank_holder, bank_notice
        FROM users
       WHERE LOWER(slug) = $1 AND status = 'approved'
@@ -193,11 +194,25 @@ function pageBits(req, t) {
 }
 
 /** 입력 화면 */
+/* 방문 기록 — 홈 통계에 쓴다.
+   봇은 빼고, 같은 사람이 1분 안에 새로고침한 것도 뺀다.
+   기록이 실패해도 화면은 그대로 나와야 하므로 await 하지 않는다. */
+function mark(req, t, kind) {
+  try {
+    const ua = req.headers['user-agent'] || '';
+    if (/bot|crawler|spider|slurp|facebookexternalhit|preview/i.test(ua)) return;
+    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const key = require('crypto').createHash('sha1').update(ip + '|' + ua).digest('hex').slice(0, 16);
+    require('../services/stats').recordVisit(t.id, key, kind);
+  } catch (e) { /* 통계가 화면을 막지 않는다 */ }
+}
+
 async function showInput(req, res, next) {
   try {
     const t = await teacherOf(req.params.slug);
     if (!t) return next();          // 없는 아이디면 다른 라우터에게 넘긴다
     if (guest.bounce(req, res)) return;   /* 루월당 주소로 온 옛 링크는 손님 주소로 */
+    mark(req, t, 'manse');
 
     res.render('msite/input', Object.assign(pageBits(req, t), { err: '', old: {} }));
   } catch (e) { next(e); }
@@ -246,6 +261,9 @@ async function showResult(req, res, next) {
       console.error('[만세력] 오늘의 운세 실패:', e.message);
     }
 
+    mark(req, t, 'manse_result');
+    const qState = await quota.load(pool, t);
+
     res.render('msite/result', {
       t, siteName: siteName(t), slug: t.slug,
       themeVars: theme.cssVars(t.msite_theme),
@@ -259,6 +277,10 @@ async function showResult(req, res, next) {
       jasiNote: !b.input.hourUnknown && b.input.hour === 23,
       /* 신청란 — 방금 넣으신 값이 그대로 담겨 있어 다시 적지 않아도 된다 */
       af: applyForm(t),
+      /* 하루 정원 안내 — 남은 자리·할인 금액. 꺼두면 quota.on 이 false 라 아무것도 안 나온다 */
+      quota: qState,
+      quotaNote: quota.notice(qState),
+      prices: quota.priceList(applyForm(t).products, qState),
       pre: {
         name: b.input.name || '',
         gender: b.input.gender === 'male' ? '남' : '여',
@@ -314,7 +336,30 @@ async function join(req, res, next) {
        손님이 두 번 적지 않아도 되고, 신청자 목록에 바로 채워진다. */
     const birth = [b.year, b.month, b.day].map((x) => cut(x, 4)).filter(Boolean).join('-');
 
+    /* 하루 정원 — 보낼 때 다시 센다.
+       화면을 열어둔 사이에 자리가 찰 수 있어서, 화면의 숫자만 믿으면 안 된다. */
+    const qs = await quota.load(pool, t);
+    if (qs.on && qs.full && qs.mode === 'block') {
+      return res.status(409).json({
+        ok: false,
+        error: `오늘 ${qs.cap}자리가 모두 찼습니다. 내일 0시에 다시 열립니다.`,
+      });
+    }
+
     const memo = ['만세력 · ' + siteName(t) + ' 링크로 들어옴'];
+
+    /* 깎아준 금액을 남긴다.
+       상품 이름에는 정가가 적혀 있어서, 이걸 안 남기면
+       교육생이 얼마를 받아야 하는지 알 수가 없다. */
+    const rawPrice = priceOf(b.product);
+    if (qs.on && !qs.full && qs.discount > 0 && rawPrice != null) {
+      const paid = Math.max(0, rawPrice - qs.discount);
+      memo.unshift(`※ 오늘 자리 할인 — ${quota.won(rawPrice)}원 → ${quota.won(paid)}원 `
+        + `(${quota.won(qs.discount)}원 깎음)`);
+    }
+    // 마감 뒤에 들어온 신청은 다음날 순번이다. 교육생이 목록에서 바로 알아보게 남긴다.
+    if (qs.on && qs.full) memo.unshift('※ 오늘 정원이 찬 뒤 신청 — 다음날 순번 (할인 없음)');
+
     if (cut(b.memo, 500)) memo.unshift(cut(b.memo, 500));
 
     const { rows } = await pool.query(
@@ -344,13 +389,26 @@ async function join(req, res, next) {
        계좌가 없으면 예전처럼 카톡으로 넘긴다. */
     let bank = null;
     if (t.bank_account) {
+      /* 자리가 남아 있을 때 신청했으면 깎아준 금액으로 안내한다.
+         화면에서 20,000원이라 해놓고 계좌 안내에 25,000원이 뜨면 안 된다. */
+      const raw = priceOf(b.product);
+      const give = qs.on && !qs.full && qs.discount > 0 && raw != null;
+      const amount = give ? Math.max(0, raw - qs.discount) : raw;
+
       bank = {
         bankName: t.bank_name || '', account: t.bank_account, holder: t.bank_holder || '',
         notice: t.bank_notice || '입금자명을 신청하신 분 성함으로 남겨주세요. 확인되는 대로 작업을 시작합니다.',
-        product: cut(b.product, 80), amount: priceOf(b.product),
+        product: cut(b.product, 80),
+        amount,
+        listPrice: give ? raw : null,          // 깎기 전 금액 (같이 보여준다)
+        discount: give ? qs.discount : 0,
+        nextDay: !!(qs.on && qs.full),         // 다음날 순번으로 받은 신청
       };
     }
-    res.json({ ok: true, bank, kakao: bank ? '' : (t.kakao_consult_link || '') });
+    res.json({
+      ok: true, bank, kakao: bank ? '' : (t.kakao_consult_link || ''),
+      nextDay: !!(qs.on && qs.full),
+    });
   } catch (e) { next(e); }
 }
 

@@ -102,6 +102,68 @@
     <% }); %>
   </div>
 </div>
+
+<!-- 만세력 신청란 — 하루 정원과 할인 -->
+<div class="settings-block">
+  <h2 class="section-h">만세력 신청란 — 하루 정원</h2>
+  <p class="block-desc">만세력을 본 손님이 신청하는 칸에
+    <b>「하루 5명만 받습니다 · 오늘 3자리 남았습니다」</b> 안내를 띄웁니다.
+    <br>정원 안에 드는 분께는 금액을 깎아드리고, 자리가 차면 안내가 바뀝니다.
+    <br><b>남은 자리는 오늘 만세력으로 들어온 신청자 수를 세어 저절로 줄어듭니다.</b>
+    자정이 지나면 다시 채워집니다.</p>
+
+  <label class="chk-row">
+    <input type="checkbox" name="q_on" value="on" <%= quotaNow.on ? 'checked' : '' %>>
+    <span>하루 정원 안내를 켭니다</span>
+  </label>
+
+  <div class="q-grid">
+    <div>
+      <label for="qcap">하루 정원</label>
+      <input type="number" id="qcap" name="q_cap" min="1" max="99" value="<%= quotaNow.cap %>">
+      <small>하루에 몇 분까지 받을지</small>
+    </div>
+    <div>
+      <label for="qseed">미리 채움</label>
+      <input type="number" id="qseed" name="q_seed" min="0" max="98" value="<%= quotaNow.seed %>">
+      <small>시작부터 몇 자리 찬 걸로 보이게 할지 (0이면 안 씀)</small>
+    </div>
+    <div>
+      <label for="qdis">깎아줄 금액</label>
+      <input type="number" id="qdis" name="q_discount" min="0" step="1000" value="<%= quotaNow.discount %>">
+      <small>정원 안에 들면 이만큼 뺀 금액으로 안내합니다</small>
+    </div>
+  </div>
+
+  <div class="q-full">
+    <label>자리가 다 찼을 때</label>
+    <label class="chk-row">
+      <input type="radio" name="q_full" value="next" <%= quotaNow.full === 'next' ? 'checked' : '' %>>
+      <span><b>다음날 순번으로 받기</b> — 신청은 계속 받되 「내일 순번으로 접수됩니다」라고 안내합니다</span>
+    </label>
+    <label class="chk-row">
+      <input type="radio" name="q_full" value="block" <%= quotaNow.full === 'block' ? 'checked' : '' %>>
+      <span><b>신청 막기</b> — 단추를 잠그고 「내일 0시에 다시 열립니다」만 보여줍니다</span>
+    </label>
+  </div>
+
+  <p class="block-desc" style="margin-top:12px">
+    깎아드린 금액은 신청자 메모에 남습니다. 얼마를 받아야 하는지 목록에서 바로 보입니다.
+    <br>정원이 찬 뒤 들어온 신청에는 <b>할인이 붙지 않습니다.</b>
+  </p>
+</div>
+
+<style>
+  .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:14px 0 4px}
+  .q-grid label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+  .q-grid input{width:100%}
+  .q-grid small{display:block;margin-top:5px;font-size:11.5px;color:#8a8574;line-height:1.5}
+  .q-full{margin-top:16px}
+  .q-full > label:first-child{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+  .chk-row{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.65;
+    margin-bottom:7px;cursor:pointer}
+  .chk-row input{margin-top:3px;flex:none}
+</style>
   <div class="settings-block">
     <h2 class="section-h">사이트 정보</h2>
 

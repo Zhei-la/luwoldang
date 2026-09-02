@@ -346,7 +346,109 @@
   </a>
 </div>
 
-<h2 class="section-h">방문자 통계</h2>
+<% if (week) { %>
+<%
+  var cmpRows = [
+    { k:'visitors', label:'방문한 사람', unit:'명', hint:'같은 사람은 하루에 한 번', v:week.today.visitors, y:week.yday.visitors, c:week.cmp.visitors },
+    { k:'views',    label:'화면을 연 횟수', unit:'회', hint:'같은 사람이 여러 번 보면 그만큼', v:week.today.views, y:week.yday.views, c:week.cmp.views },
+    { k:'manse',    label:'만세력을 본 횟수', unit:'회', hint:'결과 화면까지 본 것', v:week.today.manse, y:week.yday.manse, c:week.cmp.manse },
+    { k:'joins',    label:'신청한 사람', unit:'명', hint:'사주 신청자 목록에 들어온 수', v:week.today.joins, y:week.yday.joins, c:week.cmp.joins },
+  ];
+  function arrow(now, before, unit) {
+    if (now === before) return { cls:'same', txt:'어제와 같음' };
+    var d = now - before;
+    return { cls: d > 0 ? 'up' : 'down', txt: (d > 0 ? '▲ ' : '▼ ') + Math.abs(d) + unit };
+  }
+%>
+<h2 class="section-h">오늘 <span class="st-sub">(<%= week.today.label %> <%= week.today.dow %>요일 · 한국 시간)</span></h2>
+<div class="st-today">
+  <% cmpRows.forEach(function(r){ var a = arrow(r.v, r.y, r.unit); %>
+    <div class="st-box">
+      <div class="st-lb"><%= r.label %></div>
+      <div class="st-n"><%= r.v %></div>
+      <div class="st-vs <%= a.cls %>"><%= a.txt %></div>
+      <div class="st-hint"><%= r.hint %></div>
+    </div>
+  <% }); %>
+</div>
+
+<h2 class="section-h">일주일 흐름 <span class="st-sub">(막대는 방문한 사람 · 옅은 색은 화면을 연 횟수)</span></h2>
+<div class="st-week">
+  <div class="st-bars">
+    <% week.week.forEach(function(d){ %>
+      <div class="st-day<%= d.today ? ' on' : '' %>" title="<%= d.label %> · 방문 <%= d.visitors %> · 조회 <%= d.views %> · 만세력 <%= d.manse %> · 신청 <%= d.joins %>">
+        <div class="st-bar">
+          <i class="views" style="height:<%= Math.round(d.views / week.peak * 100) %>%"></i>
+          <i class="vis"   style="height:<%= Math.round(d.visitors / week.peak * 100) %>%"></i>
+          <% if (d.joins) { %><b class="st-dot" title="신청 <%= d.joins %>명"><%= d.joins %></b><% } %>
+        </div>
+        <div class="st-v"><%= d.visitors %></div>
+        <div class="st-d"><%= d.label %></div>
+        <div class="st-w"><%= d.dow %></div>
+      </div>
+    <% }); %>
+  </div>
+
+  <div class="st-cmp">
+    <div class="st-cmp-h">최근 7일 <span>vs 지난 7일</span></div>
+    <% cmpRows.forEach(function(r){
+         var pct = r.c.pct;
+         var cls = pct === null ? 'same' : (pct > 0 ? 'up' : (pct < 0 ? 'down' : 'same'));
+         var txt = pct === null ? '새로 생김' : (pct > 0 ? '▲ ' + pct + '%' : (pct < 0 ? '▼ ' + Math.abs(pct) + '%' : '그대로'));
+    %>
+      <div class="st-cmp-row">
+        <span class="n"><%= r.label %></span>
+        <span class="a"><%= r.c.now %></span>
+        <span class="b"><%= r.c.before %></span>
+        <span class="p <%= cls %>"><%= txt %></span>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<style>
+  .st-sub{font-size:12px;font-weight:400;color:#8a8574}
+  .st-today{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:26px}
+  .st-box{border:1px solid var(--bdr,#E9E0CF);border-radius:12px;padding:14px 15px;background:var(--sur,#fff)}
+  .st-lb{font-size:12.5px;color:#8a8574;font-weight:700}
+  .st-n{font-size:30px;font-weight:800;line-height:1.2;margin:4px 0 2px}
+  .st-vs{font-size:12px;font-weight:700}
+  .st-vs.up{color:#2F7A55} .st-vs.down{color:#B4483C} .st-vs.same{color:#a8a296}
+  .st-hint{font-size:11px;color:#a8a296;margin-top:6px;line-height:1.5}
+
+  .st-week{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:26px}
+  @media(min-width:760px){ .st-week{grid-template-columns:1.4fr 1fr;align-items:start} }
+  .st-bars{display:flex;gap:6px;align-items:flex-end;border:1px solid var(--bdr,#E9E0CF);
+    border-radius:12px;padding:14px 12px 10px;background:var(--sur,#fff);min-height:190px}
+  .st-day{flex:1;text-align:center;min-width:0}
+  .st-bar{position:relative;height:110px;display:flex;align-items:flex-end;justify-content:center}
+  .st-bar i{position:absolute;bottom:0;border-radius:5px 5px 0 0;transition:height .2s}
+  .st-bar i.views{width:26px;background:rgba(181,154,98,.28)}
+  .st-bar i.vis{width:14px;background:#B59A62}
+  .st-day.on .st-bar i.vis{background:#8a6a2f}
+  .st-dot{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    background:#2F7A55;color:#fff;font-size:10px;font-weight:800;border-radius:100px;
+    min-width:16px;padding:1px 5px;line-height:1.4}
+  .st-v{font-size:13px;font-weight:800;margin-top:6px}
+  .st-d{font-size:10.5px;color:#8a8574;margin-top:2px}
+  .st-w{font-size:10.5px;color:#a8a296}
+  .st-day.on .st-d,.st-day.on .st-w{color:#8a6a2f;font-weight:700}
+
+  .st-cmp{border:1px solid var(--bdr,#E9E0CF);border-radius:12px;padding:14px 15px;background:var(--sur,#fff)}
+  .st-cmp-h{font-size:13px;font-weight:800;margin-bottom:10px}
+  .st-cmp-h span{font-weight:400;color:#8a8574}
+  .st-cmp-row{display:grid;grid-template-columns:1fr auto auto auto;gap:9px;align-items:baseline;
+    padding:7px 0;border-top:1px solid rgba(0,0,0,.06)}
+  .st-cmp-row:first-of-type{border-top:0}
+  .st-cmp-row .n{font-size:12.5px;color:#5a5648}
+  .st-cmp-row .a{font-size:16px;font-weight:800;min-width:34px;text-align:right}
+  .st-cmp-row .b{font-size:12px;color:#a8a296;min-width:34px;text-align:right}
+  .st-cmp-row .p{font-size:11.5px;font-weight:700;min-width:56px;text-align:right}
+  .st-cmp-row .p.up{color:#2F7A55} .st-cmp-row .p.down{color:#B4483C} .st-cmp-row .p.same{color:#a8a296}
+</style>
+<% } %>
+
+<h2 class="section-h">전체 통계 <span class="st-sub">(처음부터 지금까지)</span></h2>
 <div class="stat-cards">
   <div class="stat-card">
     <div class="stat-label">오늘 방문</div>

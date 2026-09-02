@@ -144,6 +144,23 @@
   .cta .chk input{accent-color:var(--cta-ac)}
   .cta .fine{font-size:12px;color:var(--cta-fg);opacity:.5;line-height:1.8;margin:12px 0 0}
   .cta .btn.gold{background:var(--cta-ac);color:var(--cta-ac-fg)}
+
+  /* 하루 정원 안내 */
+  .qbox{border:1px solid var(--cta-ac);border-radius:12px;padding:15px 16px;margin:0 0 18px;
+        background:rgba(181,154,98,.07);text-align:center}
+  .qbox.full{border-color:#c9c3b5;background:rgba(0,0,0,.03)}
+  .qbox .q-head{font-size:14px;font-weight:800;color:var(--cta-ac);letter-spacing:-.2px}
+  .qbox.full .q-head{color:#8a8574}
+  .qbox .q-left{font-size:19px;font-weight:800;margin-top:5px;line-height:1.35}
+  .qbox .q-sale{display:inline-block;margin-top:9px;padding:5px 12px;border-radius:100px;
+        background:var(--cta-ac);color:var(--cta-ac-fg);font-size:13px;font-weight:700}
+  .qbox .q-prices{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .qbox .q-row{display:flex;align-items:baseline;justify-content:center;gap:8px;flex-wrap:wrap}
+  .qbox .q-nm{font-size:13px;opacity:.75}
+  .qbox .q-was{font-size:13px;opacity:.55;text-decoration:line-through}
+  .qbox .q-now{font-size:18px;font-weight:800;color:var(--cta-ac)}
+  .qbox .q-order{margin-top:11px;font-size:12px;opacity:.7;line-height:1.6}
+  @media(max-width:400px){ .qbox .q-left{font-size:17px} }
   /* 신청란 — 웹사이트 상담 신청과 같은 칸들 */
   .cta label i{color:var(--cta-ac);font-style:normal;opacity:1}
   .cta select{width:100%;padding:12px 13px;border-radius:10px;font-size:15px;font-family:inherit;
@@ -175,6 +192,8 @@
   .cta .bk-amt .lb{font-size:12.5px;color:var(--cta-fg);opacity:.6;width:100%}
   .cta .bk-amt .num{font-size:25px;font-weight:800;color:var(--cta-ac)}
   .cta .bk-amt .pd{font-size:13px;color:var(--cta-fg);opacity:.7}
+  .cta .bk-amt .was{font-size:14px;opacity:.5;text-decoration:line-through}
+  .cta .bk-amt .off{font-size:12px;font-weight:700;color:var(--cta-ac);border:1px solid var(--cta-ac);border-radius:100px;padding:2px 8px}
   .cta .bk-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:14.5px}
   .cta .bk-row .k{flex:0 0 62px;font-size:12.5px;color:var(--cta-fg);opacity:.55}
   .cta .bk-row .v{color:var(--cta-fg);font-weight:700;word-break:break-all}
@@ -205,6 +224,8 @@
   .bkpop .bk-amt .lb{font-size:12.5px;opacity:.6;width:100%}
   .bkpop .bk-amt .num{font-size:27px;font-weight:800;color:var(--cta-ac)}
   .bkpop .bk-amt .pd{font-size:13px;opacity:.7}
+  .bkpop .bk-amt .was{font-size:15px;opacity:.5;text-decoration:line-through}
+  .bkpop .bk-amt .off{font-size:12px;font-weight:700;color:var(--cta-ac);border:1px solid var(--cta-ac);border-radius:100px;padding:2px 8px}
   .bkpop .bk-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:14.5px}
   .bkpop .bk-row .k{flex:0 0 62px;font-size:12.5px;opacity:.55}
   .bkpop .bk-row .v{font-weight:700;word-break:break-all}
@@ -494,6 +515,31 @@
         <li>올해 달마다의 흐름과 조심할 달</li>
       </ul>
 
+      <%# 하루 정원 안내 — 설정에서 켠 교육생만 보인다.
+          남은 자리는 오늘 들어온 신청자 수로 자동으로 센다. %>
+      <% if (quotaNote) { %>
+        <div class="qbox<%= quotaNote.blocked ? ' full' : (quotaNote.next ? ' next' : '') %>">
+          <div class="q-head"><%= quotaNote.head %></div>
+          <div class="q-left"><%= quotaNote.left %></div>
+          <% if (quotaNote.sale) { %>
+            <div class="q-sale"><%= quotaNote.sale %></div>
+          <% } %>
+          <% var saleList = (prices || []).filter(function(p){ return p.sale; }); %>
+          <% if (saleList.length) { %>
+            <div class="q-prices">
+              <% saleList.forEach(function(p){ %>
+                <div class="q-row">
+                  <span class="q-nm"><%= p.name.replace(/\s*\(.*?\)\s*$/, '') %></span>
+                  <span class="q-was"><%= p.raw.toLocaleString('ko-KR') %>원</span>
+                  <span class="q-now"><%= p.price.toLocaleString('ko-KR') %>원</span>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+          <div class="q-order"><%= quotaNote.order %></div>
+        </div>
+      <% } %>
+
       <%# 웹사이트 「상담 신청」과 같은 칸을 받는다. 그래야 사주 신청자 목록으로
           바로 넘어간다. 방금 만세력에 넣으신 값은 미리 채워 둔다. %>
       <%# ⚠️ onsubmit="return false" 를 태그에 직접 건다.
@@ -602,7 +648,15 @@
         </label>
 
         <div id="jmsg"></div>
-        <button class="btn gold" type="submit"><%= af.submit %></button>
+        <% if (quotaNote && quotaNote.blocked) { %>
+          <%# 오늘 자리가 다 찼고, 설정이 「신청 막기」다. 단추를 잠근다. %>
+          <button class="btn gold" type="button" disabled
+                  style="opacity:.5;cursor:default">오늘은 마감되었습니다</button>
+          <p class="note" style="text-align:center;margin-top:9px;font-size:12.5px;opacity:.7">
+            내일 0시에 다시 열립니다. 그때 찾아주세요.</p>
+        <% } else { %>
+          <button class="btn gold" type="submit"><%= af.submit %></button>
+        <% } %>
         <p class="fine">만 14세 이상만 신청하실 수 있습니다.
           <% if (t.kakao_consult_link && !t.bank_account) { %>보내시면 곧바로 카카오톡 상담창이 열립니다.<% } %></p>
       </form>
@@ -706,9 +760,15 @@
         var card = function () {
           return '<div class="bk-card">' +
             '<div class="bk-hd">입금 계좌 안내</div>' +
-            (k.amount ? '<div class="bk-amt"><span class="lb">입금하실 금액</span>' +
+            (k.amount != null ? '<div class="bk-amt"><span class="lb">입금하실 금액</span>' +
+              /* 깎아드린 경우 원래 금액을 같이 보여준다.
+                 화면에서 20,000원이라 해놓고 계좌에 25,000원이 뜨면 안 된다. */
+              (k.listPrice ? '<span class="was">' + k.listPrice.toLocaleString('ko-KR') + '원</span>' : '') +
               '<span class="num">' + k.amount.toLocaleString('ko-KR') + '원</span>' +
+              (k.discount ? '<span class="off">' + k.discount.toLocaleString('ko-KR') + '원 할인</span>' : '') +
               (k.product ? '<span class="pd">' + esc2(k.product) + '</span>' : '') + '</div>' : '') +
+            (k.nextDay ? '<div class="bk-note">오늘 자리가 모두 차서 <b>내일 순번</b>으로 접수되었습니다. '
+              + '입금하신 순서대로 진행되며 순번은 따로 알려드립니다.</div>' : '') +
             row('은행', k.bankName) +
             row('계좌번호', k.account, true) +
             row('예금주', k.holder) +
