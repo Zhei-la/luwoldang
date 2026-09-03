@@ -49,10 +49,16 @@ router.get('/home', async (req, res, next) => {
 router.get('/api-settings', (req, res) => res.redirect('/free-saju-settings'));
 
 // 무료사주 웹사이트 설정 (실제 기능)
-router.get('/free-saju-settings', (req, res) => {
+router.get('/free-saju-settings', async (req, res) => {
+  /* 스레드 발행 키(Zernio)로 연결해둔 계정. 실패해도 설정 화면은 떠야 한다. */
+  let thAccounts = [];
+  try { thAccounts = await require('../services/threads/accounts').list(req.user.id); }
+  catch (e) { /* 표가 아직 없거나 조회 실패 - 빈 목록으로 둔다 */ }
+
   res.render('dash/free-settings', {
     user: req.user,
     active: 'settings',
+    thAccounts,
     baseUrl: guest.base(req),
     hasKey: !!req.user.openai_key,
     promo: getPromo(req.user),
