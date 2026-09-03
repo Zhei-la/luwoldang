@@ -13,6 +13,8 @@ const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { buildReportHtml } = require('../services/pdfDoc');
+/* 궁합 리포트는 상대방 원국도 같이 그린다 */
+const partnerChart = require('../services/partnerChart');
 const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
@@ -54,7 +56,7 @@ async function loadReport(token) {
   const { rows } = await pool.query(
     `SELECT p.id, p.type, p.sections, p.extra, p.teacher_id, p.saju_meta,
             p.sent_sections, p.sent_meta,
-            l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender,
+            l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.gender,
             u.site_name, u.name AS teacher_name, u.kakao_consult_link, u.button_text,
             u.pdf_cta_text, u.pdf_cta_desc, u.free_promo, u.review_on, u.review_notice,
             u.cover_set, u.bg_paper
@@ -134,7 +136,7 @@ async function loadReport(token) {
 
   const html = pdf.type === FREE
     ? buildFreePdfHtml({ teacher, client, saju, result: (pdf.sent_sections || pdf.sections) || {}, baseUrl })
-    : buildReportHtml({
+    : buildReportHtml({ ...partnerChart.forReport(pdf, sajuSettings(pdf)),
         type: pdf.type, client, saju,
         chapters: reportSections,
         teacher, extra: pdf.extra || null, baseUrl, reviewUrl, reviewMode: 'web', bgPaper, cover,

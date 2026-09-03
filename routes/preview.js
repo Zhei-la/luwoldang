@@ -22,6 +22,8 @@ const { pool } = require('../db');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const { calcSaju } = require('../services/manseryeok');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
+/* 궁합 리포트는 상대방 원국도 같이 그린다 */
+const partnerChart = require('../services/partnerChart');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const { resolveCover, resolveBgPaper } = require('../services/coverStore');
@@ -108,7 +110,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     await ensureOrigColumn();
 
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.memo
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -182,7 +184,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
     const { ensureToken } = require('./share');
     const token = await ensureToken(pdf.id);
     const reviewUrl = guest.base(req) + '/r/' + token + '#rvwWrap';
-    const inner = buildReportHtml({
+    const inner = buildReportHtml({ ...partnerChart.forReport(pdf, sajuSettings(pdf)),
       type: pdf.type,
       client,
       teacher: req.user,
@@ -336,7 +338,7 @@ async function downloadWithCover(req, res) {
 
     const { rows } = await pool.query(
       `SELECT p.id, p.type, p.sections, p.extra, p.saju_meta,
-              l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
+              l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -364,7 +366,7 @@ async function downloadWithCover(req, res) {
       const { ensureToken } = require('./share');
       const token = await ensureToken(pdf.id);
       const reviewUrl = guest.base(req) + '/r/' + token + '#rvwWrap';
-      html = buildReportHtml({
+      html = buildReportHtml({ ...partnerChart.forReport(pdf, sajuSettings(pdf)),
         type: pdf.type, client, saju,
         chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
         teacher: req.user, extra: pdf.extra || null, baseUrl, cover, reviewUrl, reviewMode: 'pdf', bgPaper,

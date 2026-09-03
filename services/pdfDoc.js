@@ -241,7 +241,7 @@ function tocPage(chapters, type) {
  * ⚠️ 엔진이 어떤 이유로든 실패하면 기존 표(sajuPages)로 되돌아간다.
  *    만세력 장이 통째로 비는 것보다 낫다.
  * ── */
-function enginePages({ client, saju, type }) {
+function enginePages({ client, saju, type, partner, partnerSaju }) {
   let html;
   try {
     const { buildMyeongsik } = require('./manseCalc');
@@ -290,15 +290,61 @@ function enginePages({ client, saju, type }) {
 
   /* 오행 그림(높이 약 390px)과 격국·대운 표는 각각 한 장을 쓰면 여백만 남는다.
      둘을 한 장에 담으면 A4 한 장이 알맞게 찬다. */
+  /* 궁합은 두 사람을 보는 리포트다. 본인 표만 있으면 반쪽이라
+     상대방 원국과 오행도 한 장 넣는다.
+     상대방은 대운·세운까지는 넣지 않는다 — 이 리포트에서 흐름을 보는 건 본인 쪽이고,
+     상대방은 「어떤 사람인가」까지만 있으면 된다. */
+  const mine = client && client.name ? esc(client.name) + '님' : '본인';
+  const pairTitle = (t) => (partnerSaju ? mine + ' · ' + t : t);
+
   const pages = [
-    sheet('만세력 · 사주 원국', head + corr + grab('pdf-wonguk')),
-    sheet('오행 · 격국 · 용신 · 신살', wheelSvg + wheelSum + grab('pdf-sgy')),
+    sheet(pairTitle('만세력 · 사주 원국'), head + corr + grab('pdf-wonguk')),
+    sheet(pairTitle('오행 · 격국 · 용신 · 신살'), wheelSvg + wheelSum + grab('pdf-sgy')),
+    partnerPage({ partner, partnerSaju }),
     /* 월운은 12행이라 대운·세운과 한 장에 넣으면 A4 를 넘겨 잘린다. 따로 뺀다. */
-    sheet('대운 · 세운', grab('pdf-daeun') + grab('pdf-seyun')),
-    sheet('월운', grab('pdf-wolun')),
+    sheet(pairTitle('대운 · 세운'), grab('pdf-daeun') + grab('pdf-seyun')),
+    sheet(pairTitle('월운'), grab('pdf-wolun')),
   ];
 
   return pages.filter(Boolean).join('');
+}
+
+/* ── 3-C. 상대방 원국 (궁합 리포트에만) ──
+ *
+ * 원국표와 오행만 넣는다. 대운·세운·월운은 넣지 않는다.
+ * 상대방 명식을 못 만들었으면 아무것도 그리지 않는다 (본인 리포트는 그대로 나간다).
+ * ── */
+function partnerPage({ partner, partnerSaju }) {
+  if (!partner || !partnerSaju) return '';
+  let html = '';
+  try {
+    const { buildMyeongsik } = require('./manseCalc');
+    html = buildMyeongsik(partner, {}).pdfHtml || '';
+  } catch (e) {
+    console.error('[PDF] 상대방 만세력 실패 — 상대방 표는 건너뜁니다:', e.message);
+    return '';
+  }
+  const m = html.match(/<table class="pdf-table pdf-wonguk"[\s\S]*?<\/table>/);
+  const wonguk = m ? m[0] : '';
+  if (!wonguk) return '';
+
+  const headM = html.match(/<div class="pdf-header">[\s\S]*?<\/div>\s*<\/div>/);
+  const head = headM ? headM[0] : '';
+
+  const wheel = elementWheelSvg(
+    partnerSaju.elementWheel || [], partnerSaju.dayMasterKo, partnerSaju.dayMasterElement
+  );
+  const sum = (partnerSaju.strong && partnerSaju.weak)
+    ? `<p class="ms-sum">강한 기운 <b>${esc((partnerSaju.strong || []).join(', '))}</b> · 부족한 기운 <b>${esc((partnerSaju.weak || []).join(', '))}</b></p>`
+    : '';
+
+  const name = esc(partner.name || '상대방');
+  return `
+<section class="page sheet">
+  <h2 class="pg-title">${name}님 · 만세력 · 사주 원국</h2>
+  <div class="pg-line"></div>
+  <div class="cb-card">${head}${wonguk}${wheel}${sum}</div>
+</section>`;
 }
 
 /* ── 3. 만세력 (여러 장으로 나눔) ──
@@ -1276,7 +1322,7 @@ body {
  * 리포트 전체 HTML
  * @param {object} o { type, client, teacher, saju, chapters }
  */
-function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl, reviewMode, bgPaper }) {
+function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover, reviewUrl, reviewMode, bgPaper, partner, partnerSaju }) {
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1288,7 +1334,7 @@ function buildReportHtml({ type, client, teacher, saju, chapters, baseUrl, cover
 <body>
 ${coverPage({ type, client, teacher, baseUrl, cover })}
 ${tocPage(chapters, type)}
-${enginePages({ client, saju, type })}
+${enginePages({ client, saju, type, partner, partnerSaju })}
 ${glossaryPage()}
 ${chapterPages(chapters, client.question)}
 ${endPage({ teacher, reviewUrl, reviewMode })}
@@ -1501,7 +1547,7 @@ function buildCSS(baseUrl, bgPaper) {
 module.exports = {
   buildReportHtml, buildCSS, CSS_TEMPLATE,
   // 무료사주 PDF(freePdf.js)에서 재사용
-  coverPage, tocPage, sajuPages, enginePages, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
+  coverPage, tocPage, sajuPages, enginePages, partnerPage, chapterPages, endPage, esc, glossaryPage, footnote, REFLOW_SCRIPT,
   sentenceBreaks,
 };
 

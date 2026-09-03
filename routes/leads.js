@@ -54,6 +54,8 @@ function sajuSettings(row) {
 const { generatePdfReport, PDF_TYPES, generateFreeSaju, UPSELL, rewriteBlock } = require('../services/ai');
 const { sendPdfReport, buildPdfHtml, sendFreeSaju, sendBundle } = require('../services/mail');
 const { buildReportHtml, esc } = require('../services/pdfDoc');
+/* 궁합 리포트는 상대방 원국도 같이 그린다 */
+const partnerChart = require('../services/partnerChart');
 const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
 const { normalizeBirth, parseHour } = require('../services/birth');
@@ -647,7 +649,7 @@ router.get('/leads/:id/pdf/stream', async (req, res) => {
 router.post('/pdfs/:id/send', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -797,7 +799,7 @@ router.post('/pdfs/:id/apply-to-sent', async (req, res) => {
 router.get('/pdfs/:id/preview', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.memo
+      `SELECT p.*, l.name, l.email, l.gender, l.birth, l.calendar, l.hour, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -860,7 +862,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
 
     const chapters = Array.isArray(pdf.sections) ? pdf.sections : [];
     const extra = pdf.extra || null;
-    const inner = buildReportHtml({
+    const inner = buildReportHtml({ ...partnerChart.forReport(pdf, sajuSettings(pdf)),
       type: pdf.type,
       client,
       teacher: req.user,
@@ -1339,7 +1341,7 @@ router.post('/leads/:id/send-bundle', async (req, res) => {
 
     // 내 리포트인지 + 같은 신청자 것인지 확인
     const { rows } = await pool.query(
-      `SELECT p.id, p.type, p.saju_meta, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
+      `SELECT p.id, p.type, p.saju_meta, l.name, l.email, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = ANY($1) AND p.teacher_id = $2 AND p.lead_id = $3
        ORDER BY p.created_at ASC`,
@@ -1399,7 +1401,7 @@ async function downloadPdf(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT p.id, p.type, p.sections, p.extra, p.saju_meta,
-              l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender
+              l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.gender
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
@@ -1438,7 +1440,7 @@ async function downloadPdf(req, res) {
     const reviewUrl = guest.base(req) + '/r/' + token + '#rvwWrap';
     const html = pdf.type === FREE
       ? buildFreePdfHtml({ teacher: req.user, client, saju, result: pdf.sections || {}, baseUrl })
-      : buildReportHtml({
+      : buildReportHtml({ ...partnerChart.forReport(pdf, sajuSettings(pdf)),
           type: pdf.type, client, saju,
           chapters: Array.isArray(pdf.sections) ? pdf.sections : [],
           teacher: req.user, extra: pdf.extra || null, baseUrl, cover, bgPaper,
@@ -1469,7 +1471,7 @@ router.post('/pdfs/:id/rewrite', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT p.type, l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.gender, l.memo
+      `SELECT p.type, l.name, l.birth, l.hour, l.calendar, l.region, l.use_local_time, l.partner_region, l.partner_name, l.partner_gender, l.partner_birth, l.partner_hour, l.partner_calendar, l.gender, l.memo
        FROM pdfs p JOIN leads l ON l.id = p.lead_id
        WHERE p.id = $1 AND p.teacher_id = $2`,
       [req.params.id, req.user.id]
