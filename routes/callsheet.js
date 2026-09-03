@@ -13,6 +13,8 @@ const { pool } = require('../db');
 const { calcSaju } = require('../services/manseryeok');
 const { normalizeBirth, parseHour } = require('../services/birth');
 const callsheet = require('../services/callsheet');
+/* 궁합이면 상대방 사주도 같이 본다 */
+const partnerChart = require('../services/partnerChart');
 const { requireAuth, requireApproved } = require('../middleware/auth');
 
 /* 교육생만 본다. 손님에게 보여주는 화면이 아니다. */
@@ -61,8 +63,10 @@ function sajuOf(o) {
   });
 }
 
-function whoOf(o, teacher) {
+function whoOf(o, teacher, partner) {
   return {
+    partnerName: (partner && partner.name) || '상대방',
+    partnerBirthText: partner ? birthText(partner.birthDate, partner.calendar) + ' ' + (timeText(partner.birthTime) || '시 모름') : '',
     name: (o.name || '고객').replace(/님$/, ''),
     gender: o.gender || '',
     age: ageOf(o.birth),
@@ -91,10 +95,19 @@ router.get('/leads/:id/callsheet', async (req, res, next) => {
     try { saju = sajuOf(lead); }
     catch (e) { return res.status(400).send('생년월일 형식을 확인해주세요.'); }
 
-    const sheet = callsheet.build(saju, whoOf(lead, req.user));
+    /* 상대방 생년월일이 들어 있으면 궁합 칸까지 만든다.
+       손님이 궁합 상담을 신청했는데 상대방이 없으면 아예 할 얘기가 없다. */
+    const pair = partnerChart.build(lead, { useLocalSolarTime: lead.use_local_time !== false });
+
+    const sheet = callsheet.build(
+      saju,
+      whoOf(lead, req.user, pair && pair.client),
+      pair && pair.saju
+    );
     res.render('dash/callsheet', {
       user: req.user, active: 'leads',
       lead, saju, sheet, backTo: '/leads/' + lead.id,
+      partnerSaju: pair && pair.saju, partner: pair && pair.client,
     });
   } catch (e) { next(e); }
 });
@@ -115,10 +128,23 @@ router.get('/callsheet', async (req, res, next) => {
     try { saju = sajuOf(who); }
     catch (e) { return res.status(400).send('생년월일 형식을 확인해주세요.'); }
 
-    const sheet = callsheet.build(saju, whoOf(who, req.user));
+    /* 연습용 화면에서도 상대방을 넣어볼 수 있게 한다 */
+    const prow = {
+      partner_name: q.pname || null, partner_gender: q.pgender || null,
+      partner_birth: q.pbirth || null, partner_hour: q.phour || null,
+      partner_calendar: q.pcalendar || '양력', partner_region: q.pregion || '서울특별시',
+    };
+    const pair = partnerChart.build(prow, { useLocalSolarTime: true });
+
+    const sheet = callsheet.build(
+      saju,
+      whoOf(who, req.user, pair && pair.client),
+      pair && pair.saju
+    );
     res.render('dash/callsheet', {
       user: req.user, active: 'leads',
       lead: null, saju, sheet, backTo: '/callsheet',
+      partnerSaju: pair && pair.saju, partner: pair && pair.client,
     });
   } catch (e) { next(e); }
 });

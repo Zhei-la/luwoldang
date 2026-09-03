@@ -198,6 +198,17 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
       bgPaper,
     });
 
+    /* 궁합인데 상대방 정보가 없으면 상대방 만세력 장이 조용히 빠진다.
+       왜 안 나오는지 알 길이 없어 여기서 알려준다. 손님 PDF에는 안 들어간다. */
+    const needPartner = partnerChart.isPair(pdf.type) && !pdf.partner_birth;
+    const partnerNote = needPartner
+      ? '<div class="pv-warn" style="display:block;background:#8a2b1d;color:#fff">' +
+          '<b>상대방 정보가 없어 상대방 만세력이 빠졌습니다.</b> ' +
+          '<a href="/leads/' + pdf.lead_id + '" style="color:#ffd9a0">신청자 화면</a>에서 ' +
+          '「＋ 상대방 정보 입력」을 눌러 생년월일을 넣고 다시 열어주세요.' +
+        '</div>'
+      : '';
+
     const toolbar =
       '<link rel="stylesheet" href="/css/preview-editor.css">' +
       '<div class="pv-bar no-print">' +
@@ -214,6 +225,7 @@ router.get('/pdfs/:id/preview', async (req, res, next) => {
           '<b>앱 안의 브라우저</b>라서 PDF 저장이 막힐 수 있습니다. ' +
           '오른쪽 위 <b>⋮</b> → <b>다른 브라우저로 열기</b>를 눌러주세요.' +
         '</div>' +
+        partnerNote +
       '</div>' +
       '<div class="edit-hint no-print">글을 눌러 바로 고칠 수 있습니다. ' +
         '페이지 오른쪽 위 <b>되돌리기</b>를 누르면 처음 만들어진 글로 돌아갑니다.</div>' +

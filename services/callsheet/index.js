@@ -13,6 +13,7 @@
 
 const { ILGAN, GROUP, EL_NONE, EL_MANY, LUCK } = require('./data');
 const TERMS = require('./terms');
+const PAIR = require('./pair');
 
 const GROUP_OF = {
   비견: '비겁', 겁재: '비겁',
@@ -753,6 +754,9 @@ function buildPrompt(w, f, memo, question, parts) {
     f.nextDw ? '다음 대운 ' + f.nextDw.age + '세 ' + f.nextDw.ko : '',
     f.sewoon ? f.year + '년 세운 ' + f.sewoon.ko + (f.seGroup ? ' (' + f.seGroup + ')' : '') : '',
     '',
+    /* 궁합이면 상대방 원국도 같이 넘긴다. 한쪽만 주면 GPT가 나머지를 지어낸다. */
+    w.pairText || '',
+    w.pairText ? '' : null,
     '[오늘 상담에서 이미 나눈 이야기]',
     '- 일간이 ' + f.il.name + '(' + f.il.mul + ')이라 어떤 사람인지 설명함',
     f.none.length ? '- ' + f.none[0] + josa(f.none[0],'이','가') + ' 없어서 생기는 부분을 짚어줌' : '- 오행이 고른 편이라고 설명함',
@@ -788,6 +792,79 @@ function buildPrompt(w, f, memo, question, parts) {
   return head.concat(mid, tail)
     .filter((x) => x !== null && x !== undefined)
     .join(NL).replace(/\n{3,}/g, '\n\n');
+}
+
+/* ── 궁합 칸 (상대방 정보가 있을 때만) ──────────────────
+ *
+ * 궁합 상담은 상대방 사주가 없으면 아예 할 수가 없다.
+ * 상대가 어떤 사람인지 먼저 짚고, 그다음에 두 사람 사이를 본다.
+ * ── */
+function secPair(w, f, pf, pSaju, saju) {
+  const P = PAIR.build(f, pf, saju, pSaju, w.name, w.partnerName);
+  const blocks = [];
+  const you = w.partnerName;
+
+  blocks.push(sayBlock('① ' + you + '님은 어떤 분인가', 'say',
+    [you + '님은 ' + pf.il.name + josa(pf.il.name, '이', '') + '세요.\n' + pf.il.mul + ' 같은 기운이요.']
+      .concat(pf.il.body.slice(1).map((x) => x.replace(/\{이름\}/g, you))),
+    '상대 일간 ' + pf.il.name + '(' + pf.il.mul + ') · ' + (pf.weak ? '신약' : '신강') +
+    ' · 비겁' + pf.grp.비겁 + ' 식상' + pf.grp.식상 + ' 재성' + pf.grp.재성 +
+    ' 관성' + pf.grp.관성 + ' 인성' + pf.grp.인성 +
+    (pf.none.length ? ' · ' + pf.none.join('·') + ' 없음' : '')));
+
+  if (pf.none.length) {
+    blocks.push(sayBlock('② ' + you + '님한테 없는 것', 'warn',
+      [EL_NONE[pf.none[0]].say.replace(/\{이름\}/g, you)],
+      '상대 ' + EL_NONE[pf.none[0]].why +
+      ' <b>손님이 「그 사람 왜 그래요?」 물을 때 여기서 답이 나옵니다.</b>'));
+  }
+
+  if (P.asMe && PAIR.AS[P.asMe]) {
+    const a = PAIR.AS[P.asMe];
+    blocks.push(sayBlock('③ ' + a.head.replace(/\{이름\}/g, w.name), 'say',
+      [a.say], a.why));
+  }
+
+  if (P.tie) {
+    blocks.push(sayBlock('④ ' + P.tie.head, P.tie.kind === '충' || P.tie.kind === '원진' ? 'warn' : 'ok',
+      [P.tie.say], '일지 ' + P.myBranch + ' · ' + P.yourBranch + ' — ' + P.tie.why));
+  }
+
+  if (P.fillMe) {
+    blocks.push(sayBlock('⑤ 채워주는 것', 'ok', [P.fillMe.say], P.fillMe.why));
+  }
+  if (P.fillYou) {
+    blocks.push(sayBlock('⑥ ' + w.name + '님이 채워주는 것', 'ok', [P.fillYou.say], P.fillYou.why));
+  }
+
+  blocks.push(sayBlock('⑦ 마무리', 'say', [
+    '궁합은 좋다 나쁘다로 나누는 게 아니에요.\n\n어디서 부딪히는지를 아는 거예요.\n\n' +
+    '알고 계시면 조절이 되는데\n모르고 부딪히면 서로를 탓하게 되거든요.',
+  ], '<b>「헤어져라」로 끝내지 마세요.</b> 어디서 부딪히는지를 알려주는 것이 궁합입니다. 관계를 끊으라는 말은 절대 하지 않습니다.'));
+
+  return {
+    key: 'pair', title: '궁합', mins: '약 5분',
+    note: you + '님 사주까지 같이 보고 있습니다. 상대분 이야기를 먼저 하고 두 사람 사이로 넘어가세요.',
+    blocks,
+    qs: [
+      { q: '저희 궁합 좋아요?',
+        a: '좋고 나쁘고로 나누는 게 아니에요.\n\n' +
+           '두 분은 ' + (P.tie ? P.tie.head.replace('두 분', '') : '무난한 조합') + '이세요.\n' +
+           '어디서 부딪히는지 알고 계시면 훨씬 편해지세요.',
+        tip: '「안 맞는다」로 단정하지 마세요. 손님이 듣고 상처받고, 그 말은 오래 남습니다.' },
+      { q: '헤어져야 할까요?',
+        a: '그건 제가 정해드릴 수 있는 게 아니에요.\n\n' +
+           '다만 두 분이 어디서 부딪히는지는 말씀드릴 수 있어요.\n그걸 보시고 정하시면 됩니다.',
+        tip: '<b>절대 헤어지라 마라 하지 마세요.</b> 사고가 제일 크게 나는 자리입니다.' },
+      { q: '그 사람 마음은 어때요?',
+        a: you + '님 사주로 성향은 말씀드릴 수 있는데\n마음까지는 사주로 못 봅니다.\n\n' +
+           '다만 ' + you + '님은 ' + (pf.grp.식상 === 0 ? '표현을 잘 못 하는 분' : '생각을 밖으로 내는 분') + '이세요.',
+        tip: '<b>상대 마음을 단정하지 마세요.</b> 성향까지만 말합니다.' },
+      { q: '언제 결혼하면 좋을까요?',
+        a: '날을 잡는 건 따로 봐드려야 해요.\n\n오늘은 두 분이 어떤 조합인지까지 말씀드릴게요.',
+        tip: '택일은 별개입니다. 즉석에서 날짜를 찍지 마세요.' },
+    ],
+  };
 }
 
 /* ── 이 손님한테는 어떻게 나오는가 ─────────────────────
@@ -930,9 +1007,10 @@ function termsIn(block, name, ex, mine) {
 }
 
 /* ── 한 장으로 묶기 ───────────────────────────────────── */
-function build(saju, who) {
+function build(saju, who, partnerSaju) {
   const w = Object.assign({
     name: '고객', gender: '', age: null, birthText: '', timeText: '', region: '', teacher: '루월당', ask: '',
+    partnerName: '상대방', partnerBirthText: '',
   }, who || {});
   w.dayEl = saju.dayMasterElement;
 
@@ -941,13 +1019,38 @@ function build(saju, who) {
 
   const f = readFacts(saju, w);
 
+  /* 궁합이면 상대방 사주도 같이 읽는다. 상대방이 없으면 그 칸은 아예 안 만든다. */
+  let pf = null;
+  if (partnerSaju) {
+    try { pf = readFacts(partnerSaju, { age: null }); }
+    catch (e) { pf = null; }
+  }
+
+  /* 궁합이면 GPT 프롬프트에도 상대방 원국을 넣는다 */
+  if (pf) {
+    const pp = partnerSaju.pillarsKo || {};
+    w.pairText = ['[상대방 — ' + w.partnerName + ']',
+      w.partnerBirthText || '',
+      '시 ' + (pp.hour || '?') + '   일 ' + (pp.day || '?') +
+        '   월 ' + (pp.month || '?') + '   년 ' + (pp.year || '?'),
+      '오행  ' + EL5.map((e) => e + (pf.els[e] || 0)).join('  '),
+      '일간 ' + pf.il.name + ' · ' + (pf.weak ? '신약' : '신강') +
+        ' · 비겁' + pf.grp.비겁 + ' 식상' + pf.grp.식상 + ' 재성' + pf.grp.재성 +
+        ' 관성' + pf.grp.관성 + ' 인성' + pf.grp.인성,
+      pf.none.length ? '없는 오행: ' + pf.none.join(', ') : '오행이 고르게 있음',
+    ].filter(Boolean).join('\n');
+  }
+
   const sections = [
     secOpen(w, f), secChart(w, f), secHit(w, f), secChar(w, f),
-    secLuck(w, f), secClose(w, f),
+    secLuck(w, f),
   ];
+  if (pf) sections.push(secPair(w, f, pf, partnerSaju, saju));
+  sections.push(secClose(w, f));
 
   /* 이름 채우기 — 대사·근거·예상질문 전부 */
   const ex = {
+    상대: w.partnerName,
     일간: f.il.name, 물상: f.il.mul,
     대운: f.curDw ? f.curDw.ko : '',
     대운시작: f.curDw ? f.curDw.age : '',

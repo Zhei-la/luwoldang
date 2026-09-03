@@ -242,6 +242,9 @@
     <h2 class="pt">원국</h2>
     <p class="pd">손님한테 읽어주는 곳이 아닙니다. 필요할 때만 보세요.</p>
 
+    <% if (typeof partnerSaju !== 'undefined' && partnerSaju) { %>
+      <p class="lbl"><%= sheet.who.name %>님</p>
+    <% } %>
     <div class="chart"><table>
       <thead><tr><th>시</th><th>일</th><th>월</th><th>년</th></tr></thead>
       <tbody>
@@ -291,6 +294,55 @@
     <% if (f.sewoon) { %>
       <p class="pd"><%= f.year %>년 세운 <b><%= f.sewoon.ko %></b>
         <% if (f.seGroup) { %>— <%= f.seGroup %><% } %></p>
+    <% } %>
+
+    <%# 궁합이면 상대방 만세력도 같이 본다. 한쪽만 보고 궁합을 말할 수는 없다. %>
+    <% if (typeof partnerSaju !== 'undefined' && partnerSaju) { %>
+      <%
+        var ps = partnerSaju;
+        var pels = ps.elements || {};
+        var pf = null;
+        try { pf = require('../../services/callsheet').readFacts(ps, {}); } catch (e) {}
+      %>
+      <p class="lbl" style="margin-top:28px;padding-top:22px;border-top:1px solid var(--line)">
+        <%= partner && partner.name ? partner.name + '님' : '상대방' %>
+      </p>
+      <div class="chart"><table>
+        <thead><tr><th>시</th><th>일</th><th>월</th><th>년</th></tr></thead>
+        <tbody>
+          <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+            <td class="gz <%= k==='day'?'me':'' %>"><%= (ps.pillars && ps.pillars[k] || '').charAt(0) %></td><% }); %></tr>
+          <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+            <td class="ko <%= k==='day'?'me':'' %>"><%= (ps.pillarsKo && ps.pillarsKo[k] || '').charAt(0) %></td><% }); %></tr>
+          <tr><% ['hour','day','month','year'].forEach(function(k){ var c=ps.detail&&ps.detail[k]; %>
+            <td class="gd <%= k==='day'?'me':'' %>"><%= k==='day' ? '본인' : ((c&&c.stem&&c.stem.god)||'') %></td><% }); %></tr>
+          <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+            <td class="gz"><%= (ps.pillars && ps.pillars[k] || '').charAt(1) %></td><% }); %></tr>
+          <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+            <td class="ko"><%= (ps.pillarsKo && ps.pillarsKo[k] || '').charAt(1) %></td><% }); %></tr>
+          <tr><% ['hour','day','month','year'].forEach(function(k){ var c=ps.detail&&ps.detail[k]; %>
+            <td class="gd"><%= (c&&c.branch&&c.branch.god)||'' %></td><% }); %></tr>
+        </tbody>
+      </table></div>
+
+      <div class="els">
+        <% EL5.forEach(function(el){ var n = pels[el]||0; %>
+          <div class="el <%= n===0?'zero':(n>=4?'many':'') %>">
+            <div class="k"><%= el %></div><div class="v"><%= n %></div>
+          </div>
+        <% }); %>
+      </div>
+      <% if (pf) { %>
+        <p class="pd" style="margin-top:8px">일간 <b><%= pf.il.name %></b> ·
+          <%= pf.weak ? '신약' : '신강' %> ·
+          비겁<%= pf.grp.비겁 %> 식상<%= pf.grp.식상 %> 재성<%= pf.grp.재성 %> 관성<%= pf.grp.관성 %> 인성<%= pf.grp.인성 %>
+          <% if (pf.none.length) { %>· <b><%= pf.none.join('·') %> 없음</b><% } %>
+          <% if (!pf.timeKnown) { %>· <b>시 모름</b><% } %>
+        </p>
+      <% } %>
+      <p class="pd">상대방은 대운·세운까지는 안 봅니다.
+        오늘 흐름을 보는 건 <%= sheet.who.name %>님 쪽이고,
+        상대분은 <b>어떤 사람인가</b>까지만 있으면 됩니다.</p>
     <% } %>
   </section>
 
