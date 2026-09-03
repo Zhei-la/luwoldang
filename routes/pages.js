@@ -61,6 +61,7 @@ router.get('/free-saju-settings', async (req, res) => {
     thAccounts,
     baseUrl: guest.base(req),
     hasKey: !!req.user.openai_key,
+    keyErr: req.query.keyerr === '1',
     promo: getPromo(req.user),
     mailDomain: process.env.MAIL_DOMAIN || null,
     mailFrom: require('../services/mail').fromAddr(req.user),
@@ -104,9 +105,21 @@ router.post('/free-saju-settings', async (req, res, next) => {
       }
     }
 
-    // 키/비번은 새로 입력했을 때만 갱신 (빈칸이면 기존 값 유지)
-    if (openai_key && openai_key.trim()) {
-      await pool.query('UPDATE users SET openai_key = $1 WHERE id = $2', [openai_key.trim(), req.user.id]);
+    /* 키는 새로 입력했을 때만 갱신 (빈칸이면 기존 값 유지)
+     *
+     * 모양을 반드시 확인한다.
+     * 이 칸은 type=password 라 크롬이 「저장된 로그인 비밀번호」를 밀어 넣는다.
+     * 검사 없이 저장하면 진짜 키가 비밀번호로 덮여, 나중에
+     * 「OpenAI 키가 맞지 않습니다」만 뜨고 이유를 알 수가 없다.
+     * 「지우기」라고 적으면 비운다 — 지울 방법이 따로 없었다. */
+    const rawKey = String(openai_key || '').trim();
+    if (rawKey === '지우기' || rawKey === '삭제') {
+      await pool.query('UPDATE users SET openai_key = NULL WHERE id = $1', [req.user.id]);
+    } else if (rawKey) {
+      if (!/^sk-\S{20,}$/.test(rawKey)) {
+        return res.redirect('/free-saju-settings?keyerr=1');
+      }
+      await pool.query('UPDATE users SET openai_key = $1 WHERE id = $2', [rawKey, req.user.id]);
     }
 
     // 메일 아이디: 영문/숫자/.-_ 만 허용
