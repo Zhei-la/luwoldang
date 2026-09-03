@@ -25,14 +25,22 @@ const EL5 = ['목', '화', '토', '금', '수'];
 
 function nz(v, d) { return v == null ? d : v; }
 
-/* 받침에 따라 조사를 고른다. 「화이 없어서」 같은 말이 안 나오게. */
-function josa(word, withBat, without) {
+/* 받침에 따라 조사를 고른다. 「화이 없어서」 같은 말이 안 나오게.
+   대사를 소리 내어 읽는 화면이라 조사 하나가 어긋나면 바로 티가 난다. */
+function batchim(word) {
   const s = String(word || '');
-  if (!s) return without;
+  if (!s) return 0;
   const c = s.charCodeAt(s.length - 1);
-  if (c < 0xac00 || c > 0xd7a3) return without;
-  return (c - 0xac00) % 28 ? withBat : without;
+  if (c < 0xac00 || c > 0xd7a3) return 0;
+  return (c - 0xac00) % 28;   /* 0 이면 받침 없음, 8 이면 ㄹ */
 }
+function josa(word, withBat, without) {
+  return batchim(word) ? withBat : without;
+}
+/* 「수예요」 / 「금이에요」 */
+function yeyo(word) { return batchim(word) ? '이에요' : '예요'; }
+/* 「경오로」 / 「신미로」 — ㄹ 받침도 「로」를 쓴다 */
+function ro(word) { const b = batchim(word); return (b === 0 || b === 8) ? '로' : '으로'; }
 
 /* 이 사람 이름을 대사에 박는다. 「당신」은 쓰지 않는다. */
 function fill(s, name, extra) {
@@ -782,6 +790,145 @@ function buildPrompt(w, f, memo, question, parts) {
     .join(NL).replace(/\n{3,}/g, '\n\n');
 }
 
+/* ── 이 손님한테는 어떻게 나오는가 ─────────────────────
+ *
+ * 용어 사전은 「용신이란 무엇인가」까지만 알려준다. 통화 중에 손님이 묻는 건
+ * 그게 아니라 「그래서 제 용신이 뭔데요?」다. 그래서 용어마다 이 사람의
+ * 답을 계산해서 같이 붙인다.
+ *
+ * 계산해서 확실히 말할 수 있는 것만 넣는다. 애매한 건 넣지 않는다.
+ */
+
+/* 삼재 — 띠(년지)로 정해진다. 손님이 제일 많이 묻는 것 중 하나다. */
+const SAMJAE = [
+  { g: ['신', '자', '진'], y: ['인', '묘', '진'] },
+  { g: ['인', '오', '술'], y: ['신', '유', '술'] },
+  { g: ['사', '유', '축'], y: ['해', '자', '축'] },
+  { g: ['해', '묘', '미'], y: ['사', '오', '미'] },
+];
+function samjaeOf(yearBranchKo, thisYearBranchKo) {
+  const row = SAMJAE.filter((r) => r.g.indexOf(yearBranchKo) > -1)[0];
+  if (!row) return null;
+  const i = row.y.indexOf(thisYearBranchKo);
+  return { years: row.y, on: i > -1, phase: ['들삼재', '눌삼재', '날삼재'][i] || null };
+}
+
+function personalize(f, w, saju) {
+  const P = {};
+  const g = f.grp;
+  const els = f.els || {};
+  const n = (k) => (els[k] || 0);
+
+  P['일간'] = '{이름}님 일간은 ' + f.il.name + yeyo(f.il.name) + '.\n' + f.il.mul + ' 같은 기운이요.';
+  P['일주'] = (function(){ var d=(saju.pillarsKo && saju.pillarsKo.day)||''; return '{이름}님 일주는 ' + d + yeyo(d) + '.'; })();
+  P[f.weak ? '신약' : '신강'] = '{이름}님이 ' + (f.weak ? '신약' : '신강') + '이세요.\n' +
+    (f.weak ? '타고난 힘보다 짊어진 게 많은 쪽이에요.\n그래서 다 하시면 지치세요.'
+            : '타고난 힘이 좋으세요.\n그 힘을 쓸 데가 있어야 편해지세요.');
+  P[f.weak ? '신강' : '신약'] = '{이름}님은 ' + (f.weak ? '신약' : '신강') + '이라 이쪽은 아니세요.';
+
+  P['오행'] = '{이름}님은 ' + EL5.map((e) => e + n(e)).join(' · ') + ' 이에요.\n\n' +
+    (f.none.length ? f.none.join('이랑 ') + josa(f.none[f.none.length - 1], '이', '가') + ' 없으세요.'
+                   : '다섯 기운이 고르게 있으세요.');
+
+  const need = f.none[0] || (f.weak ? null : null);
+  if (need) {
+    P['용신'] = '{이름}님한테 제일 필요한 건 ' + need + yeyo(need) + '.\n\n' +
+      '사주에 하나도 없는 기운이라\n이게 들어오는 해에 확실히 편해지세요.';
+  }
+
+  P['공망'] = (f.gongmang && f.gongmang.length)
+    ? '{이름}님 공망은 ' + f.gongmang.join('·') + yeyo(f.gongmang[f.gongmang.length-1]) + '.' : null;
+
+  if (f.curDw) {
+    P['대운'] = '{이름}님은 지금 ' + f.curDw.age + '세 ' + f.curDw.ko + ' 대운이세요.' +
+      (f.nextDw ? '\n' + f.nextDw.age + '세에 ' + f.nextDw.ko + ro(f.nextDw.ko) + ' 바뀌고요.' : '') +
+      (f.dwGroup ? '\n\n' + f.dwGroup + '이 들어오는 10년이에요.' : '');
+  }
+  if (f.sewoon) {
+    P['세운'] = '올해는 ' + f.sewoon.ko + '년이에요.\n' +
+      (f.seGroup
+        ? '{이름}님한테는 ' + f.seGroup + '이 들어오는 해예요.'
+        : '{이름}님한테는 무난한 해예요.');
+  }
+
+  /* 십성 — 몇 개인지 그대로 말해준다 */
+  const many = (k) => (g[k] >= 3 ? '많은 편이에요.' : g[k] === 0 ? '하나도 없으세요.' : '적당히 있으세요.');
+  ['비겁', '식상', '재성', '관성', '인성'].forEach((k) => {
+    P[k] = '{이름}님은 ' + k + '이 ' + g[k] + '개세요. ' + many(k);
+  });
+  Object.keys(GROUP_OF).forEach((k) => {
+    const c = f.god[k] || 0;
+    P[k] = c ? '{이름}님 사주에 ' + k + josa(k,'이','가') + ' ' + c + '개 있어요.'
+             : '{이름}님 사주에는 ' + k + josa(k,'이','가') + ' 없어요.';
+  });
+  P['십성'] = '{이름}님은 비겁' + g.비겁 + ' 식상' + g.식상 + ' 재성' + g.재성 +
+    ' 관성' + g.관성 + ' 인성' + g.인성 + ' 이에요.';
+
+  const hon = (f.god.편관 || 0) > 0 && (f.god.정관 || 0) > 0;
+  P['관살혼잡'] = hon
+    ? '{이름}님이 여기 해당되세요.\n편관이랑 정관이 같이 있어서\n기준이 여러 개라 늘 헷갈리세요.'
+    : '{이름}님은 여기 해당 안 되세요.';
+
+  /* 삼재 */
+  const yb = (saju.detail && saju.detail.year && saju.detail.year.branch && saju.detail.year.branch.ko) || '';
+  const sb = (f.sewoon && f.sewoon.ko && f.sewoon.ko.charAt(1)) || '';
+  const sj = samjaeOf(yb, sb);
+  if (sj) {
+    P['삼재'] = sj.on
+      ? '{이름}님은 올해가 삼재예요. ' + (sj.phase || '') + '요.\n\n' +
+        '그런데 겁내실 것 없어요.\n크게 새로 벌이는 걸 한 박자 늦추시고\n하시던 걸 지키시면 넘어갑니다.'
+      : '{이름}님은 올해 삼재 아니세요.\n' + sj.years.join('·') + '년이 {이름}님 삼재예요.';
+  }
+
+  P['궁합'] = '{이름}님 쪽은 지금 보고 있고요,\n상대분 생년월일을 알려주시면 같이 봐드릴게요.';
+  P['만세력'] = '{이름}님 사주는 ' +
+    ['hour', 'day', 'month', 'year'].map((k) => (saju.pillarsKo && saju.pillarsKo[k]) || '')
+      .filter(Boolean).reverse().join(' · ') + ' 이에요.';
+
+  return P;
+}
+
+/* ── 대사에 나온 용어 골라내기 ─────────────────────────
+ *
+ * 손님이 말을 듣다가 「그게 뭐예요?」 하고 되물을 때가 있다.
+ * 그때 용어 탭으로 옮겨 찾을 시간이 없으니 그 자리에 미리 붙여둔다.
+ *
+ * 아무 말이나 걸리면 시끄러워지므로 되물을 만한 것만 본다.
+ * 한 글자짜리(합·충·형)는 아무 데나 걸려서 뺀다.
+ */
+const ASKABLE = [
+  '일간', '일주', '월주', '년주', '시주', '지장간', '육십갑자',
+  '오행', '상생', '상극',
+  '비견', '겁재', '식신', '상관', '편재', '정재', '편관', '정관', '편인', '정인',
+  '비겁', '식상', '재성', '관성', '인성', '관살혼잡', '십성',
+  '신강', '신약', '용신', '희신', '기신', '조후', '격국',
+  '대운', '세운', '십이운성', '삼재',
+  '도화살', '역마살', '화개살', '백호살', '괴강살', '양인살', '원진살',
+  '귀문관살', '공망', '천을귀인', '문창귀인', '홍염살', '망신살', '겁살',
+  '장성살', '반안살', '고신살',
+  '궁합', '만세력', '절기', '진태양시', '야자시', '윤달',
+];
+
+function termsIn(block, name, ex, mine) {
+  const hay = (block.say || []).join(' ') + ' ' + (block.why || '');
+  const seen = {};
+  const out = [];
+  for (const key of ASKABLE) {
+    if (hay.indexOf(key) < 0 || seen[key]) continue;
+    const hit = TERMS.TERMS.filter((t) => t.t === key)[0];
+    if (!hit) continue;
+    seen[key] = 1;
+    out.push({
+      t: hit.t,
+      short: hit.short,
+      say: fill(hit.say, name, ex),
+      mine: mine[key] ? fill(mine[key], name, ex) : '',
+    });
+    if (out.length >= 3) break;   /* 셋을 넘으면 대사보다 사전이 길어진다 */
+  }
+  return out;
+}
+
 /* ── 한 장으로 묶기 ───────────────────────────────────── */
 function build(saju, who) {
   const w = Object.assign({
@@ -821,8 +968,22 @@ function build(saju, who) {
     }));
   }
 
+  /* 용어마다 「그래서 이 손님은?」을 계산해 붙인다.
+     사전 뜻만 읽어주면 손님이 원하는 답이 아니다. */
+  const mine = personalize(f, w, saju);
+
+  /* 대사에 나온 용어를 그 자리에 바로 붙인다.
+     손님이 「재성이 뭐예요?」 하고 되물었을 때 탭을 옮겨 찾을 시간이 없다. */
+  for (const s of sections) {
+    const all = (s.blocks || []).slice();
+    for (const g of (s.groups || [])) all.push.apply(all, g);
+    for (const st of (s.states || [])) all.push.apply(all, st.b);
+    for (const b of all) b.terms = termsIn(b, w.name, ex, mine);
+  }
+
   const terms = TERMS.TERMS.map((t) => Object.assign({}, t, {
     say: fill(t.say, w.name, ex),
+    mine: mine[t.t] ? fill(mine[t.t], w.name, ex) : '',
     qs: (t.qs || []).map((q) => ({ q: fill(q.q, w.name, ex), a: fill(q.a, w.name, ex) })),
   }));
 

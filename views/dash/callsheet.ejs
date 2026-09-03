@@ -36,7 +36,12 @@
       </div>
       <div class="timer">
         <div class="t" id="t">00:00</div>
-        <button type="button" id="tb">통화 시작</button>
+        <div class="tbtns">
+          <button type="button" id="tb">통화 시작</button>
+          <%# 용어 탭은 탭 줄 오른쪽 끝이라 폰에서는 밀려 안 보인다.
+              통화 중에 제일 급한 단추라 머리말에 따로 뺀다. %>
+          <button type="button" id="goterm" class="hotb">용어 찾기</button>
+        </div>
       </div>
     </div>
     <div class="tabs" role="tablist">
@@ -104,6 +109,15 @@
                   <details class="why"><summary>왜 그렇게 나오나</summary>
                     <div class="in"><%- w(b.why) %></div></details>
                 <% } %>
+                <% if (b.terms && b.terms.length) { %>
+                  <details class="tin"><summary>이 말이 무슨 뜻이냐고 물으면 — <%= b.terms.map(function(x){return x.t}).join(' · ') %></summary>
+                    <div class="in"><% b.terms.forEach(function(x){ %>
+                      <div class="tw"><b><%= x.t %></b><span><%= x.short %></span>
+                        <% if (x.mine) { %><div class="say mine"><span class="cue mi">이 손님은</span><p><%= x.mine %></p></div><% } %>
+                        <div class="say"><p><%= x.say %></p></div></div>
+                    <% }); %></div></details>
+                <% } %>
+
               <% }); %>
             </div>
           <% }); %>
@@ -124,6 +138,15 @@
               <details class="why"><summary>왜 그렇게 나오나 · 이럴 땐 이렇게</summary>
                 <div class="in"><%- w(b.why) %></div></details>
             <% } %>
+            <% if (b.terms && b.terms.length) { %>
+              <details class="tin"><summary>이 말이 무슨 뜻이냐고 물으면 — <%= b.terms.map(function(x){return x.t}).join(' · ') %></summary>
+                <div class="in"><% b.terms.forEach(function(x){ %>
+                  <div class="tw"><b><%= x.t %></b><span><%= x.short %></span>
+                    <% if (x.mine) { %><div class="say mine"><span class="cue mi">이 손님은</span><p><%= x.mine %></p></div><% } %>
+                    <div class="say"><p><%= x.say %></p></div></div>
+                <% }); %></div></details>
+            <% } %>
+
           <% }); %>
         <% } %>
 

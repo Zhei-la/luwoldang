@@ -50,6 +50,13 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .timer .t{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;
   letter-spacing:.02em;line-height:1.2;color:var(--ink)}
 .timer .t.run{color:var(--say)}
+.tbtns{display:flex;gap:5px;justify-content:flex-end;margin-top:3px}
+.timer button.hotb{background:var(--amb-w);border-color:var(--amb);color:var(--amb);font-weight:700}
+.timer button.hotb:hover{background:var(--amb);color:var(--chipfg)}
+
+/* 탭 줄이 옆으로 더 있다는 걸 알려준다 — 폰에서는 절반이 잘린다 */
+.tabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);
+  mask-image:linear-gradient(to right,#000 88%,transparent)}
 
 .tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--line2)}
 .tabs::-webkit-scrollbar{display:none}
@@ -79,6 +86,9 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .say p + p{margin-top:11px}
 .say.warn{border-left-color:var(--no);background:var(--no-w)}
 .say.ok{border-left-color:var(--ok);background:var(--ok-w)}
+/* 이 손님의 실제 답 — 사전 뜻보다 이게 먼저다 */
+.say.mine{border-left-color:var(--amb);background:var(--amb-w)}
+.cue.mi{background:var(--amb);color:var(--chipfg)}
 .cue{font-size:11.5px;font-weight:700;letter-spacing:.03em;margin:0 0 7px;
   display:inline-block;padding:2px 9px;border-radius:999px;
   background:var(--say-w);color:var(--say)}
@@ -97,6 +107,23 @@ details.why[open] summary:before{content:'－'}
 details.why[open] summary{color:var(--ink2);border-bottom:1px solid var(--line2)}
 details.why .in{padding:11px 13px 13px 31px;font-size:13.5px;line-height:1.85;color:var(--ink2)}
 details.why .in b{color:var(--ink);font-weight:600}
+
+/* 대사에 나온 용어 — 손님이 「그게 뭐예요?」 할 때 그 자리에서 편다 */
+details.tin{margin:-12px 0 20px;border-radius:9px;overflow:hidden;
+  background:var(--amb-w);border:1px solid var(--amb)}
+details.tin summary{cursor:pointer;list-style:none;padding:9px 13px;font-size:12.5px;
+  font-weight:700;color:var(--amb);display:flex;align-items:center;gap:6px;user-select:none}
+details.tin summary::-webkit-details-marker{display:none}
+details.tin summary:before{content:'？';font-size:12px;font-weight:700;width:12px;
+  display:inline-block;flex:none}
+details.tin[open] summary{border-bottom:1px solid var(--line2)}
+details.tin .in{padding:12px 13px 13px}
+details.tin .tw{margin-bottom:14px}
+details.tin .tw:last-child{margin-bottom:0}
+details.tin .tw b{font-size:14.5px;color:var(--ink);display:inline-block;margin-right:7px}
+details.tin .tw span{font-size:12.5px;color:var(--dim);line-height:1.65}
+details.tin .tw .say{margin-top:8px;margin-bottom:0}
+details.tin .tw .say p{font-size:16px;line-height:1.85}
 
 .num{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;
   border-radius:50%;background:var(--say);color:var(--chipfg);font-size:11.5px;

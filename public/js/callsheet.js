@@ -54,6 +54,14 @@
     });
   });
 
+  /* 머리말의 「용어 찾기」 — 탭 줄에서는 오른쪽으로 밀려 안 보인다 */
+  var gt = $('#goterm');
+  if (gt) gt.addEventListener('click', function () {
+    var i = -1;
+    tabs.forEach(function (b, j) { if (b.textContent.indexOf('용어') > -1) i = j; });
+    if (i > -1) { go(i); var q = $('#tq'); if (q) q.focus(); }
+  });
+
   /* ── 통화 시간 ── */
   var s = 0, iv = null, t = $('#t'), tb = $('#tb');
   function draw() {
@@ -159,6 +167,12 @@
     (it.luck || []).forEach(function (l) { h += '<span class="lk">' + esc(l) + '</span>'; });
     h += '</h3>';
     if (it.short) h += '<p class="short">' + bold(it.short) + '</p>';
+    /* 「그래서 제 용신이 뭔데요?」 — 손님이 진짜 묻는 건 이쪽이다.
+       사전 뜻보다 위에 둔다. */
+    if (it.mine) {
+      h += '<div class="say mine"><span class="cue mi">이 손님은</span><p>' +
+        esc(it.mine) + '</p></div>';
+    }
     if (it.say) h += '<div class="say"><p>' + esc(it.say) + '</p></div>';
     (it.qs || []).forEach(function (q) {
       h += '<details class="qa"><summary>' + esc(q.q) + '</summary>' +
