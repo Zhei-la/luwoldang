@@ -1,0 +1,40 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '전화상담 상담지' }) %>
+
+<div class="settings-block">
+  <h2 class="section-h">전화상담 상담지</h2>
+  <p class="hint" style="margin-bottom:18px">
+    통화하면서 폰으로 보는 화면입니다. 사주를 몰라도 그대로 읽으면 상담이 됩니다.<br>
+    신청자 화면에서 여시면 그분 정보가 자동으로 들어갑니다. 여기서는 직접 넣어보실 수 있습니다.
+  </p>
+
+  <form method="get" action="/callsheet">
+    <div class="acc-row"><span>이름</span>
+      <input class="fi" type="text" name="name" value="<%= q.name || '' %>" placeholder="백유진" required></div>
+    <div class="acc-row"><span>성별</span>
+      <select class="fi" name="gender">
+        <option value="여" <%= q.gender==='여'?'selected':'' %>>여</option>
+        <option value="남" <%= q.gender==='남'?'selected':'' %>>남</option>
+      </select></div>
+    <div class="acc-row"><span>생년월일</span>
+      <input class="fi" type="text" name="birth" value="<%= q.birth || '' %>"
+             placeholder="1994-11-08" required></div>
+    <div class="acc-row"><span>양력 · 음력</span>
+      <select class="fi" name="calendar">
+        <option value="양력">양력</option>
+        <option value="음력" <%= q.calendar==='음력'?'selected':'' %>>음력</option>
+        <option value="윤달" <%= q.calendar==='윤달'?'selected':'' %>>음력 윤달</option>
+      </select></div>
+    <div class="acc-row"><span>태어난 시간</span>
+      <input class="fi" type="text" name="hour" value="<%= q.hour || '' %>"
+             placeholder="07:30 (모르면 비워두세요)"></div>
+    <div class="acc-row"><span>지역</span>
+      <input class="fi" type="text" name="region" value="<%= q.region || '서울특별시' %>"></div>
+    <div class="acc-row"><span>오늘의 고민</span>
+      <input class="fi" type="text" name="ask" value="<%= q.ask || '' %>"
+             placeholder="회사를 그만둘지 고민이에요"></div>
+
+    <button class="btn-primary" type="submit" style="margin-top:16px">상담지 열기</button>
+  </form>
+</div>
+
+<%- include('../partials/dash-bottom') %>

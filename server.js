@@ -151,6 +151,9 @@ app.use('/', builderRouter);
 // ⚠️ 리포트 미리보기 · 수정하기 — 반드시 leadsRouter 보다 "먼저"
 //    leads.js 안에 옛날 /pdfs/:id/preview 가 남아 있는데, 먼저 붙은 쪽이 이긴다.
 app.use('/', previewRouter);
+// 전화상담 상담지 — /leads/:id/callsheet, /callsheet
+// (leads 라우터보다 먼저 붙여 /leads/:id 가 가로채지 않게 한다)
+app.use('/', require('./routes/callsheet'));
 // 사주 신청자 + PDF 제작/발송
 app.use('/', leadsRouter);
 app.use(chatRoutes);

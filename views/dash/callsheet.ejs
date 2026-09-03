@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><%= sheet.who.name %>님 상담지 · 루월당</title>
+<meta name="theme-color" content="#12606C">
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/callsheet.css">
+</head>
+<body>
+<%
+  /* 대사 안의 줄바꿈은 CSS(white-space:pre-line)가 살려준다.
+     여기서는 HTML로 새지 않게 막기만 한다. */
+  function e(s){ return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  /* 근거(why)에는 <b> 를 쓸 수 있게 열어둔다. 우리가 쓴 글만 들어간다. */
+  function w(s){ return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/&lt;b&gt;/g,'<b>').replace(/&lt;\/b&gt;/g,'</b>'); }
+  var S = sheet.sections;
+  var f = sheet.facts;
+  var EL5 = ['목','화','토','금','수'];
+  var els = f.els || {};
+%>
+
+<div class="phone">
+
+  <div class="top">
+    <div class="who">
+      <div>
+        <a class="back" href="<%= backTo %>">← 돌아가기</a>
+        <div class="nm"><%= sheet.who.name %>님
+          <span><%= sheet.who.gender || '' %><%= sheet.who.age != null ? ' · ' + sheet.who.age + '세' : '' %></span></div>
+        <% if (sheet.who.ask) { %><div class="q">“<%= sheet.who.ask %>”</div><% } %>
+      </div>
+      <div class="timer">
+        <div class="t" id="t">00:00</div>
+        <button type="button" id="tb">통화 시작</button>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <% S.forEach(function(s,i){ %>
+        <button type="button" role="tab" aria-selected="<%= i===0 ? 'true':'false' %>"><%= s.title %></button>
+      <% }); %>
+      <button type="button" role="tab" aria-selected="false" class="hot">급질문 GPT</button>
+      <button type="button" role="tab" aria-selected="false" class="hot">용어 찾기</button>
+      <button type="button" role="tab" aria-selected="false">원국</button>
+    </div>
+  </div>
+
+
+  <% S.forEach(function(s,si){ %>
+  <section class="panel <%= si===0 ? 'on':'' %>" role="tabpanel">
+    <p class="ph"><%= String(si+1).padStart(2,'0') %>
+      <% if (s.mins) { %><span class="mins"><%= s.mins %></span><% } %></p>
+    <h2 class="pt"><%= s.title %></h2>
+    <% if (s.note) { %><p class="pd"><%- w(s.note) %></p><% } %>
+
+    <% if (s.grades && s.grades.length) { %>
+      <div class="grade"><table><tbody>
+        <% s.grades.forEach(function(g,gi){ %>
+          <tr data-go="<%= gi %>">
+            <td class="g <%= g.g %>"><%= g.g %></td>
+            <td><%= g.k %></td>
+            <td class="n"><%= g.n %></td>
+          </tr>
+        <% }); %>
+      </tbody></table></div>
+    <% } %>
+
+    <% if (s.picks && s.picks.length) { %>
+      <p class="lbl">골라서 말하세요</p>
+      <div class="picker" data-for=".pk<%= si %>">
+        <% s.picks.forEach(function(p,pi){ %>
+          <button type="button" aria-pressed="<%= pi===0 ? 'true':'false' %>"><%= p %></button>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <%
+      /* 칸이 나뉜 곳(성격·운세)은 groups, 아닌 곳은 blocks 하나로 그린다 */
+      var units = (s.groups && s.groups.length) ? s.groups : [s.blocks];
+      var multi = !!(s.groups && s.groups.length);
+    %>
+    <% units.forEach(function(blocks,ui){ %>
+      <div class="<%= multi ? 'pk'+si+' sub '+(ui===0?'on':'') : '' %>">
+
+        <% if (s.states && s.stateAt === ui) { %>
+          <p class="lbl">지금 어떤 상황이신지 여쭤보고 누르세요</p>
+          <div class="picker st" data-for=".stx<%= si %>">
+            <% s.states.forEach(function(st,xi){ %>
+              <button type="button" aria-pressed="<%= xi===0 ? 'true':'false' %>"><%= st.k %></button>
+            <% }); %>
+          </div>
+          <% s.states.forEach(function(st,xi){ %>
+            <div class="stx<%= si %> sub <%= xi===0?'on':'' %>">
+              <% st.b.forEach(function(b){ %>
+                <% if (b.tag) { %><span class="cue <%= b.tone==='warn'?'warn':(b.tone==='ok'?'ok':'') %>"><%= b.tag %></span><% } %>
+                <div class="say <%= b.tone==='warn'?'warn':(b.tone==='ok'?'ok':'') %>">
+                  <% b.say.forEach(function(p){ %><p><%= p %></p><% }); %>
+                </div>
+                <% if (b.why) { %>
+                  <details class="why"><summary>왜 그렇게 나오나</summary>
+                    <div class="in"><%- w(b.why) %></div></details>
+                <% } %>
+              <% }); %>
+            </div>
+          <% }); %>
+
+        <% } else { %>
+          <% blocks.forEach(function(b,bi){ %>
+            <% if (b.tag) { %>
+              <% if (/^\d+$/.test(b.tag)) { %>
+                <span class="num"><%= b.tag %></span>
+              <% } else { %>
+                <span class="cue <%= b.tone==='warn'?'warn':(b.tone==='ok'?'ok':'') %>"><%= b.tag %></span>
+              <% } %>
+            <% } %>
+            <div class="say <%= b.tone==='warn'?'warn':(b.tone==='ok'?'ok':'') %>">
+              <% b.say.forEach(function(p){ %><p><%= p %></p><% }); %>
+            </div>
+            <% if (b.why) { %>
+              <details class="why"><summary>왜 그렇게 나오나 · 이럴 땐 이렇게</summary>
+                <div class="in"><%- w(b.why) %></div></details>
+            <% } %>
+          <% }); %>
+        <% } %>
+
+      </div>
+    <% }); %>
+
+    <% if (s.qs && s.qs.length) { %>
+      <p class="qhead">이런 질문이 오면</p>
+      <% s.qs.forEach(function(q){ %>
+        <details class="qa"><summary><%= q.q %></summary>
+          <div class="in">
+            <% if (q.a) { %><div class="say"><p><%= q.a %></p></div><% } %>
+            <% if (q.tip) { %><p class="tip"><%- w(q.tip) %></p><% } %>
+          </div>
+        </details>
+      <% }); %>
+    <% } %>
+
+    <button type="button" class="next">다음 →</button>
+  </section>
+  <% }); %>
+
+
+  <!-- 급질문 GPT -->
+  <section class="panel" role="tabpanel">
+    <p class="ph">급할 때 <span class="mins">막힐 때만</span></p>
+    <h2 class="pt">급질문 GPT</h2>
+    <p class="pd">준비 안 된 질문이 오면 여기 적고 <b>복사해서 GPT에 붙여넣으세요.</b>
+      손님 사주와 지금까지 나눈 이야기가 <b>자동으로 같이 들어갑니다.</b></p>
+
+    <div class="amber" style="margin-top:0;margin-bottom:18px">
+      <b>통화를 끊지 마세요.</b> “잠시만요, 이 부분은 좀 더 정확하게 봐드릴게요” 하고
+      10초 정도 여유를 두시면 됩니다. <b>뜸 들이는 건 이상하지 않습니다.</b>
+      오히려 신중해 보입니다.
+    </div>
+
+    <p class="lbl">손님이 방금 물어본 것</p>
+    <input class="qin" id="qin" type="text" placeholder="예) 내년에 이직하면 잘 풀릴까요?">
+
+    <p class="lbl" style="margin-top:18px">통화 중 메모 — 여기 적은 것도 같이 들어갑니다</p>
+    <textarea id="memo" placeholder="예) 팀장이랑 안 맞는다고 함&#10;예) 이직 준비 이미 시작 — 포트폴리오 만드는 중"></textarea>
+
+    <button type="button" class="btn" id="copy" style="margin-top:16px">프롬프트 복사하기</button>
+    <a class="btn gh" href="https://chatgpt.com/" target="_blank" rel="noopener">GPT 열기</a>
+    <button type="button" class="btn gh" id="toggle">프롬프트 접기</button>
+    <div id="prwrap"><pre class="pr" id="pr"></pre></div>
+
+    <div class="amber">
+      <b>GPT가 준 답을 그대로 읽지 마세요.</b> 한 번 눈으로 훑고,
+      금지어(무조건·반드시·병명·이혼)가 없는지만 보고 읽으시면 됩니다.
+      맨 아래 <b>[근거]</b> 줄은 손님한테 읽는 게 아니라 <b>선생님이 보는 것</b>입니다.
+    </div>
+
+    <div class="warnbox">
+      <h4>절대 하면 안 되는 말</h4>
+      <ul>
+        <li><b>죽음·큰 병 단정</b> — “큰 병 온다”, “조심 안 하면 위험하다” 금지</li>
+        <li><b>병명</b> — 무슨 병이라고 말하는 순간 의료법입니다</li>
+        <li><b>이혼·헤어지라 마라</b> — 관계를 끊으라는 말은 하지 않습니다</li>
+        <li><b>“무조건”, “반드시”, “틀림없이”</b> — 단정하는 부사를 빼세요</li>
+        <li><b>겁주고 부적·굿 권하기</b> — 신고 대상입니다</li>
+        <li><b>다른 곳 풀이 깎아내리기</b> — “거긴 틀렸다” 금지</li>
+        <li><b>상대 생년월일 없이 궁합 단정</b> — 사고가 제일 많이 나는 자리</li>
+        <li><b>구체적 액수·연도·직업명 찍기</b> — 성질까지만 말합니다</li>
+      </ul>
+    </div>
+    <button type="button" class="next">다음 →</button>
+  </section>
+
+
+  <!-- 용어 찾기 -->
+  <section class="panel" role="tabpanel">
+    <p class="ph">사전 <span class="mins">통화 중 검색</span></p>
+    <h2 class="pt">용어 찾기</h2>
+    <p class="pd">손님이 용어를 던지면 여기서 찾으세요.
+      <b>한 글자만 쳐도 나옵니다.</b> 파란 칸이 손님에게 그대로 읽는 말입니다.</p>
+
+    <div class="sbox">
+      <input class="sin" id="tq" type="search" autocomplete="off"
+             placeholder="도화살, 용신, 삼재, 공망…">
+    </div>
+    <div class="cats" id="tcats">
+      <button type="button" aria-pressed="true">전체</button>
+      <% sheet.cats.forEach(function(c){ %><button type="button" aria-pressed="false"><%= c %></button><% }); %>
+    </div>
+    <div id="tlist"></div>
+  </section>
+
+
+  <!-- 원국 -->
+  <section class="panel" role="tabpanel">
+    <p class="ph">참고</p>
+    <h2 class="pt">원국</h2>
+    <p class="pd">손님한테 읽어주는 곳이 아닙니다. 필요할 때만 보세요.</p>
+
+    <div class="chart"><table>
+      <thead><tr><th>시</th><th>일</th><th>월</th><th>년</th></tr></thead>
+      <tbody>
+        <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+          <td class="gz <%= k==='day'?'me':'' %>"><%= (saju.pillars && saju.pillars[k] || '').charAt(0) %></td><% }); %></tr>
+        <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+          <td class="ko <%= k==='day'?'me':'' %>"><%= (saju.pillarsKo && saju.pillarsKo[k] || '').charAt(0) %></td><% }); %></tr>
+        <tr><% ['hour','day','month','year'].forEach(function(k){ var c=saju.detail&&saju.detail[k]; %>
+          <td class="gd <%= k==='day'?'me':'' %>"><%= k==='day' ? '나' : ((c&&c.stem&&c.stem.god)||'') %></td><% }); %></tr>
+        <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+          <td class="gz"><%= (saju.pillars && saju.pillars[k] || '').charAt(1) %></td><% }); %></tr>
+        <tr><% ['hour','day','month','year'].forEach(function(k){ %>
+          <td class="ko"><%= (saju.pillarsKo && saju.pillarsKo[k] || '').charAt(1) %></td><% }); %></tr>
+        <tr><% ['hour','day','month','year'].forEach(function(k){ var c=saju.detail&&saju.detail[k]; %>
+          <td class="gd"><%= (c&&c.branch&&c.branch.god)||'' %></td><% }); %></tr>
+      </tbody>
+    </table></div>
+
+    <div class="els">
+      <% EL5.forEach(function(el){ var n = els[el]||0; %>
+        <div class="el <%= n===0?'zero':(n>=4?'many':'') %>">
+          <div class="k"><%= el %></div><div class="v"><%= n %></div>
+        </div>
+      <% }); %>
+    </div>
+    <p class="pd" style="margin-top:8px">일간 <b><%= f.il.name %></b> ·
+      <%= f.weak ? '신약' : '신강' %> ·
+      비겁<%= f.grp.비겁 %> 식상<%= f.grp.식상 %> 재성<%= f.grp.재성 %> 관성<%= f.grp.관성 %> 인성<%= f.grp.인성 %>
+      <% if (f.none.length) { %>· <b><%= f.none.join('·') %> 없음</b><% } %>
+      <% if (f.gongmang && f.gongmang.length) { %>· 공망 <%= f.gongmang.join('·') %><% } %>
+      <% if (!f.timeKnown) { %>· <b>시 모름</b><% } %>
+    </p>
+
+    <% if (f.dwList && f.dwList.length) { %>
+      <p class="lbl" style="margin-top:22px">대운 · <%= f.forward ? '순행' : '역행' %></p>
+      <div class="chart"><table>
+        <thead><tr><% f.dwList.slice(Math.max(0,f.curIdx-1), Math.max(0,f.curIdx-1)+4).forEach(function(d){ %>
+          <th><%= d.age %>세</th><% }); %></tr></thead>
+        <tbody>
+          <tr><% f.dwList.slice(Math.max(0,f.curIdx-1), Math.max(0,f.curIdx-1)+4).forEach(function(d){ %>
+            <td class="gz <%= (f.curDw && d.age===f.curDw.age)?'me':'' %>"><%= d.ganzi %></td><% }); %></tr>
+          <tr><% f.dwList.slice(Math.max(0,f.curIdx-1), Math.max(0,f.curIdx-1)+4).forEach(function(d){ %>
+            <td class="gd <%= (f.curDw && d.age===f.curDw.age)?'me':'' %>" style="padding-bottom:10px"><%= d.ko %><%= (f.curDw && d.age===f.curDw.age) ? ' · 지금' : '' %></td><% }); %></tr>
+        </tbody>
+      </table></div>
+    <% } %>
+    <% if (f.sewoon) { %>
+      <p class="pd"><%= f.year %>년 세운 <b><%= f.sewoon.ko %></b>
+        <% if (f.seGroup) { %>— <%= f.seGroup %><% } %></p>
+    <% } %>
+  </section>
+
+
+  <p class="foot">
+    이 상담지는 <%= sheet.who.name %>님의 실제 만세력 계산 결과로 만들어졌습니다.<br>
+    대사는 그대로 읽으셔도 되고, 손님 반응에 따라 골라 쓰셔도 됩니다.
+  </p>
+</div>
+
+<script>
+var CS_TERMS = <%- JSON.stringify(sheet.terms) %>;
+var CS_PROMPT = <%- JSON.stringify(sheet.promptParts) %>;
+var CS_KEY = 'callmemo:<%= lead ? lead.id : (sheet.who.name + sheet.who.birthText) %>';
+</script>
+<script src="/js/callsheet.js"></script>
+</body>
+</html>

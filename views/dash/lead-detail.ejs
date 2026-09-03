@@ -13,6 +13,8 @@
     <%# 이 분 정보를 그대로 만세력 계산기에 넣어 연다. 같은 걸 두 번 안 적게 한다. %>
     <% if (lead.birth) { %>
       <a class="edit-btn manse-btn" href="/manse?from=<%= lead.id %>">만세력 넣기</a>
+      <%# 전화로 상담할 때 폰으로 여는 화면. 사주를 몰라도 그대로 읽으면 된다. %>
+      <a class="edit-btn" href="/leads/<%= lead.id %>/callsheet" target="_blank">전화상담 상담지</a>
     <% } %>
     <button type="button" class="edit-btn" id="btnEditLead">정보 수정</button>
   </h2>
