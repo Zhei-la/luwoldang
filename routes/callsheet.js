@@ -108,6 +108,9 @@ router.get('/leads/:id/callsheet', async (req, res, next) => {
       user: req.user, active: 'leads',
       lead, saju, sheet, backTo: '/leads/' + lead.id,
       partnerSaju: pair && pair.saju, partner: pair && pair.client,
+      /* 상대방 한 줄 요약(일간·신강약·십성)은 여기서 셈해서 넘긴다.
+         화면(ejs) 안에서는 require 를 쓸 수 없다. */
+      partnerFacts: pair && pair.saju ? callsheet.readFacts(pair.saju, {}) : null,
     });
   } catch (e) { next(e); }
 });
@@ -145,6 +148,9 @@ router.get('/callsheet', async (req, res, next) => {
       user: req.user, active: 'leads',
       lead: null, saju, sheet, backTo: '/callsheet',
       partnerSaju: pair && pair.saju, partner: pair && pair.client,
+      /* 상대방 한 줄 요약(일간·신강약·십성)은 여기서 셈해서 넘긴다.
+         화면(ejs) 안에서는 require 를 쓸 수 없다. */
+      partnerFacts: pair && pair.saju ? callsheet.readFacts(pair.saju, {}) : null,
     });
   } catch (e) { next(e); }
 });

@@ -258,9 +258,11 @@ function enginePages({ client, saju, type, partner, partnerSaju }) {
     html = buildMyeongsik(c2, {}).pdfHtml;
   } catch (e) {
     console.error('[PDF] 새 만세력 엔진 실패 — 기존 표로 대체합니다:', e.message);
-    return sajuPages({ client, saju, type });
+    /* 본인 표가 옛 표로 내려앉아도 상대방 장은 그대로 붙인다.
+       궁합인데 상대방이 통째로 빠지는 것보다 낫다. */
+    return sajuPages({ client, saju, type }) + partnerPage({ partner, partnerSaju });
   }
-  if (!html) return sajuPages({ client, saju, type });
+  if (!html) return sajuPages({ client, saju, type }) + partnerPage({ partner, partnerSaju });
 
   const grab = (cls) => {
     const m = html.match(new RegExp('<table class="pdf-table ' + cls + '"[\\s\\S]*?</table>'));
@@ -339,12 +341,20 @@ function partnerPage({ partner, partnerSaju }) {
     : '';
 
   const name = esc(partner.name || '상대방');
-  return `
+
+  /* 원국표와 오행 그림을 한 장에 넣으면 A4 한 장(약 1123px)을 250px 넘겨
+     오각형 아래쪽 두 칸이 잘려 나갔다. .sheet 는 overflow:hidden 이라
+     화면에서는 티가 안 나고 PDF 에서만 사라진다.
+     본인 장이 그러듯 표와 오행을 각각 한 장씩 쓴다. */
+  const sheet = (t, inner) => (inner ? `
 <section class="page sheet">
-  <h2 class="pg-title">${name}님 · 만세력 · 사주 원국</h2>
+  <h2 class="pg-title">${t}</h2>
   <div class="pg-line"></div>
-  <div class="cb-card">${head}${wonguk}${wheel}${sum}</div>
-</section>`;
+  <div class="cb-card">${inner}</div>
+</section>` : '');
+
+  return sheet(name + '님 · 만세력 · 사주 원국', head + wonguk)
+       + sheet(name + '님 · 오행', wheel + sum);
 }
 
 /* ── 3. 만세력 (여러 장으로 나눔) ──
