@@ -130,7 +130,10 @@ details.tin .tw .say p{font-size:16px;line-height:1.85}
   font-weight:700;margin-bottom:8px;font-variant-numeric:tabular-nums}
 
 /* 고르기 */
-.picker{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+/* 운세 표에서 줄을 누르면 여기로 스크롤한다. 그냥 두면 고정 머리말 뒤로
+   들어가서, 누른 사람 눈에는 아무 일도 안 일어난 것처럼 보인다. */
+.picker{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;
+  scroll-margin-top:calc(var(--toph, 0px) + 10px)}
 .picker button{font-family:inherit;font-size:13px;font-weight:600;padding:7px 13px;
   border-radius:999px;border:1px solid var(--line);background:var(--card);
   color:var(--dim);cursor:pointer;white-space:nowrap}
@@ -205,7 +208,13 @@ details.tin .tw .say p{font-size:16px;line-height:1.85}
 .amber b{color:var(--amb)}
 
 /* 용어 */
-.sbox{position:sticky;top:0;z-index:5;background:var(--card);padding:0 0 12px}
+/* 검색칸은 머리말 바로 밑에 붙는다.
+   top:0 으로 두면 고정 머리말(약 130px)에 가려 통째로 안 보인다.
+   머리말 높이는 이름·질문 줄에 따라 달라져서 JS가 재서 --toph 에 넣어준다.
+   4px 겹쳐 올린 건 이음매 때문이다. 딱 맞춰 붙이면 소수점 한 줄이 남아
+   뒤로 지나가는 글자가 실오라기처럼 비친다. 겹친 만큼 위 여백으로 돌려준다. */
+.sbox{position:sticky;top:calc(var(--toph, 0px) - 4px);z-index:5;
+  background:var(--card);padding:14px 0 12px}
 input.sin,input.qin,textarea{width:100%;border:1px solid var(--line);border-radius:10px;
   padding:13px;font-family:inherit;font-size:16px;line-height:1.7;
   background:var(--sunk);color:var(--ink)}

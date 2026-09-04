@@ -12,6 +12,24 @@
   };
   var NL = String.fromCharCode(10);
 
+  /* ── 고정 머리말 높이 ──
+     용어 검색칸은 머리말 바로 밑에 붙어 있어야 한다. CSS 만으로는 못 한다 —
+     머리말 높이가 이름 길이와 질문 줄 유무에 따라 달라지기 때문이다.
+     재서 --toph 에 넣어주면 .sbox 가 그 값을 top 으로 쓴다. */
+  var topBar = $('.top');
+  function measureTop() {
+    if (!topBar) return;
+    var h = Math.round(topBar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--toph', h + 'px');
+  }
+  measureTop();
+  window.addEventListener('resize', measureTop);
+  window.addEventListener('orientationchange', measureTop);
+  /* 글꼴이 늦게 오면 머리말 높이가 한 번 더 바뀐다 */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(measureTop).catch(function () {});
+  }
+
   /* ── 큰 탭 ── */
   var tabs = $$('.tabs button'), pans = $$('.panel');
   function go(i) {
