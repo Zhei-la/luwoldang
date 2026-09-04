@@ -108,13 +108,50 @@ function needsBreaks(parts) {
   (parts || []).forEach((p, i) => {
     const text = String(p || '');
     const lines = text.split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean);
-    const sents = (text.match(/[.!?][\s]|[.!?]$/g) || []).length;
+
+    /* ⚠️ 예전엔 마침표(.!?)로만 문장을 셌다. 그런데 사주 글은 마침표를
+          거의 안 쓴다 — 「삼재라고 다 나쁜 건 아닙니다」 처럼 끝난다.
+          그래서 이 검사가 사실상 안 걸리고 60자 규칙만 일하고 있었다.
+          한국어 종결 어미도 같이 센다 (length.js 의 proseSentences 와 같은 방식). */
+    const sents = (text.match(/[.!?。]|다\s|요\s|음\s|임\s|다$|요$|음$|임$/g) || []).length;
+
     // 문장이 셋 이상인데 줄이 하나면 벽이다
     if (sents >= 3 && lines.length <= 1) bad.push(i + 1);
     // 한 줄이 60자를 넘어도 폰에서 두세 줄로 접힌다
     else if (lines.some((l) => l.length > 60)) bad.push(i + 1);
+    // 길이는 긴데 줄을 거의 안 나눴다 — 폰에서 통째로 벽이다
+    else if ([...text].length >= 120 && lines.length < 3) bad.push(i + 1);
   });
   return bad;
+}
+
+/* 덩어리 나누기 —
+   줄만 나눠도 여섯 줄이 다닥다닥 붙어 있으면 폰에서는 여전히 벽이다.
+   뜻이 바뀌는 자리에 빈 줄 하나를 넣어 두세 덩어리로 끊어야 읽힌다.
+   반대로 줄마다 비우면 흩어져 보여 성의 없어 보인다. 양쪽을 다 잡는다.
+
+   반환 { ok, why } — why 는 무엇이 문제인지 한 줄. */
+function blockCheck(text) {
+  const raw = String(text == null ? '' : text).split(String.fromCharCode(10));
+  const filled = raw.filter((l) => l.trim()).length;
+  /* 빈 줄이 이어져 있어도 한 번으로 센다. 두 줄 비운 것도 한 자리다. */
+  let blanks = 0;
+  for (let i = 1; i < raw.length; i++) {
+    if (!raw[i].trim() && raw[i - 1].trim()) blanks++;
+  }
+
+  /* 세 줄 이하는 그냥 둔다. 한 줄짜리 글에 억지로 빈 줄을 넣을 이유가 없다. */
+  if (filled <= 3) {
+    if (blanks > 1) return { ok: false, why: '짧은 글인데 빈 줄이 많습니다. 붙여서 쓰세요' };
+    return { ok: true };
+  }
+  if (blanks === 0) {
+    return { ok: false, why: '여섯 줄이 붙어 있으면 벽입니다. 뜻이 바뀌는 자리에 빈 줄 하나를 넣어주세요' };
+  }
+  if (blanks > Math.ceil(filled / 2)) {
+    return { ok: false, why: '빈 줄이 너무 많습니다. 한 글에 하나나 둘이면 충분합니다' };
+  }
+  return { ok: true };
 }
 
 /* 알맹이 없이 뭉뚱그린 말 — 무엇인지 안 밝히고 넘어가는 표현 */
@@ -223,9 +260,10 @@ function checkPost(post) {
      1/3, 2/3 로 나눠 올리면 뒷편을 아무도 안 본다. */
   rows.push({
     label: '한 편으로 끝남',
-    ok: parts.length <= 1,
+    /* 이어붙이기를 켠 사람은 여러 편을 쓸 수 있다. 켜지 않았으면 한 편이 규칙이다. */
+    ok: parts.length <= 1 || !!(post.allowChain),
     hard: true,
-    detail: parts.length <= 1
+    detail: (parts.length <= 1 || post.allowChain)
       ? undefined
       : parts.length + '편으로 나뉘어 있습니다. 한 편에 담거나 덜 중요한 것을 빼주세요',
   });
@@ -241,6 +279,15 @@ function checkPost(post) {
         ? '문장마다 줄을 바꿔주세요 (한 줄 60자 넘기지 않기)'
         : wall.join('·') + '번째 편이 한 줄로 붙어 있습니다'
       : undefined,
+  });
+
+  /* 덩어리 — 줄을 나눠도 다닥다닥 붙어 있으면 여전히 벽이다 */
+  const blockBad = parts.map(blockCheck).find((b) => !b.ok);
+  rows.push({
+    label: '덩어리 사이를 한 줄 비움',
+    ok: !blockBad,
+    hard: true,
+    detail: blockBad ? blockBad.why : undefined,
   });
 
   /* 알맹이 없이 뭉뚱그린 말 */

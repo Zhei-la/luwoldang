@@ -180,13 +180,6 @@ async function initDb() {
   // 편집본이 발송본과 달라졌는지 (수정했지만 발송본에 미적용) 표시
   await pool.query(`ALTER TABLE pdfs ADD COLUMN IF NOT EXISTS edits_pending BOOLEAN DEFAULT FALSE;`);
 
-  /* 표지에 얹는 상호명·내담자 정보의 위치를 교육생이 직접 고를 수 있게 한다.
-     이 값이 없으면 직접 올린 표지는 늘 '위쪽 가로'로만 나온다. */
-  for (const t of ['teacher_covers', 'cover_set_items', 'cover_presets']) {
-    await pool.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS brand_pos TEXT;`);
-    await pool.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS info_pos TEXT;`);
-  }
-
   /* 만들 때 쓴 사주 설정을 그대로 찍어둔다 (지역시 보정 On/Off · 지역 등).
      이게 없으면 나중에 신청자 설정을 바꿨을 때 만세력만 다시 계산되어
      본문(이미 써서 저장된 글)과 서로 안 맞게 된다. */
@@ -781,6 +774,15 @@ async function initDb() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_cover_set_items ON cover_set_items(set_key, type);`);
 
+  /* 표지에 얹는 상호명·내담자 정보의 위치를 교육생이 직접 고를 수 있게 한다.
+     이 값이 없으면 직접 올린 표지는 늘 '위쪽 가로'로만 나온다.
+     ⚠️ 세 표를 다 만든 뒤에 걸어야 한다. 예전엔 이 줄이 CREATE 보다 위에 있어서
+        빈 데이터베이스로 처음 띄우면 「teacher_covers 가 없습니다」로 초기화가
+        통째로 멈췄다. 운영 DB 에는 표가 이미 있어 드러나지 않았을 뿐이다. */
+  for (const t of ['teacher_covers', 'cover_set_items', 'cover_presets']) {
+    await pool.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS brand_pos TEXT;`);
+    await pool.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS info_pos TEXT;`);
+  }
 
   /* ── 스레드 자동화 ──────────────────────────────────
    * 원본 도구는 1인용이라 JSON 파일에 담았다.
@@ -880,6 +882,57 @@ async function initDb() {
     await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS threads_token TEXT;`);
     await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS threads_user_id TEXT;`);
     await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS threads_username TEXT;`);
+    /* 글을 쓸 모델. 교육생이 설정에서 고른다. 비우면 서버 기본값(THREADS_MODEL). */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS ai_model TEXT;`);
+    /* 어느 말투로 쓸지. 'mine'(내 글에서 뽑은 것) 또는 프리셋 이름. 비우면 기본 말투. */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS voice_mode TEXT;`);
+    /* 인사·무료사주 글의 재료. { name, career, sample } 을 담는다.
+       계정 이름과 경력이 있어야 「10년차 ○○사주야」 같은 첫 줄이 나온다. */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS intro JSONB;`);
+    /* 「오늘의 운세」 틀. { sample, asReply } 을 담는다.
+       본인이 쓰던 운세 글을 하나 넣어두면 날짜와 운세만 갈아끼워 나간다. */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS daily JSONB;`);
+    /* 이어붙이기(스레드 앱의 「글 추가하기」). { on, max, numbered }
+       ⚠️ 기본은 꺼짐이다. 나눠 올리면 뒷편을 안 보기 때문에 켤 때만 켠다. */
+    await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS chain JSONB;`);
+
+    /* 리스트형 글의 댓글. 본문(parts)과 따로 담는다.
+       ⚠️ parts 에 두 편을 넣는 것과 다르다. 그건 연작(1/2)이 되어 번호가 붙는다.
+          이건 본문 한 편 + 첫 댓글 한 편이다. 스레드에서 잘 먹히는 모양이다. */
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS reply_text TEXT;`);
+    /* 이 글에 1/2 · 2/2 번호를 붙일지. 전역 설정이 아니라 글마다 정한다 —
+       운세는 나누고 나머지는 한 편인 사람이 있기 때문이다. */
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS numbered BOOLEAN DEFAULT FALSE;`);
+    /* 어느 자동 규칙이 만든 글인지. 같은 자리에 두 번 만들지 않으려고 본다. */
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS rule_id TEXT;`);
+    await pool.query(`ALTER TABLE th_posts ADD COLUMN IF NOT EXISTS slot_at TIMESTAMPTZ;`);
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_th_slot
+         ON th_posts(user_id, rule_id, slot_at)
+       WHERE rule_id IS NOT NULL;`
+    );
+
+    /* 자동 발행 규칙 —
+       요일과 시각을 슬롯으로 담는다. 매일 같은 시각에 올리면 봇으로 잡히므로
+       요일마다 다른 시각을 고르게 하는 것이 이 표의 존재 이유다. */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_rules (
+        id          TEXT PRIMARY KEY,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name        TEXT,
+        enabled     BOOLEAN DEFAULT TRUE,
+        slots       JSONB DEFAULT '[]'::jsonb,   -- [{ day:0~6, time:'08:10' }]
+        jitter_min  INTEGER DEFAULT 7,           -- 정한 시각에서 ± 흔들 분
+        topics      JSONB DEFAULT '[]'::jsonb,   -- 돌려 쓸 키워드. 비면 반응 터진 소재에서
+        forms       JSONB DEFAULT '[]'::jsonb,   -- 글 틀 (여러 개 고르면 돌려 쓴다)
+        mode        TEXT DEFAULT 'draft',        -- publish(바로 예약) / draft(원고만)
+        cursor      INTEGER DEFAULT 0,
+        last_run_at TIMESTAMPTZ,
+        last_error  TEXT,
+        created_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_rules ON th_rules(user_id, created_at);`);
     /* 예약 글을 빨리 찾기 위한 색인 */
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_due ON th_posts(status, scheduled_for);`);
 

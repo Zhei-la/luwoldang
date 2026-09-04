@@ -11,6 +11,7 @@
 
 const { pool } = require('../../db');
 const zernio = require('./zernio');
+const autopost = require('./autopost');
 
 const EVERY_MS = 5 * 60 * 1000;     // 5분마다. 급할 것 없다.
 let timer = null;
@@ -117,9 +118,19 @@ async function tick() {
     if (done) console.log('[스레드] 예약 글 ' + done + '건 상태 갱신');
   } catch (e) {
     console.error('[스레드] 예약 확인 실패:', e.message);
-  } finally {
-    running = false;
   }
+
+  /* 자동 규칙대로 앞으로 올릴 글을 미리 만들어 채운다.
+     위 확인이 실패해도 이건 돌아야 한다 — 서로 다른 일이다. */
+  try {
+    const out = await autopost.tick();
+    if (out.made) console.log('[스레드] 자동 규칙으로 ' + out.made + '개 만들어 걸었습니다');
+    if (out.errors.length) console.error('[스레드] 자동 규칙 오류:', out.errors.slice(0, 3).join(' / '));
+  } catch (e) {
+    console.error('[스레드] 자동 만들기 실패:', e.message);
+  }
+
+  running = false;
 }
 
 function start() {

@@ -18,11 +18,18 @@ const pipeline = require('../services/threads/pipeline');
 const zernio = require('../services/threads/zernio');
 const tail = require('../services/threads/tail');
 const scheduler = require('../services/threads/scheduler');
-const { testKey } = require('../services/threads/llm');
+const { testKey, MODELS, DEFAULT_MODEL } = require('../services/threads/llm');
+const voice = require('../services/threads/voice');
+/* 올리기·예약은 자동 규칙과 같은 길을 타야 한다. 그래서 서비스로 뺐다. */
+const { readyToSend, bodyToSend } = require('../services/threads/publish');
+const rules = require('../services/threads/rules');
+const autopost = require('../services/threads/autopost');
+const FORMS = require('../services/threads/forms');
+const VOICES = require('../services/threads/voices');
 const { numberParts, formOf } = require('../services/threads/length');
 const { checkPost } = require('../services/threads/guideline');
 const { HOOKS } = require('../services/threads/hooks');
-const { ALL: TOPIC_LIST } = require('../services/threads/topics');
+const { ALL: TOPIC_LIST, HOT: HOT_TOPICS } = require('../services/threads/topics');
 
 const guard = [requireAuth, requireApproved];
 
@@ -69,13 +76,36 @@ router.get('/threads', ...guard, async (req, res, next) => {
         ctaLink: settings.ctaLink,
         dailyLine: settings.dailyLine,
         ctaPerWeek: settings.ctaPerWeek,
+        model: settings.model,
       },
+      models: MODELS,
+      defaultModel: DEFAULT_MODEL,
+      voicePack: settings.voicePack || null,
+      voiceMin: voice.MIN_SAMPLES,
+      voicePresets: VOICES.PRESETS,
+      voiceMode: settings.voiceMode || '',
+      intro: settings.intro || { name: '', career: '', sample: '' },
+      daily: settings.daily
+        ? {
+            body: settings.daily.body || settings.daily.sample || '',
+            tail: settings.daily.tail || '',
+            mode: settings.daily.mode || (settings.daily.asReply ? 'reply' : 'single'),
+          }
+        : { body: '', tail: '', mode: 'single' },
+      formList: FORMS.FORMS,
+      formMax: FORMS.MAX_PICK,
+      dayNames: rules.DAY_NAMES,
+      autoRules: (await rules.list(req.user.id)).map((r) => Object.assign({}, r, {
+        next: rules.upcoming(r, 24 * 7).slice(0, 3).map((u) => u.sendAt.toISOString()),
+        warning: rules.sameTimeWarning(r.slots),
+      })),
       linksThisWeek: await tail.linksThisWeek(req.user.id),
-      posts: posts.map(pipeline.view),
+      posts: posts.map((x) => pipeline.view(x)),
       trashCount: trash,
       hookTotal: HOOKS.length,
       hookUsed: Object.keys(ledger).length,
       topics: TOPIC_LIST,
+      hotTopics: HOT_TOPICS,
       dailyLimit: store.DAILY_LIMIT,
       usedToday: await store.countToday(req.user.id),
     });
@@ -98,6 +128,34 @@ router.post('/api/threads/settings', ...guard, async (req, res, next) => {
     /* 3번을 넘기면 광고 계정으로 몰려 정지될 수 있다. 화면에서도 막지만 여기서도 조인다. */
     if (b.ctaPerWeek != null) patch.ctaPerWeek = Math.max(0, Math.min(3, Number(b.ctaPerWeek) || 0));
     if (typeof b.allowPublish === 'boolean') patch.allowPublish = b.allowPublish;
+    /* 모델 이름은 그대로 받는다. 되는지는 「연결 확인」이 실제로 불러서 판단한다.
+       목록에 없는 모델을 적어 쓸 수 있어야 새 모델이 나와도 배포 없이 넘어간다. */
+    if (typeof b.model === 'string') patch.model = b.model.trim().slice(0, 60);
+    /* 말투: 'mine'(내 글에서 뽑은 것) 또는 프리셋 이름. 그 외 값은 버린다. */
+    if (typeof b.voiceMode === 'string') {
+      const m = b.voiceMode.trim();
+      patch.voiceMode = (m === 'mine' || m === '' || VOICES.byId(m)) ? m : '';
+    }
+    /* 인사글 재료. 셋 다 비면 아예 지운다 — 빈 값이 남아 있으면
+       프롬프트가 「등록됐다」고 잘못 읽는다. */
+    if (b.intro && typeof b.intro === 'object') {
+      const name   = String(b.intro.name   || '').trim().slice(0, 60);
+      const career = String(b.intro.career || '').trim().slice(0, 200);
+      const sample = String(b.intro.sample || '').trim().slice(0, 2000);
+      patch.intro = (name || career || sample) ? { name, career, sample } : null;
+    }
+    /* 오늘의 운세 틀. 본문이 비면 통째로 지운다.
+       mode — chain(두 편으로 나눔) / reply(본문+첫 댓글) / single(한 편) */
+    if (b.daily && typeof b.daily === 'object') {
+      const body = String(b.daily.body || '').trim().slice(0, 2000);
+      const tail = String(b.daily.tail || '').trim().slice(0, 2000);
+      let mode = ['chain', 'reply', 'single'].indexOf(b.daily.mode) >= 0 ? b.daily.mode : 'single';
+      /* 이어지는 글이 비었는데 나눈다고 하면 앞뒤가 안 맞는다 */
+      if (!tail) mode = 'single';
+      patch.daily = body
+        ? { body, tail, mode, numbered: b.daily.numbered !== false }
+        : null;
+    }
     if (Array.isArray(b.facts)) {
       patch.facts = b.facts
         .map((f) => ({ text: String((f && f.text) || f || '').trim().slice(0, 300) }))
@@ -114,8 +172,215 @@ router.post('/api/threads/test-key', ...guard, async (req, res, next) => {
     if (!req.user.openai_key) {
       return fail(res, { message: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.' });
     }
-    res.json(await testKey(req.user.openai_key));
+    res.json(await testKey(req.user.openai_key, (req.body || {}).model));
   } catch (e) { next(e); }
+});
+
+/* ── 내 말투 ──────────────────────────────────────── */
+
+/** 지금 잡혀 있는 말투 팩 */
+router.get('/api/threads/voice', ...guard, async (req, res, next) => {
+  try {
+    const s = await store.getSettings(req.user.id);
+    res.json({ voicePack: s.voicePack || null, min: voice.MIN_SAMPLES });
+  } catch (e) { next(e); }
+});
+
+/**
+ * 붙여넣은 내 글에서 말투를 뽑는다.
+ * text(덩어리 하나) 또는 samples(배열) 둘 다 받는다.
+ */
+router.post('/api/threads/voice', ...guard, async (req, res, next) => {
+  try {
+    if (!req.user.openai_key) {
+      return fail(res, { message: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.' });
+    }
+    const b = req.body || {};
+    const input = Array.isArray(b.samples) ? b.samples : b.text;
+    const out = await voice.analyze(req.user.id, req.user.openai_key, input);
+    res.json(out);
+  } catch (e) {
+    if (e.code === 'TOO_FEW') return fail(res, e, 400);
+    outsideFail(res, e, next);
+  }
+});
+
+/** 뽑힌 말투를 사람이 손본다 */
+router.patch('/api/threads/voice', ...guard, async (req, res, next) => {
+  try {
+    res.json({ voicePack: await voice.patch(req.user.id, req.body || {}) });
+  } catch (e) {
+    if (e.code === 'NO_PACK') return fail(res, e, 400);
+    next(e);
+  }
+});
+
+/** 말투를 지운다. 지침의 기본 말투로 돌아간다. */
+router.delete('/api/threads/voice', ...guard, async (req, res, next) => {
+  try {
+    await voice.clear(req.user.id);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+/* ── 자동 규칙 ────────────────────────────────────── */
+
+/** 규칙 목록 + 앞으로 언제 올라가는지 */
+router.get('/api/threads/rules', ...guard, async (req, res, next) => {
+  try {
+    const list = await rules.list(req.user.id);
+    res.json({
+      ok: true,
+      rules: list.map((r) => Object.assign({}, r, {
+        next: rules.upcoming(r, 24 * 7).slice(0, 5).map((u) => ({
+          label: rules.slotLabel(u.slot),
+          at: u.sendAt.toISOString(),
+        })),
+        warning: rules.sameTimeWarning(r.slots),
+      })),
+    });
+  } catch (e) { next(e); }
+});
+
+/** 규칙 만들기·고치기. id 가 없으면 새로 만든다. */
+router.post('/api/threads/rules', ...guard, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const s = await store.getSettings(req.user.id);
+    const hasIntro = !!(s.intro && (s.intro.name || s.intro.career || s.intro.sample));
+    const patch = rules.clean(b, { hasIntro });
+
+    /* 틀을 하나도 못 고르는 경우가 있다 — 인사형만 골랐는데 인사글 재료가 없을 때다.
+       그대로 저장하면 왜 안 도는지 알 수가 없다. */
+    if (Array.isArray(b.forms) && b.forms.length && !patch.forms.length) {
+      return fail(res, {
+        message: '고른 글 틀을 쓸 수 없습니다.',
+        hint: '인사·무료사주 틀은 설정의 「인사글 재료」를 먼저 채워야 합니다.',
+      });
+    }
+    const saved = await rules.save(req.user.id, b.id || null, patch);
+    res.json({
+      ok: true,
+      rule: saved,
+      warning: rules.sameTimeWarning(saved.slots),
+      /* 언제 올라가는지가 이 화면의 알맹이다. 저장하자마자 보여준다. */
+      next: rules.upcoming(saved, 24 * 7).slice(0, 3).map((u) => u.sendAt.toISOString()),
+    });
+  } catch (e) {
+    if (e.code === 'TOO_MANY') return fail(res, e);
+    next(e);
+  }
+});
+
+router.delete('/api/threads/rules/:id', ...guard, async (req, res, next) => {
+  try {
+    await rules.remove(req.user.id, req.params.id);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+/** 기다리지 않고 지금 한 번 돌린다 (확인용) */
+router.post('/api/threads/rules/:id/run', ...guard, async (req, res, next) => {
+  try {
+    if (!req.user.openai_key) {
+      return fail(res, { message: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.' });
+    }
+    const rule = await rules.get(req.user.id, req.params.id);
+    if (!rule) return fail(res, { message: '규칙을 찾지 못했습니다.' }, 404);
+    if (!rule.slots.length) return fail(res, { message: '언제 올릴지를 먼저 정해주세요.' });
+
+    const out = await autopost.runRule(Object.assign({}, rule, {
+      userId: req.user.id, openaiKey: req.user.openai_key,
+    }));
+    res.json({
+      ok: true,
+      made: out.made.length,
+      errors: out.errors,
+      slots: out.made.map((m) => new Date(m.at).toISOString()),
+    });
+  } catch (e) { outsideFail(res, e, next); }
+});
+
+/**
+ * 앞으로 올라갈 글들. 자동 규칙이 미리 만들어둔 것을 시각 순으로 보여준다.
+ *
+ * 36시간 앞서 만들어두기 때문에, 마음에 안 드는 글을 **올라가기 전에**
+ * 볼 수 있어야 한다. 안 그러면 자동이 아니라 도박이 된다.
+ */
+router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
+  try {
+    const settings = await store.getSettings(req.user.id);
+    const all = await store.getPosts(req.user.id);
+    const list = all
+      .filter((p) => p.slotAt && p.status !== 'published')
+      .sort((a, b) => new Date(a.slotAt) - new Date(b.slotAt))
+      .map((p) => {
+        const v = pipeline.view(p);
+        return {
+          id: v.id,
+          slotAt: v.slotAt,
+          status: v.status,
+          topic: v.topic,
+          postType: v.postType,
+          parts: v.parts,
+          replyText: v.replyText || '',
+          passHard: v.check.passHard,
+          bad: (v.check.rows || []).filter((r) => r.hard && !r.ok).map((r) => r.label),
+          lengths: v.lengths,
+        };
+      });
+    res.json({ ok: true, posts: list });
+  } catch (e) { next(e); }
+});
+
+/**
+ * 예정된 글 하나를 다시 만든다.
+ * topic 을 주면 그 주제로, 안 주면 **같은 주제로** 다시 만든다.
+ */
+router.post('/api/threads/upcoming/:id/regenerate', ...guard, async (req, res, next) => {
+  try {
+    if (!req.user.openai_key) {
+      return fail(res, { message: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.' });
+    }
+    const old = await store.getPost(req.user.id, req.params.id);
+    if (!old) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    if (old.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
+
+    const b = req.body || {};
+    const topic = String(b.topic || old.topic || '').trim();
+    if (!topic) return fail(res, { message: '주제를 정해주세요.' });
+
+    const used = await store.countToday(req.user.id);
+    if (used >= store.DAILY_LIMIT) {
+      return fail(res, { message: '오늘은 ' + store.DAILY_LIMIT + '번까지 만들 수 있습니다.' }, 429);
+    }
+    await store.markRun(req.user.id, '예정 글 다시 만들기');
+
+    const form = FORMS.byId(b.form) || null;
+    const out = await pipeline.generate(req.user.id, req.user.openai_key, topic, 1, {
+      form,
+      at: old.slotAt ? new Date(old.slotAt) : null,
+    });
+    const made = (out.posts || [])[0];
+    if (!made) return fail(res, { message: '글이 비어 있습니다. 다시 눌러주세요.' }, 422);
+
+    /* 자리는 그대로 두고 내용만 갈아끼운다. Zernio 에 이미 걸어둔 것이 있으면
+       그건 그대로 남으므로, 예약을 다시 걸어야 한다는 뜻으로 상태를 되돌린다. */
+    const saved = await store.updatePost(req.user.id, old.id, {
+      parts: made.parts,
+      replyText: made.replyText || '',
+      numbered: !!made.numbered,
+      form: made.form,
+      postType: made.postType,
+      cta: made.cta,
+      status: 'draft',
+      zernioId: null,
+      scheduledFor: null,
+      error: null,
+    });
+    const settings = await store.getSettings(req.user.id);
+    res.json({ ok: true, post: pipeline.view(saved), topic });
+  } catch (e) { outsideFail(res, e, next); }
 });
 
 /* ── 올릴 계정 ────────────────────────────────────── */
@@ -274,43 +539,6 @@ router.post('/api/threads/restore', ...guard, async (req, res, next) => {
 });
 
 /* ── 올리기 ───────────────────────────────────────── */
-
-/** 올리기 전에 꼭 보는 것들. 화면과 서버가 같은 기준을 쓴다. */
-async function readyToSend(userId, post) {
-  const s = await store.getSettings(userId);
-  const acc = await accounts.active(userId);
-
-  if (!acc) {
-    return { ok: false, why: '올릴 스레드 계정이 없습니다. 설정에서 먼저 등록해주세요.' };
-  }
-  if (!s.allowPublish) {
-    return { ok: false, why: '올리기가 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
-  }
-  const check = checkPost(post);
-  if (!check.passHard) {
-    const bad = check.rows.filter((r) => r.hard && !r.ok).map((r) => r.label).join(', ');
-    return { ok: false, why: '지침에 걸립니다 — ' + bad };
-  }
-  return { ok: true, acc: acc };
-}
-
-/**
- * 실제로 나갈 본문을 만든다 — 번호 붙이기 + 꼬리말 한 편.
- * 발행과 예약이 똑같이 써야 한다. 한쪽만 고치면 예약한 글에는 멘트가 안 붙는다.
- */
-async function bodyToSend(userId, post) {
-  const settings = await store.getSettings(userId);
-  const body = post.form === 'chain' ? numberParts(post.parts) : post.parts;
-
-  /* 이 글은 고정멘트를 빼기로 한 경우.
-     안내 문구가 어울리지 않는 글에도 매번 붙던 것을 글마다 끌 수 있게 했다. */
-  if (post.noTail) {
-    return { parts: body, tail: { text: '', withLink: false, off: true } };
-  }
-
-  const t = await tail.build(userId, settings);
-  return { parts: tail.attach(body, t.text), tail: t };
-}
 
 /* 글 하나의 고정멘트를 켜고 끈다 */
 router.post('/api/threads/posts/:id/tail', ...guard, async (req, res, next) => {

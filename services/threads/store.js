@@ -32,6 +32,10 @@ function rowToPost(r) {
     cta: !!r.cta,
     noTail: !!r.no_tail,
     cutNote: r.cut_note || undefined,
+    replyText: r.reply_text || '',
+    numbered: !!r.numbered,
+    ruleId: r.rule_id || undefined,
+    slotAt: r.slot_at ? new Date(r.slot_at).toISOString() : undefined,
     status: r.status,
     scheduledFor: r.scheduled_for ? new Date(r.scheduled_for).toISOString() : undefined,
     zernioId: r.zernio_id || undefined,
@@ -79,13 +83,14 @@ async function insertPosts(userId, list) {
       await client.query(
         `INSERT INTO th_posts
            (id, user_id, topic, situation, hooks, post_type, form, parts,
-            reply_type, cta, cut_note, status, auto, no_tail)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+            reply_type, cta, cut_note, status, auto, no_tail, reply_text, rule_id, slot_at, numbered)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
         [
           id, userId, p.topic || '', p.situation || '',
           JSON.stringify(p.hooks || []), p.postType || '', p.form || 'single',
           JSON.stringify(p.parts || []), p.replyType || null, !!p.cta,
           p.cutNote || null, p.status || 'draft', !!p.auto, !!p.noTail,
+          p.replyText || null, p.ruleId || null, p.slotAt || null, !!p.numbered,
         ]
       );
       made.push(id);
@@ -108,6 +113,8 @@ const PATCHABLE = {
   cta: ['cta', (v) => !!v],
   noTail: ['no_tail', (v) => !!v],
   cutNote: ['cut_note', (v) => v],
+  replyText: ['reply_text', (v) => String(v == null ? '' : v)],
+  numbered: ['numbered', (v) => !!v],
   status: ['status', (v) => v],
   scheduledFor: ['scheduled_for', (v) => v],
   zernioId: ['zernio_id', (v) => v],
@@ -258,7 +265,12 @@ const DEFAULT_SETTINGS = {
   zernioAccountId: '',
   zernioUsername: '',
   allowPublish: false,      // 발행은 기본 잠금
+  model: '',                // 비우면 서버 기본값을 쓴다
+  voiceMode: '',            // 'mine' 또는 프리셋 이름. 비우면 기본 말투
   voicePack: null,
+  intro: null,              // 인사글 재료 { name, career, sample }
+  daily: null,              // 오늘의 운세 틀 { sample, asReply }
+  chain: null,              // 이어붙이기 { on, max, numbered }
   facts: [],
 };
 
@@ -274,7 +286,12 @@ async function getSettings(userId) {
     zernioAccountId: r.zernio_account_id || '',
     zernioUsername: r.threads_username || '',
     allowPublish: !!r.allow_publish,
+    model: r.ai_model || '',
+    voiceMode: r.voice_mode || '',
     voicePack: r.voice_pack || null,
+    intro: r.intro || null,
+    daily: r.daily || null,
+    chain: r.chain || null,
     facts: r.facts || [],
   };
 }
@@ -288,7 +305,13 @@ const SETTING_COLS = {
   zernioAccountId: ['zernio_account_id', (v) => String(v || '')],
   zernioUsername: ['threads_username', (v) => String(v || '')],
   allowPublish: ['allow_publish', (v) => !!v],
+  /* 모델 이름은 그대로 담는다. 되는지 안 되는지는 「연결 확인」이 판단한다. */
+  model: ['ai_model', (v) => String(v || '').trim().slice(0, 60)],
+  voiceMode: ['voice_mode', (v) => String(v || '').trim().slice(0, 40)],
   voicePack: ['voice_pack', (v) => (v ? JSON.stringify(v) : null)],
+  intro: ['intro', (v) => (v ? JSON.stringify(v) : null)],
+  daily: ['daily', (v) => (v ? JSON.stringify(v) : null)],
+  chain: ['chain', (v) => (v ? JSON.stringify(v) : null)],
   facts: ['facts', (v) => JSON.stringify(v || [])],
 };
 

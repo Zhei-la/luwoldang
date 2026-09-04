@@ -42,18 +42,62 @@ const TOPICS = {
   ],
 };
 
-/** 전부 한 줄로 편다 */
-const ALL = Object.keys(TOPICS).reduce((acc, k) => acc.concat(TOPICS[k]), []);
+/* ============================================================
+ * 반응이 실제로 터진 소재
+ *
+ * 위 목록은 「사주에 이런 게 있다」는 분류일 뿐, 어느 게 잘 먹히는지는
+ * 알려주지 않는다. 아래는 BENCHMARK.md 에서 실제로 숫자가 나온 것만
+ * 뽑은 것이다. 숫자를 같이 적어둔 이유는, 근거 없이 「추천」 이라고만
+ * 하면 아무도 안 고르기 때문이다.
+ *
+ * ⚠️ 여기 있는 소재를 그대로 베끼라는 뜻이 아니다. 「이 각도가 먹혔다」는
+ *    기록이다. 문장은 새로 써야 한다 — copycheck 가 베낀 글을 잡아낸다.
+ * ============================================================ */
+const HOT = [
+  { topic: '일간별 성격',   why: '행동을 먼저 쓰고 일간을 뒤에 붙인 글이 조회 125,532 (팔로워 135명)' },
+  { topic: '귀한 사주',     why: '통념을 뒤집고 번호 리스트로 자가진단하게 만든 글이 조회 210,377' },
+  { topic: '현침살',        why: '설명 없이 한 줄만 던진 글이 조회 108,559 (팔로워 29명)' },
+  { topic: '개운법',        why: '「자신만의 개운법 있어?」 두 줄로 댓글 240개 — 이 자료 댓글 1위' },
+  { topic: '손금과 재물운', why: '「지금 왼손을 펼쳐보세요」로 움직이게 만든 글이 팔로워 13명에 조회 24,570' },
+  { topic: '무료사주 인사', why: '댓글 양식을 못 박은 인사글이 댓글 174개 (좋아요의 2.3배)' },
+  { topic: '오행이 치우친 사주', why: '없는 오행으로 성격을 푸는 각도. 「나는 뭐가 없지?」로 걸린다' },
+  { topic: '삼재',          why: '해마다 검색이 도는 소재. 겁주지 않고 「무엇을 하는 해인지」로 풀면 걸린다' },
+];
 
-/** 겹치지 않게 n 개를 뽑는다 */
-function pick(n) {
-  const pool = ALL.slice();
+const HOT_SET = new Set(HOT.map((h) => h.topic));
+
+/** 전부 한 줄로 편다. 반응이 터진 것을 앞에 둔다. */
+const ALL = HOT.map((h) => h.topic)
+  .concat(Object.keys(TOPICS).reduce((acc, k) => acc.concat(TOPICS[k]), [])
+    .filter((t) => !HOT_SET.has(t)));
+
+/** 이 소재가 왜 추천인지. 아니면 빈 문자열. */
+function whyHot(topic) {
+  const h = HOT.find((x) => x.topic === topic);
+  return h ? h.why : '';
+}
+
+function take(pool, n) {
   const out = [];
-  const count = Math.min(n || 8, pool.length);
-  for (let i = 0; i < count; i++) {
-    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  const p = pool.slice();
+  for (let i = 0; i < n && p.length; i++) {
+    out.push(p.splice(Math.floor(Math.random() * p.length), 1)[0]);
   }
   return out;
+}
+
+/**
+ * 겹치지 않게 n 개를 뽑는다.
+ * 절반 가까이는 반응이 터진 것에서 뽑는다 — 전부 무작위로 주면
+ * 잘 되는 소재가 목록 밑에 깔려 영영 안 걸린다.
+ */
+function pick(n) {
+  const count = Math.min(n || 8, ALL.length);
+  const hotCount = Math.min(HOT.length, Math.max(1, Math.round(count * 0.4)));
+  const hot = take(HOT.map((h) => h.topic), hotCount);
+  const rest = take(ALL.filter((t) => !hot.includes(t)), count - hot.length);
+  /* 섞어서 낸다. 앞쪽만 추천이면 뒤는 안 본다. */
+  return take(hot.concat(rest), count);
 }
 
 /** 하나만 */
@@ -61,4 +105,4 @@ function one() {
   return ALL[Math.floor(Math.random() * ALL.length)];
 }
 
-module.exports = { TOPICS, ALL, pick, one };
+module.exports = { TOPICS, ALL, HOT, pick, one, whyHot, isHot: (t) => HOT_SET.has(t) };
