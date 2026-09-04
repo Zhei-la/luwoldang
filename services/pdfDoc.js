@@ -11,6 +11,10 @@
  * 브라우저 인쇄(Ctrl+P) → PDF 저장으로 출력.
  */
 
+/* 두 사람을 보는 리포트가 무엇인지는 partnerChart 한 곳에서만 정한다.
+   여기서 따로 목록을 적으면 종류가 늘 때 한쪽만 고치게 된다. */
+const { isPair } = require('./partnerChart');
+
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
@@ -260,9 +264,9 @@ function enginePages({ client, saju, type, partner, partnerSaju }) {
     console.error('[PDF] 새 만세력 엔진 실패 — 기존 표로 대체합니다:', e.message);
     /* 본인 표가 옛 표로 내려앉아도 상대방 장은 그대로 붙인다.
        궁합인데 상대방이 통째로 빠지는 것보다 낫다. */
-    return sajuPages({ client, saju, type }) + partnerPage({ partner, partnerSaju });
+    return sajuPages({ client, saju, type }) + partnerPage({ partner, partnerSaju, type });
   }
-  if (!html) return sajuPages({ client, saju, type }) + partnerPage({ partner, partnerSaju });
+  if (!html) return sajuPages({ client, saju, type }) + partnerPage({ partner, partnerSaju, type });
 
   const grab = (cls) => {
     const m = html.match(new RegExp('<table class="pdf-table ' + cls + '"[\\s\\S]*?</table>'));
@@ -295,14 +299,18 @@ function enginePages({ client, saju, type, partner, partnerSaju }) {
   /* 궁합은 두 사람을 보는 리포트다. 본인 표만 있으면 반쪽이라
      상대방 원국과 오행도 한 장 넣는다.
      상대방은 대운·세운까지는 넣지 않는다 — 이 리포트에서 흐름을 보는 건 본인 쪽이고,
-     상대방은 「어떤 사람인가」까지만 있으면 된다. */
+     상대방은 「어떤 사람인가」까지만 있으면 된다.
+
+     표가 둘이 되는 리포트에서만 본인 장 제목에도 이름을 붙인다.
+     표가 하나뿐인데 이름이 붙으면 없는 상대를 찾게 된다. */
   const mine = client && client.name ? esc(client.name) + '님' : '본인';
-  const pairTitle = (t) => (partnerSaju ? mine + ' · ' + t : t);
+  const withPartner = !!partnerSaju && isPair(type);
+  const pairTitle = (t) => (withPartner ? mine + ' · ' + t : t);
 
   const pages = [
     sheet(pairTitle('만세력 · 사주 원국'), head + corr + grab('pdf-wonguk')),
     sheet(pairTitle('오행 · 격국 · 용신 · 신살'), wheelSvg + wheelSum + grab('pdf-sgy')),
-    partnerPage({ partner, partnerSaju }),
+    partnerPage({ partner, partnerSaju, type }),
     /* 월운은 12행이라 대운·세운과 한 장에 넣으면 A4 를 넘겨 잘린다. 따로 뺀다. */
     sheet(pairTitle('대운 · 세운'), grab('pdf-daeun') + grab('pdf-seyun')),
     sheet(pairTitle('월운'), grab('pdf-wolun')),
@@ -313,11 +321,18 @@ function enginePages({ client, saju, type, partner, partnerSaju }) {
 
 /* ── 3-C. 상대방 원국 (궁합 리포트에만) ──
  *
- * 원국표와 오행만 넣는다. 대운·세운·월운은 넣지 않는다.
- * 상대방 명식을 못 만들었으면 아무것도 그리지 않는다 (본인 리포트는 그대로 나간다).
+ * 원국표 한 장, 오행 한 장. 대운·세운·월운은 넣지 않는다.
+ * 두 사람을 보는 종류(연인궁합·재회운)가 아니면 아무것도 그리지 않는다.
+ * 상대방 명식을 못 만들었을 때도 마찬가지다 (본인 리포트는 그대로 나간다).
  * ── */
-function partnerPage({ partner, partnerSaju }) {
+function partnerPage({ partner, partnerSaju, type }) {
   if (!partner || !partnerSaju) return '';
+
+  /* 두 사람을 보는 리포트에만 넣는다.
+     상대방 칸은 신청자 한 줄(leads)에 붙어 있다. 그래서 한 번 궁합을 신청한
+     손님은 그 뒤에 만드는 재물운·건강운 리포트에까지 상대방 만세력이
+     따라 들어갔다. 그 리포트는 상대방을 한 번도 말하지 않는다. 종이만 는다. */
+  if (!isPair(type)) return '';
   let html = '';
   try {
     const { buildMyeongsik } = require('./manseCalc');
