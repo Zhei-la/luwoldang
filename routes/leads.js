@@ -58,7 +58,7 @@ const { buildReportHtml, esc } = require('../services/pdfDoc');
 const partnerChart = require('../services/partnerChart');
 const { resolveCover, resolveBgPaper } = require('../services/coverStore');
 const { buildFreePdfHtml } = require('../services/freePdf');
-const { normalizeBirth, parseHour } = require('../services/birth');
+const { normalizeBirth, parseHour, isBirthOk } = require('../services/birth');
 const { ensureToken } = require('./share');
 const { htmlToPdf, sendPdf } = require('../services/pdfFile');
 const { notify } = require('../services/push');   // 다 만들어지면 알림
@@ -221,8 +221,41 @@ router.post('/leads/:id/partner', async (req, res) => {
       return res.json({ ok: true });
     }
 
-    const birth = String(b.birth || '').trim();
-    if (!birth) return res.status(400).json({ ok: false, error: '상대방 생년월일을 입력해주세요.' });
+    const raw = String(b.birth || '').trim();
+    if (!raw) return res.status(400).json({ ok: false, error: '상대방 생년월일을 입력해주세요.' });
+
+    /* 여기서 걸러내지 않으면 계산기에서 조용히 터지고 리포트에서 상대방 장이
+       통째로 빠진다. 왜 빠졌는지 알 길이 없어 한참을 헤맸다. */
+    if (!isBirthOk(raw)) {
+      return res.status(400).json({
+        ok: false,
+        error: '생년월일을 읽지 못했습니다. 1990-01-29 처럼 적어주세요.',
+      });
+    }
+    const birth = normalizeBirth(raw);
+
+    /* 모양이 맞아도 계산이 안 되는 날이 있다. 없는 윤달을 고른 경우가 그렇다.
+       실제로 계산해보고 안 되면 여기서 알려준다. 저장해두면 리포트에서
+       조용히 빠지고, 왜 빠졌는지 알 수가 없다. */
+    const cal = String(b.calendar || '양력');
+    try {
+      calcSaju({
+        birthDate: birth,
+        birthTime: parseHour(b.hour),
+        calendar: cal === '윤달' ? '음력' : cal,
+        isLeapMonth: cal === '윤달',
+        region: '서울특별시',
+        gender: b.gender || null,
+      });
+    } catch (err) {
+      console.error('[신청자] 상대방 사주 계산 실패:', birth, cal, '-', err.message);
+      return res.status(400).json({
+        ok: false,
+        error: cal === '윤달'
+          ? '그 해 그 달에는 윤달이 없습니다. 달력을 음력이나 양력으로 바꿔주세요.'
+          : '이 날짜로는 사주를 낼 수 없습니다. 생년월일을 다시 확인해주세요.',
+      });
+    }
 
     const t = (v) => { const s = String(v == null ? '' : v).trim(); return s || null; };
     const { rowCount } = await pool.query(

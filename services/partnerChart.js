@@ -7,7 +7,7 @@
  */
 
 const { calcSaju } = require('./manseryeok');
-const { normalizeBirth, parseHour } = require('./birth');
+const { normalizeBirth, parseHour, isBirthOk } = require('./birth');
 
 /* 상대방 사주를 보는 리포트인가 */
 const PAIR_TYPES = ['연인궁합', '재회운'];
@@ -24,6 +24,16 @@ function build(row, opts) {
   if (!row || !row.partner_birth) return null;
   const o = opts || {};
   const cal = row.partner_calendar || '양력';
+
+  /* 못 읽는 날짜를 계산기에 넣으면 「wrong solar year NaN」으로 터진다.
+     여기서 먼저 걸러내고 무엇이 들어왔는지 남긴다.
+     실제로 이것 때문에 궁합 리포트에서 상대방 장이 통째로 빠졌었다. */
+  if (!isBirthOk(row.partner_birth)) {
+    console.error('[궁합] 상대방 생년월일을 읽지 못했습니다:',
+      JSON.stringify(String(row.partner_birth)), '(' + cal + ')');
+    return null;
+  }
+
   try {
     const saju = calcSaju({
       birthDate: normalizeBirth(row.partner_birth),
