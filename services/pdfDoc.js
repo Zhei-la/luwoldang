@@ -11,9 +11,14 @@
  * 브라우저 인쇄(Ctrl+P) → PDF 저장으로 출력.
  */
 
-/* 두 사람을 보는 리포트가 무엇인지는 partnerChart 한 곳에서만 정한다.
-   여기서 따로 목록을 적으면 종류가 늘 때 한쪽만 고치게 된다. */
-const { isPair } = require('./partnerChart');
+/* 상대방 만세력이 들어가는 리포트는 연인궁합 하나다.
+   두 사람의 표를 나란히 놓고 보는 건 이 종류뿐이다.
+   재회운도 본문에서는 상대를 말하지만 표는 넣지 않는다 — 그렇게 정했다.
+
+   ⚠️ partnerChart.isPair 와 다르다. 그쪽은 「상대방 정보를 받는 종류」라
+   재회운까지 포함한다. 여기는 「표를 그리는 종류」다. 섞으면 안 된다. */
+const PARTNER_CHART_TYPES = ['연인궁합'];
+const hasPartnerChart = (type) => PARTNER_CHART_TYPES.indexOf(String(type || '')) > -1;
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -304,7 +309,7 @@ function enginePages({ client, saju, type, partner, partnerSaju }) {
      표가 둘이 되는 리포트에서만 본인 장 제목에도 이름을 붙인다.
      표가 하나뿐인데 이름이 붙으면 없는 상대를 찾게 된다. */
   const mine = client && client.name ? esc(client.name) + '님' : '본인';
-  const withPartner = !!partnerSaju && isPair(type);
+  const withPartner = !!partnerSaju && hasPartnerChart(type);
   const pairTitle = (t) => (withPartner ? mine + ' · ' + t : t);
 
   const pages = [
@@ -322,17 +327,18 @@ function enginePages({ client, saju, type, partner, partnerSaju }) {
 /* ── 3-C. 상대방 원국 (궁합 리포트에만) ──
  *
  * 원국표 한 장, 오행 한 장. 대운·세운·월운은 넣지 않는다.
- * 두 사람을 보는 종류(연인궁합·재회운)가 아니면 아무것도 그리지 않는다.
+ * 연인궁합이 아니면 아무것도 그리지 않는다.
  * 상대방 명식을 못 만들었을 때도 마찬가지다 (본인 리포트는 그대로 나간다).
  * ── */
 function partnerPage({ partner, partnerSaju, type }) {
   if (!partner || !partnerSaju) return '';
 
-  /* 두 사람을 보는 리포트에만 넣는다.
-     상대방 칸은 신청자 한 줄(leads)에 붙어 있다. 그래서 한 번 궁합을 신청한
-     손님은 그 뒤에 만드는 재물운·건강운 리포트에까지 상대방 만세력이
-     따라 들어갔다. 그 리포트는 상대방을 한 번도 말하지 않는다. 종이만 는다. */
-  if (!isPair(type)) return '';
+  /* 연인궁합에만 넣는다.
+     상대방 칸은 신청자 한 줄(leads)에 붙어 있다. 리포트 종류가 아니라 손님에
+     붙어 있는 값이다. 그래서 한 번 궁합을 신청한 손님은 그 뒤에 만드는
+     재물운·건강운 리포트에까지 상대방 만세력 두 장이 따라 들어갔다.
+     그 리포트는 본문에서 상대방을 한 번도 말하지 않는다. 종이만 는다. */
+  if (!hasPartnerChart(type)) return '';
   let html = '';
   try {
     const { buildMyeongsik } = require('./manseCalc');
