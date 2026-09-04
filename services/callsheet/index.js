@@ -109,18 +109,123 @@ function readFacts(saju, opts) {
   const ilKo = saju.dayMasterKo || (d.day && d.day.stem && d.day.stem.ko) || '무';
   const il = ILGAN[ilKo] || ILGAN['무'];
 
+  /* 대운 한 칸 한 칸이 이 사람에게 무슨 자리인지 미리 붙인다.
+     화면에서 다시 셈하게 두면 같은 계산이 두 군데로 흩어진다. */
+  const dwList = list.map((x) => Object.assign({}, x, {
+    group: groupOfStem(saju, x.stem),
+    brGroup: groupOfBranch(saju, x.branch),
+  }));
+
+  /* 월운 12달. 계산기가 십성까지 붙여주므로 무리로만 바꿔 담는다.
+     「몇 월이 어떤 달인가」를 통화 중에 표로 짚으려면 이게 있어야 한다. */
+  const wolList = (yl.wolwoon || []).map((x) => ({
+    month: x.month,
+    ganzi: x.ganzi,
+    ko: x.ko,
+    god: (x.stem && x.stem.god) || '',
+    brGod: (x.branch && x.branch.god) || '',
+    group: GROUP_OF[x.stem && x.stem.god] || null,
+    brGroup: GROUP_OF[x.branch && x.branch.god] || null,
+  }));
+
   return {
     timeKnown, god, grp, els, none, many, weak, il, ilKo,
-    dwList: list, curDw, nextDw, curIdx,
+    dwList, curDw: curDw ? dwList[curIdx] : null, nextDw: curIdx >= 0 ? dwList[curIdx + 1] : null, curIdx,
     dwGroup: curDw ? groupOfStem(saju, curDw.stem) : null,
     dwBrGroup: curDw ? groupOfBranch(saju, curDw.branch) : null,
     seGroup: GROUP_OF[seGod] || null,
     seBrGroup: GROUP_OF[seBrGod] || null,
+    seGod: seGod || null,
+    seBrGod: seBrGod || null,
     sewoon: yl.sewoon || null,
+    wolList,
     year: yl.year || new Date().getFullYear(),
     gongmang: (saju.gongmang && saju.gongmang.ko) || [],
     forward: dw.forward !== false,
   };
+}
+
+/* ── 원국 칸에 붙는 운 풀이 ──────────────────────────────
+ *
+ * 표는 표일 뿐이다. 「신유」라고 적혀 있어도 그게 이 손님에게 무슨 뜻인지는
+ * 표에 안 나온다. 사주를 모르는 선생님이 표를 보고 말을 하려면 옆에
+ * 풀이가 붙어 있어야 한다.
+ *
+ * 「대운이 뭐냐」는 용어 사전이 답한다 — 제목을 누르면 나온다.
+ * 여기는 「이 손님의 지금 대운은 이런 때다」만 적는다.
+ * 운 풀이 문장은 종합 운세 칸과 같은 것을 쓴다(LUCK). 같은 손님에게
+ * 두 화면이 다른 말을 하면 안 된다.
+ * ── */
+function readWonguk(f) {
+  const kind = f.weak ? 'weak' : 'strong';
+  const luckOf = (g) => (g && LUCK[g] ? LUCK[g][kind] : null);
+  const meanOf = (g) => (g && GROUP[g] ? GROUP[g].mean : '');
+
+  let dw = null;
+  if (f.curDw) {
+    const L = luckOf(f.curDw.group);
+    const N = f.nextDw ? luckOf(f.nextDw.group) : null;
+    dw = {
+      ko: f.curDw.ko,
+      span: f.curDw.age + '세 ~ ' + (f.curDw.age + 9) + '세',
+      group: f.curDw.group || '',
+      mean: meanOf(f.curDw.group),
+      head: L ? L.head : '',
+      say: L ? L.say : '',
+      nextKo: f.nextDw ? f.nextDw.ko : '',
+      nextAge: f.nextDw ? f.nextDw.age : '',
+      nextGroup: f.nextDw ? (f.nextDw.group || '') : '',
+      nextHead: N ? N.head : '',
+      /* 다음 대운이 같은 무리일 때가 있다. 그때 「바뀌면서」라고 하면 거짓말이다.
+         무리 이름은 다섯 개 다 받침이 있어서 조사는 으로/이라로 고정된다. */
+      nextLine: !f.nextDw ? ''
+        : (f.nextDw.group && f.nextDw.group === f.curDw.group)
+          ? '무리는 그대로 ' + f.nextDw.group + '이라, 지금 흐름이 10년 더 이어집니다.'
+          : (f.nextDw.group
+              ? f.nextDw.group + '으로 바뀌면서 ' + (N ? N.head : '') + '가 됩니다.'
+              : ''),
+    };
+  }
+
+  let se = null;
+  if (f.sewoon) {
+    const L = luckOf(f.seGroup);
+    se = {
+      year: f.year, ko: f.sewoon.ko, group: f.seGroup || '',
+      mean: meanOf(f.seGroup),
+      head: L ? L.head : '', say: L ? L.say : '',
+    };
+  }
+
+  /* 월운 — 달마다 풀이를 다 붙이면 통화 중에 읽을 수가 없다.
+     표에는 달과 무리만, 풀이는 같은 무리끼리 묶어서 한 줄씩. */
+  const wol = [];
+  const byGroup = {};
+  for (const m of (f.wolList || [])) {
+    const L = luckOf(m.group);
+    wol.push({ month: m.month, ko: m.ko, group: m.group || '', head: L ? L.head : '' });
+    if (m.group) (byGroup[m.group] = byGroup[m.group] || []).push(m.month);
+  }
+  const wolSum = Object.keys(byGroup).map((g) => {
+    const L = luckOf(g);
+    return { group: g, months: byGroup[g], head: L ? L.head : '', say: L ? L.say : '' };
+  });
+
+  return { dw, se, wol, wolSum };
+}
+
+/* 풀이 문장에도 {이름}이 들어 있다. 대사와 같은 방식으로 채운다. */
+function fillWonguk(o, name, ex) {
+  if (!o) return o;
+  const F = (x) => fill(x, name, ex);
+  if (o.dw) {
+    o.dw.say = F(o.dw.say); o.dw.head = F(o.dw.head);
+    o.dw.nextHead = F(o.dw.nextHead); o.dw.nextLine = F(o.dw.nextLine);
+  }
+  if (o.se) { o.se.say = F(o.se.say); o.se.head = F(o.se.head); }
+  o.wol = (o.wol || []).map((m) => Object.assign({}, m, { head: F(m.head) }));
+  o.wolSum = (o.wolSum || []).map((g) => Object.assign({}, g, { head: F(g.head), say: F(g.say) }));
+  return o;
 }
 
 /* 대운 천간·지지가 이 일간에게 무슨 십성인지.
@@ -928,6 +1033,18 @@ function personalize(f, w, saju) {
         : '{이름}님한테는 무난한 해예요.');
   }
 
+  /* 월운 — 같은 무리끼리 묶어 「몇 월이 어떤 달인지」만 말한다.
+     열두 달을 하나씩 읽으면 손님이 못 따라온다. */
+  if (f.wolList && f.wolList.length) {
+    const by = {};
+    for (const m of f.wolList) if (m.group) (by[m.group] = by[m.group] || []).push(m.month);
+    const parts = Object.keys(by).map((k) => by[k].join('·') + '월은 ' + k);
+    if (parts.length) {
+      P['월운'] = '올해 {이름}님 달은 이렇게 가요.\n\n' + parts.join('\n')
+        + '\n\n달은 참고만 하시면 돼요.\n큰 흐름을 뒤집지는 못하거든요.';
+    }
+  }
+
   /* 십성 — 몇 개인지 그대로 말해준다 */
   const many = (k) => (g[k] >= 3 ? '많은 편이에요.' : g[k] === 0 ? '하나도 없으세요.' : '적당히 있으세요.');
   ['비겁', '식상', '재성', '관성', '인성'].forEach((k) => {
@@ -1092,9 +1209,12 @@ function build(saju, who, partnerSaju) {
 
   return {
     who: w, facts: f, sections, terms, cats: TERMS.CATS,
+    /* 원국 칸에서 표 옆에 붙는 운 풀이. 상대방 것도 같은 함수로 만든다. */
+    wonguk: fillWonguk(readWonguk(f), w.name, ex),
+    partnerWonguk: pf ? fillWonguk(readWonguk(pf), w.partnerName, ex) : null,
     /* 화면에서 메모·질문을 칠 때마다 다시 만들 수 있게 앞뒤를 나눠 넘긴다 */
     promptParts: buildPrompt(w, f, '', '', true),
   };
 }
 
-module.exports = { build, buildPrompt, readFacts, search: TERMS.search };
+module.exports = { build, buildPrompt, readFacts, readWonguk, search: TERMS.search };

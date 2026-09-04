@@ -240,6 +240,52 @@ input.sin:focus,input.qin:focus,textarea:focus{outline:2px solid var(--say);
   color:var(--dim);cursor:pointer}
 .cats button[aria-pressed="true"]{background:var(--say);border-color:var(--say);color:var(--chipfg)}
 
+/* ── 눌러서 뜻 보기 ──
+ * 표를 못 읽는 사람이 표를 쓰게 만드는 장치다.
+ * 누를 수 있다는 걸 먼저 알려야 해서 점선을 깐다. 실선은 표 격자와 섞인다. */
+.tp{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* 표는 칸마다 선을 더 그으면 격자가 두 겹이 돼서 오히려 안 읽힌다.
+   원국 표는 어느 칸을 눌러도 걸리므로 안내 문구로 알리고, 표시는 안 한다.
+   대신 눌린 순간 색이 들어와야 손가락이 닿았는지 안다. */
+td.tp:active,th.tp:active{background:var(--say-w)}
+/* 요약 줄의 굵은 글자도 눌러야 한다. 글자 높이 그대로면 19px 라
+   통화하면서 누르기엔 작다. 위아래로 여백을 줘서 손가락이 닿게 한다. */
+.pd.sum{line-height:2.15}
+b.tp{border-bottom:1.5px dotted var(--faint);display:inline-block;padding:4px 3px 2px;margin:0 -2px}
+b.tp:active{color:var(--say);border-bottom-color:var(--say)}
+.el.tp:active{border-color:var(--say)}
+.qhead.tp{cursor:pointer}
+.qhead.tp:after{content:'  뜻 보기';font-size:10.5px;letter-spacing:.02em;
+  color:var(--say);font-weight:600}
+
+/* 월운 12칸 — 여섯 달씩 두 줄 */
+.chart.wol td,.chart.wol th{padding:6px 2px}
+.chart.wol th{font-size:10.5px;font-weight:700;color:var(--dim);background:var(--sunk)}
+.chart.wol td.ko{font-size:11.5px;padding-bottom:2px}
+.chart.wol td.gd{font-size:11px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
+.chart.wol tr:last-child td{border-bottom:0}
+
+/* 눌린 용어가 밑에서 올라온다.
+   통화 중이라 화면을 갈아치우면 안 된다. 보던 자리는 그대로 두고 위에 덮는다. */
+.tsheet{position:fixed;inset:0;z-index:60}
+.tsheet-bg{position:absolute;inset:0;background:rgba(10,16,18,.5)}
+.tsheet-in{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:460px;
+  background:var(--card);border-radius:16px 16px 0 0;padding:14px 16px calc(20px + env(safe-area-inset-bottom));
+  max-height:82vh;overflow:auto;-webkit-overflow-scrolling:touch;
+  box-shadow:0 -8px 30px rgba(0,0,0,.22)}
+.tsheet-x{position:sticky;top:0;float:right;font-family:inherit;font-size:12px;font-weight:700;
+  border:1px solid var(--line);background:var(--sunk);color:var(--dim);
+  border-radius:999px;padding:7px 13px;cursor:pointer;margin-bottom:4px;z-index:2}
+.tsheet-x:active{background:var(--say);border-color:var(--say);color:var(--chipfg)}
+.tsheet .tcard{border:0;padding:0;margin:0}
+.tsheet .tnone{padding:18px 0 8px}
+@media (prefers-reduced-motion:no-preference){
+  .tsheet-in{animation:tsup .2s ease-out}
+  .tsheet-bg{animation:tsfade .2s ease-out}
+  @keyframes tsup{from{transform:translateY(14px);opacity:.4}to{transform:none;opacity:1}}
+  @keyframes tsfade{from{opacity:0}to{opacity:1}}
+}
+
 /* 버튼 */
 pre.pr{background:var(--sunk);border:1px solid var(--line);border-radius:10px;
   padding:14px;font-size:12.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word;

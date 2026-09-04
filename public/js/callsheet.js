@@ -232,4 +232,54 @@
     });
   }
   render();
+
+  /* ── 눌러서 뜻 보기 ──
+     원국 표는 사주를 아는 사람에게만 표다. 모르는 사람에게는 한자 덩어리다.
+     칸을 누르면 그 말이 무슨 뜻인지, 그리고 이 손님은 어떤지까지
+     밑에서 올라오게 한다. 보던 자리는 그대로 둔다 — 통화 중이다.
+
+     data-term 이 붙은 것이면 무엇이든 걸린다. 표 칸, 오행 타일,
+     요약 줄의 굵은 글자, 대운·세운·월운 제목 전부. */
+  var ts = $('#tsheet'), tsBody = $('#tsheetbody');
+
+  function findTerm(name) {
+    var k = norm(name);
+    if (!k) return null;
+    for (var i = 0; i < CS_TERMS.length; i++) {
+      if (norm(CS_TERMS[i].t) === k) return CS_TERMS[i];
+    }
+    for (var j = 0; j < CS_TERMS.length; j++) {
+      var alt = CS_TERMS[j].alt || [];
+      for (var m = 0; m < alt.length; m++) if (norm(alt[m]) === k) return CS_TERMS[j];
+    }
+    return null;
+  }
+
+  function openTerm(name) {
+    if (!ts || !tsBody) return;
+    var it = findTerm(name);
+    tsBody.innerHTML = it ? card(it)
+      : '<p class="tnone">「' + esc(name) + '」는 사전에 없습니다.<br>' +
+        '<b>용어 찾기</b> 탭에서 비슷한 말로 찾아보세요.</p>';
+    ts.hidden = false;
+    /* 카드가 길면 위부터 보여야 한다 */
+    var box = $('.tsheet-in', ts);
+    if (box) box.scrollTop = 0;
+  }
+  function closeTerm() { if (ts) ts.hidden = true; }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-term]') : null;
+    if (!t) return;
+    var name = (t.getAttribute('data-term') || '').trim();
+    if (!name) return;
+    ev.preventDefault();
+    openTerm(name);
+  });
+  if ($('#tsheetbg')) $('#tsheetbg').addEventListener('click', closeTerm);
+  if ($('#tsheetx')) $('#tsheetx').addEventListener('click', closeTerm);
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') closeTerm();
+  });
+
 })();
