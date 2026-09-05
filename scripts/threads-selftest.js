@@ -538,6 +538,32 @@ t('채울 게 남았으면 개수를 말한다',
   R.diagnose(live, okCtx).why.includes('만듭니다'), true);
 t('할 일이 없어도 막힌 것은 아니다', R.diagnose(live, Object.assign({}, okCtx, { filled: 9 })).ok, true);
 
+/* ── 오류 문구 풀어주기 ── */
+section('오류 문구');
+/* 「일 23:35: 예약 실패 — 지침에 걸립니다 — 사주를 실제로 가리킴」만 봐서는
+   무엇을 어떻게 하라는 건지 알 수가 없다. 화면에서 풀어준다.
+   화면 코드라 여기서는 「풀어주는 자리가 있는지」와 자리 인식 규칙만 본다. */
+const viewSrc = require('fs').readFileSync(
+  require('path').join(__dirname, '..', 'views', 'dash', 'threads-auto.ejs'), 'utf8');
+t('오류를 풀어주는 자리가 있다', /function errorHelp\(/.test(viewSrc), true);
+t('지침 오류를 풀어준다', viewSrc.indexOf('지침에 걸려서 <b>예약하지 않았습니다</b>') > 0, true);
+t('올리기 잠김도 풀어준다', viewSrc.indexOf('스레드에 올리기 허용') > 0, true);
+t('키 없음도 풀어준다', viewSrc.indexOf('OpenAI 키가 없어 글을 만들지 못했습니다') > 0, true);
+/* 「일 23:35: 자리」처럼 콜론이 딸려오면 우습다 */
+const whereRe = /^([일월화수목금토]\s\d{1,2}:\d{2})/;
+t('자리만 떼어낸다',
+  ('일 23:35: 예약 실패 — 지침에 걸립니다'.match(whereRe) || [])[1], '일 23:35');
+t('자리가 없는 오류도 받아준다', whereRe.test('OpenAI 키가 없습니다'), false);
+
+/* ── 화면 안내 ── */
+section('화면 안내');
+/* 규칙을 저장해도 글은 5분 뒤에 생긴다. 안 적어두면 「저장했는데 왜 없냐」가 된다. */
+t('저장 뒤 언제 생기는지 알려준다', viewSrc.indexOf('글은 바로 안 생깁니다') > 0, true);
+t('비어 있을 때도 알려준다', viewSrc.indexOf('규칙을 켜두면 <b>5분 안에</b>') > 0, true);
+/* 더하기 칸 기본 시각을 08:10 로 박아두면 매번 지워야 한다 */
+t('기본 시각은 지금으로', /function nowTime\(/.test(viewSrc), true);
+t('08:10 을 박아두지 않는다', viewSrc.indexOf('class="t" value="08:10"') > 0, false);
+
 /* ── 화면 스크립트 ── */
 section('화면 스크립트');
 /* ⚠️ EJS 는 렌더만 되면 통과다. 그 안의 <script> 가 깨져도 서버는 200 을 준다.

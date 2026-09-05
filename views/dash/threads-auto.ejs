@@ -1755,10 +1755,55 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   var HAS_INTRO = <%= (intro && (intro.name || intro.career || intro.sample)) ? 'true' : 'false' %>;
   var RULES    = <%- JSON.stringify(autoRules).replace(/</g, '\\u003c') %>;
 
+  /* 더하기 칸의 기본 시각. 08:10 로 박아두면 매번 지워야 한다.
+     지금 시각을 5분 단위로 올려 넣어준다. */
+  function nowTime(){
+    var d = new Date(Date.now() + 5 * 60000);
+    d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+    var p2 = function(n){ return String(n).padStart(2, '0'); };
+    return p2(d.getHours()) + ':' + p2(d.getMinutes());
+  }
   function whenText(iso){
     var d = new Date(iso);
     return DAYS[d.getDay()] + ' ' + String(d.getHours()).padStart(2,'0') + ':' +
            String(d.getMinutes()).padStart(2,'0');
+  }
+
+  /* 오류 문구를 알아들을 수 있게 풀어준다.
+     「예약 실패 — 지침에 걸립니다 — 사주를 실제로 가리킴」만 봐서는
+     무엇을 어떻게 하라는 건지 알 수가 없다. */
+  function errorHelp(raw){
+    var e = String(raw || '');
+    /* 「일 23:35: …」 앞머리에서 자리만 떼어낸다. 뒤 콜론까지 딸려오면
+       「일 23:35: 자리」가 되어 우습다. */
+    var where = (e.match(/^([일월화수목금토]\s\d{1,2}:\d{2})/) || [])[1] || '';
+    var head = where ? '<b>' + esc(where) + ' 자리</b> — ' : '';
+
+    if (e.indexOf('지침에 걸립니다') >= 0) {
+      var what = (e.split('지침에 걸립니다 — ')[1] || '').trim();
+      return head + '만든 글이 지침에 걸려서 <b>예약하지 않았습니다</b>' +
+        (what ? ' (' + esc(what) + ')' : '') + '.<br>' +
+        '자동으로 나가는 글은 사람이 안 보고 올라가므로 지침을 다 지켜야 합니다.<br>' +
+        '아래 「올라갈 글」에서 <b>수정하기</b>로 고치시거나 <b>글 재생성</b>을 눌러보세요.';
+    }
+    if (e.indexOf('올리기가 잠겨') >= 0) {
+      return head + '올리기가 잠겨 있어 예약하지 못했습니다.<br>' +
+        '설정 탭의 <b>「스레드에 올리기 허용」</b>을 켜주세요. ' +
+        '켜기 전까지는 원고만 쌓입니다.';
+    }
+    if (e.indexOf('계정이 없습니다') >= 0) {
+      return head + '올릴 스레드 계정이 없어 예약하지 못했습니다.<br>' +
+        '설정 탭에서 Zernio 열쇠를 넣어 계정을 등록해주세요.';
+    }
+    if (e.indexOf('OpenAI 키') >= 0) {
+      return head + 'OpenAI 키가 없어 글을 만들지 못했습니다.<br>' +
+        '왼쪽 메뉴 <b>「무료사주 · API 설정」</b>에서 키를 넣어주세요.';
+    }
+    if (e.indexOf('잔액') >= 0 || e.indexOf('429') >= 0) {
+      return head + 'OpenAI 쪽에서 거절당했습니다 — 잔액이나 요청 한도를 확인해주세요.<br>' +
+        '<span class="ta-sub">' + esc(e) + '</span>';
+    }
+    return head + esc(e.replace(/^[일월화수목금토]\s\d{1,2}:\d{2}:\s*/, ''));
   }
 
   function ruleHtml(r){
@@ -1794,7 +1839,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       '<div class="ta-slots">' + slots + '</div>' +
       '<div class="ta-slot-add">' +
         '<select class="d">' + dayOpts + '</select>' +
-        '<input type="time" class="t" value="08:10">' +
+        '<input type="time" class="t" value="' + nowTime() + '">' +
         '<select class="sf"><option value="">틀은 돌려쓰기</option>' +
           FORMS.map(function(f){
             var lock = f.needsIntro && !HAS_INTRO;
@@ -1847,7 +1892,9 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       ((r.next && r.next.length)
         ? '<div class="ta-rule-next">다음 차례 — <b>' + r.next.map(whenText).join('</b> · <b>') + '</b></div>'
         : '') +
-      (r.lastError ? '<div class="ta-rule-warn"><b class="bang">!</b><span>지난번 오류 — ' + esc(r.lastError) + '</span></div>' : '') +
+      (r.lastError
+        ? '<div class="ta-rule-warn"><b class="bang">!</b><span>' + errorHelp(r.lastError) + '</span></div>'
+        : '') +
 
       '<div class="ta-rule-act">' +
         '<button type="button" class="ta-btn save">저장</button>' +
@@ -1966,7 +2013,11 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       if (!quiet) {
         drawRules();
         var again = document.querySelector('.ta-rule[data-id="' + r.j.rule.id + '"] .msg');
-        msg(again, 'ok', '저장했습니다.');
+        msg(again, 'ok', [
+          '저장했습니다.',
+          '글은 바로 안 생깁니다 — 5분 안에 확인해서 채웁니다.',
+          '지금 보고 싶으시면 「지금 한 번 만들어보기」를 눌러주세요.',
+        ].join(String.fromCharCode(10)));
       }
       return r;
     });
@@ -2063,7 +2114,9 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     var box = $('#taUpcoming');
     if (!box) return;
     box.innerHTML = list.length ? list.map(upHtml).join('')
-      : '<div class="ta-empty">아직 예정된 글이 없습니다.<br>규칙을 켜두면 36시간 앞에서부터 채워집니다.</div>';
+      : '<div class="ta-empty">아직 예정된 글이 없습니다.<br>' +
+        '규칙을 켜두면 <b>5분 안에</b> 확인해서 36시간 앞에서부터 채웁니다.<br>' +
+        '<span class="ta-sub">지금 보고 싶으시면 위 규칙의 「지금 한 번 만들어보기」를 눌러주세요.</span></div>';
 
     box.querySelectorAll('.ta-up').forEach(function(el){
       var id = el.dataset.id;
