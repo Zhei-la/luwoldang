@@ -116,8 +116,9 @@ const PATCHABLE = {
   replyText: ['reply_text', (v) => String(v == null ? '' : v)],
   numbered: ['numbered', (v) => !!v],
   /* 언제 올라갈 자리인지. 스케줄러가 지난 자리를 밀 때, 사람이 시각을
-     고칠 때 둘 다 이걸 바꾼다. */
+     고칠 때, 자리를 취소할 때 이걸 바꾼다. */
   slotAt: ['slot_at', (v) => v],
+  ruleId: ['rule_id', (v) => v],
   status: ['status', (v) => v],
   scheduledFor: ['scheduled_for', (v) => v],
   zernioId: ['zernio_id', (v) => v],

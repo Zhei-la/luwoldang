@@ -345,7 +345,24 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
  */
 router.post('/api/threads/upcoming/:id/slot', ...guard, async (req, res, next) => {
   try {
-    const when = new Date(String((req.body && req.body.at) || ''));
+    const b = req.body || {};
+    let when;
+
+    /* 요일 + 시각으로 받는다.
+       ⚠️ 날짜를 직접 고르게 하면 지난 날짜를 찍거나 몇 월 며칠인지 세어야 한다.
+          자리는 원래 「무슨 요일 몇 시」로 잡는 것이라 요일이면 충분하다.
+          앞으로 오는 그 요일의 첫 번째를 잡아준다. */
+    if (b.day != null && b.time) {
+      const day = Number(b.day);
+      const time = rules.hhmm(b.time);
+      if (!(day >= 0 && day <= 6) || !time) {
+        return fail(res, { message: '요일과 시각을 정해주세요.' });
+      }
+      when = rules.nextSlotTime({ day, time }, new Date());
+    } else {
+      when = new Date(String(b.at || ''));
+    }
+
     if (isNaN(when.getTime())) return fail(res, { message: '시각을 정해주세요.' });
     if (when.getTime() < Date.now() - 60000) {
       return fail(res, { message: '지난 시각으로는 옮길 수 없습니다.' });
@@ -371,6 +388,38 @@ router.post('/api/threads/upcoming/:id/slot', ...guard, async (req, res, next) =
       slotAt: when.toISOString(),
     });
     res.json({ ok: true, post: pipeline.view(saved) });
+  } catch (e) { outsideFail(res, e, next); }
+});
+
+/**
+ * 이 자리를 취소한다 — 자동으로 안 올라가게.
+ *
+ * 글을 지우는 것이 아니다. 자리(slot_at·rule_id)만 떼어내 「올라갈 글」에서
+ * 빠지고, 예약이 걸려 있었으면 Zernio 에서도 뺀다.
+ * 글은 「내 원고」에 그대로 남아 나중에 손으로 올릴 수 있다.
+ */
+router.post('/api/threads/upcoming/:id/unhook', ...guard, async (req, res, next) => {
+  try {
+    const post = await store.getPost(req.user.id, req.params.id);
+    if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
+
+    if (post.status === 'scheduled' && post.zernioId) {
+      try {
+        const acc = await accounts.active(req.user.id);
+        if (acc) await zernio.remove(acc.key, post.zernioId);
+      } catch (e) {
+        /* Zernio 에서 이미 없어졌거나 못 뺐다. 우리 쪽은 정리하되 알려준다. */
+        console.error('[스레드] 예약 취소 실패:', e.message);
+      }
+    }
+    await store.updatePost(req.user.id, post.id, {
+      status: 'draft', zernioId: null, scheduledFor: null,
+      /* rule_id 까지 떼어야 자동이 그 자리를 다시 보지 않는다.
+         slot_at 만 지우면 다음 회차에 또 채워 넣는다. */
+      slotAt: null, ruleId: null, error: null,
+    });
+    res.json({ ok: true });
   } catch (e) { outsideFail(res, e, next); }
 });
 

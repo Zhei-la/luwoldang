@@ -505,6 +505,20 @@ function done() {
   process.exit(fail ? 1 : 0);
 }
 
+/* ── 화면 스크립트 ── */
+section('화면 스크립트');
+/* ⚠️ EJS 는 렌더만 되면 통과다. 그 안의 <script> 가 깨져도 서버는 200 을 준다.
+   실제로 문자열에 진짜 줄바꿈이 들어가 「올라갈 글」이 통째로 안 그려졌는데
+   렌더 검사는 다 통과했다. 그래서 문법을 따로 본다. */
+let viewOk = false;
+try {
+  require('child_process').execFileSync(
+    process.execPath, [require('path').join(__dirname, 'view-check.js')], { stdio: 'pipe' }
+  );
+  viewOk = true;
+} catch (e) { viewOk = false; }
+t('화면 안 자바스크립트가 성한가', viewOk, true);
+
 /* ── 지난 자리 다음으로 밀기 ── */
 section('지난 자리 밀기');
 /* ⚠️ 시각이 지났는데 안 올라간 원고가 그대로 남아 「올라갈 글」에
