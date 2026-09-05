@@ -80,7 +80,9 @@ async function rulesWithStatus(req) {
       new Date(p.slotAt).getTime() >= now && new Date(p.slotAt).getTime() <= until).length;
     return Object.assign({}, r, {
       next: rules.upcoming(r, 24 * 7).slice(0, 3).map((u) => u.sendAt.toISOString()),
-      warning: rules.sameTimeWarning(r.slots),
+      /* 같은 시각만 보는 게 아니다. 다른 규칙과 같은 날 같은 틀이면
+         글이 거의 똑같이 나가서 스팸으로 걸린다. */
+      warning: rules.sameTimeWarning(r.slots) || rules.clashWarning(r, list),
       status: rules.diagnose(r, {
         hasKey: !!req.user.openai_key,
         allowPublish: settings.allowPublish,

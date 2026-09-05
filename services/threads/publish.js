@@ -12,6 +12,7 @@ const zernio = require('./zernio');
 const tail = require('./tail');
 const { checkPost } = require('./guideline');
 const { numberParts } = require('./length');
+const dupe = require('./dupe');
 
 /**
  * 올리기 전에 꼭 보는 것들. 화면과 서버가 같은 기준을 쓴다.
@@ -52,6 +53,20 @@ async function readyToSend(userId, post, opts) {
   if (auto && !check.passHard) {
     return { ok: false, why: '지침에 걸립니다 — ' + check.advice.join(', ') };
   }
+
+  /* ⚠️ 같은 글이 두 번 나가는 것을 막는다.
+        규칙을 두 개 만들어 두면 둘 다 같은 운세 틀을 쓰고 날짜도 띠도
+        계산값이라 같아서, 글자까지 거의 같은 글이 두 계정에 나갔다.
+        여러 계정에 같은 글을 뿌리는 것은 스레드가 스팸으로 보는 모양이다.
+        어느 길로 오든 여기서 걸린다. */
+  try {
+    const twin = await dupe.findTwin(userId, post);
+    if (twin) return { ok: false, why: dupe.why(twin, acc.username) };
+  } catch (e) {
+    /* 못 봤다고 못 올리게 하면 더 답답하다. 검사만 건너뛴다. */
+    console.error('[스레드] 같은 글 검사 실패:', e.message);
+  }
+
   return { ok: true, acc: acc, advice: check.advice };
 }
 

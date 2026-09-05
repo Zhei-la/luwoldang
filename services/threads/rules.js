@@ -359,8 +359,46 @@ function sameTimeWarning(slots) {
   return '';
 }
 
+/**
+ * 규칙 둘이 **같은 날 같은 틀**을 잡고 있나.
+ *
+ * ⚠️ 실제로 같은 오늘의 운세가 두 계정에 나란히 올라갔다.
+ *    규칙을 두 개 두면 둘 다 같은 운세 틀을 쓰고, 날짜도 띠도 계산값이라
+ *    글자까지 거의 같은 글이 나간다. 나가고 나서 막는 것보다
+ *    **잡을 때 알려주는 편**이 낫다.
+ *
+ * 반환 '' 또는 사람이 읽을 한 줄
+ */
+function clashWarning(rule, others) {
+  if (!rule || rule.enabled === false) return '';
+  const mine = {};
+  (rule.slots || []).forEach((s) => {
+    /* 틀을 안 집은 자리는 돌려 쓰므로 겹칠지 알 수 없다. 안 본다. */
+    if (s.form) mine[s.day + '|' + s.form] = true;
+  });
+  if (!Object.keys(mine).length) return '';
+
+  const hit = [];
+  (others || []).forEach((o) => {
+    if (!o || o.id === rule.id || o.enabled === false) return;
+    (o.slots || []).forEach((s) => {
+      if (s.form && mine[s.day + '|' + s.form]) {
+        const f = forms.byId(s.form);
+        hit.push(DAY_NAMES[s.day] + '요일 ' + (f ? f.label : s.form) +
+          (o.name ? ' (' + o.name + ')' : ''));
+      }
+    });
+  });
+  if (!hit.length) return '';
+
+  return '다른 규칙과 겹칩니다 — ' + hit.slice(0, 3).join(', ') + '. ' +
+    '같은 날 같은 틀이면 **글이 거의 똑같이 나옵니다** (날짜도 띠도 계산값이라). ' +
+    '여러 계정에 같은 글이 뿌려지면 스팸으로 걸립니다. ' +
+    '계정마다 「내 글 넣기」와 「오늘의 운세 틀」을 다르게 두시거나, 요일을 갈라주세요.';
+}
+
 module.exports = {
-  list, get, active, save, remove, clean,
+  list, get, active, save, remove, clean, clashWarning,
   upcoming, plan, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf, diagnose,
   DAY_NAMES, MAX_SLOTS, MAX_RULES, LOOKAHEAD_DAYS,
 };

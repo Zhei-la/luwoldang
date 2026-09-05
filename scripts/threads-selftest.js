@@ -1298,6 +1298,57 @@ t('뭉뚱그린 말을 막는다', blk.indexOf('근거 없는 말을 셋 모두�
 /* ⚠️ filter(Boolean) 을 쓰면 빈 줄이 지워져 지시가 한 벽이 된다 */
 t('덩어리 사이가 붙지 않는다', blk.split(LF2).filter(function (l) { return !l.trim(); }).length >= 4, true);
 
+/* ── 같은 글이 두 번 나가지 않게 ──
+   ⚠️ 실제로 같은 오늘의 운세가 두 계정에 나란히 올라갔다.
+      규칙을 두 개 두면 둘 다 같은 운세 틀을 쓰고, 날짜도 띠도 계산값이라
+      글자까지 거의 같은 글이 나간다.
+      여러 계정에 같은 글을 뿌리는 것은 스레드가 스팸으로 보는 모양이다. */
+section('같은 글 두 번 막기');
+
+const DUP = require(require('path').join(__dirname, '..', 'services', 'threads', 'dupe'));
+const L = String.fromCharCode(10);
+const dayA = ['오늘 잘 풀리는 사람은', '', '9월 6일 오늘의 운세', '',
+  '🍀 운 좋은 띠', '🐴 말띠', '🐷 돼지띠', '🐰 토끼띠'].join(L);
+const dayB = dayA.replace('9월 6일', '9월 7일');
+const other = ['말이 늦게 나오는 사람들이 있습니다', '', '인성이 두꺼우면 그렇습니다'].join(L);
+
+t('완전히 같으면 1', DUP.similarity(dayA, dayA), 1);
+/* 날짜 한 줄만 다른 것도 같은 글이다 — 숫자를 걷어내고 본다 */
+t('날짜만 다르면 같은 글로 본다', DUP.similarity(dayA, dayB) >= DUP.SAME_ENOUGH, true);
+t('아예 다른 글은 안 걸린다', DUP.similarity(dayA, other) < DUP.SAME_ENOUGH, true);
+/* 띠와 후킹을 바꾼 글은 다른 글이다 — 이걸 막으면 아무것도 못 올린다 */
+t('띠·후킹을 바꾸면 다른 글',
+  DUP.similarity(dayA, dayA.replace('🐰 토끼띠', '🐮 소띠')
+    .replace('오늘 잘 풀리는 사람은', '오늘은 사람 관계에서')) < DUP.SAME_ENOUGH, true);
+t('빈 글은 안 걸린다', DUP.similarity('', dayA), 0);
+t('공백·부호는 걷어낸다', DUP.normalize('가 나.  다!'), '가나다');
+t('숫자도 걷어낸다', DUP.normalize('9월 6일'), '월일');
+
+/* 어느 길로 오든 여기서 걸려야 한다 */
+const pubSrc3 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'publish.js'), 'utf8');
+t('내보내기 전에 본다', pubSrc3.indexOf('dupe.findTwin(userId, post)') > 0, true);
+t('막을 때 이유를 준다', pubSrc3.indexOf('dupe.why(twin, acc.username)') > 0, true);
+/* 검사가 터졌다고 못 올리게 하면 더 답답하다 */
+t('검사가 터져도 막지는 않는다', pubSrc3.indexOf('같은 글 검사 실패') > 0, true);
+t('화면이 그 이유를 풀어준다', viewSrc.indexOf('이미 나간 글과 똑같아서 막았습니다') > 0, true);
+
+/* 나가고 나서 막는 것보다 잡을 때 알려주는 편이 낫다 */
+const rA = { id: 'a', enabled: true, name: '루사주',
+  slots: [{ day: 0, time: '05:00', form: 'daily' }, { day: 1, time: '08:00', form: 'info' }] };
+const rB = { id: 'b', enabled: true, name: 'AI이안', slots: [{ day: 0, time: '06:00', form: 'daily' }] };
+const rC = { id: 'c', enabled: true, name: '다른날', slots: [{ day: 3, time: '06:00', form: 'daily' }] };
+t('같은 날 같은 틀이면 미리 알려준다', R.clashWarning(rA, [rB]).indexOf('일요일 오늘의 운세') > 0, true);
+t('어느 규칙과 겹치는지 말해준다', R.clashWarning(rA, [rB]).indexOf('AI이안') > 0, true);
+t('날이 다르면 안 알린다', R.clashWarning(rA, [rC]), '');
+t('꺼진 규칙과는 안 겹친다',
+  R.clashWarning(rA, [Object.assign({}, rB, { enabled: false })]), '');
+t('자기 자신과는 안 겹친다', R.clashWarning(rA, [rA]), '');
+/* 틀을 안 집은 자리는 돌려 쓰므로 겹칠지 알 수 없다 */
+t('틀을 안 집었으면 안 알린다',
+  R.clashWarning({ id: 'x', enabled: true, slots: [{ day: 0, time: '05:00' }] }, [rB]), '');
+t('규칙 카드가 그 경고를 받는다', routeSrc.indexOf('rules.clashWarning(r, list)') > 0, true);
+
 /* ── 종류별 본보기 글 ──
    ⚠️ 큰 칸 하나에 글을 다 붙여넣게 했다. 그러면 말투는 잡혀도
       **짜임새**가 안 잡힌다 — 무료사주 안내글과 리스트형은 여는 법도
