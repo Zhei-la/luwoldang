@@ -643,7 +643,11 @@ const tiny = checkPost({ postType: '정보형', form: 'single', parts: ['테스�
 t('짧은 글도 올릴 수는 있다', tiny.passBlock, true);
 t('다만 지침은 못 지켰다고 알려준다', tiny.passHard, false);
 t('무엇을 고치면 좋은지 준다', tiny.advice.length >= 1, true);
-t('고칠 것에 사주 근거가 들어 있다', tiny.advice.indexOf('사주를 실제로 가리킴') >= 0, true);
+t('고칠 것에 사주 근거가 들어 있다',
+  tiny.advice.some((a) => a.indexOf('사주를 실제로 가리킴') === 0), true);
+/* 이름표만 주면 「사주를 실제로 가리킴」이 무슨 말인지 알 수가 없다 */
+t('무엇을 적어야 하는지까지 알려준다',
+  tiny.advice.some((a) => a.indexOf('일간·오행·십성·신살') > 0), true);
 
 const tooLong = checkPost({ postType: '정보형', form: 'single', parts: ['가'.repeat(600)] });
 t('500자를 넘으면 못 올린다', tooLong.passBlock, false);
@@ -788,6 +792,54 @@ t('오늘을 표시한다', viewSrc.indexOf("' today'") > 0, true);
 t('지난 요일은 올라갔는지 말한다', viewSrc.indexOf('안 올라감') > 0, true);
 t('안 만든 자리를 따로 그린다', viewSrc.indexOf('ta-slot') > 0, true);
 t('36시간 전에 만든다고 알려준다', viewSrc.indexOf('올라가기 36시간 전') > 0, true);
+
+
+/* ── 짧은 글 덩어리 나누기 ────────────────────────────
+   ⚠️ 세 줄을 빈 줄로 끊은 글을 「빈 줄이 많다」고 막고 있었다.
+      그건 막을 모양이 아니라 **권장하는 모양**이다. 벤치마크 글이 다 그 꼴이고,
+      그래서 멀쩡한 자동 글이 예약 단계에서 통째로 막혔다. */
+section('짧은 글 덩어리');
+
+const nl = String.fromCharCode(10);
+const hard3 = (parts) => checkPost({ postType: '정보형', form: 'single', parts }).passHard;
+
+t('세 줄을 빈 줄로 끊어도 통과',
+  hard3(['화 기운이 부족하면 시작이 어렵습니다.' + nl + nl +
+         '마음은 급한데 발이 안 떨어지죠.' + nl + nl +
+         '아침에 햇빛부터 보세요.']), true);
+t('십성을 짚은 세 덩어리도 통과',
+  hard3(['재성이 강한 사람은 돈을 잘 봅니다.' + nl + nl +
+         '다만 사람을 놓칩니다.' + nl + nl +
+         '이번 달엔 밥을 먼저 사보세요.']), true);
+t('띠를 짚은 세 덩어리도 통과',
+  hard3(['쥐띠는 올해 움직임이 많습니다.' + nl + nl +
+         '자리를 옮길 일이 생깁니다.' + nl + nl +
+         '서두르지 마세요.']), true);
+/* 끝에 남은 줄바꿈 하나로 막히면 사람이 이유를 알 수가 없다 */
+t('끝 줄바꿈은 안 센다', hard3(['갑목은 곧게 자랍니다.' + nl]), true);
+t('앞 줄바꿈도 안 센다', hard3([nl + '갑목은 곧게 자랍니다.']), true);
+/* 그렇다고 다 열어주면 흩어진 글이 나간다 */
+t('줄마다 다 비우면 여전히 막는다',
+  hard3(['갑목은 곧게 자랍니다.' + nl + nl + '휘지 않습니다.' + nl + nl +
+         '그래서 부러집니다.' + nl + nl + '한 번쯤 굽어보세요.' + nl + nl +
+         '그게 오래 갑니다.' + nl + nl + '정말입니다.']), false);
+t('여섯 줄이 다 붙어 있으면 막는다',
+  hard3([['갑목은 곧게 자랍니다.', '휘지 않습니다.', '그래서 부러집니다.',
+    '한 번쯤 굽어보세요.', '그게 오래 갑니다.', '정말입니다.'].join(nl)]), false);
+
+/* 사주 근거 — 무엇을 적으면 통과하는지 */
+const points = (s) => checkPost({ postType: '정보형', form: 'single', parts: [s] })
+  .rows.find((r) => r.label === '사주를 실제로 가리킴').ok;
+t('일간을 적으면 통과', points('목일간은 먼저 움직입니다'), true);
+t('천간을 적으면 통과', points('갑목은 곧게 자랍니다'), true);
+t('오행을 적으면 통과', points('화 기운이 부족합니다'), true);
+t('십성을 적으면 통과', points('재성이 강한 사람'), true);
+t('신살을 적으면 통과', points('역마가 있으면'), true);
+t('띠를 적으면 통과', points('쥐띠는 올해'), true);
+t('사주 말이 하나도 없으면 막힌다', points('돈이 모이지 않는 사람들이 있습니다'), false);
+/* 「수요일」·「금방」이 오행으로 잡히면 아무 글이나 통과해버린다 */
+t('수요일은 오행이 아니다', points('수요일에 만나기로 했습니다'), false);
+t('금방은 오행이 아니다', points('금방 끝납니다'), false);
 
 /* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
    여기서 끝내버리면 그 결과를 못 보고 나간다. */

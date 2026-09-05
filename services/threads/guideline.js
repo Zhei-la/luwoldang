@@ -142,7 +142,9 @@ function needsBreaks(parts) {
 
    반환 { ok, why } — why 는 무엇이 문제인지 한 줄. */
 function blockCheck(text) {
-  const raw = String(text == null ? '' : text).split(String.fromCharCode(10));
+  /* 앞뒤 빈 줄은 세지 않는다. 끝에 남은 줄바꿈 하나 때문에
+     「빈 줄이 많다」고 막으면 사람이 이유를 알 수가 없다. */
+  const raw = String(text == null ? '' : text).trim().split(String.fromCharCode(10));
   const filled = raw.filter((l) => l.trim()).length;
   /* 빈 줄이 이어져 있어도 한 번으로 센다. 두 줄 비운 것도 한 자리다. */
   let blanks = 0;
@@ -150,11 +152,12 @@ function blockCheck(text) {
     if (!raw[i].trim() && raw[i - 1].trim()) blanks++;
   }
 
-  /* 세 줄 이하는 그냥 둔다. 한 줄짜리 글에 억지로 빈 줄을 넣을 이유가 없다. */
-  if (filled <= 3) {
-    if (blanks > 1) return { ok: false, why: '짧은 글인데 빈 줄이 많습니다. 붙여서 쓰세요' };
-    return { ok: true };
-  }
+  /* 세 줄 이하는 그냥 둔다.
+     ⚠️ 예전엔 여기서 빈 줄 둘을 막았다. 그런데 세 줄을 빈 줄로 끊은 글은
+        막을 게 아니라 **권장하는 모양**이다 — 벤치마크 글이 다 그 꼴이다.
+        그래서 멀쩡한 짧은 글이 「빈 줄이 많다」로 막혀 자동 예약이 안 나갔다.
+        줄이 셋뿐이면 사이는 둘. 그만큼 비우는 건 흩어진 게 아니다. */
+  if (filled <= 3) return { ok: true };
   if (blanks === 0) {
     return { ok: false, why: '여섯 줄이 붙어 있으면 벽입니다. 뜻이 바뀌는 자리에 빈 줄 하나를 넣어주세요' };
   }
@@ -410,7 +413,10 @@ function checkPost(post) {
                  나머지는 「고치면 좋습니다」로 보여주고 판단은 사람이 한다. */
   const passHard = rows.filter((r) => r.hard).every((r) => r.ok);
   const passBlock = rows.filter((r) => r.blocking).every((r) => r.ok);
-  const advice = rows.filter((r) => r.hard && !r.blocking && !r.ok).map((r) => r.label);
+  /* 이름표만 주면 「사주를 실제로 가리킴」이 무슨 말인지 알 수가 없다.
+     무엇을 어떻게 고치라는 detail 까지 같이 실어 보낸다. */
+  const advice = rows.filter((r) => r.hard && !r.blocking && !r.ok)
+    .map((r) => r.label + (r.detail ? ': ' + r.detail : ''));
   return { rows, passHard, passBlock, advice, lengths };
 }
 
