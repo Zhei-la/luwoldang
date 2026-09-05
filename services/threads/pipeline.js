@@ -93,7 +93,16 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     ? { on: true, max: 2, numbered: daily.numbered !== false }
     : null;
 
+  /* 이 종류 글의 본보기. 말투만으로는 **짜임새**가 안 잡힌다 —
+     무료사주 안내글과 리스트형은 여는 법도 닫는 법도 다르다.
+     틀을 안 정한 글(사람이 손으로 만드는 자리)은 정보형 것을 쓴다. */
+  const wantKind = (o.form && o.form.id) || 'info';
+  const sample = (settings.samples || []).find((x) => x && x.kind === wantKind) || null;
+  const sampleLabel = o.form ? o.form.label : '';
+
   const makePrompt = (extra) => buildPrompt(topic, {
+    sample,
+    sampleLabel,
     ledger,
     facts: (settings.facts || []).map((f) => f.text || String(f)),
     voicePack: require('./voice').resolve(settings),

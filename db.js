@@ -972,9 +972,17 @@ async function initDb() {
         intro        JSONB,
         daily        JSONB,
         seeded       BOOLEAN DEFAULT FALSE,
+        /* 종류별 본보기 글 — [{ kind:'info', text:'…' }] 다섯 칸까지.
+           말투만으로는 「무료사주 글」과 「리스트형」의 짜임새가 안 잡힌다. */
+        samples      JSONB,
         PRIMARY KEY (user_id, account_id)
       );
     `);
+
+    /* ⚠️ 표가 이미 만들어져 있으면 CREATE TABLE IF NOT EXISTS 는
+       **새 칸을 안 만든다.** 위에 칸을 적어두는 것만으로는 부족하다.
+       이미 돌고 있는 곳에서는 여기 ALTER 가 있어야 붙는다. */
+    await pool.query(`ALTER TABLE th_acct_settings ADD COLUMN IF NOT EXISTS samples JSONB;`);
 
     /* 규칙도 계정에 묶는다. 계정을 두세 개 돌리면 규칙마다
        어느 계정으로 나갈지가 정해져 있어야 한다. */

@@ -274,6 +274,7 @@ const DEFAULT_SETTINGS = {
   voicePack: null,
   intro: null,              // 인사글 재료 { name, career, sample }
   daily: null,              // 오늘의 운세 틀 { sample, asReply }
+  samples: [],              // 종류별 본보기 글 [{ kind, text }]
   chain: null,              // 이어붙이기 { on, max, numbered }
   facts: [],
 };
@@ -285,7 +286,7 @@ const DEFAULT_SETTINGS = {
  *
  * 여기 없는 것(열쇠·올리기 허용·모델·사실)은 사람 단위로 둔다 —
  * 요금과 안전에 걸린 것이라 계정마다 갈라두면 오히려 헷갈린다. */
-const PER_ACCOUNT = ['ctaLink', 'dailyLine', 'ctaPerWeek', 'voiceMode', 'voicePack', 'intro', 'daily'];
+const PER_ACCOUNT = ['ctaLink', 'dailyLine', 'ctaPerWeek', 'voiceMode', 'voicePack', 'intro', 'daily', 'samples'];
 
 const ACCT_COLS = {
   ctaLink: 'cta_link',
@@ -295,6 +296,7 @@ const ACCT_COLS = {
   voicePack: 'voice_pack',
   intro: 'intro',
   daily: 'daily',
+  samples: 'samples',
 };
 
 /** 지금 고른 계정. 안 골랐으면 가장 먼저 등록한 것. */
@@ -366,6 +368,7 @@ async function getSettings(userId, accountId) {
     voicePack: row.voice_pack || null,
     intro: row.intro || null,
     daily: row.daily || null,
+    samples: row.samples || [],
   });
 }
 
@@ -387,6 +390,7 @@ async function userSettings(userId) {
     intro: r.intro || null,
     daily: r.daily || null,
     chain: r.chain || null,
+    samples: [],
     facts: r.facts || [],
   };
 }
@@ -406,6 +410,13 @@ const SETTING_COLS = {
   voicePack: ['voice_pack', (v) => (v ? JSON.stringify(v) : null)],
   intro: ['intro', (v) => (v ? JSON.stringify(v) : null)],
   daily: ['daily', (v) => (v ? JSON.stringify(v) : null)],
+  /* 다섯 칸까지. 그 이상은 프롬프트만 길어지고 나아지지 않는다. */
+  samples: ['samples', (v) => JSON.stringify(
+    (Array.isArray(v) ? v : []).slice(0, 5)
+      .map((x) => ({ kind: String((x && x.kind) || '').slice(0, 20),
+        text: String((x && x.text) || '').slice(0, 3000) }))
+      .filter((x) => x.text.trim())
+  )],
   chain: ['chain', (v) => (v ? JSON.stringify(v) : null)],
   facts: ['facts', (v) => JSON.stringify(v || [])],
 };

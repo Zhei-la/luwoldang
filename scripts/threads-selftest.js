@@ -1137,7 +1137,8 @@ t('규칙에 계정 칸이 있다',
 
 /* 무엇이 계정 몫이고 무엇이 사람 몫인지 — 잘못 가르면 열쇠가 갈라진다 */
 t('말투는 계정 몫', storeSrc.indexOf("'voiceMode', 'voicePack'") > 0, true);
-t('인사글·운세 틀도 계정 몫', /PER_ACCOUNT = \[[^\]]*'intro', 'daily'\]/.test(storeSrc), true);
+t('인사글·운세 틀도 계정 몫', /PER_ACCOUNT = \[[^\]]*'intro', 'daily'/.test(storeSrc), true);
+t('본보기 글도 계정 몫', /PER_ACCOUNT = \[[^\]]*'samples'\]/.test(storeSrc), true);
 t('열쇠는 계정 몫이 아니다', /PER_ACCOUNT = \[[^\]]*zernioKey/.test(storeSrc), false);
 t('올리기 허용도 계정 몫이 아니다', /PER_ACCOUNT = \[[^\]]*allowPublish/.test(storeSrc), false);
 
@@ -1296,6 +1297,57 @@ t('고르지 말라고 못 박는다', blk.indexOf('띠를 고르는 것은 당�
 t('뭉뚱그린 말을 막는다', blk.indexOf('근거 없는 말을 셋 모두에 뭉뚱그려') > 0, true);
 /* ⚠️ filter(Boolean) 을 쓰면 빈 줄이 지워져 지시가 한 벽이 된다 */
 t('덩어리 사이가 붙지 않는다', blk.split(LF2).filter(function (l) { return !l.trim(); }).length >= 4, true);
+
+/* ── 종류별 본보기 글 ──
+   ⚠️ 큰 칸 하나에 글을 다 붙여넣게 했다. 그러면 말투는 잡혀도
+      **짜임새**가 안 잡힌다 — 무료사주 안내글과 리스트형은 여는 법도
+      닫는 법도 다른데 한 덩어리로 뭉뚱그려졌다.
+      종류를 골라 칸마다 하나씩 넣고, 그 종류를 만들 때 그 본보기를 쓴다. */
+section('종류별 본보기 글');
+
+const P3 = require(require('path').join(__dirname, '..', 'services', 'threads', 'prompt'));
+const pipeSrc4 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'pipeline.js'), 'utf8');
+const dbSrc2 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'db.js'), 'utf8');
+
+t('본보기 칸이 있다', dbSrc2.indexOf('samples      JSONB') > 0, true);
+/* ⚠️ 표가 이미 있으면 CREATE TABLE IF NOT EXISTS 는 새 칸을 안 만든다.
+   이미 돌고 있는 곳에는 ALTER 가 있어야 붙는다 — 실제로 여기서 깨졌다. */
+t('이미 있는 표에도 칸을 붙인다',
+  dbSrc2.indexOf('ALTER TABLE th_acct_settings ADD COLUMN IF NOT EXISTS samples') > 0, true);
+t('종류별로 담는다', storeSrc.indexOf("samples: 'samples'") > 0, true);
+/* 다섯 칸까지. 그 이상은 프롬프트만 길어지고 나아지지 않는다 */
+t('다섯 칸까지만 담는다', storeSrc.indexOf('.slice(0, 5)') > 0, true);
+t('빈 칸은 안 담는다', storeSrc.indexOf('.filter((x) => x.text.trim())') > 0, true);
+t('모르는 종류는 빈 값으로', routeSrc.indexOf("ok.indexOf(String(x.kind || '')) >= 0") > 0, true);
+
+const sb = P3.sampleBlock({ text: '무료사주 받아가요' }, '인사 · 무료사주');
+t('본보기가 프롬프트 덩어리가 된다', sb.indexOf('내가 쓰던 인사 · 무료사주 글') > 0, true);
+t('짜임새를 가져가라고 한다', sb.indexOf('여는 법 · 끊는 법 · 닫는 법') > 0, true);
+/* 베끼면 안 된다 — 짜임새만 빌린다 */
+t('베끼지 말라고 한다', sb.indexOf('짜임새만') > 0, true);
+t('글이 없으면 덩어리도 없다', P3.sampleBlock({ text: '' }, 'x'), '');
+t('아예 안 주면 빈 값', P3.sampleBlock(null, 'x'), '');
+
+/* 만들 때 그 종류 본보기를 골라 써야 한다 */
+t('만드는 틀로 본보기를 고른다',
+  pipeSrc4.indexOf("(settings.samples || []).find((x) => x && x.kind === wantKind)") > 0, true);
+t('틀을 안 정했으면 정보형 것', pipeSrc4.indexOf("(o.form && o.form.id) || 'info'") > 0, true);
+t('프롬프트에 실어 보낸다', pipeSrc4.indexOf('sample,') > 0, true);
+
+/* 화면 — 번호 다섯 칸 */
+t('칸이 다섯 개', (viewSrc.match(/si < 5/g) || []).length, 1);
+t('칸마다 번호를 붙인다', viewSrc.indexOf('<span class="no"><%= si + 1 %></span>') > 0, true);
+t('칸마다 종류를 고른다', viewSrc.indexOf('종류 고르기') > 0, true);
+t('종류는 틀 목록에서 뽑는다', viewSrc.indexOf('formList.forEach(function(f){ %>') > 0, true);
+t('칸을 합쳐 말투를 뽑는다', viewSrc.indexOf('function sampleText()') > 0, true);
+t('저장 단추가 있다', viewSrc.indexOf('taSampleSave') > 0, true);
+/* 종류를 안 골라도 말투에는 쓴다 — 본보기로만 안 쓴다 */
+t('종류 없는 칸도 말투에 쓴다', viewSrc.indexOf('말투에는 쓰지만 본보기로는 안 씁니다') > 0, true);
+t('칸마다 줄 수를 보여준다', viewSrc.indexOf("x.el.querySelector('.cnt')") > 0, true);
+/* 큰 칸 하나짜리는 없어졌다 */
+t('옛 큰 칸은 없다', viewSrc.indexOf('id="taVoiceIn"') > 0, false);
 
 /* ── 첫 줄은 후킹 자리 ──
    ⚠️ 「일진을 그대로 쓰라」고 일러줬더니 모델이 첫 줄을 일진으로 바꿔

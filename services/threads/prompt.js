@@ -107,6 +107,34 @@ function iya(word) {
   return (code - 0xac00) % 28 === 0 ? '야' : '이야';        // 받침이 없으면 「야」
 }
 
+/**
+ * 이 종류 글의 **본보기**.
+ *
+ * 말투 규칙서(voicePack)만으로는 안 잡히는 것이 있다. 어미와 말버릇은
+ * 잡아도 **짜임새**는 종류마다 다르다 — 무료사주 안내글과 리스트형과
+ * 사주 풀이글은 여는 법도, 끊는 법도, 닫는 법도 다르다.
+ *
+ * 그래서 종류마다 본인 글을 하나 받아두고, 그 종류를 만들 때 얹어준다.
+ *
+ * ⚠️ 문장을 베끼면 안 된다. 짜임새만 빌린다.
+ *    베끼는지는 copycheck 가 따로 기계로 잡는다.
+ */
+function sampleBlock(sample, label) {
+  const text = String((sample && sample.text) || '').trim();
+  if (!text) return '';
+  return [
+    '════════ 내가 쓰던 ' + (label || '이 종류') + ' 글 ════════',
+    '아래는 이 사람이 실제로 올렸던 ' + (label || '이 종류') + ' 글입니다.',
+    '**여는 법 · 끊는 법 · 닫는 법 · 줄 나누는 자리**를 이대로 가져가세요.',
+    '',
+    text,
+    '',
+    '⚠️ 문장을 그대로 가져다 쓰지 마세요. **짜임새만** 빌립니다.',
+    '   소재는 이번 주제로 새로 씁니다.',
+    '',
+  ].join(String.fromCharCode(10));
+}
+
 function introBlock(intro) {
   const i = intro || {};
   const name = String(i.name || '').trim();
@@ -332,7 +360,7 @@ ${facts.length
   ? facts.map((f) => '- ' + f).join('\n')
   : '(비어 있음 — 실제 수치·이벤트·사례·개인 소식이 필요한 후킹은 blocked 로 처리하고, 무엇이 있으면 쓸 수 있는지 unlock 에 적어주세요)'}
 
-${introBlock(o.intro)}
+${sampleBlock(o.sample, o.sampleLabel)}${introBlock(o.intro)}
 ${o.wantsDaily ? dailyBlock(o.daily) : ''}${chainBlock(o.chain)}
 ${o.ctaLink ? '════════ 신청 안내 ════════\n신청 주소는 시스템이 글 맨 뒤에 따로 붙입니다. 본문에 URL 을 적지 마세요.\ncta: true 로 둔 글은 마지막을 안내하는 문장으로 닫기만 하세요.\n' : ''}
 ${o.extra || ''}
@@ -554,4 +582,4 @@ ${samples.map((s, i) => '--- 글 ' + (i + 1) + ' ---\n' + s).join('\n\n')}
 - toneAxis 는 0~10 사이 숫자입니다.`;
 }
 
-module.exports = { buildPrompt, buildRewritePrompt, buildVoicePrompt, buildFixPrompt, introBlock, dailyBlock, chainBlock, loadGuideline, loadBenchmark, voiceBlock };
+module.exports = { buildPrompt, buildRewritePrompt, buildVoicePrompt, buildFixPrompt, introBlock, dailyBlock, chainBlock, sampleBlock, loadGuideline, loadBenchmark, voiceBlock };

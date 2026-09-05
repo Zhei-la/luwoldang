@@ -30,7 +30,7 @@ const voice = require('../services/threads/voice');
 const data = {
   user: { id: 1, name: '점검' }, active: 'threads', hasKey: true,
   accounts: [], account: null, allowPublish: true,
-  settings: { ctaLink: '', dailyLine: '', ctaPerWeek: 2, model: '' },
+  settings: { ctaLink: '', dailyLine: '', ctaPerWeek: 2, model: '', samples: [] },
   models: MODELS, defaultModel: DEFAULT_MODEL,
   voicePack: null, voiceMin: voice.MIN_SAMPLES, voiceLines: voice.MIN_LINES,
   voicePresets: PRESETS, voiceMode: '',

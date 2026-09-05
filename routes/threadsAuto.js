@@ -212,6 +212,8 @@ router.get('/threads', ...guard, async (req, res, next) => {
         dailyLine: settings.dailyLine,
         ctaPerWeek: settings.ctaPerWeek,
         model: settings.model,
+        /* 종류별 본보기 글 — 화면이 다섯 칸을 채워 보여준다 */
+        samples: settings.samples || [],
       },
       models: MODELS,
       defaultModel: DEFAULT_MODEL,
@@ -278,6 +280,20 @@ router.post('/api/threads/settings', ...guard, async (req, res, next) => {
       const career = String(b.intro.career || '').trim().slice(0, 200);
       const sample = String(b.intro.sample || '').trim().slice(0, 2000);
       patch.intro = (name || career || sample) ? { name, career, sample } : null;
+    }
+    /* 종류별 본보기 글. 다섯 칸까지.
+       말투만으로는 짜임새가 안 잡힌다 — 무료사주 안내글과 리스트형은
+       여는 법도 닫는 법도 다르다. 그 종류를 만들 때 그 칸을 본보기로 쓴다. */
+    if (Array.isArray(b.samples)) {
+      const ok = FORMS.FORMS.map((f) => f.id);
+      patch.samples = b.samples
+        .filter((x) => x && String(x.text || '').trim())
+        .slice(0, 5)
+        .map((x) => ({
+          /* 모르는 종류는 빈 값으로 둔다 — 말투에는 쓰고 본보기로는 안 쓴다 */
+          kind: ok.indexOf(String(x.kind || '')) >= 0 ? String(x.kind) : '',
+          text: String(x.text).trim().slice(0, 3000),
+        }));
     }
     /* 오늘의 운세 틀. 본문이 비면 통째로 지운다.
        mode — chain(두 편으로 나눔) / reply(본문+첫 댓글) / single(한 편) */

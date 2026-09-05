@@ -287,6 +287,20 @@
   background:#c9a227;color:#fff;font-size:11px;font-weight:900;text-align:center;line-height:16px}
 #ta .ta-rule-act{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
 
+/* 내 글 넣기 — 종류를 골라 칸마다 하나씩.
+   큰 칸 하나에 다 붙여넣으면 말투는 잡혀도 짜임새가 안 잡힌다. */
+#ta .ta-samples{display:grid;gap:10px;margin:14px 0 10px}
+#ta .ta-sample{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#fff}
+#ta .ta-sample-hd{display:flex;align-items:center;gap:9px;margin-bottom:8px;flex-wrap:wrap}
+#ta .ta-sample-hd .no{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+#ta .ta-sample-hd select{margin:0;width:auto;min-width:150px;padding:6px 10px;font-size:13px}
+#ta .ta-sample-hd .cnt{margin:0 0 0 auto;font-size:12px}
+#ta .ta-sample textarea{margin:0;font-size:13.5px;line-height:1.8}
+@media (max-width:560px){
+  #ta .ta-sample-hd select{min-width:0;flex:1}
+}
+
 /* 사용 설명서 — 처음 여는 사람은 칸이 뭐가 뭔지 모른다.
    접어두고, 펴면 위에서부터 그대로 따라 하면 되게. */
 #ta .ta-guide{border:1px solid var(--line);border-radius:14px;background:#fff;
@@ -1113,14 +1127,13 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
     <!-- ── 내 말투 ────────────────────────────────── -->
     <div class="ta-card">
-      <h2>내 글에서 말투 뽑기</h2>
-      <p class="ta-sub">본인이 쓴 글을 붙여넣으면 <b>말투를 뽑아 규칙서로 만듭니다.</b>
-        그 뒤로 만드는 글이 전부 이 말투로 나옵니다. 어미·자주 쓰는 표현·줄바꿈 리듬·
-        절대 안 쓰는 말까지 잡습니다.<br>
-        <b>글 사이를 한 줄 띄우면</b> 글을 하나씩 가려서 더 정확합니다
-        (<code>---</code> 로 나누셔도 됩니다).<br>
-        안 띄우고 통째로 붙여넣어도 됩니다 — <b>글 <%= voiceMin %>개나 <%= voiceLines %>줄</b>
-        중 하나만 넘으면 분석합니다.</p>
+      <h2>내 글 넣기</h2>
+      <p class="ta-sub"><b>종류를 고르고 그 종류로 쓰셨던 글을 하나씩</b> 넣어주세요.
+        무료사주 인사글, 리스트형, 사주 풀이글 — 종류마다 여는 법도 닫는 법도 다릅니다.
+        그 종류를 만들 때 <b>그 칸의 글을 본보기로</b> 씁니다.<br>
+        그리고 여기 넣은 글을 전부 합쳐 <b>말투를 뽑습니다</b> —
+        어미·자주 쓰는 표현·줄바꿈 리듬·절대 안 쓰는 말까지 잡습니다.
+        <b>글 <%= voiceMin %>개나 <%= voiceLines %>줄</b> 중 하나만 넘으면 분석합니다.</p>
 
       <div id="taVoiceNow"><% if (voicePack) { %>
         <div class="ta-voice-now">
@@ -1135,13 +1148,36 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         <div class="ta-msg">아직 말투를 안 잡았습니다. 지금은 지침의 기본 말투로 씁니다.</div>
       <% } %></div>
 
-      <textarea id="taVoiceIn" rows="10"
-        placeholder="스레드에 쓰셨던 글을 그대로 붙여넣으세요.&#10;&#10;글과 글 사이는 한 줄 띄웁니다.&#10;&#10;많을수록 정확합니다. 25~30개면 가장 좋습니다."></textarea>
+      <!-- ⚠️ 예전엔 큰 칸 하나에 글을 다 붙여넣게 했다. 그러면 말투는 잡혀도
+           **짜임새**가 안 잡힌다 — 무료사주 안내글과 리스트형은 여는 법도
+           닫는 법도 다른데 한 덩어리로 뭉뚱그려졌다.
+           종류를 골라 칸마다 하나씩 넣으면, 그 종류를 만들 때 그 본보기를 쓴다. -->
+      <div class="ta-samples" id="taSamples">
+        <% for (var si = 0; si < 5; si++) { %>
+          <% var sv = (settings.samples || [])[si] || { kind: '', text: '' }; %>
+          <div class="ta-sample" data-i="<%= si %>">
+            <div class="ta-sample-hd">
+              <span class="no"><%= si + 1 %></span>
+              <select class="kind">
+                <option value="">종류 고르기</option>
+                <% formList.forEach(function(f){ %>
+                  <option value="<%= f.id %>" <%= sv.kind === f.id ? 'selected' : '' %>><%= f.label %></option>
+                <% }) %>
+              </select>
+              <span class="ta-sub cnt"></span>
+            </div>
+            <textarea class="body" rows="4"
+              placeholder="이 종류로 올리셨던 글 하나를 그대로 붙여넣으세요."><%= sv.text || '' %></textarea>
+          </div>
+        <% } %>
+      </div>
+
       <p class="ta-voice-count" id="taVoiceCount">글 <b>0</b>개 · <b>0</b>줄 —
         글 <%= voiceMin %>개나 <%= voiceLines %>줄 중 하나는 넘어야 합니다</p>
 
       <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="ta-btn" type="button" id="taVoiceRun">말투 분석</button>
+        <button class="ta-btn" type="button" id="taSampleSave">저장</button>
+        <button class="ta-btn ghost" type="button" id="taVoiceRun">말투 분석</button>
         <% if (voicePack) { %>
           <button class="ta-btn ghost" type="button" id="taVoiceClear">말투 지우기</button>
         <% } %>
@@ -2703,11 +2739,32 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     return String(text || '').split(String.fromCharCode(10))
       .filter(function(l){ return l.trim().length >= 2; }).length;
   }
+  /* 다섯 칸에 든 글을 모은다. 종류를 안 고른 칸도 말투에는 쓴다 —
+     말투는 종류를 안 가리고, 본보기로 쓸 때만 종류가 필요하다. */
+  function sampleSlots(){
+    return [].map.call(document.querySelectorAll('#taSamples .ta-sample'), function(el){
+      return {
+        kind: el.querySelector('.kind').value,
+        text: el.querySelector('.body').value.trim(),
+        el: el,
+      };
+    });
+  }
+  function sampleText(){
+    return sampleSlots().map(function(x){ return x.text; })
+      .filter(Boolean).join(String.fromCharCode(10,10) + '---' + String.fromCharCode(10,10));
+  }
+
   function voiceCount(){
-    var el = $('#taVoiceIn');
-    if (!el) return { ok: false, n: 0, lines: 0 };
-    var n = voiceChunks(el.value).length;
-    var lines = voiceLineCount(el.value);
+    if (!document.querySelector('#taSamples')) return { ok: false, n: 0, lines: 0 };
+    /* 칸마다 몇 줄인지 옆에 적어준다 — 어디를 더 채워야 하는지 보이게 */
+    sampleSlots().forEach(function(x){
+      var c = x.el.querySelector('.cnt');
+      if (c) c.textContent = x.text ? voiceLineCount(x.text) + '줄' : '';
+    });
+    var all = sampleText();
+    var n = voiceChunks(all).length;
+    var lines = voiceLineCount(all);
     var ok = n >= VOICE_MIN || lines >= VOICE_LINES;
     var box = $('#taVoiceCount');
     if (box) {
@@ -2719,7 +2776,27 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     }
     return { ok: ok, n: n, lines: lines };
   }
-  $('#taVoiceIn') && $('#taVoiceIn').addEventListener('input', voiceCount);
+  document.querySelectorAll('#taSamples .body').forEach(function(el){
+    el.addEventListener('input', voiceCount);
+  });
+  voiceCount();
+
+  /* 본보기 저장 — 말투 분석과 따로다. 글만 넣어두고 분석은 나중에 할 수 있다. */
+  $('#taSampleSave') && $('#taSampleSave').addEventListener('click', function(){
+    var list = sampleSlots().filter(function(x){ return x.text; });
+    var noKind = list.filter(function(x){ return !x.kind; }).length;
+    var b = this;
+    b.disabled = true;
+    post('/api/threads/settings', {
+      samples: list.map(function(x){ return { kind: x.kind, text: x.text }; }),
+    }).then(function(r){
+      b.disabled = false;
+      if (!r.j.ok) { msg($('#taVoiceMsg'), 'err', r.j.error || '저장하지 못했습니다.'); return; }
+      msg($('#taVoiceMsg'), 'ok', '글 ' + list.length + '개를 저장했습니다.' +
+        (noKind ? String.fromCharCode(10) + '종류를 안 고른 칸이 ' + noKind +
+          '개 있습니다 — 말투에는 쓰지만 본보기로는 안 씁니다.' : ''));
+    });
+  });
 
   $('#taVoiceRun') && $('#taVoiceRun').addEventListener('click', function(){
     var c = voiceCount();
@@ -2733,7 +2810,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     var b = this;
     b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 분석 중 (30초쯤)';
     if ($('#taVoiceMsg')) $('#taVoiceMsg').innerHTML = '';
-    post('/api/threads/voice', { text: $('#taVoiceIn').value }).then(function(r){
+    /* 분석하면서 본보기도 같이 저장한다. 따로 저장을 안 눌러도 남게. */
+    var slots = sampleSlots().filter(function(x){ return x.text; });
+    post('/api/threads/settings', {
+      samples: slots.map(function(x){ return { kind: x.kind, text: x.text }; }),
+    });
+    post('/api/threads/voice', { text: sampleText() }).then(function(r){
       b.disabled = false; b.textContent = '말투 분석';
       if (!r.j.voicePack) {
         msg($('#taVoiceMsg'), 'err', (r.j.error || '분석하지 못했습니다.') + (r.j.hint ? '\n' + r.j.hint : ''));
