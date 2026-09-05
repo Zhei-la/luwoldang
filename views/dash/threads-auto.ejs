@@ -288,14 +288,19 @@
 #ta .ta-rule-act{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
 
 /* 요일 판 — 「월요일에 뭐가 올라가지」는 목록을 훑는 게 아니라 눈에 들어와야 한다 */
-#ta .ta-wk{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-#ta .ta-wk-d{flex:1;min-width:82px;border:1px solid var(--line);border-radius:10px;
-  background:#fff;padding:9px 6px;cursor:pointer;text-align:center;font:inherit;
-  transition:border-color .12s,background .12s}
+/* 일곱 칸은 **늘 한 줄**이어야 한다. 폰에서 3+3+1 로 접히면
+   요일 판이 아니라 그냥 단추 더미가 된다. */
+#ta .ta-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px}
+#ta .ta-wk-d{min-width:0;border:1px solid var(--line);border-radius:10px;
+  background:#fff;padding:9px 2px;cursor:pointer;text-align:center;font:inherit;
+  overflow:hidden;transition:border-color .12s,background .12s}
 #ta .ta-wk-d:hover{border-color:var(--ink)}
 #ta .ta-wk-d .nm{display:block;font-size:13px;font-weight:700;color:var(--ink)}
 #ta .ta-wk-d .dt{display:block;font-size:11px;color:var(--dim);margin-top:1px}
-#ta .ta-wk-d .ct{display:block;font-size:11px;margin-top:5px;color:var(--dim);min-height:14px}
+/* keep-all 이 없으면 「1개 예정」이 「1개 / 예 / 정」으로 쪼개진다.
+   한국어는 낱말 사이에서만 넘겨야 읽힌다. */
+#ta .ta-wk-d .ct{display:block;font-size:11px;margin-top:5px;color:var(--dim);
+  min-height:14px;word-break:keep-all;line-height:1.4}
 #ta .ta-wk-d.on{background:var(--ink);border-color:var(--ink)}
 #ta .ta-wk-d.on .nm,#ta .ta-wk-d.on .dt,#ta .ta-wk-d.on .ct{color:#fff}
 #ta .ta-wk-d.past{background:#fafaf8}
@@ -305,12 +310,32 @@
 #ta .ta-wk-d .ct .ok{color:var(--ok)}
 #ta .ta-wk-d .ct .no{color:#b4342a}
 #ta .ta-wk-d.on .ct .ok,#ta .ta-wk-d.on .ct .no{color:#fff}
-#ta .ta-wk-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+#ta .ta-wk-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 #ta .ta-wk-nav .lbl{font-size:14px;font-weight:700}
-/* 아직 글이 안 만들어진 자리 */
-#ta .ta-slot{border:1px dashed var(--line);border-radius:12px;padding:13px 16px;
-  margin-bottom:12px;background:#fcfcfa;font-size:14px;color:var(--dim);line-height:1.7}
-#ta .ta-slot b{color:var(--ink)}
+#ta .ta-wk-nav .push{margin-left:auto}
+/* 폰에서는 칸이 50px 남짓이다. 요일과 날짜만 남기고 줄인다. */
+@media (max-width:560px){
+  #ta .ta-wk{gap:3px}
+  #ta .ta-wk-d{padding:7px 1px;border-radius:8px}
+  #ta .ta-wk-d .nm{font-size:12px}
+  #ta .ta-wk-d .dt{font-size:10px}
+  #ta .ta-wk-d .ct{font-size:10px;line-height:1.35;margin-top:4px}
+  #ta .ta-wk-nav .ta-btn{padding:6px 9px;font-size:12px}
+  #ta .ta-wk-nav .lbl{font-size:13px}
+  /* 「새로 불러오기」를 오른쪽 끝으로 밀면 폰에서 한 줄을 통째로 잡아먹는다 */
+  #ta .ta-wk-nav .push{margin-left:0}
+  /* 「1개 예정」은 세 줄로 쪼개진다. 좁으면 숫자만 남긴다 —
+     예정이라는 것은 바로 아래 글칸이 말해준다. */
+  #ta .ta-wk-d .ct .wide{display:none}
+}
+/* 아직 글이 안 만들어진 자리.
+   ⚠️ ta-slot 은 위 규칙 편집기의 요일 칸이 쓰고 있다 (display:inline-flex).
+      그 이름을 그대로 쓰면 글자가 칸칸이 쪼개져 읽을 수가 없다. */
+#ta .ta-hold{border:1px dashed var(--line);border-radius:12px;padding:13px 16px;
+  margin-bottom:12px;background:#fcfcfa;font-size:14px;color:var(--dim);line-height:1.75;
+  word-break:keep-all}
+#ta .ta-hold b{color:var(--ink);font-weight:700}
+#ta .ta-hold .sub{display:block;margin-top:6px;font-size:13px}
 /* 왜 자동으로 안 올라가는지 */
 #ta .ta-why{margin-top:10px;font-size:13px;line-height:1.7;border-radius:8px;padding:9px 12px}
 #ta .ta-why.no{background:#fdf3f2;color:#8f2a22}
@@ -506,8 +531,7 @@
         <button class="ta-btn ghost sm" type="button" id="taWkPrev">‹ 지난주</button>
         <span class="lbl" id="taWkLabel">이번 주</span>
         <button class="ta-btn ghost sm" type="button" id="taWkNext">다음주 ›</button>
-        <button class="ta-btn ghost sm" type="button" id="taUpRefresh"
-          style="margin-left:auto">새로 불러오기</button>
+        <button class="ta-btn ghost sm push" type="button" id="taUpRefresh">새로 불러오기</button>
       </div>
       <div class="ta-wk" id="taWeek"></div>
       <div id="taUpcoming"><div class="ta-empty">불러오는 중…</div></div>
@@ -2228,18 +2252,16 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       var fail = posts.filter(function(p){ return p.status === 'failed'; }).length;
       var wait = posts.length - up - fail;
 
-      /* 지난 요일은 「올라갔나 아닌가」만 알면 된다.
-         남은 요일은 「몇 개 나가나」가 궁금하다. */
-      var ct;
-      if (past) {
-        ct = up ? '<span class="ok">✓ ' + up + '개 올라감</span>'
-           : (posts.length || slots.length) ? '<span class="no">안 올라감</span>' : '';
-      } else {
-        var cnt = wait + slots.length;
-        ct = cnt ? '<b>' + cnt + '개</b> 예정' : '';
-        if (up) ct = '<span class="ok">✓ ' + up + '</span>' + (cnt ? ' · ' + cnt + '개 예정' : ' 올라감');
-      }
-      if (fail) ct += (ct ? ' · ' : '') + '<span class="no">실패 ' + fail + '</span>';
+      /* 칸 하나가 폰에서 50픽셀 남짓이다. 여기엔 **한 마디만** 넣는다.
+         자세한 것은 요일을 눌렀을 때 아래에서 보면 된다.
+         지난 요일은 「올라갔나」, 남은 요일은 「몇 개 나가나」. */
+      var cnt = wait + slots.length;
+      var ct = '';
+      if (fail)            ct = '<span class="no">실패 ' + fail + '</span>';
+      else if (up)         ct = '<span class="ok">✓ ' + up + '개</span>';
+      else if (past)       ct = (posts.length || slots.length)
+                                ? '<span class="no">안 올림</span>' : '';
+      else if (cnt)        ct = '<b>' + cnt + '개</b><span class="wide"> 예정</span>';
 
       html += '<button type="button" class="ta-wk-d' +
         (WK_DAY === n ? ' on' : '') + (past ? ' past' : '') +
@@ -2260,10 +2282,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
   /** 아직 글이 안 만들어진 자리. 「빈 날」과 구별되어야 한다. */
   function slotHtml(x){
-    return '<div class="ta-slot"><b>' + esc(whenFull(x.slotAt)) + '</b> — 자리는 잡혀 있습니다' +
-      (x.formLabel ? ' · ' + esc(x.formLabel) : '') +
-      (x.ruleName ? ' · ' + esc(x.ruleName) : '') +
-      '<br>글은 <b>올라가기 36시간 전</b>에 만들어집니다. 그때 여기에 보입니다.</div>';
+    var tag = [x.formLabel, x.ruleName].filter(Boolean).map(esc).join(' · ');
+    return '<div class="ta-hold">' +
+      '<b>' + esc(whenFull(x.slotAt)) + '</b> — 자리는 잡혀 있습니다' +
+      (tag ? ' · ' + tag : '') +
+      '<span class="sub">글은 <b>올라가기 36시간 전</b>에 만들어집니다. ' +
+      '그때 여기에 보입니다.</span></div>';
   }
 
   function drawDay(){

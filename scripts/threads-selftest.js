@@ -789,8 +789,13 @@ t('짝을 맞출 이름표가 있다', /function planKeyOf\(/.test(routeSrc), tr
 t('요일 단추를 그린다', viewSrc.indexOf('ta-wk-d') > 0, true);
 t('주를 앞뒤로 넘긴다', viewSrc.indexOf('taWkPrev') > 0 && viewSrc.indexOf('taWkNext') > 0, true);
 t('오늘을 표시한다', viewSrc.indexOf("' today'") > 0, true);
-t('지난 요일은 올라갔는지 말한다', viewSrc.indexOf('안 올라감') > 0, true);
-t('안 만든 자리를 따로 그린다', viewSrc.indexOf('ta-slot') > 0, true);
+t('지난 요일은 올라갔는지 말한다', viewSrc.indexOf('안 올림') > 0, true);
+/* 폰에서는 칸이 50픽셀 남짓이다 — 낱말 사이에서만 넘겨야 읽힌다 */
+t('글자가 쪼개지지 않게 한다', viewSrc.indexOf('word-break:keep-all') > 0, true);
+t('일곱 칸이 늘 한 줄이다', viewSrc.indexOf('grid-template-columns:repeat(7,1fr)') > 0, true);
+/* ta-slot 은 규칙 편집기 요일 칸이 이미 쓰는 이름이다 (inline-flex) */
+t('이름이 겹치지 않는다', /class="ta-slot"><b>/.test(viewSrc), false);
+t('안 만든 자리를 따로 그린다', viewSrc.indexOf('ta-hold') > 0, true);
 t('36시간 전에 만든다고 알려준다', viewSrc.indexOf('올라가기 36시간 전') > 0, true);
 
 
