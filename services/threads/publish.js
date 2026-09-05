@@ -60,7 +60,9 @@ async function readyToSend(userId, post, opts) {
         여러 계정에 같은 글을 뿌리는 것은 스레드가 스팸으로 보는 모양이다.
         어느 길로 오든 여기서 걸린다. */
   try {
-    const twin = await dupe.findTwin(userId, post);
+    /* 어느 계정으로 나갈지 알려줘야 「같은 계정인가」를 가릴 수 있다.
+       원고에는 계정이 안 새겨져 있어서 여기서 붙여준다. */
+    const twin = await dupe.findTwin(userId, Object.assign({}, post, { accountId: acc.id }));
     if (twin) return { ok: false, why: dupe.why(twin, acc.username) };
   } catch (e) {
     /* 못 봤다고 못 올리게 하면 더 답답하다. 검사만 건너뛴다. */

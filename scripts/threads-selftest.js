@@ -998,9 +998,24 @@ t('옮기는 게 낫습니다', warn('가을에 옮기는 게 낫습니다'), tr
 t('하십시오', warn('가을까지 기다리십시오'), true);
 t('이렇게 하면 됩니다', warn('이렇게 하면 됩니다'), true);
 t('방향만 잡으면', warn('방향만 잡으면 됩니다'), true);
+/* ⚠️ 위는 전부 존댓말이다. 반말·음슴체로 쓰는 계정은 이렇게 닫는데
+   하나도 안 걸려서 경고형이 통째로 자동에서 막혔다.
+   본인 말투가 반말이면 해결 문장도 반말로 나온다. */
+t('버텨봐', warn('가을까지만 버텨봐'), true);
+t('띄어 써도 (버텨 봐)', warn('가을까지만 버텨 봐'), true);
+t('댓글 남겨봐', warn('본인 띠 있으면 댓글 남겨봐'), true);
+t('한 번 더 생각할 것', warn('한 번 더 생각할 것'), true);
+t('서두르지 말자', warn('급하게 결정하지 말자'), true);
+t('기다리는 게 좋음', warn('오늘은 기다리는 게 좋음'), true);
+t('말하면 됨', warn('한 번 삼키고 말하면 됨'), true);
+t('서두르지 않는 게 나음', warn('서두르지 않는 게 나음'), true);
+t('조심하면 됨', warn('조심하면 됨'), true);
+
 /* 길을 안 알려주고 겁만 주고 끝내면 여전히 막아야 한다 */
 t('겁만 주고 끝나면 막는다', warn('올해는 조심할 일이 많습니다'), false);
 t('나쁘다고만 하면 막는다', warn('좋지 않은 해입니다'), false);
+t('반말로 겁만 줘도 막는다', warn('올해는 조심할 일이 많음'), false);
+t('나쁘다고만 하는 반말도 막는다', warn('좋지 않은 해임'), false);
 
 /* 실제로 쓰는 일곱 가지 글 모양이 다 통과하는지 —
    하나라도 막히면 그 틀은 자동으로 영영 안 나간다. */
@@ -1354,12 +1369,20 @@ t('띠·후킹을 바꾸면 다른 글',
     .replace('오늘 잘 풀리는 사람은', '오늘은 사람 관계에서')) < DUP.SAME_ENOUGH, true);
 t('빈 글은 안 걸린다', DUP.similarity('', dayA), 0);
 t('공백·부호는 걷어낸다', DUP.normalize('가 나.  다!'), '가나다');
-t('숫자도 걷어낸다', DUP.normalize('9월 6일'), '월일');
+/* ⚠️ 예전엔 숫자까지 걷어냈다. 그러면 날마다 나가는 운세가 서로
+   같은 글이 되어 다음 날 글이 막힌다. 날짜는 남겨둔다. */
+t('날짜는 남겨둔다', DUP.normalize('9월 6일'), '9월6일');
+t('날짜만 달라도 아주 닮았다', DUP.similarity(dayA, dayB) >= 0.9, true);
+/* 문턱이 하나면 멀쩡한 다음 날 운세가 막힌다 —
+   다른 계정이면 조이고, 같은 계정이면 느슨하게 본다 */
+t('같은 계정 문턱이 더 높다', DUP.SAME_ACCOUNT > DUP.SAME_ENOUGH, true);
 
 /* 어느 길로 오든 여기서 걸려야 한다 */
 const pubSrc3 = require('fs')
   .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'publish.js'), 'utf8');
-t('내보내기 전에 본다', pubSrc3.indexOf('dupe.findTwin(userId, post)') > 0, true);
+t('내보내기 전에 본다', pubSrc3.indexOf('dupe.findTwin(userId, Object.assign(') > 0, true);
+/* 원고에는 계정이 안 새겨져 있다 — 나갈 계정을 붙여줘야 가릴 수 있다 */
+t('나갈 계정을 붙여 넘긴다', pubSrc3.indexOf('{ accountId: acc.id }') > 0, true);
 t('막을 때 이유를 준다', pubSrc3.indexOf('dupe.why(twin, acc.username)') > 0, true);
 /* 검사가 터졌다고 못 올리게 하면 더 답답하다 */
 t('검사가 터져도 막지는 않는다', pubSrc3.indexOf('같은 글 검사 실패') > 0, true);

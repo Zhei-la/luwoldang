@@ -16,18 +16,28 @@ const { pool } = require('../../db');
 
 /* 며칠치를 되돌아볼지. 운세는 날마다 다르니 사흘이면 넉넉하다. */
 const LOOKBACK_DAYS = 3;
-/* 이만큼 닮았으면 같은 글로 본다. 날짜 한 줄만 다른 것도 같은 글이다. */
-const SAME_ENOUGH = 0.9;
+/* 이만큼 닮았으면 같은 글로 본다.
+ *
+ * ⚠️ 문턱이 하나뿐이면 **멀쩡한 다음 날 운세가 막힌다.**
+ *    오늘의 운세는 틀이 같고 띠만 바뀌어서, 이틀 사이가 89% 까지 나온다.
+ *    막아야 하는 것은 「같은 글이 두 계정에 뿌려지는 것」이고,
+ *    한 계정에서 날마다 띠가 바뀌는 것은 막을 일이 아니다.
+ *    그래서 **다른 계정이면 조이고, 같은 계정이면 느슨하게** 본다. */
+const SAME_ENOUGH = 0.9;        // 다른 계정 — 뿌리기를 막는다
+const SAME_ACCOUNT = 0.97;      // 같은 계정 — 사실상 똑같을 때만
 
 /**
  * 견줄 수 있게 글을 다듬는다.
  *
- * 공백·줄바꿈·문장부호를 걷어낸다. 「9월 6일」처럼 날짜만 다른 글을
- * 다른 글로 보면 막을 수가 없다 — 숫자도 걷어낸다.
+ * 공백·줄바꿈·문장부호를 걷어낸다.
+ *
+ * ⚠️ 예전엔 숫자까지 걷어냈다. 「9월 6일」과 「9월 7일」을 같은 글로 보려던
+ *    것인데, 그러면 **날마다 나가는 운세가 서로 같은 글이 되어** 다음 날
+ *    글이 막힌다. 날짜는 남겨둔다 — 같은 날 두 계정에 뿌리는 것은
+ *    날짜까지 똑같으니 그래도 걸린다.
  */
 function normalize(text) {
   return String(text == null ? '' : text)
-    .replace(/[0-9]+/g, '')
     .replace(/[\s​]+/g, '')
     .replace(/[.,!?·…—–\-~()[\]{}"'「」『』:;]/g, '')
     .trim();
@@ -66,7 +76,7 @@ async function findTwin(userId, post) {
   if (!normalize(body)) return null;
 
   const { rows } = await pool.query(
-    `SELECT id, parts, status, account_name, scheduled_for, published_at, slot_at
+    `SELECT id, parts, status, account_id, account_name, scheduled_for, published_at, slot_at
        FROM th_posts
       WHERE user_id = $1
         AND id <> $2
@@ -77,10 +87,13 @@ async function findTwin(userId, post) {
     [userId, post.id || '', String(LOOKBACK_DAYS)]
   );
 
+  const myAcct = post.accountId || null;
   for (const r of rows) {
     const other = (r.parts || []).join(String.fromCharCode(10));
     const score = similarity(body, other);
-    if (score >= SAME_ENOUGH) {
+    /* 같은 계정끼리는 사실상 똑같을 때만 막는다 */
+    const same = myAcct && r.account_id && Number(r.account_id) === Number(myAcct);
+    if (score >= (same ? SAME_ACCOUNT : SAME_ENOUGH)) {
       return {
         id: r.id,
         status: r.status,
@@ -106,4 +119,5 @@ function why(twin, myAccountName) {
     ' 「글 재생성」으로 다시 만들거나 「수정하기」로 고쳐주세요.';
 }
 
-module.exports = { findTwin, why, similarity, normalize, LOOKBACK_DAYS, SAME_ENOUGH };
+module.exports = { findTwin, why, similarity, normalize,
+  LOOKBACK_DAYS, SAME_ENOUGH, SAME_ACCOUNT };
