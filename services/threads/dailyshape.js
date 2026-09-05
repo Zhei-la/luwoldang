@@ -61,6 +61,46 @@ function outline(text) {
   };
 }
 
+/* 간지 — 「계미일」·「을유일」처럼 적힌 자리를 찾는다 */
+const STEMS = '갑을병정무기경신임계';
+const BRANCHES = '자축인묘진사오미신유술해';
+const GANJI_RE = new RegExp('[' + STEMS + '][' + BRANCHES + ']\\s*일');
+
+/** 이 글에 일진이 적혀 있나 */
+function hasGanji(text) { return GANJI_RE.test(String(text || '')); }
+
+/** 앞뒤 빈 줄을 뺀 첫 줄 */
+function firstLine(text) {
+  const ls = String(text == null ? '' : text).trim().split(NL);
+  return (ls[0] || '').trim();
+}
+
+/**
+ * 틀을 **줄 번호가 붙은 차례표**로 바꾼다.
+ *
+ * ⚠️ 줄 수만 알려주면 순서가 바뀐다. 첫 줄이 후킹인데 모델이 거기에
+ *    일진을 밀어넣어 「오늘은 을유일」로 시작한 적이 있다. 그렇게 시작하면
+ *    아무도 안 읽는다 — 첫 줄은 걸어야 하는 자리다.
+ *    몇 번째 줄이 무엇인지 하나씩 못 박아야 순서가 지켜진다.
+ */
+function skeleton(text) {
+  const raw = String(text == null ? '' : text).trim().split(NL);
+  return raw.map((line, i) => {
+    const t = line.trim();
+    const n = (i + 1) + '줄';
+    if (!t) return '  ' + n + ': (빈 줄)';
+    if (LEAD_EMOJI.test(t)) {
+      return '  ' + n + ': 이모지로 시작 — 「' + t + '」';
+    }
+    if (/\d+\s*월\s*\d+\s*일/.test(t)) {
+      return '  ' + n + ': 날짜 줄 — 「' + t + '」 (날짜만 이 날 것으로 바꿉니다)';
+    }
+    if (hasGanji(t)) return '  ' + n + ': 일진 줄 — 「' + t + '」';
+    if (i === 0) return '  ' + n + ': **후킹** — 「' + t + '」 (걸어야 하는 자리. 여기를 일진으로 바꾸지 마세요)';
+    return '  ' + n + ': 글 — 「' + t + '」';
+  }).join(NL);
+}
+
 /**
  * 틀을 프롬프트에 넣을 「설계도」로 바꾼다.
  *
@@ -90,6 +130,11 @@ function blueprint(body) {
       (o.tone === '음슴체'
         ? '「~있음」·「~함」으로 끝냅니다. 「~입니다」로 바꾸지 마세요.'
         : '끝맺음을 바꾸지 마세요.'));
+  }
+  /* ⚠️ 틀에 일진이 없는데 모델이 첫 줄에 넣어버린 적이 있다.
+        없으면 없다고 못 박아야 안 넣는다. */
+  if (!hasGanji(body)) {
+    out.push('⚠️ 이 틀에는 **일진(계미일 같은 것)이 없습니다.** 넣지 마세요.');
   }
   return out;
 }
@@ -139,6 +184,25 @@ function check(templateBody, madeBody) {
         '설명을 덧붙이지 말고 틀만큼만 적으세요.',
     };
   }
+  /* ⚠️ 첫 줄은 걸어야 하는 자리다.
+        「일진을 그대로 쓰라」고 일러줬더니 모델이 **첫 줄을 일진으로 바꿔**
+        「오늘은 을유일」로 시작한 적이 있다. 그렇게 시작하면 아무도 안 읽는다. */
+  if (!hasGanji(firstLine(templateBody)) && hasGanji(firstLine(madeBody))) {
+    return {
+      ok: false,
+      why: '첫 줄이 일진(「' + firstLine(madeBody) + '」)으로 바뀌었습니다. ' +
+        '틀의 첫 줄은 후킹입니다 — 「' + firstLine(templateBody) + '」 자리입니다. ' +
+        '일진으로 글을 시작하지 마세요.',
+    };
+  }
+  /* 틀에 아예 없는 일진을 넣어버린 경우 */
+  if (!hasGanji(templateBody) && hasGanji(madeBody)) {
+    return {
+      ok: false,
+      why: '틀에 없는 일진이 들어갔습니다. 이 틀은 일진을 적지 않습니다.',
+    };
+  }
+
   /* 말투 */
   if (a.tone && b.tone && a.tone !== b.tone) {
     return {
@@ -160,4 +224,4 @@ function needsTwo(daily) {
   return d.mode === 'chain' && !!String(d.tail || '').trim();
 }
 
-module.exports = { outline, blueprint, check, needsTwo, tone };
+module.exports = { outline, blueprint, skeleton, check, needsTwo, tone, hasGanji, firstLine };

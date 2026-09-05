@@ -1297,6 +1297,56 @@ t('뭉뚱그린 말을 막는다', blk.indexOf('근거 없는 말을 셋 모두�
 /* ⚠️ filter(Boolean) 을 쓰면 빈 줄이 지워져 지시가 한 벽이 된다 */
 t('덩어리 사이가 붙지 않는다', blk.split(LF2).filter(function (l) { return !l.trim(); }).length >= 4, true);
 
+/* ── 첫 줄은 후킹 자리 ──
+   ⚠️ 「일진을 그대로 쓰라」고 일러줬더니 모델이 첫 줄을 일진으로 바꿔
+      「오늘은 을유일」로 시작했다. 그렇게 시작하면 아무도 안 읽는다.
+      틀 첫 줄은 걸어야 하는 자리다. */
+const HOOK_TPL = ['오늘 잘 풀리는 사람은', '사람이든 일이든 먼저 신호가 올 수 있음', '',
+  '9월 5일 오늘의 운세', '', '🍀 운 좋은 띠', '🐑 양띠', '🐯 호랑이띠'].join(LF);
+const HOOK_BAD = ['오늘은 을유일', '사람이든 일이든 먼저 움직일수록 갈림', '',
+  '9월 8일 오늘의 운세', '', '🍀 운 좋은 띠', '🐲 용띠', '🐍 뱀띠'].join(LF);
+const HOOK_OK = ['오늘은 사람 관계에서', '선명하게 정리되는 게 생길 수 있는 날', '',
+  '9월 8일 오늘의 운세', '', '🍀 운 좋은 띠', '🐲 용띠', '🐍 뱀띠'].join(LF);
+
+t('일진을 알아본다', DS.hasGanji('오늘은 을유일'), true);
+t('띄어 써도 알아본다', DS.hasGanji('오늘은 계미 일'), true);
+t('보통 말은 일진이 아니다', DS.hasGanji('오늘은 사람 관계에서'), false);
+t('첫 줄을 일진으로 바꾸면 잡는다', DS.check(HOOK_TPL, HOOK_BAD).ok, false);
+t('후킹 자리라고 말해준다',
+  DS.check(HOOK_TPL, HOOK_BAD).why.indexOf('첫 줄은 후킹입니다') > 0, true);
+t('틀의 첫 줄을 보여준다',
+  DS.check(HOOK_TPL, HOOK_BAD).why.indexOf('오늘 잘 풀리는 사람은') > 0, true);
+t('후킹으로 시작하면 통과', DS.check(HOOK_TPL, HOOK_OK).ok, true);
+/* 틀이 일진으로 시작하는 사람이면 그건 그대로 둬야 한다 */
+const GANJI_TPL = ['오늘은 계미일', '', '9월 5일 오늘의 운세', '', '🍀 운 좋은 띠', '🐑 양띠'].join(LF);
+t('원래 일진으로 시작하는 틀은 안 막는다',
+  DS.check(GANJI_TPL, ['오늘은 을유일', '', '9월 8일 오늘의 운세', '', '🍀 운 좋은 띠', '🐲 용띠'].join(LF)).ok,
+  true);
+/* 틀에 아예 없는 일진을 넣는 것도 막는다 */
+t('틀에 없는 일진을 넣으면 잡는다',
+  DS.check(HOOK_TPL, HOOK_OK + LF + '오늘은 을유일이라').ok, false);
+
+/* 줄 차례를 번호로 못 박아야 순서가 지켜진다 */
+const skel = DS.skeleton(HOOK_TPL);
+t('줄마다 번호를 붙인다', skel.indexOf('1줄:') === 2, true);
+t('첫 줄을 후킹이라고 이름 붙인다', skel.indexOf('**후킹**') > 0, true);
+t('일진으로 바꾸지 말라고 적는다', skel.indexOf('여기를 일진으로 바꾸지 마세요') > 0, true);
+t('날짜 줄을 알아본다', skel.indexOf('날짜 줄') > 0, true);
+t('빈 줄도 자리로 센다', skel.indexOf('(빈 줄)') > 0, true);
+t('이모지 줄을 알아본다', skel.indexOf('이모지로 시작') > 0, true);
+/* 틀에 일진이 없으면 없다고 못 박아야 안 넣는다 */
+t('일진 없는 틀이라고 알려준다',
+  DS.blueprint(HOOK_TPL).join(LF).indexOf('일진(계미일 같은 것)이 없습니다') > 0, true);
+
+const P2 = require(require('path').join(__dirname, '..', 'services', 'threads', 'prompt'));
+const hookBlock = P2.dailyBlock({ body: HOOK_TPL, mode: 'single' });
+t('줄 차례가 프롬프트에 실린다', hookBlock.indexOf('줄 차례 (이 순서 그대로)') > 0, true);
+t('순서를 바꾸지 말라고 적는다', hookBlock.indexOf('줄 차례를 바꾸지 마세요') > 0, true);
+/* 날짜 덩어리도 첫 줄을 건드리지 말라고 해야 한다 */
+const T3 = require(require('path').join(__dirname, '..', 'services', 'threads', 'today'));
+t('일진은 틀이 적는 자리에만',
+  T3.block(new Date('2026-09-08T05:00:00+09:00')).indexOf('일진으로 글을 시작하지 마세요') > 0, true);
+
 /* ── 이미 만들어둔 글 ──
    ⚠️ 띠를 계산으로 정하기 전에 만든 글이 그대로 남아 있다.
       「예약됨」이면 Zernio 가 들고 있어서 **그대로 나간다.**

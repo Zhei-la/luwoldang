@@ -171,6 +171,8 @@ function dailyBlock(daily) {
     '새로 쓰는 게 아닙니다. 같은 틀에 오늘 것을 채워 넣는 것입니다.',
     '',
     '- 머리말·꼬리말·이모지·구분선이 있으면 **그 자리에 그대로** 둡니다.',
+    '- **줄 차례를 바꾸지 마세요.** 첫 줄은 걸어야 하는 자리입니다 —',
+    '  거기에 일진이나 날짜를 밀어넣으면 아무도 안 읽습니다.',
     '- 띠·일간별로 갈라 쓰는 틀이면 **그 개수까지 맞추세요.** 셋을 꼽았으면 셋입니다.',
     '- 날짜와 일진은 위 「이 글이 올라갈 날」의 값을 씁니다. 지어내지 마세요.',
     '- 1/2 · 2/2 같은 번호는 **적지 마세요.** 시스템이 붙입니다.',
@@ -183,6 +185,12 @@ function dailyBlock(daily) {
   ]
     .concat(shape.blueprint(body).map((x) => '  ' + x))
     .concat([
+      '',
+      /* ⚠️ 줄 수만 알려주면 순서가 바뀐다. 첫 줄이 후킹인데 모델이 거기에
+            일진을 밀어넣어 「오늘은 을유일」로 시작한 적이 있다.
+            몇 번째 줄이 무엇인지 하나씩 못 박아야 순서가 지켜진다. */
+      '── 줄 차례 (이 순서 그대로) ──',
+      shape.skeleton(body),
       '',
       '--- 1편 (본문) ---',
       body,
@@ -199,6 +207,9 @@ function dailyBlock(daily) {
     lines.push('');
     lines.push('── 2편의 치수 ──');
     shape.blueprint(tail).forEach((x) => lines.push('  ' + x));
+    lines.push('');
+    lines.push('── 2편 줄 차례 (이 순서 그대로) ──');
+    lines.push(shape.skeleton(tail));
   } else if (tail && mode === 'reply') {
     lines.push('');
     lines.push('--- 첫 댓글 ---');
