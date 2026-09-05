@@ -289,11 +289,12 @@ function slotLabel(slot) {
  * 화면에서 바로 보여야 한다.
  *
  * ctx = { hasKey, allowPublish, hasAccount, filled }
- *   filled — 앞으로 36시간 안에 이미 채워둔 자리 개수
+ *   filled — 앞으로 일주일 안에 이미 채워둔 자리 개수
  */
 function diagnose(rule, ctx) {
   const c = ctx || {};
-  const soon = upcoming(rule, 36).length;
+  /* 일주일치를 미리 채운다. 36시간만 보면 요일 판에 이틀치만 뜬다. */
+  const soon = plan(rule, 7).length;
 
   if (!rule.enabled) return { ok: false, why: '꺼져 있습니다. 위 「켜기」를 체크해주세요.' };
   if (!(rule.slots || []).length) return { ok: false, why: '올릴 자리가 없습니다. 요일과 시각을 더해주세요.' };
@@ -307,10 +308,10 @@ function diagnose(rule, ctx) {
     return { ok: false, why: '올리기가 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
   }
   if (!soon) {
-    return { ok: true, why: '앞으로 36시간 안에 올릴 자리가 없습니다. 그 자리가 다가오면 만듭니다.' };
+    return { ok: true, why: '앞으로 일주일 안에 올릴 자리가 없습니다. 그 자리가 다가오면 만듭니다.' };
   }
   if (c.filled >= soon) {
-    return { ok: true, why: '앞으로 36시간치를 이미 다 만들어뒀습니다. 아래에서 확인하세요.' };
+    return { ok: true, why: '일주일치를 이미 다 만들어뒀습니다. 아래 요일 판에서 확인하세요.' };
   }
   return { ok: true, why: '다음 확인 때 ' + (soon - c.filled) + '개를 만듭니다. (5분마다 돕니다)' };
 }

@@ -3,7 +3,7 @@
  *
  * 발행 시각에 글을 만들지 않는다. 만드는 데 20~45초가 걸리고,
  * 그때 OpenAI 가 한 번 튕기면 그 자리를 통째로 놓친다.
- * 그래서 **앞으로 36시간치를 미리 만들어 Zernio 에 예약을 걸어둔다.**
+ * 그래서 **앞으로 일주일치를 미리 만들어 Zernio 에 예약을 걸어둔다.**
  * 걸어두면 우리 서버가 꺼져 있어도 시간이 되면 Zernio 가 올린다.
  *
  * 같은 자리에 두 번 만들지 않는 것이 제일 중요하다.
@@ -19,8 +19,18 @@ const pipeline = require('./pipeline');
 const topicsLib = require('./topics');
 const publish = require('./publish');
 
-const LOOKAHEAD_H = 36;      // 앞으로 몇 시간치를 미리 채울지
-const PER_TICK = 3;          // 한 번에 몇 자리까지. 요금이 한꺼번에 나가면 안 된다
+/* 앞으로 며칠치를 미리 채울지.
+ *
+ * ⚠️ 예전엔 36시간이었다. 그러면 요일 판에 이틀치만 뜬다 —
+ *    일곱 요일을 다 잡아뒀는데 「왜 월요일만 보이냐」가 된다.
+ *    일주일치를 늘 채워두면, 하루가 지날 때마다 그 다음 날 자리가
+ *    저절로 하나 붙어 **손을 안 대도 일주일이 늘 차 있다.** */
+const LOOKAHEAD_DAYS = 7;
+const LOOKAHEAD_H = LOOKAHEAD_DAYS * 24;   // 예전 이름을 쓰던 곳이 있어 남겨둔다
+/* 한 번에 몇 자리까지. 요금이 한꺼번에 나가면 안 된다.
+   일주일치 일곱 자리를 처음 채울 땐 5분씩 세 바퀴면 다 찬다.
+   그 뒤로는 하루에 하나씩만 새로 생긴다. */
+const PER_TICK = 3;
 
 /**
  * 이 자리에 이미 글이 있나.
@@ -129,7 +139,9 @@ async function runRule(rule) {
     console.error('[스레드] 지난 자리 밀기 실패:', e.message);
   }
 
-  const slots = rules.upcoming(rule, LOOKAHEAD_H);
+  /* upcoming() 은 슬롯마다 「다음 한 번」만 준다.
+     일주일을 채우려면 되풀이되는 것까지 펴야 한다. */
+  const slots = rules.plan(rule, LOOKAHEAD_DAYS);
   let cursor = rule.cursor || 0;
 
   for (const s of slots) {
@@ -223,4 +235,4 @@ async function tick() {
   return out;
 }
 
-module.exports = { tick, runRule, rollForward, LOOKAHEAD_H, PER_TICK };
+module.exports = { tick, runRule, rollForward, LOOKAHEAD_DAYS, LOOKAHEAD_H, PER_TICK };

@@ -336,6 +336,9 @@
   word-break:keep-all}
 #ta .ta-hold b{color:var(--ink);font-weight:700}
 #ta .ta-hold .sub{display:block;margin-top:6px;font-size:13px}
+/* 꺼진 규칙 자리 — 조용히 비면 「왜 안 보이지」가 된다 */
+#ta .ta-hold.off{border-color:#e3c9c5;background:#fdf6f5}
+#ta .ta-hold.off b{color:#8f2a22}
 /* 왜 자동으로 안 올라가는지 */
 #ta .ta-why{margin-top:10px;font-size:13px;line-height:1.7;border-radius:8px;padding:9px 12px}
 #ta .ta-why.no{background:#fdf3f2;color:#8f2a22}
@@ -504,8 +507,9 @@
     <div class="ta-card">
       <h2>자동 올리기</h2>
       <p class="ta-sub">요일과 시각을 정해두면 <b>그 자리에 맞춰 글을 미리 만들어 예약</b>해둡니다.
-        발행 시각에 만들지 않고 <b>36시간 앞서</b> 만들어 걸어두기 때문에,
-        이 사이트가 꺼져 있어도 시간이 되면 올라갑니다.</p>
+        <b>일주일치를 늘 채워둡니다.</b> 하루가 지나면 그 다음 날 자리가 저절로 하나 붙어서,
+        손을 안 대도 앞으로 일주일이 늘 차 있습니다.
+        발행 시각에 만들지 않고 미리 걸어두기 때문에, 이 사이트가 꺼져 있어도 시간이 되면 올라갑니다.</p>
 
       <div class="ta-warn-box">
         <b class="bang">!</b>
@@ -2057,7 +2061,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         if (!r.j.ok) { msg(box.querySelector('.msg'), 'err', r.j.error); return; }
         msg(box.querySelector('.msg'), r.j.made ? 'ok' : 'err',
           r.j.made ? r.j.made + '개를 만들어 걸었습니다. 「내 원고」에서 보세요.'
-                   : (r.j.errors[0] || '앞으로 36시간 안에 빈 자리가 없습니다.'));
+                   : (r.j.errors[0] || '앞으로 일주일 안에 빈 자리가 없습니다.'));
       });
     });
   }
@@ -2247,6 +2251,8 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       var posts = UP_POSTS.filter(function(p){ return dayIndex(p.slotAt, base) === n; });
       var slots = UP_SLOTS.filter(function(x){ return dayIndex(x.slotAt, base) === n; });
       var past  = d.getTime() < today.getTime();
+      /* 규칙이 꺼져 있으면 칸이 조용히 빈다. 그러면 「왜 안 보이지」가 된다. */
+      var off   = slots.length && slots.every(function(x){ return x.off; });
 
       var up   = posts.filter(function(p){ return p.status === 'published'; }).length;
       var fail = posts.filter(function(p){ return p.status === 'failed'; }).length;
@@ -2261,6 +2267,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       else if (up)         ct = '<span class="ok">✓ ' + up + '개</span>';
       else if (past)       ct = (posts.length || slots.length)
                                 ? '<span class="no">안 올림</span>' : '';
+      else if (off)        ct = '<span class="no">규칙 꺼짐</span>';
       else if (cnt)        ct = '<b>' + cnt + '개</b><span class="wide"> 예정</span>';
 
       html += '<button type="button" class="ta-wk-d' +
@@ -2283,11 +2290,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   /** 아직 글이 안 만들어진 자리. 「빈 날」과 구별되어야 한다. */
   function slotHtml(x){
     var tag = [x.formLabel, x.ruleName].filter(Boolean).map(esc).join(' · ');
-    return '<div class="ta-hold">' +
-      '<b>' + esc(whenFull(x.slotAt)) + '</b> — 자리는 잡혀 있습니다' +
+    return '<div class="ta-hold' + (x.off ? ' off' : '') + '">' +
+      '<b>' + esc(whenFull(x.slotAt)) + '</b> — ' +
+      (x.off ? '자리는 잡혔지만 <b>안 나갑니다</b>' : '자리는 잡혀 있습니다') +
       (tag ? ' · ' + tag : '') +
-      '<span class="sub">글은 <b>올라가기 36시간 전</b>에 만들어집니다. ' +
-      '그때 여기에 보입니다.</span></div>';
+      '<span class="sub">' + esc(x.note || '글은 그 자리가 일주일 안에 들어오면 만들어집니다. 그때 여기에 보입니다.') +
+      '</span></div>';
   }
 
   function drawDay(){
@@ -2311,7 +2319,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       var nothing = !UP_POSTS.length && !UP_SLOTS.length;
       box.innerHTML = '<div class="ta-empty">' + (nothing
         ? '아직 예정된 글이 없습니다.<br>' +
-          '규칙을 켜두면 <b>5분 안에</b> 확인해서 36시간 앞에서부터 채웁니다.<br>' +
+          '규칙을 켜두면 <b>5분 안에</b> 확인해서 <b>일주일치</b>를 채웁니다.<br>' +
           '<span class="ta-sub">지금 보고 싶으시면 위 규칙의 「지금 한 번 만들어보기」를 눌러주세요.</span>'
         : (d.getMonth()+1) + '월 ' + d.getDate() + '일 ' + DAYS[d.getDay()] + '요일에는 ' +
           '<b>잡아둔 자리가 없습니다.</b><br>' +

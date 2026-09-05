@@ -630,7 +630,7 @@ const autoSrc4 = require('fs')
 t('원고만 민다', /status = 'draft'[\s\S]{0,60}slot_at < \$3/.test(autoSrc4), true);
 /* 예약까지 걸린 글을 밀면 Zernio 가 든 것과 화면이 어긋난다 */
 t('밀기를 먼저 하고 채운다',
-  autoSrc4.indexOf('rollForward(rule)') < autoSrc4.indexOf('rules.upcoming(rule, LOOKAHEAD_H)'), true);
+  autoSrc4.indexOf('rollForward(rule)') < autoSrc4.indexOf('rules.plan(rule, LOOKAHEAD_DAYS)'), true);
 t('시각을 고칠 수 있게 열어뒀다',
   /slotAt: \['slot_at'/.test(require('fs').readFileSync(
     require('path').join(__dirname, '..', 'services', 'threads', 'store.js'), 'utf8')), true);
@@ -782,7 +782,13 @@ t('이번 주 시작을 계산한다', /function weekStart\(/.test(routeSrc), tr
 t('하루만 남기지 않는다', routeSrc.indexOf('const since = Date.now() - DAY') > 0, false);
 /* 아직 안 만든 자리도 보내야 다음 주가 빈칸으로 보이지 않는다 */
 t('안 만든 자리도 같이 보낸다', routeSrc.indexOf('slots,') > 0, true);
-t('꺼진 규칙 자리는 안 보낸다', routeSrc.indexOf('ruleList.filter((r) => r.enabled)') > 0, true);
+/* ⚠️ 꺼진 규칙을 빼버리면 요일 판이 조용히 빈다 —
+   「일곱 요일을 다 잡아놨는데 왜 아무것도 안 보이냐」가 된다.
+   자리는 보여주고 왜 안 나가는지를 그 자리에 적는다. */
+t('꺼진 규칙 자리도 보여준다', routeSrc.indexOf('ruleList.filter((r) => r.enabled)') > 0, false);
+t('꺼졌다고 표시해 보낸다', routeSrc.indexOf('off: !r.enabled') > 0, true);
+t('켜라고 알려준다', routeSrc.indexOf('「켜기」를 체크해주세요') > 0, true);
+t('화면이 꺼진 자리를 따로 그린다', viewSrc.indexOf('규칙 꺼짐') > 0, true);
 t('짝을 맞출 이름표가 있다', /function planKeyOf\(/.test(routeSrc), true);
 
 /* 화면 쪽 */
@@ -796,7 +802,35 @@ t('일곱 칸이 늘 한 줄이다', viewSrc.indexOf('grid-template-columns:repe
 /* ta-slot 은 규칙 편집기 요일 칸이 이미 쓰는 이름이다 (inline-flex) */
 t('이름이 겹치지 않는다', /class="ta-slot"><b>/.test(viewSrc), false);
 t('안 만든 자리를 따로 그린다', viewSrc.indexOf('ta-hold') > 0, true);
-t('36시간 전에 만든다고 알려준다', viewSrc.indexOf('올라가기 36시간 전') > 0, true);
+/* ⚠️ 36시간만 채우면 요일 판에 이틀치만 뜬다. 일곱 요일을 잡아놔도
+   「왜 월요일만 보이냐」가 된다. 일주일치를 늘 채워둔다. */
+t('일주일치를 채운다고 알려준다', viewSrc.indexOf('일주일치를 늘 채워둡니다') > 0, true);
+t('일주일치를 미리 만든다',
+  require(require('path').join(__dirname, '..', 'services', 'threads', 'autopost')).LOOKAHEAD_DAYS, 7);
+t('되풀이되는 자리까지 편다', autoSrc4.indexOf('rules.plan(rule, LOOKAHEAD_DAYS)') > 0, true);
+/* 하루가 지나면 창이 하루 굴러야 한다 —
+   그래야 손을 안 대도 앞으로 일주일이 늘 차 있다. */
+const everyDay = { id: 'w', jitterMin: 0,
+  slots: [0, 1, 2, 3, 4, 5, 6].map(function (d) { return { day: d, time: '05:10' }; }) };
+const kstDay = function (at) {
+  return new Date(at.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+};
+const planDays = function (n) {
+  const from = new Date(Date.UTC(2026, 8, 5, 17, 15) + n * 86400000);
+  return R.plan(everyDay, 7, from).map(function (x) { return kstDay(x.at); });
+};
+t('오늘부터 일주일이 찬다', planDays(0).length, 7);
+t('하루 지나도 일주일이 찬다', planDays(1).length, 7);
+t('창이 하루 굴러간다', planDays(1)[0], planDays(0)[1]);
+t('뒤에 하루가 붙는다', planDays(1)[6] > planDays(0)[6], true);
+t('같은 날이 두 번 안 잡힌다',
+  new Set(planDays(0)).size, 7);
+
+/* 일곱 요일을 잡아두면 일주일 안에 일곱 자리가 다 잡혀야 한다 */
+t('일곱 요일이면 일곱 자리',
+  R.plan({ id: 'w', jitterMin: 0, slots: [0, 1, 2, 3, 4, 5, 6].map(function (d) {
+    return { day: d, time: '05:10' };
+  }) }, 7).length, 7);
 
 
 /* ── 짧은 글 덩어리 나누기 ────────────────────────────

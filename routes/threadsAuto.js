@@ -68,7 +68,7 @@ async function rulesWithStatus(req) {
   const until = now + 36 * 3600 * 1000;
 
   return list.map((r) => {
-    /* 이 규칙이 앞으로 36시간 안에 이미 채워둔 자리 개수 */
+    /* 이 규칙이 앞으로 일주일 안에 이미 채워둔 자리 개수 */
     const filled = posts.filter((p) => p.ruleId === r.id && p.slotAt &&
       new Date(p.slotAt).getTime() >= now && new Date(p.slotAt).getTime() <= until).length;
     return Object.assign({}, r, {
@@ -388,7 +388,7 @@ router.post('/api/threads/rules/:id/run', ...guard, async (req, res, next) => {
 /**
  * 앞으로 올라갈 글들. 자동 규칙이 미리 만들어둔 것을 시각 순으로 보여준다.
  *
- * 36시간 앞서 만들어두기 때문에, 마음에 안 드는 글을 **올라가기 전에**
+ * 일주일 앞서 만들어두기 때문에, 마음에 안 드는 글을 **올라가기 전에**
  * 볼 수 있어야 한다. 안 그러면 자동이 아니라 도박이 된다.
  */
 router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
@@ -440,22 +440,33 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
         };
       });
     /* 아직 글이 안 만들어진 자리도 보여준다.
-       자동은 36시간 앞만 채우니, 다음 주는 늘 빈칸이 된다.
+       자동은 일주일 앞까지 채우니, 그 너머는 자리만 보여준다.
        빈칸만 보면 「예약이 안 걸렸나」 싶다 — 자리는 잡혀 있다고 알려줘야 한다. */
     const written = {};
     list.forEach((x) => { if (x.planKey) written[x.planKey] = true; });
 
+    const WEEK_MS = 7 * 24 * 3600 * 1000;
     const slots = [];
-    ruleList.filter((r) => r.enabled).forEach((r) => {
+    /* ⚠️ 꺼진 규칙을 빼버리면 요일 판이 조용히 빈다.
+          「일곱 요일을 다 잡아놨는데 왜 아무것도 안 보이냐」가 된다.
+          자리는 보여주고 **왜 안 나가는지**를 그 자리에 적는다. */
+    ruleList.forEach((r) => {
       rules.plan(r, 14).forEach((x) => {
         const key = planKeyOf(r.id, x.at, x.slot.time);
         if (written[key]) return;
         const f = x.slot.form ? FORMS.byId(x.slot.form) : null;
+        const soon = new Date(x.sendAt).getTime() - Date.now() <= WEEK_MS;
         slots.push({
           planKey: key,
           slotAt: new Date(x.sendAt).toISOString(),
           ruleName: r.name || '',
           formLabel: f ? f.label : '',
+          off: !r.enabled,
+          note: !r.enabled
+            ? '이 규칙이 꺼져 있어 글을 만들지 않습니다. 위 규칙에서 「켜기」를 체크해주세요.'
+            : soon
+              ? '곧 만듭니다. 5분마다 확인해서 일주일치를 채웁니다.'
+              : '일주일 앞까지만 미리 만듭니다. 날짜가 가까워지면 여기에 글이 보입니다.',
         });
       });
     });
