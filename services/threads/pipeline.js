@@ -77,6 +77,17 @@ async function generate(userId, openaiKey, topic, limit, opts) {
   const settings = await store.getSettings(userId);
   const ledger = await store.getLedger(userId);
 
+  /* ⚠️ 이 셋은 makePrompt 보다 **위에** 있어야 한다.
+        아래에 두었다가 「Cannot access 'dailyChain' before initialization」로
+        글 만들기가 통째로 죽은 적이 있다. 한자리에 모아둔다. */
+  const daily = settings.daily;
+  const wantsDaily = !!(o.form && o.form.id === 'daily');
+  /* 운세 틀이 「두 편으로 나눔」이면, 이 글만은 두 편을 쓸 수 있어야 한다.
+     짧아도 나누는 게 그 계정의 모양이다. */
+  const dailyChain = wantsDaily && daily && daily.mode === 'chain' && String(daily.tail || '').trim()
+    ? { on: true, max: 2, numbered: daily.numbered !== false }
+    : null;
+
   const makePrompt = (extra) => buildPrompt(topic, {
     ledger,
     facts: (settings.facts || []).map((f) => f.text || String(f)),
@@ -98,8 +109,6 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     ].filter(Boolean).join(String.fromCharCode(10)),
   });
 
-  const daily = settings.daily;
-  const wantsDaily = !!(o.form && o.form.id === 'daily');
   const model = settings.model;
   const { text, usage } = await runAi(openaiKey, makePrompt(''), { model });
 
@@ -113,11 +122,6 @@ async function generate(userId, openaiKey, topic, limit, opts) {
 
   const v = norm.value;
   const topicOut = v.topic || topic;
-  /* 운세 틀이 「두 편으로 나눔」이면, 이어붙이기를 전역으로 안 켰어도
-     이 글만은 두 편을 쓸 수 있어야 한다. 짧아도 나누는 게 그 계정의 모양이다. */
-  const dailyChain = wantsDaily && daily && daily.mode === 'chain' && String(daily.tail || '').trim()
-    ? { on: true, max: 2, numbered: daily.numbered !== false }
-    : null;
   /* 예전에는 설정에 전역 「이어붙이기」 스위치가 있었다. 리스트형이 스케줄러에
      생기면서 같은 일을 두 군데서 하게 되어 없앴다. 이제 나누는 것은
      **틀이 정한다** — 운세 틀의 두 편, 리스트형의 본문+댓글. */

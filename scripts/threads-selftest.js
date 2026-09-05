@@ -444,6 +444,67 @@ t('여러 편이면 통과시킨다',
 t('허락 없으면 막는다',
   checkPost(twoPartPost).rows.find((r) => r.label === '한 편으로 끝남').ok, false);
 
+/* ── 만들기 함수가 실제로 도는가 ── */
+section('만들기 함수');
+/* ⚠️ 여기가 비어 있어서 사고가 났다.
+   조각들은 다 통과하는데 generate() 를 한 번도 안 돌려봐서
+   「Cannot access 'dailyChain' before initialization」이 배포까지 나갔다.
+   DB 도 OpenAI 도 없이 껍데기를 끼워 흐름만 한 번 통과시킨다. */
+{
+  const Module = require('module');
+  const origLoad = Module._load;
+  const fakeAi = {
+    topic: '역마살', situation: '',
+    hookScan: [], unusable: [],
+    posts: [{
+      hooks: [1], postType: '정보형', form: 'single',
+      parts: ['경금 일간은 거절을 못 합니다' + NL + '그래서 일이 몰립니다' + NL + NL + '본인은 어떠신가요'],
+      reply: '', cta: false,
+    }],
+  };
+  const settings = {
+    facts: [], ctaLink: '', intro: null, model: '', voiceMode: '', voicePack: null,
+    daily: { body: '내 운세 1편', tail: '내 운세 2편', mode: 'chain' },
+  };
+  /* store · llm 만 껍데기로 갈아끼운다. 나머지는 진짜 코드를 탄다. */
+  Module._load = function (req, parent, isMain) {
+    if (req === './store') {
+      return { getSettings: async () => settings, getLedger: async () => ({}) };
+    }
+    if (req === './llm') {
+      return { runAi: async () => ({ text: JSON.stringify(fakeAi), usage: null }) };
+    }
+    return origLoad.apply(this, arguments);
+  };
+  delete require.cache[require.resolve('../services/threads/pipeline')];
+  const freshPipe = require('../services/threads/pipeline');
+  Module._load = origLoad;
+
+  let out = null, err = null;
+  freshPipe.generate(1, 'sk-test', '역마살', 1, null)
+    .then((r) => { out = r; })
+    .catch((e) => { err = e; });
+
+  /* 위 약속이 끝난 뒤에 확인해야 한다 */
+  setTimeout(() => {
+    t('generate 가 터지지 않는다', err ? err.message : '터지지 않음', '터지지 않음');
+    t('글이 나온다', !!(out && out.posts && out.posts.length), true);
+    t('지침 점검이 붙어 나온다', !!(out && out.posts[0].check), true);
+
+    /* 운세 틀로도 한 번 — dailyChain 이 실제로 쓰이는 길이다 */
+    const dailyForm = require('../services/threads/forms').byId('daily');
+    freshPipe.generate(1, 'sk-test', '오늘의 운세', 1, { form: dailyForm, at: new Date() })
+      .then(() => { t('운세 틀로도 터지지 않는다', true, true); done(); })
+      .catch((e) => { t('운세 틀로도 터지지 않는다', e.message, true); done(); });
+  }, 60);
+}
+
+/* 위 검사가 비동기라 마지막 줄을 미뤄야 한다 */
+function done() {
+  console.log('\n' + (fail ? '✗ ' : '✓ ') + '통과 ' + pass + ' · 실패 ' + fail);
+  process.exit(fail ? 1 : 0);
+}
+
 /* ── 같은 자리를 두 번 만들지 않기 ── */
 section('같은 자리 두 번 안 만들기');
 /* ⚠️ 돈이 새던 자리다.
@@ -462,5 +523,5 @@ t('어긋낸 값은 몇 번을 봐도 같다',
   R.upcoming(jr, 24 * 7, base)[0].sendAt.getTime(),
   R.upcoming(jr, 24 * 7, base)[0].sendAt.getTime());
 
-console.log('\n' + (fail ? '✗ ' : '✓ ') + '통과 ' + pass + ' · 실패 ' + fail);
-process.exit(fail ? 1 : 0);
+/* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
+   여기서 끝내버리면 그 결과를 못 보고 나간다. */
