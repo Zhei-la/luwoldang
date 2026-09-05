@@ -84,6 +84,70 @@ async function rulesWithStatus(req) {
   });
 }
 
+
+/**
+ * 이 글이 자동으로 올라갈지, 안 간다면 왜인지.
+ *
+ * 「시간이 되어도 안 올라간다」의 답이 여기 있어야 한다.
+ * 규칙 카드에는 마지막 오류 하나만 뜨니 어느 글이 왜 막혔는지 알 수가 없다.
+ */
+function autoWhy(post, rule, settings, acc) {
+  if (post.status === 'published') return null;
+  if (post.status === 'scheduled') {
+    return { ok: true, why: '예약해뒀습니다. 시간이 되면 Zernio 가 올립니다.' };
+  }
+  if (!rule) {
+    return { ok: false, why: '자동 규칙에서 빠진 글입니다. 「내 원고」에서 직접 올리세요.' };
+  }
+  if (rule.mode !== 'publish') {
+    return {
+      ok: false,
+      why: '이 규칙은 「원고로만 두기」라 자동으로 안 올라갑니다. ' +
+        '자동으로 내보내려면 규칙에서 「바로 예약까지」로 바꿔주세요.',
+    };
+  }
+  if (!acc) return { ok: false, why: '올릴 스레드 계정이 없습니다. 설정에서 등록해주세요.' };
+  if (!settings.allowPublish) {
+    return { ok: false, why: '올리기가 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
+  }
+  if (!post.check.passHard) {
+    return {
+      ok: false,
+      why: '지침에 걸려서 예약하지 못했습니다 (' + post.check.advice.join(', ') + '). ' +
+        '자동으로 나가는 글은 지침을 다 지켜야 합니다 — 「수정하기」나 「글 재생성」을 눌러주세요.',
+    };
+  }
+  return { ok: true, why: '다음 확인 때 예약합니다. (5분마다 돕니다)' };
+}
+
+
+const KST_MS = 9 * 3600 * 1000;
+
+/** 이번 주 월요일 0시 (한국 시각). 요일 판의 왼쪽 끝이다. */
+function weekStart(at) {
+  const k = new Date(at.getTime() + KST_MS);
+  const back = (k.getUTCDay() + 6) % 7;          // 월요일이 0
+  const m = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate() - back);
+  return new Date(m - KST_MS);
+}
+
+/** 이 시각이 규칙의 어느 슬롯이었는지, 그 슬롯의 시각 문자열. */
+function slotTimeOf(rule, at) {
+  if (!rule || !at) return '';
+  const s = rules.slotOf(rule, at);
+  return s ? s.time : '';
+}
+
+/**
+ * 「이 규칙의 이 날 이 자리」를 가리키는 이름표.
+ * 저장된 시각에는 흔들기가 얹혀 있어서 시각만으로는 짝이 안 맞는다.
+ */
+function planKeyOf(ruleId, at, time) {
+  if (!ruleId || !at || !time) return '';
+  const k = new Date(new Date(at).getTime() + KST_MS);
+  return ruleId + '|' + k.toISOString().slice(0, 10) + '|' + time;
+}
+
 /* ── 화면 ─────────────────────────────────────────── */
 
 router.get('/threads', ...guard, async (req, res, next) => {
@@ -331,15 +395,23 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
   try {
     const settings = await store.getSettings(req.user.id);
     const all = await store.getPosts(req.user.id);
-    /* 올라간 글도 **하루는** 남겨둔다.
-       바로 사라지면 「올라간 거야 만 거야」를 확인할 데가 없다. */
-    const DAY = 24 * 3600 * 1000;
-    const since = Date.now() - DAY;
+    /* 이 글이 자동으로 나갈 수 있는지 글마다 판단하려면 규칙과 계정이 필요하다.
+       규칙 카드에는 마지막 오류 하나만 뜨는데, 어느 글이 왜 막혔는지는
+       거기서 알 수가 없다. */
+    const [ruleList, acc] = await Promise.all([
+      rules.list(req.user.id),
+      accounts.active(req.user.id),
+    ]);
+    const ruleById = {};
+    ruleList.forEach((r) => { ruleById[r.id] = r; });
+    /* 요일 판은 **이번 주 월요일부터** 보여준다.
+       「이번 주에 뭐가 올라갔지」를 확인하려면 지난 요일도 남아 있어야 한다.
+       하루만 남기면 수요일에 월요일 글을 확인할 수가 없다. */
+    const since = weekStart(new Date()).getTime();
 
     const list = all
       .filter((p) => {
         if (!p.slotAt) return false;
-        if (p.status !== 'published') return true;
         const at = new Date(p.publishedAt || p.slotAt).getTime();
         return at >= since;
       })
@@ -358,6 +430,8 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
           bad: (v.check.rows || []).filter((r) => r.hard && !r.ok).map((r) => r.label),
           lengths: v.lengths,
           /* 올라간 글이면 언제 어디로 나갔는지 */
+          auto: autoWhy(v, ruleById[v.ruleId], settings, acc),
+          planKey: planKeyOf(v.ruleId, v.slotAt, slotTimeOf(ruleById[v.ruleId], v.slotAt)),
           publishedAt: v.publishedAt || null,
           permalink: v.permalink || null,
           accountName: v.accountName || null,
@@ -365,7 +439,28 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
           error: v.error || null,
         };
       });
-    res.json({ ok: true, posts: list });
+    /* 아직 글이 안 만들어진 자리도 보여준다.
+       자동은 36시간 앞만 채우니, 다음 주는 늘 빈칸이 된다.
+       빈칸만 보면 「예약이 안 걸렸나」 싶다 — 자리는 잡혀 있다고 알려줘야 한다. */
+    const written = {};
+    list.forEach((x) => { if (x.planKey) written[x.planKey] = true; });
+
+    const slots = [];
+    ruleList.filter((r) => r.enabled).forEach((r) => {
+      rules.plan(r, 14).forEach((x) => {
+        const key = planKeyOf(r.id, x.at, x.slot.time);
+        if (written[key]) return;
+        const f = x.slot.form ? FORMS.byId(x.slot.form) : null;
+        slots.push({
+          planKey: key,
+          slotAt: new Date(x.sendAt).toISOString(),
+          ruleName: r.name || '',
+          formLabel: f ? f.label : '',
+        });
+      });
+    });
+
+    res.json({ ok: true, posts: list, slots, weekStart: since });
   } catch (e) { next(e); }
 });
 

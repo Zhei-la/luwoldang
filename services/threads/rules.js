@@ -219,6 +219,33 @@ function upcoming(rule, hours, from) {
 }
 
 /**
+ * 앞으로 며칠간 이 규칙이 잡아둔 자리를 **모두** 펼친다.
+ *
+ * upcoming() 은 슬롯마다 「다음 한 번」만 준다. 요일 판에는 이번 주와
+ * 다음 주가 같이 보여야 하니, 같은 슬롯이 주마다 되풀이되는 것까지 펴야 한다.
+ */
+function plan(rule, days, from) {
+  const now = from || new Date();
+  const until = now.getTime() + (days || 14) * 24 * 3600 * 1000;
+  const out = [];
+
+  (rule.slots || []).forEach((s) => {
+    let at = nextSlotTime(s, now);
+    while (at.getTime() <= until) {
+      const key = at.toISOString();
+      out.push({
+        slot: s,
+        at,
+        key,
+        sendAt: jitter(at, rule.jitterMin, rule.id + key),
+      });
+      at = new Date(at.getTime() + 7 * 24 * 3600 * 1000);
+    }
+  });
+  return out.sort((a, b) => a.at - b.at);
+}
+
+/**
  * 정한 시각에서 ± 몇 분 흔든다.
  * 무작위로 하면 볼 때마다 값이 바뀌어 「몇 시에 올라가나」를 알 수 없다.
  * 규칙과 시각으로 씨앗을 만들어 **같은 자리는 늘 같은 값**이 나오게 한다.
@@ -308,6 +335,6 @@ function sameTimeWarning(slots) {
 
 module.exports = {
   list, get, active, save, remove, clean,
-  upcoming, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf, diagnose,
+  upcoming, plan, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf, diagnose,
   DAY_NAMES, MAX_SLOTS, MAX_RULES,
 };

@@ -510,9 +510,16 @@ section('규칙 진단');
 /* 「저장했는데 아무것도 안 올라간다」가 제일 답답하다. 로그를 볼 수 없으니
    화면이 이유를 말해줘야 한다. */
 const okCtx = { hasKey: true, allowPublish: true, hasAccount: true, filled: 0 };
+/* 10시간 뒤 자리 하나. 요일만 맞추고 시각을 00:00 으로 두면
+   그 요일이 이미 지나서 다음 주로 밀려버린다 — 시·분까지 같이 맞춘다. */
+const soonAt = new Date(Date.now() + 10 * 3600000 + 9 * 3600000);   // 한국 시각
 const live = { id: 'd1', enabled: true, jitterMin: 0, mode: 'draft',
-  slots: [{ day: new Date(Date.now() + 3600000 + 9 * 3600000).getUTCDay(),
-            time: '00:00' }] };
+  slots: [{
+    day: soonAt.getUTCDay(),
+    time: String(soonAt.getUTCHours()).padStart(2, '0') + ':' +
+          String(soonAt.getUTCMinutes()).padStart(2, '0'),
+  }] };
+t('시험용 자리는 36시간 안에 있다', R.upcoming(live, 36).length, 1);
 t('꺼져 있으면 그렇게 말한다',
   R.diagnose({ id: 'x', enabled: false, slots: [{ day: 1, time: '08:10' }] }, okCtx).why
     .includes('꺼져 있습니다'), true);
@@ -725,6 +732,62 @@ const base = new Date('2026-09-05T00:00:00+09:00');
 t('어긋낸 값은 몇 번을 봐도 같다',
   R.upcoming(jr, 24 * 7, base)[0].sendAt.getTime(),
   R.upcoming(jr, 24 * 7, base)[0].sendAt.getTime());
+
+
+/* ── 요일 판 ──────────────────────────────────────────
+   목록을 훑는 대신 요일로 나눠 본다. 판이 틀리면 「이번 주에 뭐가
+   올라갔지」를 확인할 데가 없어지므로, 자리 펼치기부터 확인한다. */
+section('요일 판');
+
+const wkRule = { id: 'w1', enabled: true, jitterMin: 0,
+  slots: [{ day: 1, time: '08:10' }, { day: 4, time: '20:00' }] };
+
+const two = R.plan(wkRule, 14);
+t('14일이면 자리마다 두 번씩', two.length, 4);
+t('이른 순으로 준다', two.every((x, i) => !i || x.at >= two[i - 1].at), true);
+t('같은 자리는 정확히 7일 간격',
+  two[2].at.getTime() - two[0].at.getTime(), 7 * 24 * 3600 * 1000);
+t('7일이면 한 번씩만', R.plan(wkRule, 7).length, 2);
+t('자리가 없으면 빈 판', R.plan({ id: 'w2', slots: [] }, 14).length, 0);
+/* upcoming 은 「다음 한 번」만 준다 — 판에는 다음 주도 있어야 한다 */
+t('upcoming 보다 멀리 본다', R.plan(wkRule, 14).length > R.upcoming(wkRule, 36 * 7).length, true);
+/* 흔들기가 얹혀야 기계처럼 안 보인다 */
+const shook = R.plan({ id: 'w3', jitterMin: 20, slots: [{ day: 2, time: '09:00' }] }, 14);
+t('흔든 값도 같이 준다', shook.every((x) => x.sendAt instanceof Date), true);
+t('흔든 값은 몇 번을 봐도 같다',
+  R.plan({ id: 'w3', jitterMin: 20, slots: [{ day: 2, time: '09:00' }] }, 14)[0].sendAt.getTime(),
+  shook[0].sendAt.getTime());
+
+/* ── 왜 안 올라갔나 ──────────────────────────────────
+   「시간이 됐는데 글이 안 올라간다」가 가장 답답하다.
+   규칙 카드에는 마지막 오류 하나만 뜨니, 글마다 이유를 말해줘야 한다. */
+section('글마다 안 올라간 이유');
+
+const routeSrc = require('fs').readFileSync('routes/threadsAuto.js', 'utf8');
+t('이유를 만드는 자리가 있다', /function autoWhy\(/.test(routeSrc), true);
+t('글마다 실어 보낸다', routeSrc.indexOf('auto: autoWhy(') > 0, true);
+/* 원고 모드면 아무리 기다려도 안 나간다 — 이걸 모르면 하루를 버린다 */
+t('원고로만 두기를 짚어준다', routeSrc.indexOf('「원고로만 두기」라 자동으로 안 올라갑니다') > 0, true);
+t('계정 없음을 짚어준다', routeSrc.indexOf('올릴 스레드 계정이 없습니다') > 0, true);
+t('올리기 잠김을 짚어준다', routeSrc.indexOf('올리기가 잠겨 있습니다') > 0, true);
+t('지침에 걸린 것도 짚어준다', routeSrc.indexOf('지침에 걸려서 예약하지 못했습니다') > 0, true);
+t('화면이 그 이유를 그린다', viewSrc.indexOf('ta-why') > 0, true);
+
+/* 이번 주 월요일부터 보여야 수요일에 월요일 글을 확인할 수 있다 */
+t('이번 주 시작을 계산한다', /function weekStart\(/.test(routeSrc), true);
+t('하루만 남기지 않는다', routeSrc.indexOf('const since = Date.now() - DAY') > 0, false);
+/* 아직 안 만든 자리도 보내야 다음 주가 빈칸으로 보이지 않는다 */
+t('안 만든 자리도 같이 보낸다', routeSrc.indexOf('slots,') > 0, true);
+t('꺼진 규칙 자리는 안 보낸다', routeSrc.indexOf('ruleList.filter((r) => r.enabled)') > 0, true);
+t('짝을 맞출 이름표가 있다', /function planKeyOf\(/.test(routeSrc), true);
+
+/* 화면 쪽 */
+t('요일 단추를 그린다', viewSrc.indexOf('ta-wk-d') > 0, true);
+t('주를 앞뒤로 넘긴다', viewSrc.indexOf('taWkPrev') > 0 && viewSrc.indexOf('taWkNext') > 0, true);
+t('오늘을 표시한다', viewSrc.indexOf("' today'") > 0, true);
+t('지난 요일은 올라갔는지 말한다', viewSrc.indexOf('안 올라감') > 0, true);
+t('안 만든 자리를 따로 그린다', viewSrc.indexOf('ta-slot') > 0, true);
+t('36시간 전에 만든다고 알려준다', viewSrc.indexOf('올라가기 36시간 전') > 0, true);
 
 /* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
    여기서 끝내버리면 그 결과를 못 보고 나간다. */

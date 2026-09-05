@@ -287,6 +287,35 @@
   background:#c9a227;color:#fff;font-size:11px;font-weight:900;text-align:center;line-height:16px}
 #ta .ta-rule-act{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
 
+/* 요일 판 — 「월요일에 뭐가 올라가지」는 목록을 훑는 게 아니라 눈에 들어와야 한다 */
+#ta .ta-wk{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+#ta .ta-wk-d{flex:1;min-width:82px;border:1px solid var(--line);border-radius:10px;
+  background:#fff;padding:9px 6px;cursor:pointer;text-align:center;font:inherit;
+  transition:border-color .12s,background .12s}
+#ta .ta-wk-d:hover{border-color:var(--ink)}
+#ta .ta-wk-d .nm{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+#ta .ta-wk-d .dt{display:block;font-size:11px;color:var(--dim);margin-top:1px}
+#ta .ta-wk-d .ct{display:block;font-size:11px;margin-top:5px;color:var(--dim);min-height:14px}
+#ta .ta-wk-d.on{background:var(--ink);border-color:var(--ink)}
+#ta .ta-wk-d.on .nm,#ta .ta-wk-d.on .dt,#ta .ta-wk-d.on .ct{color:#fff}
+#ta .ta-wk-d.past{background:#fafaf8}
+#ta .ta-wk-d.past .nm{color:var(--dim)}
+#ta .ta-wk-d.today{border-color:var(--ink);border-width:2px;padding:8px 5px}
+#ta .ta-wk-d .ct b{font-weight:700}
+#ta .ta-wk-d .ct .ok{color:var(--ok)}
+#ta .ta-wk-d .ct .no{color:#b4342a}
+#ta .ta-wk-d.on .ct .ok,#ta .ta-wk-d.on .ct .no{color:#fff}
+#ta .ta-wk-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+#ta .ta-wk-nav .lbl{font-size:14px;font-weight:700}
+/* 아직 글이 안 만들어진 자리 */
+#ta .ta-slot{border:1px dashed var(--line);border-radius:12px;padding:13px 16px;
+  margin-bottom:12px;background:#fcfcfa;font-size:14px;color:var(--dim);line-height:1.7}
+#ta .ta-slot b{color:var(--ink)}
+/* 왜 자동으로 안 올라가는지 */
+#ta .ta-why{margin-top:10px;font-size:13px;line-height:1.7;border-radius:8px;padding:9px 12px}
+#ta .ta-why.no{background:#fdf3f2;color:#8f2a22}
+#ta .ta-why.yes{background:#f2f8f3;color:#2f6b3a}
+#ta .ta-why b{font-weight:800}
 /* 올라갈 글 미리 보기 — 나가기 전에 눈으로 볼 수 있어야 자동이 무섭지 않다 */
 #ta .ta-up{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff}
 #ta .ta-up-hd{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px;font-size:14px}
@@ -469,13 +498,18 @@
 
     <!-- ── 올라갈 글 미리 보기 ─────────────────────── -->
     <div class="ta-card">
-      <h2>올라갈 글 <span class="ta-sub" style="font-weight:600">— 이른 순</span></h2>
-      <p class="ta-sub">36시간 앞서 만들어두기 때문에 <b>올라가기 전에 눈으로 볼 수 있습니다.</b>
-        마음에 안 들면 여기서 고치거나 다시 만드세요.
+      <h2>요일별 글</h2>
+      <p class="ta-sub">요일을 누르면 <b>그날 올라간 글과 올라갈 글</b>이 보입니다.
+        지난 요일은 올라갔는지 확인하는 자리이고, 남은 요일은 나가기 전에 고치는 자리입니다.
         <b>고치면 예약이 풀립니다</b> — 다시 걸어야 나갑니다.</p>
-      <div style="margin-bottom:12px">
-        <button class="ta-btn ghost sm" type="button" id="taUpRefresh">새로 불러오기</button>
+      <div class="ta-wk-nav">
+        <button class="ta-btn ghost sm" type="button" id="taWkPrev">‹ 지난주</button>
+        <span class="lbl" id="taWkLabel">이번 주</span>
+        <button class="ta-btn ghost sm" type="button" id="taWkNext">다음주 ›</button>
+        <button class="ta-btn ghost sm" type="button" id="taUpRefresh"
+          style="margin-left:auto">새로 불러오기</button>
       </div>
+      <div class="ta-wk" id="taWeek"></div>
       <div id="taUpcoming"><div class="ta-empty">불러오는 중…</div></div>
     </div>
   </section>
@@ -2091,6 +2125,13 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       done = '<div class="ta-up-done wait">예약해뒀습니다 · 시간이 되면 Zernio 가 올립니다</div>';
     }
 
+    /* 「시간이 됐는데 왜 안 올라갔지」의 답.
+       규칙 카드에는 마지막 오류 하나만 뜨니, 글마다 여기서 말해줘야 한다. */
+    var why = (p.auto && p.status !== 'published' && p.status !== 'scheduled')
+      ? '<div class="ta-why ' + (p.auto.ok ? 'yes' : 'no') + '">' +
+        (p.auto.ok ? '' : '<b>안 올라갑니다.</b> ') + esc(p.auto.why) + '</div>'
+      : '';
+
     /* 기본은 **시간·요일·글만** 보인다. 단추를 눌러야 고치는 칸이 열린다.
        칸을 다 펼쳐두면 글이 안 읽힌다. */
     return '<div class="ta-up' + (p.status === 'published' ? ' is-done' : '') +
@@ -2100,7 +2141,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         (p.postType ? ' · ' + esc(p.postType) : '') + '</span></div>' +
 
       '<div class="ta-up-read">' + esc(p.parts.join(CUT)) + '</div>' +
-      reply + done + bad +
+      reply + done + why + bad +
 
       (p.status === 'published'
         ? ''
@@ -2144,14 +2185,128 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     '</div>';
   }
 
-  function drawUpcoming(list){
+  /* ── 요일 판 ─────────────────────────────────────────
+     목록을 위에서 아래로 훑는 방식은, 글이 열 개만 넘어도
+     「수요일에 뭐가 나가지」를 못 찾는다. 요일로 먼저 나눈다. */
+  var UP_POSTS = [];
+  var UP_SLOTS = [];
+  var WK_OFF   = 0;    // 0 = 이번 주
+  var WK_DAY   = null; // 고른 요일 (0=월 … 6=일)
+
+  /** 월요일 0시. 요일 판의 왼쪽 끝. */
+  function monday(off){
+    var d = new Date();
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (off || 0) * 7);
+    return d;
+  }
+  /** 그 주 며칠째인가 (월=0 … 일=6). 판에 없으면 -1. */
+  function dayIndex(iso, base){
+    var n = Math.floor((new Date(iso).setHours(0,0,0,0) - base.getTime()) / 86400000);
+    return (n >= 0 && n < 7) ? n : -1;
+  }
+
+  function drawWeek(){
+    var box = $('#taWeek');
+    if (!box) return;
+    var base  = monday(WK_OFF);
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    $('#taWkLabel').textContent =
+      (WK_OFF === 0 ? '이번 주' : WK_OFF === 1 ? '다음주' : WK_OFF === -1 ? '지난주'
+        : (base.getMonth()+1) + '월 ' + base.getDate() + '일 주') +
+      ' · ' + (base.getMonth()+1) + '/' + base.getDate() + '부터';
+
+    var html = '';
+    for (var n = 0; n < 7; n++){
+      var d = new Date(base.getTime() + n * 86400000);
+      var posts = UP_POSTS.filter(function(p){ return dayIndex(p.slotAt, base) === n; });
+      var slots = UP_SLOTS.filter(function(x){ return dayIndex(x.slotAt, base) === n; });
+      var past  = d.getTime() < today.getTime();
+
+      var up   = posts.filter(function(p){ return p.status === 'published'; }).length;
+      var fail = posts.filter(function(p){ return p.status === 'failed'; }).length;
+      var wait = posts.length - up - fail;
+
+      /* 지난 요일은 「올라갔나 아닌가」만 알면 된다.
+         남은 요일은 「몇 개 나가나」가 궁금하다. */
+      var ct;
+      if (past) {
+        ct = up ? '<span class="ok">✓ ' + up + '개 올라감</span>'
+           : (posts.length || slots.length) ? '<span class="no">안 올라감</span>' : '';
+      } else {
+        var cnt = wait + slots.length;
+        ct = cnt ? '<b>' + cnt + '개</b> 예정' : '';
+        if (up) ct = '<span class="ok">✓ ' + up + '</span>' + (cnt ? ' · ' + cnt + '개 예정' : ' 올라감');
+      }
+      if (fail) ct += (ct ? ' · ' : '') + '<span class="no">실패 ' + fail + '</span>';
+
+      html += '<button type="button" class="ta-wk-d' +
+        (WK_DAY === n ? ' on' : '') + (past ? ' past' : '') +
+        (d.getTime() === today.getTime() ? ' today' : '') +
+        '" data-n="' + n + '">' +
+        '<span class="nm">' + DAYS[d.getDay()] + '</span>' +
+        '<span class="dt">' + (d.getMonth()+1) + '/' + d.getDate() + '</span>' +
+        '<span class="ct">' + ct + '</span></button>';
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('.ta-wk-d').forEach(function(b){
+      b.addEventListener('click', function(){
+        WK_DAY = Number(b.dataset.n);
+        drawWeek(); drawDay();
+      });
+    });
+  }
+
+  /** 아직 글이 안 만들어진 자리. 「빈 날」과 구별되어야 한다. */
+  function slotHtml(x){
+    return '<div class="ta-slot"><b>' + esc(whenFull(x.slotAt)) + '</b> — 자리는 잡혀 있습니다' +
+      (x.formLabel ? ' · ' + esc(x.formLabel) : '') +
+      (x.ruleName ? ' · ' + esc(x.ruleName) : '') +
+      '<br>글은 <b>올라가기 36시간 전</b>에 만들어집니다. 그때 여기에 보입니다.</div>';
+  }
+
+  function drawDay(){
     var box = $('#taUpcoming');
     if (!box) return;
-    box.innerHTML = list.length ? list.map(upHtml).join('')
-      : '<div class="ta-empty">아직 예정된 글이 없습니다.<br>' +
-        '규칙을 켜두면 <b>5분 안에</b> 확인해서 36시간 앞에서부터 채웁니다.<br>' +
-        '<span class="ta-sub">지금 보고 싶으시면 위 규칙의 「지금 한 번 만들어보기」를 눌러주세요.</span></div>';
+    var base = monday(WK_OFF);
+    var n = WK_DAY;
 
+    if (n === null) {
+      box.innerHTML = '<div class="ta-empty">위에서 <b>요일</b>을 눌러주세요.</div>';
+      return;
+    }
+    var d = new Date(base.getTime() + n * 86400000);
+    var byTime = function(a,b){ return new Date(a.slotAt) - new Date(b.slotAt); };
+    var posts = UP_POSTS.filter(function(p){ return dayIndex(p.slotAt, base) === n; }).sort(byTime);
+    var slots = UP_SLOTS.filter(function(x){ return dayIndex(x.slotAt, base) === n; }).sort(byTime);
+
+    if (!posts.length && !slots.length) {
+      /* 아무 데도 자리가 없으면 「이 요일엔 없다」가 아니라
+         「아직 아무것도 안 걸었다」는 말을 해줘야 한다. */
+      var nothing = !UP_POSTS.length && !UP_SLOTS.length;
+      box.innerHTML = '<div class="ta-empty">' + (nothing
+        ? '아직 예정된 글이 없습니다.<br>' +
+          '규칙을 켜두면 <b>5분 안에</b> 확인해서 36시간 앞에서부터 채웁니다.<br>' +
+          '<span class="ta-sub">지금 보고 싶으시면 위 규칙의 「지금 한 번 만들어보기」를 눌러주세요.</span>'
+        : (d.getMonth()+1) + '월 ' + d.getDate() + '일 ' + DAYS[d.getDay()] + '요일에는 ' +
+          '<b>잡아둔 자리가 없습니다.</b><br>' +
+          '<span class="ta-sub">이 요일에도 올리시려면 위 규칙에서 「' +
+          DAYS[d.getDay()] + '」 자리를 더해주세요.</span>') + '</div>';
+      return;
+    }
+    box.innerHTML = posts.map(upHtml).join('') + slots.map(slotHtml).join('');
+    wireUpcoming(box);
+  }
+
+  function drawUpcoming(){
+    /* 처음 열면 오늘을 보여준다 — 대개 궁금한 건 오늘이다. */
+    if (WK_DAY === null) WK_DAY = (new Date().getDay() + 6) % 7;
+    drawWeek();
+    drawDay();
+  }
+
+  function wireUpcoming(box){
     box.querySelectorAll('.ta-up').forEach(function(el){
       var id = el.dataset.id;
       /* 이미 올라간 글은 보여주기만 한다. 단추가 없으니 여기서 끝낸다. */
@@ -2219,10 +2374,18 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
   function loadUpcoming(){
     fetch('/api/threads/upcoming').then(function(r){ return r.json(); }).then(function(j){
-      drawUpcoming(j.posts || []);
+      UP_POSTS = j.posts || [];
+      UP_SLOTS = j.slots || [];
+      drawUpcoming();
     });
   }
   $('#taUpRefresh') && $('#taUpRefresh').addEventListener('click', loadUpcoming);
+  $('#taWkPrev') && $('#taWkPrev').addEventListener('click', function(){
+    WK_OFF--; drawWeek(); drawDay();
+  });
+  $('#taWkNext') && $('#taWkNext').addEventListener('click', function(){
+    WK_OFF++; drawWeek(); drawDay();
+  });
   loadUpcoming();
 
   /* ── 오늘의 운세 틀 ──────────────────────────────── */
