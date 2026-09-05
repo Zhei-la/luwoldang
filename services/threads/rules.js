@@ -256,6 +256,39 @@ function slotLabel(slot) {
 }
 
 /**
+ * 이 규칙이 지금 도는지, 안 돈다면 왜인지 한 줄로.
+ *
+ * 「저장했는데 아무것도 안 올라간다」가 제일 답답하다. 로그를 볼 수 없으니
+ * 화면에서 바로 보여야 한다.
+ *
+ * ctx = { hasKey, allowPublish, hasAccount, filled }
+ *   filled — 앞으로 36시간 안에 이미 채워둔 자리 개수
+ */
+function diagnose(rule, ctx) {
+  const c = ctx || {};
+  const soon = upcoming(rule, 36).length;
+
+  if (!rule.enabled) return { ok: false, why: '꺼져 있습니다. 위 「켜기」를 체크해주세요.' };
+  if (!(rule.slots || []).length) return { ok: false, why: '올릴 자리가 없습니다. 요일과 시각을 더해주세요.' };
+  if (!c.hasKey) {
+    return { ok: false, why: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 등록해주세요.' };
+  }
+  if (rule.mode === 'publish' && !c.hasAccount) {
+    return { ok: false, why: '올릴 스레드 계정이 없습니다. 설정에서 등록하거나 「원고로만 두기」로 바꿔주세요.' };
+  }
+  if (rule.mode === 'publish' && !c.allowPublish) {
+    return { ok: false, why: '올리기가 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
+  }
+  if (!soon) {
+    return { ok: true, why: '앞으로 36시간 안에 올릴 자리가 없습니다. 그 자리가 다가오면 만듭니다.' };
+  }
+  if (c.filled >= soon) {
+    return { ok: true, why: '앞으로 36시간치를 이미 다 만들어뒀습니다. 아래에서 확인하세요.' };
+  }
+  return { ok: true, why: '다음 확인 때 ' + (soon - c.filled) + '개를 만듭니다. (5분마다 돕니다)' };
+}
+
+/**
  * 같은 시각에 몰려 있는지 본다.
  * 매일 같은 시각이면 기계로 잡힌다 — 저장은 시켜주되 화면에 경고를 띄운다.
  */
@@ -275,6 +308,6 @@ function sameTimeWarning(slots) {
 
 module.exports = {
   list, get, active, save, remove, clean,
-  upcoming, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf,
+  upcoming, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf, diagnose,
   DAY_NAMES, MAX_SLOTS, MAX_RULES,
 };

@@ -276,6 +276,10 @@
   padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 #ta .ta-form.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 #ta .ta-form:disabled{opacity:.45;cursor:not-allowed}
+#ta .ta-rule-state{margin-top:12px;padding:9px 12px;border-radius:9px;font-size:13px;line-height:1.7}
+#ta .ta-rule-state.on{background:var(--ok-bg);color:var(--ok)}
+#ta .ta-rule-state.off{background:#fdf3f2;color:#a03a2e}
+#ta .ta-rule-state b{font-weight:800;margin-right:4px}
 #ta .ta-rule-next{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.7}
 #ta .ta-rule-next b{color:var(--ink)}
 #ta .ta-rule-warn{display:flex;gap:7px;margin-top:10px;font-size:12.5px;line-height:1.7;color:#8a6100}
@@ -1829,6 +1833,16 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         '<option value="publish"' + (r.mode === 'publish' ? ' selected' : '') + '>바로 예약까지 (손 안 대도 올라간다)</option>' +
       '</select>' +
 
+      /* 「저장했는데 아무것도 안 올라간다」가 제일 답답하다.
+         지금 도는지, 안 돌면 왜인지 여기서 바로 보여준다. */
+      (r.status
+        ? '<div class="ta-rule-state ' + (r.status.ok ? 'on' : 'off') + '">' +
+          '<b>' + (r.status.ok ? '돌고 있습니다' : '안 돌고 있습니다') + '</b> ' +
+          esc(r.status.why) + '</div>'
+        : '') +
+      (r.lastRunAt
+        ? '<div class="ta-rule-next">마지막으로 확인한 때 — <b>' + esc(whenFull(r.lastRunAt)) + '</b></div>'
+        : '<div class="ta-rule-next">아직 한 번도 안 돌았습니다. 5분마다 확인합니다.</div>') +
       (r.warning ? '<div class="ta-rule-warn"><b class="bang">!</b><span>' + esc(r.warning) + '</span></div>' : '') +
       ((r.next && r.next.length)
         ? '<div class="ta-rule-next">다음 차례 — <b>' + r.next.map(whenText).join('</b> · <b>') + '</b></div>'
@@ -1995,33 +2009,52 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       ? '<div class="ta-up-reply"><b>첫 댓글</b>' + esc(p.replyText) + '</div>' : '';
     var rows = Math.min(14, Math.max(5, p.parts.join('\n').split('\n').length + 1));
 
+    /* 기본은 **시간·요일·글만** 보인다. 단추를 눌러야 고치는 칸이 열린다.
+       칸을 다 펼쳐두면 글이 안 읽힌다. */
     return '<div class="ta-up" data-id="' + esc(p.id) + '">' +
       '<div class="ta-up-hd"><b>' + esc(whenFull(p.slotAt)) + '</b>' + state +
-        '<button type="button" class="ta-btn ghost sm when">시각 바꾸기</button>' +
         '<span class="ta-sub" style="margin:0 0 0 auto">' + esc(p.topic || '') +
         (p.postType ? ' · ' + esc(p.postType) : '') + '</span></div>' +
-      '<div class="ta-up-when" hidden>' +
-        '<select class="wd">' + DAYS.map(function(d, i){
-          return '<option value="' + i + '"' + (i === new Date(p.slotAt).getDay() ? ' selected' : '') +
-                 '>' + d + '요일</option>';
-        }).join('') + '</select>' +
-        '<input type="time" class="wt" value="' + esc(timeValue(p.slotAt)) + '">' +
-        '<button type="button" class="ta-btn sm setwhen">이 자리로</button>' +
-        '<span class="ta-sub" style="margin:0">앞으로 오는 그 요일로 갑니다. ' +
-          '예약이 걸려 있었다면 다시 걸립니다.</span>' +
-      '</div>' +
-      '<textarea class="body" rows="' + rows + '">' + esc(p.parts.join(CUT)) + '</textarea>' +
+
+      '<div class="ta-up-read">' + esc(p.parts.join(CUT)) + '</div>' +
       reply + bad +
+
       '<div class="ta-up-act">' +
-        '<button type="button" class="ta-btn sm save">고친 것 저장</button>' +
-        '<button type="button" class="ta-btn ghost sm again">같은 주제로 다시</button>' +
-        '<input type="text" class="tp" placeholder="다른 주제 적고 엔터…" maxlength="60">' +
-        '<select class="fm"><option value="">틀 그대로</option>' +
-          FORMS.map(function(f){ return '<option value="' + f.id + '">' + esc(f.label) + '</option>'; }).join('') +
-        '</select>' +
-        '<button type="button" class="ta-btn ghost sm unhook" style="margin-left:auto">자리 취소</button>' +
-        '<button type="button" class="ta-btn ghost sm del">글까지 지우기</button>' +
+        '<button type="button" class="ta-btn ghost sm when">시간 설정</button>' +
+        '<button type="button" class="ta-btn ghost sm edit">수정하기</button>' +
+        '<button type="button" class="ta-btn ghost sm again">글 재생성</button>' +
+        '<button type="button" class="ta-btn ghost sm del" style="margin-left:auto">삭제하기</button>' +
       '</div>' +
+
+      /* ── 시간 설정 ── */
+      '<div class="ta-up-open when-box" hidden>' +
+        '<div class="ta-up-when">' +
+          '<select class="wd">' + DAYS.map(function(d, i){
+            return '<option value="' + i + '"' + (i === new Date(p.slotAt).getDay() ? ' selected' : '') +
+                   '>' + d + '요일</option>';
+          }).join('') + '</select>' +
+          '<input type="time" class="wt" value="' + esc(timeValue(p.slotAt)) + '">' +
+          '<button type="button" class="ta-btn sm setwhen">저장</button>' +
+        '</div>' +
+      '</div>' +
+
+      /* ── 수정하기 ── */
+      '<div class="ta-up-open edit-box" hidden>' +
+        '<textarea class="body" rows="' + rows + '">' + esc(p.parts.join(CUT)) + '</textarea>' +
+        '<div style="margin-top:8px"><button type="button" class="ta-btn sm save">저장</button></div>' +
+      '</div>' +
+
+      /* ── 글 재생성 ── */
+      '<div class="ta-up-open again-box" hidden>' +
+        '<div class="ta-up-when">' +
+          '<input type="text" class="tp" maxlength="60" value="' + esc(p.topic || '') + '" placeholder="주제">' +
+          '<select class="fm"><option value="">틀 그대로</option>' +
+            FORMS.map(function(f){ return '<option value="' + f.id + '">' + esc(f.label) + '</option>'; }).join('') +
+          '</select>' +
+          '<button type="button" class="ta-btn sm makeagain">만들기</button>' +
+        '</div>' +
+      '</div>' +
+
       '<div class="msg"></div>' +
     '</div>';
   }
@@ -2047,21 +2080,29 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         });
       });
 
-      function regen(topic){
-        var b = el.querySelector('.again');
+      /* 칸 하나만 열어둔다. 셋이 한꺼번에 펼쳐지면 다시 어지러워진다. */
+      function open(cls){
+        var want = el.querySelector('.' + cls);
+        var opening = want.hidden;
+        el.querySelectorAll('.ta-up-open').forEach(function(x){ x.hidden = true; });
+        want.hidden = !opening;
+      }
+      el.querySelector('.when').addEventListener('click', function(){ open('when-box'); });
+      el.querySelector('.edit').addEventListener('click', function(){ open('edit-box'); });
+      el.querySelector('.again').addEventListener('click', function(){ open('again-box'); });
+
+      el.querySelector('.makeagain').addEventListener('click', function(){
+        var b = this;
         b.disabled = true;
-        b.innerHTML = '<span class="ta-spin" style="border-top-color:#8A7340"></span> 만드는 중';
+        b.innerHTML = '<span class="ta-spin"></span> 만드는 중';
         post('/api/threads/upcoming/' + encodeURIComponent(id) + '/regenerate', {
-          topic: topic || '', form: el.querySelector('.fm').value,
+          topic: el.querySelector('.tp').value.trim(),
+          form: el.querySelector('.fm').value,
         }).then(function(r){
-          b.disabled = false; b.textContent = '같은 주제로 다시';
+          b.disabled = false; b.textContent = '만들기';
           if (!r.j.ok) { msg(el.querySelector('.msg'), 'err', r.j.error); return; }
           loadUpcoming();
         });
-      }
-      el.querySelector('.when').addEventListener('click', function(){
-        var box = el.querySelector('.ta-up-when');
-        box.hidden = !box.hidden;
       });
       el.querySelector('.setwhen').addEventListener('click', function(){
         var t = el.querySelector('.wt').value;
@@ -2072,25 +2113,17 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
           loadUpcoming();
         });
       });
-      /* 자동에서 빼기 — 글을 지우는 게 아니라 **이 자리를 취소**한다.
-         예약이 걸려 있었으면 Zernio 에서도 뺀다. 글은 「내 원고」에 남는다. */
-      el.querySelector('.unhook').addEventListener('click', function(){
-        if (!confirm('이 자리를 취소할까요?\n자동으로 안 올라갑니다.\n글은 「내 원고」에 그대로 남습니다.')) return;
+      /* 삭제 — 이 자리를 없앤다. 예약이 걸려 있었으면 Zernio 에서도 뺀다.
+         글은 「내 원고」에 남아 나중에 손으로 올릴 수 있다. */
+      el.querySelector('.del').addEventListener('click', function(){
+        if (!confirm('이 글을 삭제할까요?\n자동으로 안 올라갑니다.\n글은 「내 원고」에 남습니다.')) return;
         post('/api/threads/upcoming/' + encodeURIComponent(id) + '/unhook', {}).then(function(r){
           if (!r.j.ok) { msg(el.querySelector('.msg'), 'err', r.j.error); return; }
           loadUpcoming();
         });
       });
-      el.querySelector('.del').addEventListener('click', function(){
-        if (!confirm('이 글을 아예 지울까요?\n휴지통으로 가니 「내 원고」에서 되살릴 수 있습니다.')) return;
-        post('/api/threads/delete', { ids: [id] }).then(function(r){
-          if (!r.j.ok) { msg(el.querySelector('.msg'), 'err', r.j.error); return; }
-          loadUpcoming();
-        });
-      });
-      el.querySelector('.again').addEventListener('click', function(){ regen(''); });
       el.querySelector('.tp').addEventListener('keydown', function(e){
-        if (e.key === 'Enter' && this.value.trim()) { e.preventDefault(); regen(this.value.trim()); }
+        if (e.key === 'Enter') { e.preventDefault(); el.querySelector('.makeagain').click(); }
       });
     });
   }

@@ -505,6 +505,39 @@ function done() {
   process.exit(fail ? 1 : 0);
 }
 
+/* ── 왜 안 도는지 알려주기 ── */
+section('규칙 진단');
+/* 「저장했는데 아무것도 안 올라간다」가 제일 답답하다. 로그를 볼 수 없으니
+   화면이 이유를 말해줘야 한다. */
+const okCtx = { hasKey: true, allowPublish: true, hasAccount: true, filled: 0 };
+const live = { id: 'd1', enabled: true, jitterMin: 0, mode: 'draft',
+  slots: [{ day: new Date(Date.now() + 3600000 + 9 * 3600000).getUTCDay(),
+            time: '00:00' }] };
+t('꺼져 있으면 그렇게 말한다',
+  R.diagnose({ id: 'x', enabled: false, slots: [{ day: 1, time: '08:10' }] }, okCtx).why
+    .includes('꺼져 있습니다'), true);
+t('자리가 없으면 그렇게 말한다',
+  R.diagnose({ id: 'x', enabled: true, slots: [] }, okCtx).why.includes('올릴 자리가 없습니다'), true);
+t('키가 없으면 그렇게 말한다',
+  R.diagnose({ id: 'x', enabled: true, slots: [{ day: 1, time: '08:10' }] },
+    Object.assign({}, okCtx, { hasKey: false })).why.includes('OpenAI 키가 없습니다'), true);
+/* 바로 예약까지 하는 규칙만 계정·허용이 필요하다 */
+t('바로 예약인데 계정이 없으면 막힌다',
+  R.diagnose({ id: 'x', enabled: true, mode: 'publish', slots: [{ day: 1, time: '08:10' }] },
+    Object.assign({}, okCtx, { hasAccount: false })).ok, false);
+t('원고로만 두면 계정이 없어도 돈다',
+  R.diagnose({ id: 'x', enabled: true, mode: 'draft', slots: [{ day: 1, time: '08:10' }] },
+    Object.assign({}, okCtx, { hasAccount: false, allowPublish: false })).ok, true);
+t('바로 예약인데 올리기가 잠겨 있으면 막힌다',
+  R.diagnose({ id: 'x', enabled: true, mode: 'publish', slots: [{ day: 1, time: '08:10' }] },
+    Object.assign({}, okCtx, { allowPublish: false })).why.includes('잠겨 있습니다'), true);
+/* 멀쩡한데 할 일이 없는 것과, 막힌 것은 다르다 */
+t('이미 채워뒀으면 그렇게 말한다',
+  R.diagnose(live, Object.assign({}, okCtx, { filled: 9 })).why.includes('이미 다 만들어뒀습니다'), true);
+t('채울 게 남았으면 개수를 말한다',
+  R.diagnose(live, okCtx).why.includes('만듭니다'), true);
+t('할 일이 없어도 막힌 것은 아니다', R.diagnose(live, Object.assign({}, okCtx, { filled: 9 })).ok, true);
+
 /* ── 화면 스크립트 ── */
 section('화면 스크립트');
 /* ⚠️ EJS 는 렌더만 되면 통과다. 그 안의 <script> 가 깨져도 서버는 200 을 준다.

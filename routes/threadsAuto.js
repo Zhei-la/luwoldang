@@ -52,6 +52,38 @@ function outsideFail(res, e, next) {
   return next(e);
 }
 
+
+/**
+ * 규칙 목록에 「지금 도는지, 안 돌면 왜인지」를 붙인다.
+ * 화면과 API 가 같은 답을 줘야 해서 한 곳에 둔다.
+ */
+async function rulesWithStatus(req) {
+  const [settings, acc, list] = await Promise.all([
+    store.getSettings(req.user.id),
+    accounts.active(req.user.id),
+    rules.list(req.user.id),
+  ]);
+  const posts = await store.getPosts(req.user.id);
+  const now = Date.now();
+  const until = now + 36 * 3600 * 1000;
+
+  return list.map((r) => {
+    /* 이 규칙이 앞으로 36시간 안에 이미 채워둔 자리 개수 */
+    const filled = posts.filter((p) => p.ruleId === r.id && p.slotAt &&
+      new Date(p.slotAt).getTime() >= now && new Date(p.slotAt).getTime() <= until).length;
+    return Object.assign({}, r, {
+      next: rules.upcoming(r, 24 * 7).slice(0, 3).map((u) => u.sendAt.toISOString()),
+      warning: rules.sameTimeWarning(r.slots),
+      status: rules.diagnose(r, {
+        hasKey: !!req.user.openai_key,
+        allowPublish: settings.allowPublish,
+        hasAccount: !!acc,
+        filled,
+      }),
+    });
+  });
+}
+
 /* ── 화면 ─────────────────────────────────────────── */
 
 router.get('/threads', ...guard, async (req, res, next) => {
@@ -96,10 +128,7 @@ router.get('/threads', ...guard, async (req, res, next) => {
       formList: FORMS.FORMS,
       formMax: FORMS.MAX_PICK,
       dayNames: rules.DAY_NAMES,
-      autoRules: (await rules.list(req.user.id)).map((r) => Object.assign({}, r, {
-        next: rules.upcoming(r, 24 * 7).slice(0, 3).map((u) => u.sendAt.toISOString()),
-        warning: rules.sameTimeWarning(r.slots),
-      })),
+      autoRules: await rulesWithStatus(req),
       linksThisWeek: await tail.linksThisWeek(req.user.id),
       posts: posts.map((x) => pipeline.view(x)),
       trashCount: trash,
@@ -229,17 +258,7 @@ router.delete('/api/threads/voice', ...guard, async (req, res, next) => {
 /** 규칙 목록 + 앞으로 언제 올라가는지 */
 router.get('/api/threads/rules', ...guard, async (req, res, next) => {
   try {
-    const list = await rules.list(req.user.id);
-    res.json({
-      ok: true,
-      rules: list.map((r) => Object.assign({}, r, {
-        next: rules.upcoming(r, 24 * 7).slice(0, 5).map((u) => ({
-          label: rules.slotLabel(u.slot),
-          at: u.sendAt.toISOString(),
-        })),
-        warning: rules.sameTimeWarning(r.slots),
-      })),
-    });
+    res.json({ ok: true, rules: await rulesWithStatus(req) });
   } catch (e) { next(e); }
 });
 
