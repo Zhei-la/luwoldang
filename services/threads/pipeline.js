@@ -75,7 +75,9 @@ function decorate(p, topic, situation, opts) {
  */
 async function generate(userId, openaiKey, topic, limit, opts) {
   const o = opts || {};
-  const settings = await store.getSettings(userId);
+  /* 말투·인사글·운세 틀은 계정마다 다르다.
+     규칙이 계정을 집어 보내면 그 계정 몫으로 읽는다. */
+  const settings = await store.getSettings(userId, o.accountId);
   const ledger = await store.getLedger(userId);
 
   /* ⚠️ 이 셋은 makePrompt 보다 **위에** 있어야 한다.

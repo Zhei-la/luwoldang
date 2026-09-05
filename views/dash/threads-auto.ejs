@@ -287,6 +287,43 @@
   background:#c9a227;color:#fff;font-size:11px;font-weight:900;text-align:center;line-height:16px}
 #ta .ta-rule-act{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
 
+/* 사용 설명서 — 처음 여는 사람은 칸이 뭐가 뭔지 모른다.
+   접어두고, 펴면 위에서부터 그대로 따라 하면 되게. */
+#ta .ta-guide{border:1px solid var(--line);border-radius:14px;background:#fff;
+  margin-bottom:16px;overflow:hidden}
+#ta .ta-guide>summary{cursor:pointer;padding:14px 18px;font-size:14px;line-height:1.6;
+  color:var(--ink);list-style:none;user-select:none}
+#ta .ta-guide>summary::-webkit-details-marker{display:none}
+#ta .ta-guide>summary::before{content:'▸ ';color:var(--dim);font-weight:700}
+#ta .ta-guide[open]>summary::before{content:'▾ '}
+#ta .ta-guide>summary:hover{background:#fbfbf9}
+#ta .ta-guide-in{padding:2px 18px 20px;border-top:1px solid var(--line)}
+#ta .ta-guide-lead{margin:14px 0 4px;font-size:14px;line-height:1.85;color:var(--ink2)}
+#ta .ta-guide-in h4{margin:22px 0 8px;font-size:14.5px;font-weight:700;color:var(--ink)}
+/* 순서대로 따라 하는 자리 — 번호가 커야 어디까지 했는지 안 잃는다 */
+#ta .ta-steps{margin:14px 0 0;padding:0;list-style:none;counter-reset:st}
+#ta .ta-steps li{counter-increment:st;position:relative;padding:0 0 14px 34px;
+  font-size:14px;line-height:1.75}
+#ta .ta-steps li::before{content:counter(st);position:absolute;left:0;top:1px;
+  width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+#ta .ta-steps li>span{display:block;margin-top:3px;color:var(--dim);font-size:13.5px;line-height:1.8}
+#ta .ta-steps li b{color:var(--ink)}
+#ta .ta-terms{margin:0}
+#ta .ta-terms dt{font-size:14px;font-weight:700;color:var(--ink);margin-top:12px}
+#ta .ta-terms dd{margin:3px 0 0;font-size:13.5px;line-height:1.8;color:var(--dim)}
+#ta .ta-formlist,#ta .ta-terms-lite{margin:0;padding-left:18px}
+#ta .ta-formlist li,#ta .ta-terms-lite li{font-size:13.5px;line-height:1.8;
+  color:var(--dim);margin-bottom:5px}
+#ta .ta-formlist b,#ta .ta-terms-lite b{color:var(--ink)}
+#ta .ta-guide-warn{display:flex;gap:9px;margin-top:20px;padding:12px 14px;
+  border-radius:10px;background:#fff7e6;font-size:13.5px;line-height:1.8;color:#7a5600}
+#ta .ta-guide-warn b{color:#5c4100}
+@media (max-width:560px){
+  #ta .ta-guide>summary{padding:13px 14px;font-size:13.5px}
+  #ta .ta-guide-in{padding:2px 14px 18px}
+}
+
 /* 요일 판 — 「월요일에 뭐가 올라가지」는 목록을 훑는 게 아니라 눈에 들어와야 한다 */
 /* 일곱 칸은 **늘 한 줄**이어야 한다. 폰에서 3+3+1 로 접히면
    요일 판이 아니라 그냥 단추 더미가 된다. */
@@ -504,11 +541,126 @@
 
   <!-- ══════════ 자동 올리기 ══════════ -->
   <section class="ta-panel" id="p-auto" hidden>
+
+  <!-- ── 사용 설명서 ─────────────────────────────────
+       처음 여는 사람은 칸이 뭐가 뭔지 모른다. 접어두고,
+       펴면 **위에서부터 그대로 따라 하면 되게** 적는다. -->
+  <details class="ta-guide">
+    <summary><b>처음이신가요?</b> 자동 올리기 사용법 — 순서대로 따라 하시면 됩니다</summary>
+
+    <div class="ta-guide-in">
+
+      <p class="ta-guide-lead">글을 <b>미리 만들어 예약</b>해두는 기능입니다.
+        예약해두면 이 사이트가 꺼져 있어도 시간이 되면 올라갑니다.
+        앞으로 <b><%= lookaheadDays %>일치</b>를 늘 채워두고, 하루가 지나면 그 다음 날 자리가 저절로 하나 붙습니다.</p>
+
+      <ol class="ta-steps">
+        <li><b>올릴 계정을 고릅니다</b>
+          <span>바로 위 칸입니다. 「올릴 계정이 아직 없습니다」라고 나오면
+            <b>설정 탭</b>에서 Zernio 열쇠를 먼저 넣어주세요.</span></li>
+
+        <li><b>설정 탭에서 「스레드에 올리기 허용」을 켭니다</b>
+          <span>이게 꺼져 있으면 글은 만들어지지만 <b>올라가지는 않습니다.</b>
+            실수로 나가는 걸 막는 잠금장치입니다.</span></li>
+
+        <li><b>「+ 규칙 추가」를 누릅니다</b>
+          <span>규칙 하나가 「무슨 요일 몇 시에, 어떤 글을」 한 벌입니다.</span></li>
+
+        <li><b>요일과 시각을 더합니다</b>
+          <span>요일을 고르고 시각을 적고 <b>더하기</b>를 누르면 자리가 하나 생깁니다.
+            올리고 싶은 만큼 여러 개 더하세요.</span></li>
+
+        <li><b>「어떤 글로」에서 틀을 고릅니다</b>
+          <span>여러 개 고르면 돌아가며 씁니다. <b>3개까지</b>가 좋습니다 —
+            다 고르면 결국 아무거나가 됩니다.
+            자리를 더할 때 <b>틀을 콕 집어</b>둘 수도 있습니다 (「토요일 아침은 운세」처럼).</span></li>
+
+        <li><b>「만든 다음」을 정합니다</b> — <b>여기가 제일 중요합니다</b>
+          <span><b>바로 예약까지</b> = 손 안 대도 알아서 올라갑니다.<br>
+            <b>원고로만 두기</b> = 글만 만들어두고 <b>절대 안 올라갑니다.</b> 사람이 보고 직접 올려야 합니다.</span></li>
+
+        <li><b>「켜기」를 체크하고 저장합니다</b>
+          <span>⚠️ <b>이걸 안 누르면 아무 일도 안 일어납니다.</b>
+            저장 뒤 규칙 아래 <b>초록 줄</b>에 「몇 개를 만듭니다」라고 나오면 잘 켜진 겁니다.
+            빨간 줄이면 거기 적힌 대로 고쳐주세요.</span></li>
+
+        <li><b>5분쯤 기다렸다가 아래 「요일별 글」을 봅니다</b>
+          <span>글은 바로 안 생깁니다. 5분마다 확인해서 채웁니다.
+            바로 보고 싶으시면 규칙의 <b>「지금 한 번 만들어보기」</b>를 누르세요.</span></li>
+      </ol>
+
+      <h4>칸마다 무슨 뜻인가요</h4>
+      <dl class="ta-terms">
+        <dt>시각 어긋내기 ±분</dt>
+        <dd>정한 시각에 딱 맞춰 올리지 않고 몇 분씩 흔들어 올립니다.
+          <b>매일 똑같은 시각에 올리면 기계로 보여 계정이 막힐 수 있습니다.</b>
+          ±7분쯤을 권합니다. 0으로 두면 정한 시각 그대로 나갑니다.</dd>
+
+        <dt>댓글 유도</dt>
+        <dd><b>알아서</b> = 글마다 어울리면 붙입니다 (권합니다).
+          <b>꼭 받기</b> = 모든 글이 댓글을 조릅니다 — 매번 그러면 질립니다.
+          <b>조르지 않기</b> = 정보만 주고 끝냅니다.</dd>
+
+        <dt>주제 (키워드)</dt>
+        <dd>적어두면 돌아가며 씁니다. 비워두면 반응이 좋았던 소재에서 골라 옵니다.
+          「오늘의 운세」·「인사·무료사주」 틀은 <b>주제를 무시하고</b> 자기 주제를 씁니다.</dd>
+      </dl>
+
+      <h4>어떤 틀이 있나요</h4>
+      <ul class="ta-formlist">
+        <% formList.forEach(function(f){ %>
+          <li><b><%= f.label %></b> — <%= f.hint %></li>
+        <% }) %>
+      </ul>
+
+      <h4>「요일별 글」은 어떻게 보나요</h4>
+      <ul class="ta-terms-lite">
+        <li><b>요일을 누르면</b> 그날 올라간 글과 올라갈 글이 나옵니다.</li>
+        <li><b>지난 요일</b>은 「✓ 몇 개」 또는 「안 올림」 — 올라갔는지 확인하는 자리입니다.</li>
+        <li><b>남은 요일</b>은 「몇 개 예정」 — 나가기 전에 고치는 자리입니다.</li>
+        <li><b>규칙 꺼짐</b>이라고 뜨면 그 규칙의 「켜기」가 안 눌린 것입니다.</li>
+        <li>점선 칸(<b>자리는 잡혀 있습니다</b>)은 아직 글을 안 만든 자리입니다.
+          날짜가 <%= lookaheadDays %>일 안으로 들어오면 글이 채워집니다.</li>
+      </ul>
+
+      <h4>글마다 있는 단추</h4>
+      <ul class="ta-terms-lite">
+        <li><b>시간 설정</b> — 이 글만 다른 요일·시각으로 옮깁니다.</li>
+        <li><b>수정하기</b> — 본문을 직접 고칩니다. <b>고치면 예약이 풀립니다</b> — 다시 걸어야 나갑니다.</li>
+        <li><b>글 재생성</b> — 같은 자리에 글을 새로 만듭니다. 주제와 틀을 바꿔서 만들 수도 있습니다.</li>
+        <li><b>삭제하기</b> — <b>이 자리의 예약을 취소</b>합니다. 글은 「내 원고」에 남습니다.</li>
+      </ul>
+
+      <h4>계정을 두세 개 쓰신다면</h4>
+      <ul class="ta-terms-lite">
+        <li><b>설정은 계정마다 따로입니다.</b> 말투·인사글·오늘의 운세 틀·링크는
+          계정을 바꾸면 그 계정 것으로 바뀝니다. 계정마다 성격이 다르니까요.</li>
+        <li>계정을 바꾸시려면 맨 위 <b>「올릴 계정」</b>에서 고르세요.
+          그 계정 설정으로 화면이 다시 뜹니다.</li>
+        <li><b>규칙마다 어느 계정으로 나갈지 집어두세요.</b>
+          규칙 칸의 「어느 계정으로」입니다. 계정이 둘 이상일 때만 보입니다.</li>
+        <li>규칙을 계정별로 만들어두면 <b>세 계정이 각자 자기 시간표대로</b> 돌아갑니다.
+          예를 들어 A계정은 아침 7시, B계정은 저녁 9시로 따로 잡으시면 됩니다.</li>
+        <li>안 집어두면 「지금 고른 계정」으로 나갑니다 —
+          계정을 바꾸면 그 규칙이 나가는 곳도 같이 바뀌니 주의하세요.</li>
+        <li>열쇠·올리기 허용·모델은 <b>사람 단위</b>라 계정을 바꿔도 그대로입니다.</li>
+      </ul>
+
+      <div class="ta-guide-warn">
+        <b class="bang">!</b>
+        <div><b>글이 안 올라갈 때는 그 글 밑을 보세요.</b>
+          왜 안 나가는지 적혀 있습니다 — 규칙이 「원고로만 두기」인지,
+          올리기가 잠겼는지, 계정이 없는지, 지침에 걸렸는지.</div>
+      </div>
+
+    </div>
+  </details>
+
     <div class="ta-card">
       <h2>자동 올리기</h2>
       <p class="ta-sub">요일과 시각을 정해두면 <b>그 자리에 맞춰 글을 미리 만들어 예약</b>해둡니다.
-        <b>일주일치를 늘 채워둡니다.</b> 하루가 지나면 그 다음 날 자리가 저절로 하나 붙어서,
-        손을 안 대도 앞으로 일주일이 늘 차 있습니다.
+        <b><%= lookaheadDays %>일치를 늘 채워둡니다.</b> 하루가 지나면 그 다음 날 자리가 저절로 하나 붙어서,
+        손을 안 대도 앞으로 <%= lookaheadDays %>일이 늘 차 있습니다.
         발행 시각에 만들지 않고 미리 걸어두기 때문에, 이 사이트가 꺼져 있어도 시간이 되면 올라갑니다.</p>
 
       <div class="ta-warn-box">
@@ -1824,6 +1976,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   var FORMS    = <%- JSON.stringify(formList.map(function(f){return {id:f.id,label:f.label,hint:f.hint,needsIntro:!!f.needsIntro}})).replace(/</g, '\\u003c') %>;
   var FORM_MAX = <%= formMax %>;
   var DAYS     = <%- JSON.stringify(dayNames).replace(/</g, '\\u003c') %>;
+  /* 며칠치를 미리 만드는지. 서버가 정한 값을 그대로 받아 쓴다. */
+  var AHEAD    = <%= lookaheadDays %>;
+  /* 등록해둔 계정들. 규칙마다 어느 계정으로 나갈지 고르는 데 쓴다. */
+  var ACCOUNTS = <%- JSON.stringify(accounts.map(function(a){
+    return { id: a.id, username: a.username, accountId: a.accountId };
+  })).replace(/</g, '\u003c') %>;
   var HAS_INTRO = <%= (intro && (intro.name || intro.career || intro.sample)) ? 'true' : 'false' %>;
   var RULES    = <%- JSON.stringify(autoRules).replace(/</g, '\\u003c') %>;
 
@@ -1944,6 +2102,21 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         '<option value="no"' + (r.askComments === 'no' ? ' selected' : '') + '>댓글을 조르지 않기</option>' +
       '</select>' +
 
+      /* 계정을 두세 개 돌리면 규칙마다 어느 계정으로 나갈지 정해야 한다.
+         안 정하면 「지금 고른 계정」으로 나간다 — 계정을 바꾸면 같이 바뀐다. */
+      (ACCOUNTS.length > 1
+        ? '<label style="margin-top:16px">어느 계정으로</label>' +
+          '<p class="ta-sub" style="margin:0 0 6px">계정마다 말투·인사글·운세 틀이 따로 있습니다. ' +
+          '계정을 여러 개 돌리시면 <b>규칙마다 계정을 집어두세요.</b></p>' +
+          '<select class="acct">' +
+            '<option value="0"' + (r.accountId ? '' : ' selected') + '>지금 고른 계정 (바꾸면 같이 바뀝니다)</option>' +
+            ACCOUNTS.map(function(a){
+              return '<option value="' + a.id + '"' + (r.accountId === a.id ? ' selected' : '') +
+                '>@' + esc(a.username || a.accountId) + '</option>';
+            }).join('') +
+          '</select>'
+        : '') +
+
       '<label style="margin-top:16px">만든 다음</label>' +
       '<select class="md">' +
         '<option value="draft"' + (r.mode === 'draft' ? ' selected' : '') + '>원고로만 두기 (내가 보고 올린다)</option>' +
@@ -1993,6 +2166,8 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       topics: box.querySelector('.kw').value.split('\n').map(function(t){ return t.trim(); }).filter(Boolean),
       mode: box.querySelector('.md').value,
       askComments: box.querySelector('.ac').value,
+      /* 계정이 하나면 고르는 칸을 안 그린다 — 그때는 안 보낸다 */
+      accountId: box.querySelector('.acct') ? Number(box.querySelector('.acct').value) : 0,
     };
   }
 
@@ -2061,7 +2236,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         if (!r.j.ok) { msg(box.querySelector('.msg'), 'err', r.j.error); return; }
         msg(box.querySelector('.msg'), r.j.made ? 'ok' : 'err',
           r.j.made ? r.j.made + '개를 만들어 걸었습니다. 「내 원고」에서 보세요.'
-                   : (r.j.errors[0] || '앞으로 일주일 안에 빈 자리가 없습니다.'));
+                   : (r.j.errors[0] || '앞으로 ' + AHEAD + '일 안에 빈 자리가 없습니다.'));
       });
     });
   }
@@ -2294,7 +2469,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       '<b>' + esc(whenFull(x.slotAt)) + '</b> — ' +
       (x.off ? '자리는 잡혔지만 <b>안 나갑니다</b>' : '자리는 잡혀 있습니다') +
       (tag ? ' · ' + tag : '') +
-      '<span class="sub">' + esc(x.note || '글은 그 자리가 일주일 안에 들어오면 만들어집니다. 그때 여기에 보입니다.') +
+      '<span class="sub">' + esc(x.note || ('글은 그 자리가 ' + AHEAD + '일 안에 들어오면 만들어집니다. 그때 여기에 보입니다.')) +
       '</span></div>';
   }
 
@@ -2319,7 +2494,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       var nothing = !UP_POSTS.length && !UP_SLOTS.length;
       box.innerHTML = '<div class="ta-empty">' + (nothing
         ? '아직 예정된 글이 없습니다.<br>' +
-          '규칙을 켜두면 <b>5분 안에</b> 확인해서 <b>일주일치</b>를 채웁니다.<br>' +
+          '규칙을 켜두면 <b>5분 안에</b> 확인해서 <b>' + AHEAD + '일치</b>를 채웁니다.<br>' +
           '<span class="ta-sub">지금 보고 싶으시면 위 규칙의 「지금 한 번 만들어보기」를 눌러주세요.</span>'
         : (d.getMonth()+1) + '월 ' + d.getDate() + '일 ' + DAYS[d.getDay()] + '요일에는 ' +
           '<b>잡아둔 자리가 없습니다.</b><br>' +

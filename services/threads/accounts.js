@@ -29,6 +29,18 @@ async function list(userId) {
   }));
 }
 
+/** 계정 하나를 번호로 집어 온다. 규칙마다 나갈 계정이 다를 수 있다. */
+async function byId(userId, id) {
+  if (!id) return null;
+  const { rows } = await pool.query(
+    'SELECT * FROM th_accounts WHERE user_id = $1 AND id = $2',
+    [userId, id]
+  );
+  const r = rows[0];
+  if (!r) return null;
+  return { id: r.id, key: r.zernio_key, accountId: r.account_id, username: r.username || '' };
+}
+
 /**
  * 지금 올릴 계정.
  * 정해둔 게 없으면 제일 먼저 등록한 것을 쓴다 —
@@ -111,4 +123,4 @@ async function count(userId) {
   return rows[0] ? rows[0].n : 0;
 }
 
-module.exports = { list, active, add, setActive, remove, count };
+module.exports = { list, active, byId, add, setActive, remove, count };

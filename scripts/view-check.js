@@ -37,7 +37,7 @@ const data = {
   intro: { name: '', career: '', sample: '' },
   daily: { body: '', tail: '', mode: 'single' },
   formList: FORMS.FORMS, formMax: FORMS.MAX_PICK,
-  dayNames: rules.DAY_NAMES, autoRules: [],
+  dayNames: rules.DAY_NAMES, lookaheadDays: rules.LOOKAHEAD_DAYS, autoRules: [],
   linksThisWeek: 0, posts: [], trashCount: 0,
   hookTotal: HOOKS.length, hookUsed: 0,
   topics: ALL, hotTopics: HOT, dailyLimit: 20, usedToday: 0,

@@ -278,7 +278,98 @@ const DEFAULT_SETTINGS = {
   facts: [],
 };
 
-async function getSettings(userId) {
+/* 계정마다 달라야 하는 것들.
+ *
+ * ⚠️ 예전엔 설정이 사람 하나에 한 벌이었다. 계정을 바꿔도 앞 계정의
+ *    말투·인사글·운세 틀이 그대로 떴다. 계정마다 성격이 다르다.
+ *
+ * 여기 없는 것(열쇠·올리기 허용·모델·사실)은 사람 단위로 둔다 —
+ * 요금과 안전에 걸린 것이라 계정마다 갈라두면 오히려 헷갈린다. */
+const PER_ACCOUNT = ['ctaLink', 'dailyLine', 'ctaPerWeek', 'voiceMode', 'voicePack', 'intro', 'daily'];
+
+const ACCT_COLS = {
+  ctaLink: 'cta_link',
+  dailyLine: 'daily_line',
+  ctaPerWeek: 'cta_per_week',
+  voiceMode: 'voice_mode',
+  voicePack: 'voice_pack',
+  intro: 'intro',
+  daily: 'daily',
+};
+
+/** 지금 고른 계정. 안 골랐으면 가장 먼저 등록한 것. */
+async function currentAccountId(userId) {
+  const { rows } = await pool.query(
+    `SELECT a.id, (a.id = s.active_account) AS chosen
+       FROM th_accounts a
+       LEFT JOIN th_settings s ON s.user_id = a.user_id
+      WHERE a.user_id = $1
+      ORDER BY chosen DESC NULLS LAST, a.created_at
+      LIMIT 1`,
+    [userId]
+  );
+  return rows[0] ? rows[0].id : null;
+}
+
+/**
+ * 이 계정 몫의 설정을 읽는다. 없으면 만든다.
+ *
+ * 처음 만들 때는 **사람 단위 설정을 그대로 옮겨 담는다.** 이미 한 계정
+ * 분량을 다 채워둔 사람이 있어서, 빈 칸으로 시작하면 다 날아간 것처럼 보인다.
+ */
+async function acctRow(userId, accountId, base) {
+  const { rows } = await pool.query(
+    'SELECT * FROM th_acct_settings WHERE user_id = $1 AND account_id = $2',
+    [userId, accountId]
+  );
+  if (rows[0]) return rows[0];
+
+  await pool.query(
+    `INSERT INTO th_acct_settings
+       (user_id, account_id, cta_link, daily_line, cta_per_week, voice_mode, voice_pack, intro, daily, seeded)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE)
+     ON CONFLICT (user_id, account_id) DO NOTHING`,
+    [userId, accountId,
+      base.ctaLink || '', base.dailyLine || '', base.ctaPerWeek,
+      base.voiceMode || '',
+      base.voicePack ? JSON.stringify(base.voicePack) : null,
+      base.intro ? JSON.stringify(base.intro) : null,
+      base.daily ? JSON.stringify(base.daily) : null]
+  );
+  const again = await pool.query(
+    'SELECT * FROM th_acct_settings WHERE user_id = $1 AND account_id = $2',
+    [userId, accountId]
+  );
+  return again.rows[0] || null;
+}
+
+/**
+ * 설정을 읽는다.
+ *
+ * accountId 를 주면 그 계정 몫으로, 안 주면 지금 고른 계정 몫으로 읽는다.
+ * 계정이 하나도 없으면 사람 단위 설정을 그대로 쓴다.
+ */
+async function getSettings(userId, accountId) {
+  const base = await userSettings(userId);
+  const id = accountId === undefined ? await currentAccountId(userId) : accountId;
+  if (!id) return base;
+
+  const row = await acctRow(userId, id, base);
+  if (!row) return base;
+
+  return Object.assign({}, base, {
+    accountId: id,
+    ctaLink: row.cta_link || '',
+    dailyLine: row.daily_line || '',
+    ctaPerWeek: row.cta_per_week == null ? 2 : Number(row.cta_per_week),
+    voiceMode: row.voice_mode || '',
+    voicePack: row.voice_pack || null,
+    intro: row.intro || null,
+    daily: row.daily || null,
+  });
+}
+
+async function userSettings(userId) {
   const { rows } = await pool.query('SELECT * FROM th_settings WHERE user_id = $1', [userId]);
   const r = rows[0];
   if (!r) return Object.assign({}, DEFAULT_SETTINGS);
@@ -319,23 +410,53 @@ const SETTING_COLS = {
   facts: ['facts', (v) => JSON.stringify(v || [])],
 };
 
-async function saveSettings(userId, patch) {
+async function saveSettings(userId, patch, accountId) {
   await pool.query(
     'INSERT INTO th_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
     [userId]
   );
+  const p = patch || {};
+  const id = accountId === undefined ? await currentAccountId(userId) : accountId;
+
+  /* 계정 몫과 사람 몫을 갈라 담는다. 계정이 없으면 예전처럼 다 사람 몫으로. */
+  const mine = {};
+  const acct = {};
+  Object.keys(p).forEach((k) => {
+    if (id && PER_ACCOUNT.indexOf(k) >= 0) acct[k] = p[k];
+    else mine[k] = p[k];
+  });
+
   const sets = [];
   const args = [userId];
-  for (const key of Object.keys(patch || {})) {
+  for (const key of Object.keys(mine)) {
     const map = SETTING_COLS[key];
     if (!map) continue;
-    args.push(map[1](patch[key]));
+    args.push(map[1](mine[key]));
     sets.push(map[0] + ' = $' + args.length);
   }
   if (sets.length) {
     await pool.query('UPDATE th_settings SET ' + sets.join(', ') + ' WHERE user_id = $1', args);
   }
-  return getSettings(userId);
+
+  if (id && Object.keys(acct).length) {
+    /* 줄이 없을 수 있다. 먼저 만들어두고(사람 몫을 옮겨 담아) 고친다. */
+    await acctRow(userId, id, await userSettings(userId));
+    const aSets = [];
+    const aArgs = [userId, id];
+    for (const key of Object.keys(acct)) {
+      const col = ACCT_COLS[key];
+      if (!col) continue;
+      const map = SETTING_COLS[key];
+      aArgs.push(map[1](acct[key]));
+      aSets.push(col + ' = $' + aArgs.length);
+    }
+    if (aSets.length) {
+      await pool.query(
+        'UPDATE th_acct_settings SET ' + aSets.join(', ') +
+        ' WHERE user_id = $1 AND account_id = $2', aArgs);
+    }
+  }
+  return getSettings(userId, id === null ? undefined : id);
 }
 
 /* ── 하루 사용량 ──────────────────────────────────── */
@@ -365,6 +486,6 @@ module.exports = {
   deletePosts, restoreLatest, trashCount,
   saveBatch,
   getLedger, markHooksUsed,
-  getSettings, saveSettings,
+  getSettings, saveSettings, currentAccountId,
   countToday, markRun,
 };

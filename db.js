@@ -952,6 +952,33 @@ async function initDb() {
       );
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_accounts ON th_accounts(user_id, created_at);`);
+
+    /* 계정마다 다른 설정.
+     *
+     * ⚠️ 예전엔 설정이 사람 하나에 한 벌이었다. 계정을 두 개 등록해도
+     *    말투·인사글·운세 틀이 같이 따라다녀서, 계정을 바꿔도 앞 계정
+     *    설정이 그대로 떴다. 계정마다 성격이 다른데 한 벌이면 안 된다.
+     *
+     * 여기 없는 것(열쇠·올리기 허용·모델)은 사람 단위 그대로 둔다. */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_acct_settings (
+        user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        account_id   INTEGER NOT NULL REFERENCES th_accounts(id) ON DELETE CASCADE,
+        cta_link     TEXT,
+        daily_line   TEXT,
+        cta_per_week INTEGER,
+        voice_mode   TEXT,
+        voice_pack   JSONB,
+        intro        JSONB,
+        daily        JSONB,
+        seeded       BOOLEAN DEFAULT FALSE,
+        PRIMARY KEY (user_id, account_id)
+      );
+    `);
+
+    /* 규칙도 계정에 묶는다. 계정을 두세 개 돌리면 규칙마다
+       어느 계정으로 나갈지가 정해져 있어야 한다. */
+    await pool.query(`ALTER TABLE th_rules ADD COLUMN IF NOT EXISTS account_id INTEGER;`);
     /* 지금 올릴 계정 */
     await pool.query(`ALTER TABLE th_settings ADD COLUMN IF NOT EXISTS active_account INTEGER;`);
     /* 그 글이 어느 계정으로 나갔는지. 계정을 바꿔도 예약 상태를 계속 확인하려면 필요하다.

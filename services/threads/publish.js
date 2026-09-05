@@ -24,8 +24,12 @@ const { numberParts } = require('./length');
  *   자동은 다르다. 사람이 안 보고 나가므로 지침을 다 지킨 글만 내보낸다.
  */
 async function readyToSend(userId, post, opts) {
-  const s = await store.getSettings(userId);
-  const acc = await accounts.active(userId);
+  const o = opts || {};
+  /* 규칙이 계정을 집어 보내면 그 계정으로 나간다.
+     안 집었으면 지금 고른 계정. 계정을 두세 개 돌리면 이게 갈려야 한다. */
+  const acc = (o.accountId && await accounts.byId(userId, o.accountId))
+    || await accounts.active(userId);
+  const s = await store.getSettings(userId, acc ? acc.id : undefined);
 
   if (!acc) {
     return { ok: false, why: '올릴 스레드 계정이 없습니다. 설정에서 먼저 등록해주세요.' };
@@ -55,8 +59,9 @@ async function readyToSend(userId, post, opts) {
  * 실제로 나갈 본문을 만든다 — 번호 붙이기 + 리스트 댓글 + 꼬리말 한 편.
  * 발행과 예약이 똑같이 써야 한다.
  */
-async function bodyToSend(userId, post) {
-  const settings = await store.getSettings(userId);
+async function bodyToSend(userId, post, accountId) {
+  /* 꼬리말·링크는 계정마다 다르다. 그 계정 몫을 읽어야 한다. */
+  const settings = await store.getSettings(userId, accountId);
 
   /* 번호(1/2 · 2/2)는 **이 글이 붙이기로 한 경우에만** 붙인다.
      예전에는 편이 셋 이상이면 무조건 붙었다. 그래서 원치 않는 사람에게도
@@ -93,7 +98,7 @@ async function scheduleAt(userId, post, when, opts) {
     e.code = 'NOT_READY';
     throw e;
   }
-  const send = await bodyToSend(userId, post);
+  const send = await bodyToSend(userId, post, ready.acc.id);
   const out = await zernio.send({
     apiKey: ready.acc.key,
     accountId: ready.acc.accountId,

@@ -58,11 +58,16 @@ function outsideFail(res, e, next) {
  * 화면과 API 가 같은 답을 줘야 해서 한 곳에 둔다.
  */
 async function rulesWithStatus(req) {
-  const [settings, acc, list] = await Promise.all([
+  const [settings, acc, list, accList] = await Promise.all([
     store.getSettings(req.user.id),
     accounts.active(req.user.id),
     rules.list(req.user.id),
+    accounts.list(req.user.id),
   ]);
+  /* 규칙이 계정을 집어뒀으면 그 계정이 아직 있는지 봐야 한다.
+     지운 계정을 붙들고 있으면 영영 안 나가는데 이유를 알 수 없다. */
+  const accIds = {};
+  accList.forEach((a) => { accIds[a.id] = a; });
   const posts = await store.getPosts(req.user.id);
   const now = Date.now();
   const until = now + 36 * 3600 * 1000;
@@ -77,7 +82,9 @@ async function rulesWithStatus(req) {
       status: rules.diagnose(r, {
         hasKey: !!req.user.openai_key,
         allowPublish: settings.allowPublish,
-        hasAccount: !!acc,
+        hasAccount: r.accountId ? !!accIds[r.accountId] : !!acc,
+        accountName: r.accountId && accIds[r.accountId]
+          ? (accIds[r.accountId].username || '') : '',
         filled,
       }),
     });
@@ -192,6 +199,8 @@ router.get('/threads', ...guard, async (req, res, next) => {
       formList: FORMS.FORMS,
       formMax: FORMS.MAX_PICK,
       dayNames: rules.DAY_NAMES,
+      /* 안내 문구가 숫자와 따로 놀지 않게 화면도 같은 값을 쓴다 */
+      lookaheadDays: rules.LOOKAHEAD_DAYS,
       autoRules: await rulesWithStatus(req),
       linksThisWeek: await tail.linksThisWeek(req.user.id),
       posts: posts.map((x) => pipeline.view(x)),
@@ -330,7 +339,10 @@ router.get('/api/threads/rules', ...guard, async (req, res, next) => {
 router.post('/api/threads/rules', ...guard, async (req, res, next) => {
   try {
     const b = req.body || {};
-    const s = await store.getSettings(req.user.id);
+    /* 「인사글 재료가 있나」는 **그 규칙이 쓸 계정** 기준으로 봐야 한다.
+       계정마다 인사글이 따로 있어서, 사람 단위로 보면 엉뚱한 답이 나온다. */
+    const acctId = Number(b.accountId) > 0 ? Number(b.accountId) : undefined;
+    const s = await store.getSettings(req.user.id, acctId);
     const hasIntro = !!(s.intro && (s.intro.name || s.intro.career || s.intro.sample));
     const patch = rules.clean(b, { hasIntro });
 
@@ -388,7 +400,7 @@ router.post('/api/threads/rules/:id/run', ...guard, async (req, res, next) => {
 /**
  * 앞으로 올라갈 글들. 자동 규칙이 미리 만들어둔 것을 시각 순으로 보여준다.
  *
- * 일주일 앞서 만들어두기 때문에, 마음에 안 드는 글을 **올라가기 전에**
+ * 며칠 앞서 만들어두기 때문에, 마음에 안 드는 글을 **올라가기 전에**
  * 볼 수 있어야 한다. 안 그러면 자동이 아니라 도박이 된다.
  */
 router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
@@ -440,12 +452,12 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
         };
       });
     /* 아직 글이 안 만들어진 자리도 보여준다.
-       자동은 일주일 앞까지 채우니, 그 너머는 자리만 보여준다.
+       자동은 정해둔 며칠 앞까지만 채우니, 그 너머는 자리만 보여준다.
        빈칸만 보면 「예약이 안 걸렸나」 싶다 — 자리는 잡혀 있다고 알려줘야 한다. */
     const written = {};
     list.forEach((x) => { if (x.planKey) written[x.planKey] = true; });
 
-    const WEEK_MS = 7 * 24 * 3600 * 1000;
+    const AHEAD_MS = rules.LOOKAHEAD_DAYS * 24 * 3600 * 1000;
     const slots = [];
     /* ⚠️ 꺼진 규칙을 빼버리면 요일 판이 조용히 빈다.
           「일곱 요일을 다 잡아놨는데 왜 아무것도 안 보이냐」가 된다.
@@ -455,7 +467,7 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
         const key = planKeyOf(r.id, x.at, x.slot.time);
         if (written[key]) return;
         const f = x.slot.form ? FORMS.byId(x.slot.form) : null;
-        const soon = new Date(x.sendAt).getTime() - Date.now() <= WEEK_MS;
+        const soon = new Date(x.sendAt).getTime() - Date.now() <= AHEAD_MS;
         slots.push({
           planKey: key,
           slotAt: new Date(x.sendAt).toISOString(),
@@ -465,8 +477,8 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
           note: !r.enabled
             ? '이 규칙이 꺼져 있어 글을 만들지 않습니다. 위 규칙에서 「켜기」를 체크해주세요.'
             : soon
-              ? '곧 만듭니다. 5분마다 확인해서 일주일치를 채웁니다.'
-              : '일주일 앞까지만 미리 만듭니다. 날짜가 가까워지면 여기에 글이 보입니다.',
+              ? '곧 만듭니다. 5분마다 확인해서 ' + rules.LOOKAHEAD_DAYS + '일치를 채웁니다.'
+              : rules.LOOKAHEAD_DAYS + '일 앞까지만 미리 만듭니다. 날짜가 가까워지면 여기에 글이 보입니다.',
         });
       });
     });
@@ -796,7 +808,7 @@ router.post('/api/threads/posts/:id/publish', ...guard, async (req, res, next) =
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
-    const send = await bodyToSend(req.user.id, post);
+    const send = await bodyToSend(req.user.id, post, ready.acc.id);
     try {
       const out = await zernio.send({
         apiKey: ready.acc.key,
@@ -838,7 +850,7 @@ router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) 
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
-    const send = await bodyToSend(req.user.id, post);
+    const send = await bodyToSend(req.user.id, post, ready.acc.id);
     try {
       const out = await zernio.send({
         apiKey: ready.acc.key,

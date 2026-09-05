@@ -18,6 +18,11 @@ const forms = require('./forms');
 
 const TZ_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+/* 며칠치를 미리 만들어 둘지. **한 곳에서만 정한다** —
+   숫자와 안내 문구가 따로 놀면 「3일이라더니 왜 이틀만 있냐」가 된다.
+   화면 문구도 이 값을 받아서 쓴다. */
+const LOOKAHEAD_DAYS = 3;
 const MAX_SLOTS = 21;      // 하루 세 번 × 이레. 그 이상은 광고 계정이 된다
 const MAX_RULES = 10;
 
@@ -32,6 +37,8 @@ function rowToRule(r) {
     id: r.id,
     name: r.name || '',
     enabled: !!r.enabled,
+    /* 어느 계정으로 나갈지. 계정을 두세 개 돌리면 규칙마다 달라야 한다. */
+    accountId: r.account_id == null ? null : Number(r.account_id),
     slots: r.slots || [],
     jitterMin: r.jitter_min == null ? 7 : Number(r.jitter_min),
     topics: r.topics || [],
@@ -117,6 +124,11 @@ function clean(patch, opts) {
     out.forms = forms.clean(patch.forms, { hasIntro: !!o.hasIntro });
   }
   if (patch.mode === 'publish' || patch.mode === 'draft') out.mode = patch.mode;
+  /* 계정을 골라 담는다. 0·빈 값이면 「지금 고른 계정」을 쓴다는 뜻이다. */
+  if (patch.accountId !== undefined) {
+    const n = Number(patch.accountId);
+    out.accountId = n > 0 ? n : null;
+  }
   /* 'yes' 댓글 받기 · 'no' 조르지 않기 · '' 글마다 알아서 */
   if (['yes', 'no', ''].indexOf(patch.askComments) >= 0) out.askComments = patch.askComments;
 
@@ -126,7 +138,7 @@ function clean(patch, opts) {
 const COLS = {
   name: 'name', enabled: 'enabled', slots: 'slots', jitterMin: 'jitter_min',
   topics: 'topics', forms: 'forms', mode: 'mode', cursor: 'cursor',
-  askComments: 'ask_comments',
+  askComments: 'ask_comments', accountId: 'account_id',
   lastRunAt: 'last_run_at', lastError: 'last_error',
 };
 const JSON_COLS = new Set(['slots', 'topics', 'forms']);
@@ -289,12 +301,11 @@ function slotLabel(slot) {
  * 화면에서 바로 보여야 한다.
  *
  * ctx = { hasKey, allowPublish, hasAccount, filled }
- *   filled — 앞으로 일주일 안에 이미 채워둔 자리 개수
+ *   filled — 앞으로 며칠 안에 이미 채워둔 자리 개수
  */
 function diagnose(rule, ctx) {
   const c = ctx || {};
-  /* 일주일치를 미리 채운다. 36시간만 보면 요일 판에 이틀치만 뜬다. */
-  const soon = plan(rule, 7).length;
+  const soon = plan(rule, LOOKAHEAD_DAYS).length;
 
   if (!rule.enabled) return { ok: false, why: '꺼져 있습니다. 위 「켜기」를 체크해주세요.' };
   if (!(rule.slots || []).length) return { ok: false, why: '올릴 자리가 없습니다. 요일과 시각을 더해주세요.' };
@@ -302,18 +313,32 @@ function diagnose(rule, ctx) {
     return { ok: false, why: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 등록해주세요.' };
   }
   if (rule.mode === 'publish' && !c.hasAccount) {
+    /* 규칙이 계정을 집어뒀는데 그 계정이 사라진 경우다.
+       「계정이 없습니다」만 보면 등록해둔 게 있는데 왜 그러나 싶다. */
+    if (rule.accountId) {
+      return {
+        ok: false,
+        why: '이 규칙이 쓰던 계정이 없어졌습니다. 아래 「어느 계정으로」에서 다시 골라주세요.',
+      };
+    }
     return { ok: false, why: '올릴 스레드 계정이 없습니다. 설정에서 등록하거나 「원고로만 두기」로 바꿔주세요.' };
   }
   if (rule.mode === 'publish' && !c.allowPublish) {
     return { ok: false, why: '올리기가 잠겨 있습니다. 설정에서 「스레드에 올리기 허용」을 켜주세요.' };
   }
   if (!soon) {
-    return { ok: true, why: '앞으로 일주일 안에 올릴 자리가 없습니다. 그 자리가 다가오면 만듭니다.' };
+    return { ok: true, why: '앞으로 ' + LOOKAHEAD_DAYS + '일 안에 올릴 자리가 없습니다. 그 자리가 다가오면 만듭니다.' };
   }
   if (c.filled >= soon) {
-    return { ok: true, why: '일주일치를 이미 다 만들어뒀습니다. 아래 요일 판에서 확인하세요.' };
+    return { ok: true, why: LOOKAHEAD_DAYS + '일치를 이미 다 만들어뒀습니다. 아래 요일 판에서 확인하세요.' };
   }
-  return { ok: true, why: '다음 확인 때 ' + (soon - c.filled) + '개를 만듭니다. (5분마다 돕니다)' };
+  /* 계정을 집어둔 규칙은 어디로 나가는지 같이 보여준다.
+     계정이 두세 개면 「이건 어느 계정이지」가 늘 헷갈린다. */
+  const where = rule.accountId && c.accountName ? ' @' + c.accountName + ' 으로 나갑니다.' : '';
+  return {
+    ok: true,
+    why: '다음 확인 때 ' + (soon - c.filled) + '개를 만듭니다. (5분마다 돕니다)' + where,
+  };
 }
 
 /**
@@ -337,5 +362,5 @@ function sameTimeWarning(slots) {
 module.exports = {
   list, get, active, save, remove, clean,
   upcoming, plan, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf, diagnose,
-  DAY_NAMES, MAX_SLOTS, MAX_RULES,
+  DAY_NAMES, MAX_SLOTS, MAX_RULES, LOOKAHEAD_DAYS,
 };

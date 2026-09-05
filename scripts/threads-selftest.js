@@ -667,7 +667,14 @@ t('사람이 올릴 땐 길이만 막는다', /if \(!check\.passBlock\)/.test(pu
 t('자동일 땐 지침을 다 본다', /if \(auto && !check\.passHard\)/.test(pubSrc), true);
 const autoSrc3 = require('fs')
   .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
-t('자동 예약은 auto 로 부른다', /scheduleAt\([^)]*\{ auto: true \}\)/.test(autoSrc3), true);
+t('자동 예약은 auto 로 부른다', /scheduleAt\([\s\S]{0,120}auto: true/.test(autoSrc3), true);
+/* 계정을 두세 개 돌리면 규칙마다 자기 계정으로 나가야 한다 */
+t('규칙의 계정으로 예약한다',
+  /scheduleAt\([\s\S]{0,160}accountId: rule\.accountId/.test(autoSrc3), true);
+t('규칙의 계정 몫 설정으로 만든다',
+  autoSrc3.indexOf('store.getSettings(rule.userId, rule.accountId') > 0, true);
+t('글도 그 계정 말투로 만든다',
+  /pipeline\.generate\([\s\S]{0,220}accountId: rule\.accountId/.test(autoSrc3), true);
 
 /* ── 틀이 주제를 이기는가 ── */
 section('틀과 주제');
@@ -802,11 +809,28 @@ t('일곱 칸이 늘 한 줄이다', viewSrc.indexOf('grid-template-columns:repe
 /* ta-slot 은 규칙 편집기 요일 칸이 이미 쓰는 이름이다 (inline-flex) */
 t('이름이 겹치지 않는다', /class="ta-slot"><b>/.test(viewSrc), false);
 t('안 만든 자리를 따로 그린다', viewSrc.indexOf('ta-hold') > 0, true);
-/* ⚠️ 36시간만 채우면 요일 판에 이틀치만 뜬다. 일곱 요일을 잡아놔도
-   「왜 월요일만 보이냐」가 된다. 일주일치를 늘 채워둔다. */
-t('일주일치를 채운다고 알려준다', viewSrc.indexOf('일주일치를 늘 채워둡니다') > 0, true);
-t('일주일치를 미리 만든다',
-  require(require('path').join(__dirname, '..', 'services', 'threads', 'autopost')).LOOKAHEAD_DAYS, 7);
+/* ⚠️ 36시간만 채우면 요일 판에 이틀치도 안 뜬다. 요일을 다 잡아놔도
+   「왜 오늘 것만 보이냐」가 된다. 며칠치를 늘 채워둔다. */
+t('며칠치인지 알려준다', viewSrc.indexOf('일치를 늘 채워둡니다') > 0, true);
+/* 숫자와 문구가 따로 놀면 「3일이라더니 왜 이틀만 있냐」가 된다.
+   값은 rules.js 한 곳에서 정하고 화면도 그 값을 받아 쓴다. */
+t('며칠치인지 한 곳에서 정한다', R.LOOKAHEAD_DAYS, 3);
+t('자동 올리기도 같은 값을 쓴다',
+  require(require('path').join(__dirname, '..', 'services', 'threads', 'autopost')).LOOKAHEAD_DAYS,
+  R.LOOKAHEAD_DAYS);
+t('화면도 그 값을 받는다', viewSrc.indexOf('var AHEAD    = <%= lookaheadDays %>') > 0, true);
+t('라우트가 그 값을 넘긴다', routeSrc.indexOf('lookaheadDays: rules.LOOKAHEAD_DAYS') > 0, true);
+
+/* ── 사용 설명서 ──
+   처음 여는 사람은 칸이 뭐가 뭔지 모른다. 보고 그대로 따라 할 수 있어야 한다. */
+t('설명서가 있다', viewSrc.indexOf('class="ta-guide"') > 0, true);
+t('접혀 있다', /<details class="ta-guide">/.test(viewSrc), true);
+/* 「켜기」를 안 눌러 아무 일도 안 일어난 적이 있다 — 그 자리를 짚어준다 */
+t('켜기를 짚어준다', viewSrc.indexOf('이걸 안 누르면 아무 일도 안 일어납니다') > 0, true);
+t('원고로만 두기를 짚어준다', viewSrc.indexOf('절대 안 올라갑니다') > 0, true);
+t('시각 어긋내기를 풀어준다', viewSrc.indexOf('계정이 막힐 수 있습니다') > 0, true);
+t('틀 목록을 자동으로 뽑는다', viewSrc.indexOf('formList.forEach') > 0, true);
+t('단추 뜻을 적어둔다', viewSrc.indexOf('이 자리의 예약을 취소') > 0, true);
 t('되풀이되는 자리까지 편다', autoSrc4.indexOf('rules.plan(rule, LOOKAHEAD_DAYS)') > 0, true);
 /* ── 지난 자리 밀기 ──
    ⚠️ 일주일치를 미리 채우면 「그 요일의 다음 번」은 늘 차 있다.
@@ -1088,6 +1112,82 @@ const block = P.dailyBlock({ body: TPL, tail: '운 좋은 띠는' + LF + '흐름
 t('치수가 프롬프트에 실린다', block.indexOf('이 틀의 치수') > 0, true);
 t('2편 치수도 실린다', block.indexOf('2편의 치수') > 0, true);
 t('참고가 아니라 서식이라고 말한다', block.indexOf('참고 자료가 아니라') > 0, true);
+
+
+/* ── 계정마다 다른 설정 ────────────────────────────────
+   ⚠️ 설정이 사람 하나에 한 벌이었다. 계정을 두 개 등록해도
+      말투·인사글·운세 틀이 같이 따라다녀서, 계정을 바꿔도 앞 계정
+      설정이 그대로 떴다. 계정마다 성격이 다른데 한 벌이면 안 된다. */
+section('계정마다 다른 설정');
+
+const storeSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'store.js'), 'utf8');
+const dbSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'db.js'), 'utf8');
+const acctSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'accounts.js'), 'utf8');
+const pubSrc2 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'publish.js'), 'utf8');
+const pipeSrc2 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'pipeline.js'), 'utf8');
+
+t('계정 몫 설정 표가 있다', dbSrc.indexOf('CREATE TABLE IF NOT EXISTS th_acct_settings') > 0, true);
+t('규칙에 계정 칸이 있다',
+  dbSrc.indexOf('ALTER TABLE th_rules ADD COLUMN IF NOT EXISTS account_id') > 0, true);
+
+/* 무엇이 계정 몫이고 무엇이 사람 몫인지 — 잘못 가르면 열쇠가 갈라진다 */
+t('말투는 계정 몫', storeSrc.indexOf("'voiceMode', 'voicePack'") > 0, true);
+t('인사글·운세 틀도 계정 몫', /PER_ACCOUNT = \[[^\]]*'intro', 'daily'\]/.test(storeSrc), true);
+t('열쇠는 계정 몫이 아니다', /PER_ACCOUNT = \[[^\]]*zernioKey/.test(storeSrc), false);
+t('올리기 허용도 계정 몫이 아니다', /PER_ACCOUNT = \[[^\]]*allowPublish/.test(storeSrc), false);
+
+/* 처음 만들 때 사람 몫을 옮겨 담아야 한다.
+   빈 칸으로 시작하면 이미 채워둔 사람은 다 날아간 것처럼 보인다. */
+t('처음엔 쓰던 설정을 옮겨 담는다', storeSrc.indexOf('async function acctRow') > 0, true);
+t('옮겨 담았다고 표시해둔다', storeSrc.indexOf('seeded') > 0, true);
+t('계정을 안 주면 지금 고른 계정', storeSrc.indexOf('async function currentAccountId') > 0, true);
+/* 계정이 하나도 없으면 예전처럼 사람 단위로 — 안 그러면 아무것도 못 읽는다 */
+t('계정이 없으면 사람 몫 그대로', /if \(!id\) return base;/.test(storeSrc), true);
+t('저장도 갈라 담는다', storeSrc.indexOf('const acct = {};') > 0, true);
+
+/* ── 계정을 두세 개 돌리기 ──
+   계정마다 시간표가 따로 돌아야 한다. */
+section('계정 여러 개 돌리기');
+
+t('계정을 번호로 집어 온다', acctSrc.indexOf('async function byId') > 0, true);
+t('집은 계정으로 내보낸다', pubSrc2.indexOf('accounts.byId(userId, o.accountId)') > 0, true);
+t('못 집었으면 지금 고른 계정', pubSrc2.indexOf('|| await accounts.active(userId)') > 0, true);
+/* 꼬리말·링크도 그 계정 몫이라야 한다 */
+t('꼬리말도 그 계정 몫으로',
+  pubSrc2.indexOf('async function bodyToSend(userId, post, accountId)') > 0, true);
+t('예약할 때 그 계정 몫을 넘긴다',
+  pubSrc2.indexOf('bodyToSend(userId, post, ready.acc.id)') > 0, true);
+t('글도 그 계정 말투로', pipeSrc2.indexOf('store.getSettings(userId, o.accountId)') > 0, true);
+
+/* 규칙에 계정을 담고 꺼낼 수 있어야 한다 */
+t('규칙이 계정을 담는다', R.clean({ accountId: 7 }, {}).accountId, 7);
+t('0은 안 집은 것으로 본다', R.clean({ accountId: 0 }, {}).accountId, null);
+t('빈 값도 안 집은 것', R.clean({ accountId: '' }, {}).accountId, null);
+t('안 보내면 건드리지 않는다', R.clean({}, {}).accountId, undefined);
+
+/* 집어둔 계정이 사라지면 왜 안 나가는지 말해줘야 한다 */
+const gone = { id: 'g', enabled: true, mode: 'publish', accountId: 9,
+  slots: [{ day: 1, time: '08:10' }] };
+t('없어진 계정을 짚어준다',
+  R.diagnose(gone, { hasKey: true, allowPublish: true, hasAccount: false, filled: 0 })
+    .why.indexOf('없어졌습니다') > 0, true);
+/* 어디로 나가는지 보여야 한다 — 계정이 둘이면 늘 헷갈린다 */
+t('어느 계정으로 나가는지 말해준다',
+  R.diagnose(Object.assign({}, live, { accountId: 3 }),
+    { hasKey: true, allowPublish: true, hasAccount: true, filled: 0, accountName: 'luwol' })
+    .why.indexOf('@luwol') > 0, true);
+
+/* 화면 */
+t('규칙에서 계정을 고른다', viewSrc.indexOf('어느 계정으로') > 0, true);
+t('계정이 하나면 안 그린다', viewSrc.indexOf('ACCOUNTS.length > 1') > 0, true);
+t('고른 계정을 저장에 담는다', viewSrc.indexOf("box.querySelector('.acct')") > 0, true);
+t('설명서가 계정별 설정을 알려준다', viewSrc.indexOf('설정은 계정마다 따로입니다') > 0, true);
+t('각자 시간표로 돈다고 알려준다', viewSrc.indexOf('각자 자기 시간표대로') > 0, true);
 
 /* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
    여기서 끝내버리면 그 결과를 못 보고 나간다. */

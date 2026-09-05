@@ -3,7 +3,7 @@
  *
  * 발행 시각에 글을 만들지 않는다. 만드는 데 20~45초가 걸리고,
  * 그때 OpenAI 가 한 번 튕기면 그 자리를 통째로 놓친다.
- * 그래서 **앞으로 일주일치를 미리 만들어 Zernio 에 예약을 걸어둔다.**
+ * 그래서 **앞으로 며칠치를 미리 만들어 Zernio 에 예약을 걸어둔다.**
  * 걸어두면 우리 서버가 꺼져 있어도 시간이 되면 Zernio 가 올린다.
  *
  * 같은 자리에 두 번 만들지 않는 것이 제일 중요하다.
@@ -19,17 +19,17 @@ const pipeline = require('./pipeline');
 const topicsLib = require('./topics');
 const publish = require('./publish');
 
-/* 앞으로 며칠치를 미리 채울지.
+/* 앞으로 며칠치를 미리 채울지. 값은 rules.js 한 곳에서 정한다.
  *
- * ⚠️ 예전엔 36시간이었다. 그러면 요일 판에 이틀치만 뜬다 —
- *    일곱 요일을 다 잡아뒀는데 「왜 월요일만 보이냐」가 된다.
- *    일주일치를 늘 채워두면, 하루가 지날 때마다 그 다음 날 자리가
- *    저절로 하나 붙어 **손을 안 대도 일주일이 늘 차 있다.** */
-const LOOKAHEAD_DAYS = 7;
+ * ⚠️ 예전엔 36시간이었다. 그러면 요일 판에 이틀치도 안 뜬다 —
+ *    요일을 다 잡아뒀는데 「왜 오늘 것만 보이냐」가 된다.
+ *    며칠치를 늘 채워두면, 하루가 지날 때마다 그 다음 날 자리가
+ *    저절로 하나 붙어 **손을 안 대도 그만큼이 늘 차 있다.** */
+const LOOKAHEAD_DAYS = rules.LOOKAHEAD_DAYS;
 const LOOKAHEAD_H = LOOKAHEAD_DAYS * 24;   // 예전 이름을 쓰던 곳이 있어 남겨둔다
 /* 한 번에 몇 자리까지. 요금이 한꺼번에 나가면 안 된다.
-   일주일치 일곱 자리를 처음 채울 땐 5분씩 세 바퀴면 다 찬다.
-   그 뒤로는 하루에 하나씩만 새로 생긴다. */
+   처음 채울 땐 5분에 세 자리씩 차고, 그 뒤로는 하루에 하나씩만
+   새로 생긴다. */
 const PER_TICK = 3;
 
 /**
@@ -140,7 +140,8 @@ async function runRule(rule) {
     return { made, errors: ['OpenAI 키가 없습니다'] };
   }
 
-  const settings = await store.getSettings(rule.userId);
+  /* 이 규칙이 어느 계정으로 나가는지. 말투·인사글·운세 틀이 계정마다 다르다. */
+  const settings = await store.getSettings(rule.userId, rule.accountId || undefined);
   const hasIntro = !!(settings.intro &&
     (settings.intro.name || settings.intro.career || settings.intro.sample));
   const pickable = forms.clean(rule.forms, { hasIntro });
@@ -173,6 +174,8 @@ async function runRule(rule) {
       /* 한 자리에 글 하나만 만든다. 여러 개 만들어 고르는 건 사람이 할 때 이야기다. */
       const out = await pipeline.generate(rule.userId, rule.openaiKey, topic, 1, {
         form,
+        /* 이 규칙의 계정 몫 설정으로 만든다 */
+        accountId: rule.accountId || undefined,
         /* 지금이 아니라 이 글이 올라갈 시각. 「오늘의 운세」가 이걸 보고 날짜를 적는다. */
         at: s.sendAt,
         /* 이 규칙이 댓글을 받기로 했는지. 슬롯이 「댓글 유도형」이면 그건 당연히 받는다. */
@@ -208,7 +211,9 @@ async function runRule(rule) {
       if (rule.mode === 'publish') {
         try {
           const saved = await store.getPost(rule.userId, ids[0]);
-          await publish.scheduleAt(rule.userId, saved, s.sendAt, { auto: true });
+          await publish.scheduleAt(rule.userId, saved, s.sendAt, {
+            auto: true, accountId: rule.accountId || undefined,
+          });
         } catch (e) {
           errors.push(rules.slotLabel(s.slot) + ': 예약 실패 — ' + e.message);
         }
