@@ -956,5 +956,89 @@ Object.keys(shapes).forEach((k) => {
     checkPost({ postType: type, form: 'single', parts: [body] }).passHard, true);
 });
 
+
+/* ── 오늘의 운세는 틀대로 나가야 한다 ──────────────────
+   ⚠️ 프롬프트에 「짜임새를 그대로 두세요」라고 적어두는 것만으로는
+      안 지켜진다. 실제로 이런 일이 있었다.
+
+        틀:   🐑 양띠
+        결과: 🐵 원숭이띠 — 오늘은 흐름이 자연스럽게 연결됩니다
+
+      말투도 「~있음」에서 「~입니다」로 바뀌고, 두 편으로 나눠 올리는
+      틀인데 한 편으로 합쳐 나왔다. 매일 나가는 글이라 모양이 바뀌면
+      매일 오던 사람이 어디를 봐야 할지 모른다. 그래서 기계로 잡는다. */
+section('오늘의 운세 틀 지키기');
+
+const DS = require(require('path').join(__dirname, '..', 'services', 'threads', 'dailyshape'));
+const LF = String.fromCharCode(10);
+
+/* 수강생이 실제로 저장한 틀 */
+const TPL = ['오늘 잘 풀리는 사람은', '사람이든 일이든 먼저 신호가 올 수 있음', '',
+  '9월 5일 오늘의 운세', '',
+  '🍀 운 좋은 띠', '🐑 양띠', '🐯 호랑이띠', '🐶 개띠', '',
+  '⚠️ 조금 조심할 띠', '🐭 쥐띠', '🐷 돼지띠'].join(LF);
+
+/* 실제로 나왔던 글 — 띠마다 설명을 붙이고 말투를 바꿨다 */
+const MADE = ['오늘은 갑신일입니다', '', '9월 7일 오늘의 운세', '',
+  '🍀 운 좋은 띠',
+  '🐵 원숭이띠 — 오늘은 흐름이 자연스럽게 연결됩니다',
+  '🐲 용띠 — 주변에서 먼저 손을 내밀어줍니다',
+  '🐶 개띠 — 분위기를 주도하기 좋은 날입니다', '',
+  '⚠️ 조심할 띠',
+  '🐰 토끼띠 — 감정에 휩쓸려 말이 앞서기 쉽습니다',
+  '🐔 닭띠 — 결정은 한 번 더 고민하면 더 좋습니다', '',
+  '오늘은 강하게 끌리는 대로 한 번 움직여보세요'].join(LF);
+
+/* 틀대로 채운 글 — 날짜와 띠만 바뀌었다 */
+const GOOD = ['오늘 잘 풀리는 사람은', '먼저 신호가 올 수 있음', '',
+  '9월 7일 오늘의 운세', '',
+  '🍀 운 좋은 띠', '🐵 원숭이띠', '🐲 용띠', '🐶 개띠', '',
+  '⚠️ 조금 조심할 띠', '🐰 토끼띠', '🐔 닭띠'].join(LF);
+
+t('틀의 줄 수를 센다', DS.outline(TPL).lines, 13);
+t('이모지 줄을 센다', DS.outline(TPL).emoji, 7);
+t('음슴체를 알아본다', DS.outline(TPL).tone, '음슴체');
+t('합니다체를 알아본다', DS.outline(MADE).tone, '합니다체');
+t('「이름 — 설명」 줄을 센다', DS.outline(MADE).dash, 5);
+t('틀에는 설명 줄이 없다', DS.outline(TPL).dash, 0);
+
+/* 실제로 잘못 나왔던 글을 잡아내야 한다 */
+t('설명을 붙인 글을 잡는다', DS.check(TPL, MADE).ok, false);
+t('무엇이 틀렸는지 말해준다',
+  DS.check(TPL, MADE).why.indexOf('이름만 적던 자리에는 이름만') > 0, true);
+t('틀대로 채운 글은 통과', DS.check(TPL, GOOD).ok, true);
+
+/* 말투만 바뀌어도 딴 글로 보인다 */
+t('말투가 바뀌면 잡는다',
+  DS.check('한 줄임' + LF + '두 줄임', '한 줄입니다' + LF + '두 줄입니다').ok, false);
+
+/* 줄 수가 크게 달라지면 딴 글이다. 다만 날짜·운세가 바뀌니 조금은 봐준다. */
+t('한 줄 차이는 봐준다',
+  DS.check(TPL, GOOD + LF + '오늘도 좋은 하루 되세요').ok, true);
+/* 어중간하면 말투를 단정하지 않는다 — 멀쩡한 글을 다시 시키면 요금만 든다 */
+t('음슴체와 해요체가 반반이면 안 잡는다',
+  DS.tone('한 줄임' + LF + '두 줄이에요'), '');
+t('한쪽이 앞서면 잡아낸다', DS.tone('한 줄임' + LF + '두 줄임' + LF + '세 줄이에요'), '음슴체');
+t('절반으로 줄면 잡는다', DS.check(TPL, '오늘 잘 풀리는 사람은').ok, false);
+
+/* 두 편으로 나눠 올리는 틀인지 */
+t('두 편 틀을 알아본다', DS.needsTwo({ mode: 'chain', tail: '2편' }), true);
+t('꼬리가 비면 두 편이 아니다', DS.needsTwo({ mode: 'chain', tail: '' }), false);
+t('한 편 틀은 두 편이 아니다', DS.needsTwo({ mode: 'single', tail: '2편' }), false);
+
+/* 치수를 프롬프트에 넣어야 모델이 지킨다 */
+const bp = DS.blueprint(TPL).join(LF);
+t('줄 수를 못 박는다', bp.indexOf('13줄') > 0, true);
+t('이모지 개수를 못 박는다', bp.indexOf('7개') > 0, true);
+t('설명 붙이지 말라고 한다', bp.indexOf('설명을 덧붙이지 마세요') > 0, true);
+t('말투를 못 박는다', bp.indexOf('음슴체') > 0, true);
+
+/* 프롬프트에 실제로 실리는지 */
+const P = require(require('path').join(__dirname, '..', 'services', 'threads', 'prompt'));
+const block = P.dailyBlock({ body: TPL, tail: '운 좋은 띠는' + LF + '흐름이 붙기 좋은 편', mode: 'chain' });
+t('치수가 프롬프트에 실린다', block.indexOf('이 틀의 치수') > 0, true);
+t('2편 치수도 실린다', block.indexOf('2편의 치수') > 0, true);
+t('참고가 아니라 서식이라고 말한다', block.indexOf('참고 자료가 아니라') > 0, true);
+
 /* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
    여기서 끝내버리면 그 결과를 못 보고 나간다. */

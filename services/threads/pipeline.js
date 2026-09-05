@@ -16,6 +16,7 @@ const copycheck = require('./copycheck');
 const { checkPost } = require('./guideline');
 const { formOf, threadsLength, numberParts } = require('./length');
 const { hookName } = require('./hooks');
+const dailyshape = require('./dailyshape');
 
 /**
  * 모델이 준 form 은 믿지 않는다. 편 개수로 다시 정한다.
@@ -167,6 +168,63 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     }
   }
 
+  /* ── 운세는 틀대로 나왔는지 확인한다 ────────────────
+     ⚠️ 프롬프트에 「짜임새를 그대로」라고 적어두는 것만으로는 안 지켜진다.
+        틀에 「🐑 양띠」만 있어도 모델은 「🐵 원숭이띠 — 오늘은 …」로
+        살을 붙이고 말투까지 바꾼다. 매일 나가는 글이라 모양이 바뀌면
+        매일 오던 사람이 어디를 봐야 할지 모른다.
+        그래서 어긋나면 **무엇이 어긋났는지 짚어** 한 번만 다시 시킨다. */
+  let shapeNote = null;
+  if (wantsDaily && daily && String(daily.body || daily.sample || '').trim() && posts.length) {
+    const tplBody = String(daily.body || daily.sample || '').trim();
+    const tplTail = String(daily.tail || '').trim();
+    const first = posts[0];
+    const gripes = [];
+
+    const c1 = dailyshape.check(tplBody, (first.parts || [])[0] || '');
+    if (!c1.ok) gripes.push('1편 — ' + c1.why);
+
+    if (dailyshape.needsTwo(daily)) {
+      if ((first.parts || []).length < 2) {
+        gripes.push('두 편으로 나눠 올리는 틀인데 한 편만 왔습니다. ' +
+          'parts 에 두 편을 담으세요. 길이를 보고 합치지 마세요.');
+      } else {
+        const c2 = dailyshape.check(tplTail, first.parts[1]);
+        if (!c2.ok) gripes.push('2편 — ' + c2.why);
+      }
+    } else if (daily.mode === 'reply' && tplTail && !String(first.replyText || '').trim()) {
+      gripes.push('본문 + 첫 댓글로 올리는 틀인데 댓글이 비었습니다. reply 를 채우세요.');
+    }
+
+    if (gripes.length) {
+      console.log('[스레드] 운세가 틀과 다릅니다 — ' + gripes[0]);
+      try {
+        const again = await runAi(openaiKey, makePrompt(
+          ['', '[다시 씁니다] 방금 만든 운세가 **내 틀과 다르게** 나왔습니다.']
+            .concat(gripes.map((g) => '- ' + g))
+            .concat([
+              '위 「내 오늘의 운세 틀」을 그대로 두고 날짜와 운세만 갈아끼우세요.',
+              '새로 쓰지 마세요. 서식을 채우는 것입니다.',
+            ]).join(String.fromCharCode(10))), { model });
+        const re3 = normalize(parseLoose(again.text).data);
+        if (re3.ok) {
+          const fresh = re3.value.posts.map((x) => fixShape(x, shapeOpts)).filter((p) => p.parts.length);
+          /* 다시 만든 것이 더 나을 때만 바꾼다. 더 어긋났으면 그냥 둔다. */
+          if (fresh.length &&
+              dailyshape.check(tplBody, fresh[0].parts[0] || '').ok) {
+            posts = fresh;
+            shapeNote = '운세를 틀에 맞춰 다시 만들었습니다.';
+          } else {
+            shapeNote = '운세가 틀과 조금 다릅니다 — ' + gripes[0];
+          }
+        }
+      } catch (e) {
+        console.error('[스레드] 운세 다시 만들기 실패:', e.message);
+        shapeNote = '운세가 틀과 조금 다릅니다 — ' + gripes[0];
+      }
+    }
+  }
+
   /* 이 글이 번호를 붙일지 여기서 정해 새겨 둔다. 나중에 발행할 때
      설정을 다시 보면, 그 사이 설정이 바뀌었을 때 엉뚱하게 붙는다. */
   const wantNum = !!(shapeOpts.chain && shapeOpts.chain.on && shapeOpts.chain.numbered);
@@ -198,8 +256,9 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     hookScan: v.hookScan,
     unusable: v.unusable,
     posts,
-    warning: parsed.warning || copyNote || fixNote || null,
+    warning: parsed.warning || copyNote || shapeNote || fixNote || null,
     copyNote,
+    shapeNote,
     fixNote,
     usage,
   };

@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { HOOKS } = require('./hooks');
+const shape = require('./dailyshape');
 
 const GUIDELINE_PATH = path.join(__dirname, 'CONTENT-GUIDELINE.md');
 /* 실제로 터진 글을 유형별로 뜯어본 것. 노션 「사주 글 벤치마킹」에서 옮겨 온다.
@@ -165,18 +166,27 @@ function dailyBlock(daily) {
   const lines = [
     '════════ 내 오늘의 운세 틀 ════════',
     '아래는 이 사람이 쓰던 오늘의 운세 글입니다.',
+    '이것은 **참고 자료가 아니라 채워 넣을 서식**입니다.',
     '**짜임새·줄 순서·말투·이모지를 그대로 두고 날짜와 운세 내용만 갈아끼우세요.**',
     '새로 쓰는 게 아닙니다. 같은 틀에 오늘 것을 채워 넣는 것입니다.',
     '',
     '- 머리말·꼬리말·이모지·구분선이 있으면 **그 자리에 그대로** 둡니다.',
-    '- 줄 수도 되도록 맞춥니다. 갑자기 길어지거나 짧아지면 딴 글로 보입니다.',
     '- 띠·일간별로 갈라 쓰는 틀이면 **그 개수까지 맞추세요.** 셋을 꼽았으면 셋입니다.',
     '- 날짜와 일진은 위 「이 글이 올라갈 날」의 값을 씁니다. 지어내지 마세요.',
     '- 1/2 · 2/2 같은 번호는 **적지 마세요.** 시스템이 붙입니다.',
     '',
-    '--- 1편 (본문) ---',
-    body,
-  ];
+    /* ⚠️ 「짜임새를 그대로」라고 적어두는 것만으로는 안 지켜진다.
+          틀에 「🐑 양띠」만 있어도 모델은 「🐵 원숭이띠 — 오늘은 …」로
+          살을 붙이고 말투까지 바꾼다. 줄 수·이모지 수·줄 길이를
+          숫자로 못 박아야 지킨다. */
+    '── 이 틀의 치수 (지켜야 하는 값) ──',
+  ]
+    .concat(shape.blueprint(body).map((x) => '  ' + x))
+    .concat([
+      '',
+      '--- 1편 (본문) ---',
+      body,
+    ]);
 
   if (tail && mode === 'chain') {
     lines.push('');
@@ -186,6 +196,9 @@ function dailyBlock(daily) {
     lines.push('⚠️ 이 사람은 **짧아도 두 편으로 나눠** 올립니다. 그게 이 계정의 모양입니다.');
     lines.push('   길이를 보고 합치지 마세요. **parts 에 두 편을 담으세요.**');
     lines.push('   1편은 1편 틀대로, 2편은 2편 틀대로 채웁니다.');
+    lines.push('');
+    lines.push('── 2편의 치수 ──');
+    shape.blueprint(tail).forEach((x) => lines.push('  ' + x));
   } else if (tail && mode === 'reply') {
     lines.push('');
     lines.push('--- 첫 댓글 ---');
