@@ -1138,9 +1138,16 @@ t('규칙에 계정 칸이 있다',
 /* 무엇이 계정 몫이고 무엇이 사람 몫인지 — 잘못 가르면 열쇠가 갈라진다 */
 t('말투는 계정 몫', storeSrc.indexOf("'voiceMode', 'voicePack'") > 0, true);
 t('인사글·운세 틀도 계정 몫', /PER_ACCOUNT = \[[^\]]*'intro', 'daily'/.test(storeSrc), true);
-t('본보기 글도 계정 몫', /PER_ACCOUNT = \[[^\]]*'samples'\]/.test(storeSrc), true);
+t('본보기 글도 계정 몫', /PER_ACCOUNT = \[[\s\S]*?'samples'[\s\S]*?\]/.test(storeSrc), true);
 t('열쇠는 계정 몫이 아니다', /PER_ACCOUNT = \[[^\]]*zernioKey/.test(storeSrc), false);
-t('올리기 허용도 계정 몫이 아니다', /PER_ACCOUNT = \[[^\]]*allowPublish/.test(storeSrc), false);
+/* ⚠️ 올리기 허용을 사람 몫으로 뒀더니 계정을 바꿔도 같이 켜지고 꺼졌다.
+   한 계정만 켜두고 다른 계정은 잠가두는 것이 안 됐다. */
+t('올리기 허용은 계정 몫', /PER_ACCOUNT = \[[\s\S]*?'allowPublish'[\s\S]*?\]/.test(storeSrc), true);
+t('이미 있는 표에도 붙인다',
+  dbSrc.indexOf('ALTER TABLE th_acct_settings ADD COLUMN IF NOT EXISTS allow_publish') > 0, true);
+/* NULL 이면 아직 안 정한 것 — false 로 읽으면 이미 켜둔 사람이 갑자기 잠긴다 */
+t('안 정했으면 사람 몫을 쓴다',
+  storeSrc.indexOf('row.allow_publish == null ? base.allowPublish') > 0, true);
 
 /* 처음 만들 때 사람 몫을 옮겨 담아야 한다.
    빈 칸으로 시작하면 이미 채워둔 사람은 다 날아간 것처럼 보인다. */
@@ -1297,6 +1304,31 @@ t('고르지 말라고 못 박는다', blk.indexOf('띠를 고르는 것은 당�
 t('뭉뚱그린 말을 막는다', blk.indexOf('근거 없는 말을 셋 모두에 뭉뚱그려') > 0, true);
 /* ⚠️ filter(Boolean) 을 쓰면 빈 줄이 지워져 지시가 한 벽이 된다 */
 t('덩어리 사이가 붙지 않는다', blk.split(LF2).filter(function (l) { return !l.trim(); }).length >= 4, true);
+
+/* ── 계정을 바꾸면 화면도 갈려야 한다 ──
+   ⚠️ 계정을 바꿔도 규칙과 올라갈 글이 그대로 다 떴다. 루사주와 AI이안이
+      같은 목록을 보니 어느 것이 어느 계정 것인지 알 수가 없었다. */
+section('계정별 화면 가르기');
+
+t('규칙을 계정으로 거른다',
+  routeSrc.indexOf('list.filter((r) => !r.accountId || r.accountId === here)') > 0, true);
+/* 계정이 하나뿐이면 거를 것이 없다 — 괜히 걸러서 빈 화면이 되면 안 된다 */
+t('계정이 하나면 안 거른다', routeSrc.indexOf('accList.length > 1') > 0, true);
+t('올라갈 글도 계정으로 거른다', routeSrc.indexOf('const belongs = (p) =>') > 0, true);
+/* 이미 나간 글은 그 글에 새겨진 계정으로 본다 */
+t('나간 글은 새겨진 계정으로', routeSrc.indexOf('if (p.accountId) return p.accountId === here;') > 0, true);
+/* 원고는 그 글을 만든 규칙의 계정으로 본다 */
+t('원고는 규칙의 계정으로', routeSrc.indexOf('if (r && r.accountId) return r.accountId === here;') > 0, true);
+t('안 만든 자리도 같은 기준으로',
+  (routeSrc.match(/accCount < 2 \|\| !r\.accountId \|\| r\.accountId === here/g) || []).length >= 1, true);
+
+/* 계정을 안 집은 규칙은 고른 계정을 따라간다 — 그렇다고 알려줘야 한다 */
+t('따라간다고 표시해 보낸다', routeSrc.indexOf('follows: !r.accountId && accList.length > 1') > 0, true);
+t('화면이 그 경고를 그린다', viewSrc.indexOf('지금 고른 계정</b>을 따라갑니다') > 0, true);
+/* 계정이 둘이면 새 규칙은 만들 때 못 박는다 — 안 그러면 계정 바꿀 때마다 흔들린다 */
+t('새 규칙은 지금 계정에 못 박는다',
+  routeSrc.indexOf('if (patch.accountId === undefined && !b.id)') > 0, true);
+t('어느 계정 화면인지 보여준다', viewSrc.indexOf('것만 보입니다') > 0, true);
 
 /* ── 같은 글이 두 번 나가지 않게 ──
    ⚠️ 실제로 같은 오늘의 운세가 두 계정에 나란히 올라갔다.

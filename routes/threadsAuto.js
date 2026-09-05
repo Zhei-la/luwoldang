@@ -70,11 +70,20 @@ async function rulesWithStatus(req) {
      지운 계정을 붙들고 있으면 영영 안 나가는데 이유를 알 수 없다. */
   const accIds = {};
   accList.forEach((a) => { accIds[a.id] = a; });
+
+  /* ⚠️ 계정을 바꿔도 규칙이 그대로 다 떴다. 루사주와 AI이안이 같은 목록을
+        보니 어느 것이 어느 계정 것인지 알 수가 없었다.
+        지금 고른 계정 것만 보여준다 — 계정을 안 집은 규칙은
+        「지금 고른 계정」으로 나가므로 어느 계정에서 보든 보여준다. */
+  const here = acc ? acc.id : null;
+  const mine = accList.length > 1
+    ? list.filter((r) => !r.accountId || r.accountId === here)
+    : list;
   const posts = await store.getPosts(req.user.id);
   const now = Date.now();
   const until = now + 36 * 3600 * 1000;
 
-  return list.map((r) => {
+  return mine.map((r) => {
     /* 이 규칙이 앞으로 일주일 안에 이미 채워둔 자리 개수 */
     const filled = posts.filter((p) => p.ruleId === r.id && p.slotAt &&
       new Date(p.slotAt).getTime() >= now && new Date(p.slotAt).getTime() <= until).length;
@@ -83,6 +92,8 @@ async function rulesWithStatus(req) {
       /* 같은 시각만 보는 게 아니다. 다른 규칙과 같은 날 같은 틀이면
          글이 거의 똑같이 나가서 스팸으로 걸린다. */
       warning: rules.sameTimeWarning(r.slots) || rules.clashWarning(r, list),
+      /* 계정을 안 집은 규칙은 지금 고른 계정으로 나간다 — 그렇다고 알려준다 */
+      follows: !r.accountId && accList.length > 1,
       status: rules.diagnose(r, {
         hasKey: !!req.user.openai_key,
         allowPublish: settings.allowPublish,
@@ -396,6 +407,17 @@ router.post('/api/threads/rules', ...guard, async (req, res, next) => {
     const hasIntro = !!(s.intro && (s.intro.name || s.intro.career || s.intro.sample));
     const patch = rules.clean(b, { hasIntro });
 
+    /* ⚠️ 계정을 안 집은 규칙은 「지금 고른 계정」을 따라간다. 계정이 둘이면
+          계정을 바꿀 때마다 그 규칙이 나가는 곳도 같이 바뀌어 헷갈린다.
+          계정이 둘 이상이면 **만들 때 지금 계정에 못 박는다.** */
+    if (patch.accountId === undefined && !b.id) {
+      const all = await accounts.list(req.user.id);
+      if (all.length > 1) {
+        const cur = await accounts.active(req.user.id);
+        if (cur) patch.accountId = cur.id;
+      }
+    }
+
     /* 틀을 하나도 못 고르는 경우가 있다 — 인사형만 골랐는데 인사글 재료가 없을 때다.
        그대로 저장하면 왜 안 도는지 알 수가 없다. */
     if (Array.isArray(b.forms) && b.forms.length && !patch.forms.length) {
@@ -471,9 +493,25 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
        하루만 남기면 수요일에 월요일 글을 확인할 수가 없다. */
     const since = weekStart(new Date()).getTime();
 
+    /* ⚠️ 계정을 바꿔도 올라갈 글이 그대로 다 떴다. 두 계정이 같은 판을
+          보니 어느 글이 어느 계정으로 나가는지 알 수가 없었다.
+          이미 나간 글은 그 글에 새겨진 계정으로, 아직 원고인 글은
+          그 글을 만든 규칙의 계정으로 가른다. */
+    const accCount = (await accounts.list(req.user.id)).length;
+    const here = acc ? acc.id : null;
+    const belongs = (p) => {
+      if (accCount < 2) return true;
+      if (p.accountId) return p.accountId === here;
+      const r = ruleById[p.ruleId];
+      /* 규칙이 계정을 안 집었으면 「지금 고른 계정」으로 나간다 */
+      if (r && r.accountId) return r.accountId === here;
+      return true;
+    };
+
     const list = all
       .filter((p) => {
         if (!p.slotAt) return false;
+        if (!belongs(p)) return false;
         const at = new Date(p.publishedAt || p.slotAt).getTime();
         return at >= since;
       })
@@ -514,7 +552,10 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
     /* ⚠️ 꺼진 규칙을 빼버리면 요일 판이 조용히 빈다.
           「일곱 요일을 다 잡아놨는데 왜 아무것도 안 보이냐」가 된다.
           자리는 보여주고 **왜 안 나가는지**를 그 자리에 적는다. */
-    ruleList.forEach((r) => {
+    ruleList
+      /* 지금 고른 계정의 자리만. 규칙 목록과 같은 기준이어야 한다. */
+      .filter((r) => accCount < 2 || !r.accountId || r.accountId === here)
+      .forEach((r) => {
       rules.plan(r, 14).forEach((x) => {
         const key = planKeyOf(r.id, x.at, x.slot.time);
         if (written[key]) return;

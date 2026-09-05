@@ -983,6 +983,10 @@ async function initDb() {
        **새 칸을 안 만든다.** 위에 칸을 적어두는 것만으로는 부족하다.
        이미 돌고 있는 곳에서는 여기 ALTER 가 있어야 붙는다. */
     await pool.query(`ALTER TABLE th_acct_settings ADD COLUMN IF NOT EXISTS samples JSONB;`);
+    /* ⚠️ 올리기 허용을 사람 단위로 뒀더니 계정을 바꿔도 같이 켜지고 꺼졌다.
+       한 계정만 켜두고 다른 계정은 잠가두는 것이 안 됐다. 계정 몫으로 옮긴다.
+       NULL 이면 「아직 안 정함」 — 사람 몫 값을 그대로 쓴다. */
+    await pool.query(`ALTER TABLE th_acct_settings ADD COLUMN IF NOT EXISTS allow_publish BOOLEAN;`);
 
     /* 규칙도 계정에 묶는다. 계정을 두세 개 돌리면 규칙마다
        어느 계정으로 나갈지가 정해져 있어야 한다. */

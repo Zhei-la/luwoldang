@@ -690,7 +690,9 @@
   </details>
 
     <div class="ta-card">
-      <h2>자동 올리기</h2>
+      <h2>자동 올리기<% if (accounts.length > 1 && account) { %>
+        <span class="ta-sub" style="font-weight:600">— @<%= account.username || account.accountId %> 것만 보입니다</span>
+      <% } %></h2>
       <p class="ta-sub">요일과 시각을 정해두면 <b>그 자리에 맞춰 글을 미리 만들어 예약</b>해둡니다.
         <b><%= lookaheadDays %>일치를 늘 채워둡니다.</b> 하루가 지나면 그 다음 날 자리가 저절로 하나 붙어서,
         손을 안 대도 앞으로 <%= lookaheadDays %>일이 늘 차 있습니다.
@@ -712,7 +714,9 @@
 
     <!-- ── 올라갈 글 미리 보기 ─────────────────────── -->
     <div class="ta-card">
-      <h2>요일별 글</h2>
+      <h2>요일별 글<% if (accounts.length > 1 && account) { %>
+        <span class="ta-sub" style="font-weight:600">— @<%= account.username || account.accountId %></span>
+      <% } %></h2>
       <p class="ta-sub">요일을 누르면 <b>그날 올라간 글과 올라갈 글</b>이 보입니다.
         지난 요일은 올라갔는지 확인하는 자리이고, 남은 요일은 나가기 전에 고치는 자리입니다.
         <b>고치면 예약이 풀립니다</b> — 다시 걸어야 나갑니다.</p>
@@ -2170,6 +2174,13 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
       /* 계정을 두세 개 돌리면 규칙마다 어느 계정으로 나갈지 정해야 한다.
          안 정하면 「지금 고른 계정」으로 나간다 — 계정을 바꾸면 같이 바뀐다. */
+      (ACCOUNTS.length > 1 && r.follows
+        ? '<div class="ta-rule-warn"><b class="bang">!</b><span>' +
+          '이 규칙은 <b>지금 고른 계정</b>을 따라갑니다. ' +
+          '계정을 바꾸면 나가는 곳도 같이 바뀝니다 — 아래에서 계정을 집어두세요.' +
+          '</span></div>'
+        : '') +
+
       (ACCOUNTS.length > 1
         ? '<label style="margin-top:16px">어느 계정으로</label>' +
           '<p class="ta-sub" style="margin:0 0 6px">계정마다 말투·인사글·운세 틀이 따로 있습니다. ' +

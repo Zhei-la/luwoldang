@@ -286,7 +286,8 @@ const DEFAULT_SETTINGS = {
  *
  * 여기 없는 것(열쇠·올리기 허용·모델·사실)은 사람 단위로 둔다 —
  * 요금과 안전에 걸린 것이라 계정마다 갈라두면 오히려 헷갈린다. */
-const PER_ACCOUNT = ['ctaLink', 'dailyLine', 'ctaPerWeek', 'voiceMode', 'voicePack', 'intro', 'daily', 'samples'];
+const PER_ACCOUNT = ['ctaLink', 'dailyLine', 'ctaPerWeek', 'voiceMode', 'voicePack',
+  'intro', 'daily', 'samples', 'allowPublish'];
 
 const ACCT_COLS = {
   ctaLink: 'cta_link',
@@ -297,6 +298,7 @@ const ACCT_COLS = {
   intro: 'intro',
   daily: 'daily',
   samples: 'samples',
+  allowPublish: 'allow_publish',
 };
 
 /** 지금 고른 계정. 안 골랐으면 가장 먼저 등록한 것. */
@@ -328,15 +330,17 @@ async function acctRow(userId, accountId, base) {
 
   await pool.query(
     `INSERT INTO th_acct_settings
-       (user_id, account_id, cta_link, daily_line, cta_per_week, voice_mode, voice_pack, intro, daily, seeded)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE)
+       (user_id, account_id, cta_link, daily_line, cta_per_week, voice_mode, voice_pack,
+        intro, daily, allow_publish, seeded)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,TRUE)
      ON CONFLICT (user_id, account_id) DO NOTHING`,
     [userId, accountId,
       base.ctaLink || '', base.dailyLine || '', base.ctaPerWeek,
       base.voiceMode || '',
       base.voicePack ? JSON.stringify(base.voicePack) : null,
       base.intro ? JSON.stringify(base.intro) : null,
-      base.daily ? JSON.stringify(base.daily) : null]
+      base.daily ? JSON.stringify(base.daily) : null,
+      !!base.allowPublish]
   );
   const again = await pool.query(
     'SELECT * FROM th_acct_settings WHERE user_id = $1 AND account_id = $2',
@@ -369,6 +373,9 @@ async function getSettings(userId, accountId) {
     intro: row.intro || null,
     daily: row.daily || null,
     samples: row.samples || [],
+    /* NULL 이면 아직 안 정한 것이다 — 사람 몫 값을 그대로 쓴다.
+       false 로 읽어버리면 이미 켜둔 사람이 갑자기 잠긴다. */
+    allowPublish: row.allow_publish == null ? base.allowPublish : !!row.allow_publish,
   });
 }
 
