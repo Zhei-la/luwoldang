@@ -63,6 +63,9 @@ const FIXED_TOPIC = {
   intro: '무료사주 인사',
 };
 
+/* 날짜가 글 안에 박히는 주제. 다른 날로 밀면 틀린 날짜가 나간다. */
+const DATED_TOPIC = { '오늘의 운세': true };
+
 function pickTopic(rule, n, form) {
   const fixed = form && FIXED_TOPIC[form.id];
   if (fixed) return fixed;
@@ -87,7 +90,7 @@ function pickTopic(rule, n, form) {
 async function rollForward(rule) {
   const now = new Date();
   const { rows } = await pool.query(
-    `SELECT id, slot_at FROM th_posts
+    `SELECT id, slot_at, topic FROM th_posts
       WHERE user_id = $1 AND rule_id = $2
         AND status = 'draft' AND slot_at IS NOT NULL AND slot_at < $3
       ORDER BY slot_at`,
@@ -95,16 +98,29 @@ async function rollForward(rule) {
   );
   if (!rows.length) return 0;
 
+  /* 앞으로 비어 있는 자리를 미리 훑어둔다.
+     ⚠️ 예전엔 「그 요일의 다음 번」 한 자리만 봤다. 일주일치를 미리
+        채우게 되면서 그 자리는 늘 차 있다 — 그래서 아무것도 못 밀었다.
+        빈 자리를 앞에서부터 찾아야 한다. */
+  const free = [];
+  for (const x of rules.plan(rule, LOOKAHEAD_DAYS)) {
+    if (!(await taken(rule.userId, rule.id, x.sendAt))) free.push(x.sendAt);
+  }
+
   let moved = 0;
   for (const r of rows) {
+    /* ⚠️ 날짜가 글 안에 박힌 것은 밀면 안 된다.
+          「오늘은 계미일입니다」로 쓴 월요일 운세를 토요일로 옮기면
+          날짜가 틀린 글이 나간다. 그런 글은 지난 자리에 그대로 두고,
+          요일 판에서 「안 올림」으로 보이게 한다. */
+    if (DATED_TOPIC[r.topic]) continue;
+
     const slot = rules.slotOf(rule, r.slot_at);
     /* 규칙에서 그 자리를 없앤 경우다. 자리가 없으니 밀 곳도 없다. */
     if (!slot) continue;
 
-    const at = rules.nextSlotTime(slot, now);
-    const sendAt = rules.jitter(at, rule.jitterMin, rule.id + at.toISOString());
-    /* 그 자리에 이미 다른 글이 있으면 밀지 않는다. 두 개가 겹친다. */
-    if (await taken(rule.userId, rule.id, sendAt)) continue;
+    const sendAt = free.shift();
+    if (!sendAt) break;                    // 일주일이 다 찼다. 다음에 민다.
 
     await store.updatePost(rule.userId, r.id, { slotAt: sendAt.toISOString() });
     moved++;

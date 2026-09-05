@@ -808,6 +808,21 @@ t('일주일치를 채운다고 알려준다', viewSrc.indexOf('일주일치를 
 t('일주일치를 미리 만든다',
   require(require('path').join(__dirname, '..', 'services', 'threads', 'autopost')).LOOKAHEAD_DAYS, 7);
 t('되풀이되는 자리까지 편다', autoSrc4.indexOf('rules.plan(rule, LOOKAHEAD_DAYS)') > 0, true);
+/* ── 지난 자리 밀기 ──
+   ⚠️ 일주일치를 미리 채우면 「그 요일의 다음 번」은 늘 차 있다.
+      한 자리만 보던 예전 코드는 아무것도 못 밀게 된다. */
+const rollSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
+t('빈 자리를 앞에서부터 찾는다', rollSrc.indexOf('const free = [];') > 0, true);
+t('한 자리만 보지 않는다',
+  /const at = rules\.nextSlotTime\(slot, now\);[\s\S]{0,200}updatePost/.test(rollSrc), false);
+t('다 차 있으면 다음에 민다', rollSrc.indexOf('if (!sendAt) break;') > 0, true);
+/* ⚠️ 「오늘은 계미일입니다」로 쓴 월요일 운세를 토요일로 옮기면
+   날짜가 틀린 글이 나간다. 날짜가 박힌 글은 밀지 않는다. */
+t('날짜가 박힌 주제를 안다', rollSrc.indexOf("DATED_TOPIC = { '오늘의 운세': true }") > 0, true);
+t('그런 글은 안 민다', rollSrc.indexOf('if (DATED_TOPIC[r.topic]) continue;') > 0, true);
+t('밀 때 주제까지 읽어온다', rollSrc.indexOf('SELECT id, slot_at, topic FROM th_posts') > 0, true);
+
 /* 하루가 지나면 창이 하루 굴러야 한다 —
    그래야 손을 안 대도 앞으로 일주일이 늘 차 있다. */
 const everyDay = { id: 'w', jitterMin: 0,
