@@ -294,6 +294,16 @@
 #ta .ta-up-reply{margin-top:10px;border-left:3px solid var(--line);padding:8px 0 8px 12px;
   font-size:13.5px;line-height:1.85;color:var(--ink2);white-space:pre-wrap}
 #ta .ta-up-reply b{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+/* 기본은 읽기만. 단추를 눌러야 고치는 칸이 열린다. */
+#ta .ta-up-read{white-space:pre-wrap;font-size:14px;line-height:1.9;color:var(--ink);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fdfcfa}
+#ta .ta-up-open{margin-top:10px;border-top:1px dashed var(--line);padding-top:12px}
+/* 올라간 글은 하루 남겨두고 「언제 나갔는지」를 보여준다 */
+#ta .ta-up-done{margin-top:10px;font-size:13px;line-height:1.7;color:var(--ok);
+  background:var(--ok-bg);border-radius:9px;padding:8px 12px}
+#ta .ta-up-done.wait{color:#8a6100;background:#fff7e6}
+#ta .ta-up-done a{color:inherit;font-weight:700}
+#ta .ta-up.is-done{opacity:.9;background:#fbfbf9}
 #ta .ta-up-when{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
 #ta .ta-up-when select.wd,#ta .ta-up-when input.wt{margin:0;width:auto;padding:7px 11px;font-size:13px}
 #ta .ta-up-act{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap;align-items:center}
@@ -2050,9 +2060,13 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   var CUT = '\n\n──── 다음 편 ────\n\n';
 
   function upHtml(p){
-    var state = p.status === 'scheduled'
-      ? '<span class="ta-state wait">예약됨</span>'
-      : '<span class="ta-state">원고</span>';
+    var state = p.status === 'published'
+      ? '<span class="ta-state done">올라감</span>'
+      : p.status === 'scheduled'
+        ? '<span class="ta-state wait">예약됨</span>'
+        : p.status === 'failed'
+          ? '<span class="ta-state bad">실패</span>'
+          : '<span class="ta-state">원고</span>';
     var bad = p.bad.length
       ? '<div class="ta-rule-warn"><b class="bang">!</b><span>고치면 좋은 것 — ' +
         esc(p.bad.join(', ')) + '</span></div>' : '';
@@ -2060,22 +2074,42 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       ? '<div class="ta-up-reply"><b>첫 댓글</b>' + esc(p.replyText) + '</div>' : '';
     var rows = Math.min(14, Math.max(5, p.parts.join('\n').split('\n').length + 1));
 
+    /* 올라간 글은 언제 어디로 나갔는지 보여준다.
+       올라가자마자 목록에서 사라지면 「올라간 거야 만 거야」를 확인할 데가 없다.
+       그래서 하루는 남겨두고 여기에 표시한다. */
+    var done = '';
+    if (p.status === 'published') {
+      done = '<div class="ta-up-done">✓ <b>' +
+        esc(whenFull(p.publishedAt || p.slotAt)) + '</b> 에 올라갔습니다' +
+        (p.accountName ? ' · @' + esc(p.accountName) : '') +
+        (p.permalink ? ' · <a href="' + esc(p.permalink) + '" target="_blank" rel="noopener">스레드에서 보기</a>' : '') +
+        '</div>';
+    } else if (p.status === 'failed') {
+      done = '<div class="ta-rule-warn"><b class="bang">!</b><span>올리지 못했습니다' +
+        (p.error ? ' — ' + esc(p.error) : '') + '</span></div>';
+    } else if (p.status === 'scheduled') {
+      done = '<div class="ta-up-done wait">예약해뒀습니다 · 시간이 되면 Zernio 가 올립니다</div>';
+    }
+
     /* 기본은 **시간·요일·글만** 보인다. 단추를 눌러야 고치는 칸이 열린다.
        칸을 다 펼쳐두면 글이 안 읽힌다. */
-    return '<div class="ta-up" data-id="' + esc(p.id) + '">' +
+    return '<div class="ta-up' + (p.status === 'published' ? ' is-done' : '') +
+      '" data-id="' + esc(p.id) + '">' +
       '<div class="ta-up-hd"><b>' + esc(whenFull(p.slotAt)) + '</b>' + state +
         '<span class="ta-sub" style="margin:0 0 0 auto">' + esc(p.topic || '') +
         (p.postType ? ' · ' + esc(p.postType) : '') + '</span></div>' +
 
       '<div class="ta-up-read">' + esc(p.parts.join(CUT)) + '</div>' +
-      reply + bad +
+      reply + done + bad +
 
-      '<div class="ta-up-act">' +
-        '<button type="button" class="ta-btn ghost sm when">시간 설정</button>' +
-        '<button type="button" class="ta-btn ghost sm edit">수정하기</button>' +
-        '<button type="button" class="ta-btn ghost sm again">글 재생성</button>' +
-        '<button type="button" class="ta-btn ghost sm del" style="margin-left:auto">삭제하기</button>' +
-      '</div>' +
+      (p.status === 'published'
+        ? ''
+        : '<div class="ta-up-act">' +
+          '<button type="button" class="ta-btn ghost sm when">시간 설정</button>' +
+          '<button type="button" class="ta-btn ghost sm edit">수정하기</button>' +
+          '<button type="button" class="ta-btn ghost sm again">글 재생성</button>' +
+          '<button type="button" class="ta-btn ghost sm del" style="margin-left:auto">삭제하기</button>' +
+        '</div>') +
 
       /* ── 시간 설정 ── */
       '<div class="ta-up-open when-box" hidden>' +
@@ -2120,6 +2154,8 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
     box.querySelectorAll('.ta-up').forEach(function(el){
       var id = el.dataset.id;
+      /* 이미 올라간 글은 보여주기만 한다. 단추가 없으니 여기서 끝낸다. */
+      if (!el.querySelector('.ta-up-act')) return;
 
       el.querySelector('.save').addEventListener('click', function(){
         /* 「──── 다음 편 ────」로 갈라 여러 편을 되돌린다 */

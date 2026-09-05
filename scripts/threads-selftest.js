@@ -538,6 +538,25 @@ t('채울 게 남았으면 개수를 말한다',
   R.diagnose(live, okCtx).why.includes('만듭니다'), true);
 t('할 일이 없어도 막힌 것은 아니다', R.diagnose(live, Object.assign({}, okCtx, { filled: 9 })).ok, true);
 
+/* ── 사주를 가리켰는지 (자동 예약의 급소) ── */
+section('사주 근거 판정');
+const { pointsToSaju } = require('../services/threads/guideline');
+/* 자동은 지침을 다 지킨 글만 내보낸다. 그래서 이 판정이 틀리면
+   멀쩡한 글이 통째로 안 나간다. 실제로 그렇게 막혀 있었다 —
+   「목일간은 먼저 움직이고 토일간은 관찰합니다」가 근거 없음으로 잡혔다. */
+t('오행+일간을 근거로 본다', pointsToSaju('목일간은 먼저 움직입니다'), true);
+t('띄어 써도 잡는다', pointsToSaju('화 일간이 강하면'), true);
+t('순서가 뒤집혀도 잡는다', pointsToSaju('일간이 수인 사람'), true);
+t('오행 이야기도 근거다', pointsToSaju('오행이 치우친 사주'), true);
+t('예전부터 되던 것도 그대로', pointsToSaju('갑목 일간은'), true);
+t('기운 이야기도 그대로', pointsToSaju('수 기운이 없으면'), true);
+t('신살도 그대로', pointsToSaju('역마살이 둘이면'), true);
+/* 오행은 한 글자라 아무 데나 걸리면 안 된다 */
+t('요일은 근거가 아니다', pointsToSaju('수요일에 만나요'), false);
+t('금방도 근거가 아니다', pointsToSaju('금방 끝납니다'), false);
+t('토요일도 근거가 아니다', pointsToSaju('토요일 저녁에 봅시다'), false);
+t('사주 얘기가 없으면 없는 것', pointsToSaju('오늘은 좋은 날입니다'), false);
+
 /* ── 오류 문구 풀어주기 ── */
 section('오류 문구');
 /* 「일 23:35: 예약 실패 — 지침에 걸립니다 — 사주를 실제로 가리킴」만 봐서는

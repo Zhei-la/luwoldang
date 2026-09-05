@@ -331,8 +331,18 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
   try {
     const settings = await store.getSettings(req.user.id);
     const all = await store.getPosts(req.user.id);
+    /* 올라간 글도 **하루는** 남겨둔다.
+       바로 사라지면 「올라간 거야 만 거야」를 확인할 데가 없다. */
+    const DAY = 24 * 3600 * 1000;
+    const since = Date.now() - DAY;
+
     const list = all
-      .filter((p) => p.slotAt && p.status !== 'published')
+      .filter((p) => {
+        if (!p.slotAt) return false;
+        if (p.status !== 'published') return true;
+        const at = new Date(p.publishedAt || p.slotAt).getTime();
+        return at >= since;
+      })
       .sort((a, b) => new Date(a.slotAt) - new Date(b.slotAt))
       .map((p) => {
         const v = pipeline.view(p);
@@ -347,6 +357,12 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
           passHard: v.check.passHard,
           bad: (v.check.rows || []).filter((r) => r.hard && !r.ok).map((r) => r.label),
           lengths: v.lengths,
+          /* 올라간 글이면 언제 어디로 나갔는지 */
+          publishedAt: v.publishedAt || null,
+          permalink: v.permalink || null,
+          accountName: v.accountName || null,
+          scheduledFor: v.scheduledFor || null,
+          error: v.error || null,
         };
       });
     res.json({ ok: true, posts: list });
