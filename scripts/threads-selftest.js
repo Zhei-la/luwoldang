@@ -1297,6 +1297,23 @@ t('뭉뚱그린 말을 막는다', blk.indexOf('근거 없는 말을 셋 모두�
 /* ⚠️ filter(Boolean) 을 쓰면 빈 줄이 지워져 지시가 한 벽이 된다 */
 t('덩어리 사이가 붙지 않는다', blk.split(LF2).filter(function (l) { return !l.trim(); }).length >= 4, true);
 
+/* ── 이미 만들어둔 글 ──
+   ⚠️ 띠를 계산으로 정하기 전에 만든 글이 그대로 남아 있다.
+      「예약됨」이면 Zernio 가 들고 있어서 **그대로 나간다.**
+      어느 글을 다시 만들어야 하는지 사람이 눈으로 찾게 하면 안 된다. */
+t('만들어둔 글의 띠도 본다', routeSrc.indexOf('function ttiWarn(') > 0, true);
+t('글마다 실어 보낸다', routeSrc.indexOf('tti: ttiWarn(v)') > 0, true);
+t('이미 나간 글은 안 건드린다',
+  routeSrc.indexOf("if (post.status === 'published') return null;") > 0, true);
+/* 「쥐띠는 올해…」처럼 하나만 짚은 보통 글까지 붙잡으면
+   멀쩡한 글에 빨간 줄이 떠서 아무도 안 믿게 된다 */
+t('띠를 여럿 늘어놓은 글만 본다', routeSrc.indexOf('if (found < 4) return null;') > 0, true);
+t('화면이 그 경고를 그린다', viewSrc.indexOf('띠가 그 날과 안 맞습니다') > 0, true);
+t('다시 만들라고 알려준다', viewSrc.indexOf('계산해서 다시 만듭니다') > 0, true);
+/* 예약된 글은 그대로 나간다 — 더 세게 짚어야 한다 */
+t('예약된 글은 더 세게 짚는다', viewSrc.indexOf('이 글이 그대로 올라갑니다') > 0, true);
+t('요일 칸에도 표시한다', viewSrc.indexOf('띠 확인') > 0, true);
+
 /* 파이프라인이 그 검사를 쓰는지 */
 const pipeSrc3 = require('fs')
   .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'pipeline.js'), 'utf8');

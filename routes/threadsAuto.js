@@ -29,6 +29,8 @@ const VOICES = require('../services/threads/voices');
 const { numberParts, formOf } = require('../services/threads/length');
 const { checkPost } = require('../services/threads/guideline');
 const { HOOKS } = require('../services/threads/hooks');
+const today = require('../services/threads/today');
+const jiji = require('../services/threads/jiji');
 const { ALL: TOPIC_LIST, HOT: HOT_TOPICS } = require('../services/threads/topics');
 
 const guard = [requireAuth, requireApproved];
@@ -153,6 +155,36 @@ function planKeyOf(ruleId, at, time) {
   if (!ruleId || !at || !time) return '';
   const k = new Date(new Date(at).getTime() + KST_MS);
   return ruleId + '|' + k.toISOString().slice(0, 10) + '|' + time;
+}
+
+/**
+ * 오늘의 운세 글의 띠가 그 날 일지와 맞는가.
+ *
+ * ⚠️ 예전에는 띠를 모델이 골랐다. 그때 만들어 둔 글이 그대로 남아 있고,
+ *    「예약됨」이면 Zernio 가 들고 있어서 **그대로 나간다.**
+ *    어느 글을 다시 만들어야 하는지 사람이 눈으로 찾게 하면 안 된다.
+ *
+ * 반환 null(볼 것 없음) 또는 { ok:false, why }
+ */
+function ttiWarn(post) {
+  if (post.status === 'published') return null;      // 이미 나간 건 어쩔 수 없다
+  if (!post.slotAt) return null;
+
+  const whole = (post.parts || []).join(String.fromCharCode(10)) +
+    String.fromCharCode(10) + (post.replyText || '');
+
+  /* 띠를 **여럿 늘어놓은 글**만 본다.
+     「쥐띠는 올해 움직임이 많습니다」처럼 하나만 짚은 보통 글까지
+     붙잡으면, 멀쩡한 글에 빨간 줄이 떠서 아무도 안 믿게 된다.
+     운세 글은 좋은 쪽·조심할 쪽을 합쳐 넷 이상 적는다. */
+  const found = jiji.TTI.filter((name) => whole.indexOf(name) >= 0).length;
+  if (found < 4) return null;
+
+  const t = today.forDate(post.slotAt);
+  if (!t || !t.dayBranch) return null;
+
+  const c = jiji.checkText(t.dayBranch, whole);
+  return c.ok ? null : { ok: false, why: c.why };
 }
 
 /* ── 화면 ─────────────────────────────────────────── */
@@ -441,6 +473,8 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
           passHard: v.check.passHard,
           bad: (v.check.rows || []).filter((r) => r.hard && !r.ok).map((r) => r.label),
           lengths: v.lengths,
+          /* 띠가 그 날 일지와 맞는지. 계산이 붙기 전에 만든 글은 안 맞는다. */
+          tti: ttiWarn(v),
           /* 올라간 글이면 언제 어디로 나갔는지 */
           auto: autoWhy(v, ruleById[v.ruleId], settings, acc),
           planKey: planKeyOf(v.ruleId, v.slotAt, slotTimeOf(ruleById[v.ruleId], v.slotAt)),
