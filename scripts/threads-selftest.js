@@ -1189,5 +1189,120 @@ t('고른 계정을 저장에 담는다', viewSrc.indexOf("box.querySelector('.a
 t('설명서가 계정별 설정을 알려준다', viewSrc.indexOf('설정은 계정마다 따로입니다') > 0, true);
 t('각자 시간표로 돈다고 알려준다', viewSrc.indexOf('각자 자기 시간표대로') > 0, true);
 
+
+/* ── 띠는 계산해서 정한다 ──────────────────────────────
+   ⚠️ 「운 좋은 띠 셋」을 모델이 골랐다. 근거가 없으니 아무 띠나 나왔다.
+      계미일에 용띠·원숭이띠가 나오는 식이었다 — 미(未)와는 아무 관계도
+      없는 지지다. 명리를 아는 사람이 보면 바로 티가 난다.
+
+      일지 하나만 있으면 합·삼합·방합·충·형·해·파가 다 정해진다.
+      여기서 정하고, 모델은 그 근거를 풀어 쓰기만 한다. */
+section('띠 고르기 (합충형파해)');
+
+const J = require(require('path').join(__dirname, '..', 'services', 'threads', 'jiji'));
+
+/* 관계표가 명리 기본과 맞는지 — 여기가 틀리면 전부 틀린다 */
+t('육합 미-오', J.YUKHAP['미'], '오');
+t('육합 자-축', J.YUKHAP['자'], '축');
+t('육합 인-해', J.YUKHAP['인'], '해');
+t('충은 여섯 칸 건너 (미-축)', J.chungOf('미'), '축');
+t('충 자-오', J.chungOf('자'), '오');
+t('충 인-신', J.chungOf('인'), '신');
+t('해 미-자', J.HAE['미'], '자');
+t('파 미-술', J.PA['미'], '술');
+t('삼합 해묘미가 있다',
+  J.SAMHAP.some(function (g) { return g.set.join('') === '해묘미' && g.element === '목'; }), true);
+t('삼합 인오술은 화',
+  J.SAMHAP.filter(function (g) { return g.set.join('') === '인오술'; })[0].element, '화');
+t('삼형 축술미가 있다',
+  J.SAMHYEONG.some(function (g) { return g.join('') === '축술미'; }), true);
+
+/* ⚠️ 실제로 있었던 일 — 계미일(9월 6일) 글이 용띠·원숭이띠로 나갔다.
+   미(未)의 기본 관계는 이렇게 나와야 한다. */
+const mi = J.pick('미', 3);
+t('계미일 좋은 띠는 말·돼지·토끼',
+  mi.good.map(function (x) { return x.tti; }).sort().join(','), '돼지띠,말띠,토끼띠');
+t('계미일 조심할 띠는 소·개·쥐',
+  mi.care.map(function (x) { return x.tti; }).sort().join(','), '개띠,소띠,쥐띠');
+t('말띠 근거는 미오합', mi.good[0].why.indexOf('미오합') >= 0, true);
+t('토끼·돼지 근거는 해묘미 삼합',
+  mi.good.filter(function (x) { return x.tti === '토끼띠'; })[0].why.indexOf('해묘미 삼합') >= 0, true);
+t('소띠 근거는 축미충',
+  mi.care.filter(function (x) { return x.tti === '소띠'; })[0].why.indexOf('충') >= 0, true);
+t('쥐띠 근거는 자미해',
+  mi.care.filter(function (x) { return x.tti === '쥐띠'; })[0].why.indexOf('해') >= 0, true);
+t('개띠 근거는 형·파',
+  /형|파/.test(mi.care.filter(function (x) { return x.tti === '개띠'; })[0].why), true);
+/* 용띠·원숭이띠는 미(未)와 아무 관계가 없다 */
+t('용띠는 안 나온다',
+  mi.good.concat(mi.care).some(function (x) { return x.tti === '용띠'; }), false);
+t('원숭이띠도 안 나온다',
+  mi.good.concat(mi.care).some(function (x) { return x.tti === '원숭이띠'; }), false);
+
+/* 열두 지지가 다 돌아야 한다. 하나라도 비면 그 날 운세가 못 나간다. */
+let allOk = true;
+let noOverlap = true;
+J.BRANCHES.forEach(function (b) {
+  const p = J.pick(b, 3);
+  if (!p || !p.good.length || !p.care.length) allOk = false;
+  const care = p.care.map(function (x) { return x.tti; });
+  if (p.good.some(function (x) { return care.indexOf(x.tti) >= 0; })) noOverlap = false;
+});
+t('열두 지지가 다 나온다', allOk, true);
+/* ⚠️ 합과 파·해가 겹칠 때가 있다 (인해는 육합이면서 파).
+   양쪽에 같은 띠를 올리면 읽는 사람이 뭘 믿어야 할지 모른다. */
+t('좋은 쪽과 조심 쪽이 안 겹친다', noOverlap, true);
+/* 인일은 해(돼지)가 육합이자 파다 — 합을 먼저 본다 */
+const inDay = J.pick('인', 3);
+t('인일에 돼지띠는 좋은 쪽',
+  inDay.good.some(function (x) { return x.tti === '돼지띠'; }), true);
+t('인일에 돼지띠는 조심 쪽이 아니다',
+  inDay.care.some(function (x) { return x.tti === '돼지띠'; }), false);
+/* 억지로 셋을 채우느니 근거 있는 둘이 낫다 */
+t('근거가 둘뿐이면 둘만 준다', inDay.care.length, 2);
+t('없는 지지는 안 받는다', J.pick('봄'), null);
+
+/* ── 나온 글을 기계로 본다 ──
+   프롬프트에 「이 목록을 그대로」라고 적어두는 것만으로는 안 지켜진다. */
+section('띠 검사');
+
+const LF2 = String.fromCharCode(10);
+const wrongPost = ['🍀 운 좋은 띠', '🐲 용띠', '🐰 토끼띠', '🐷 돼지띠',
+  '⚠️ 조심할 띠', '🐵 원숭이띠', '🐔 닭띠', '🐯 호랑이띠'].join(LF2);
+const rightPost = ['🍀 운 좋은 띠', '🐴 말띠', '🐰 토끼띠', '🐷 돼지띠',
+  '⚠️ 조심할 띠', '🐮 소띠', '🐭 쥐띠', '🐶 개띠'].join(LF2);
+
+t('엉뚱한 띠를 잡는다', J.checkText('미', wrongPost).ok, false);
+t('어느 띠가 틀렸는지 말한다', J.checkText('미', wrongPost).why.indexOf('용띠') > 0, true);
+t('맞는 띠를 알려준다', J.checkText('미', wrongPost).why.indexOf('말띠') > 0, true);
+t('맞게 쓴 글은 통과', J.checkText('미', rightPost).ok, true);
+/* 여섯 중 하나라도 빠지면 틀이 무너진다 */
+t('빠뜨린 띠도 잡는다',
+  J.checkText('미', rightPost.replace('🐭 쥐띠', '')).ok, false);
+/* 「범띠」로 적어도 호랑이띠와 같은 것으로 봐야 한다 */
+t('범띠는 호랑이띠와 같게 본다',
+  J.checkText('미', wrongPost.replace('호랑이띠', '범띠')).why.indexOf('호랑이띠') > 0, true);
+t('일지를 모르면 안 막는다', J.checkText('', rightPost).ok, true);
+
+/* 프롬프트에 실리는지 */
+const T2 = require(require('path').join(__dirname, '..', 'services', 'threads', 'today'));
+const blk = T2.block(new Date('2026-09-06T05:00:00+09:00'));
+t('일진을 만세력으로 뽑는다', blk.indexOf('계미일') > 0, true);
+t('일지를 같이 준다', T2.forDate(new Date('2026-09-06T05:00:00+09:00')).dayBranch, '미');
+t('띠 목록이 프롬프트에 실린다', blk.indexOf('오늘 띠 (계산해둔 값)') > 0, true);
+t('근거까지 실린다', blk.indexOf('미오합') > 0, true);
+t('고르지 말라고 못 박는다', blk.indexOf('띠를 고르는 것은 당신 일이 아닙니다') > 0, true);
+/* 「귀인이 붙는다」를 셋 모두에 뭉뚱그려 붙이던 것도 막는다 */
+t('뭉뚱그린 말을 막는다', blk.indexOf('근거 없는 말을 셋 모두에 뭉뚱그려') > 0, true);
+/* ⚠️ filter(Boolean) 을 쓰면 빈 줄이 지워져 지시가 한 벽이 된다 */
+t('덩어리 사이가 붙지 않는다', blk.split(LF2).filter(function (l) { return !l.trim(); }).length >= 4, true);
+
+/* 파이프라인이 그 검사를 쓰는지 */
+const pipeSrc3 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'pipeline.js'), 'utf8');
+t('만든 글의 띠를 확인한다', pipeSrc3.indexOf('jiji.checkText(t.dayBranch, whole)') > 0, true);
+t('날짜 틀에서만 본다', pipeSrc3.indexOf('o.form && o.form.needsDate') > 0, true);
+t('첫 댓글까지 같이 본다', pipeSrc3.indexOf('(first.replyText') > 0, true);
+
 /* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
    여기서 끝내버리면 그 결과를 못 보고 나간다. */

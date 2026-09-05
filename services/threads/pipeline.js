@@ -17,6 +17,8 @@ const { checkPost } = require('./guideline');
 const { formOf, threadsLength, numberParts } = require('./length');
 const { hookName } = require('./hooks');
 const dailyshape = require('./dailyshape');
+const jiji = require('./jiji');
+const today = require('./today');
 
 /**
  * 모델이 준 form 은 믿지 않는다. 편 개수로 다시 정한다.
@@ -185,6 +187,20 @@ async function generate(userId, openaiKey, topic, limit, opts) {
 
     const c1 = dailyshape.check(tplBody, (first.parts || [])[0] || '');
     if (!c1.ok) gripes.push('1편 — ' + c1.why);
+
+    /* ⚠️ 띠는 일지에서 계산해 정해준 것이다. 그런데 모델은 목록을 앞에
+          두고도 엉뚱한 띠를 넣는다. 계미일에 용띠·원숭이띠가 나왔었다 —
+          미(未)와 아무 관계도 없는 지지라 아는 사람이 보면 바로 티가 난다.
+          날짜가 걸린 틀에서만 본다. */
+    if (o.form && o.form.needsDate) {
+      const t = today.forDate(o.at);
+      if (t && t.dayBranch) {
+        const whole = (first.parts || []).join(String.fromCharCode(10)) +
+          String.fromCharCode(10) + (first.replyText || '');
+        const cT = jiji.checkText(t.dayBranch, whole);
+        if (!cT.ok) gripes.push('띠 — ' + cT.why);
+      }
+    }
 
     if (dailyshape.needsTwo(daily)) {
       if ((first.parts || []).length < 2) {

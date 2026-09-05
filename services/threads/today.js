@@ -13,6 +13,7 @@
  * ============================================================ */
 
 const { calcSaju } = require('../manseryeok');
+const jiji = require('./jiji');
 
 const TZ_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
@@ -68,6 +69,8 @@ function forDate(at) {
       ganji,
       ganjiKo: ko(ganji),
       dayStem: STEM[ganji[0]] || '',
+      /* 띠를 정하려면 일지가 필요하다. 합·삼합·충·형·해·파가 여기서 나온다. */
+      dayBranch: BRANCH[ganji[1]] || '',
       element: ELEMENT[ganji[0]] || '',
     };
   } catch (e) {
@@ -97,6 +100,12 @@ function block(at) {
     '- 일진도 위 값 그대로입니다. **간지를 지어내지 마세요.**',
     '- 한자는 쓰지 말고 「' + t.ganjiKo + '일」처럼 한글로 적으세요.',
     '',
+    /* ⚠️ 띠는 모델이 고르면 안 된다. 일지에서 계산해 정해 준다.
+          예전엔 계미일에 용띠·원숭이띠가 나왔다 — 미(未)와 아무 관계도
+          없는 지지다. 명리를 아는 사람이 보면 바로 티가 난다. */
+    /* ⚠️ filter(Boolean) 을 쓰면 위의 빈 줄까지 지워진다. 덩어리가 붙어
+          한 벽이 되면 모델이 어디까지가 한 지시인지 헷갈린다. */
+    jiji.block(t.dayBranch) || '',
   ].join('\n');
 }
 
