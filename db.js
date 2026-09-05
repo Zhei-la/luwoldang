@@ -932,6 +932,8 @@ async function initDb() {
         created_at  TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    /* 댓글을 받을지 말지. 'yes' · 'no' · 빈 값(글마다 알아서) */
+    await pool.query(`ALTER TABLE th_rules ADD COLUMN IF NOT EXISTS ask_comments TEXT;`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_rules ON th_rules(user_id, created_at);`);
     /* 예약 글을 빨리 찾기 위한 색인 */
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_th_due ON th_posts(status, scheduled_for);`);

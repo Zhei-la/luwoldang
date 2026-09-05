@@ -37,6 +37,7 @@ function rowToRule(r) {
     topics: r.topics || [],
     forms: r.forms || [],
     mode: r.mode || 'draft',
+    askComments: r.ask_comments || '',
     cursor: Number(r.cursor) || 0,
     lastRunAt: r.last_run_at ? new Date(r.last_run_at).toISOString() : null,
     lastError: r.last_error || '',
@@ -82,10 +83,17 @@ function clean(patch, opts) {
   if (Array.isArray(patch.slots)) {
     const seen = new Set();
     out.slots = patch.slots
-      .map((s) => ({
-        day: Math.max(0, Math.min(6, Number(s && s.day))),
-        time: hhmm(s && s.time),
-      }))
+      .map((s) => {
+        const one = {
+          day: Math.max(0, Math.min(6, Number(s && s.day))),
+          time: hhmm(s && s.time),
+        };
+        /* 이 자리는 이 틀로 — 「토 아침은 운세」처럼 못 박을 수 있다.
+           안 정하면 규칙에서 고른 틀들을 돌려 쓴다. */
+        const f = forms.byId(s && s.form);
+        if (f && !(f.needsIntro && !o.hasIntro)) one.form = f.id;
+        return one;
+      })
       .filter((s) => Number.isFinite(s.day) && s.time)
       .filter((s) => {
         const k = s.day + ' ' + s.time;
@@ -109,6 +117,8 @@ function clean(patch, opts) {
     out.forms = forms.clean(patch.forms, { hasIntro: !!o.hasIntro });
   }
   if (patch.mode === 'publish' || patch.mode === 'draft') out.mode = patch.mode;
+  /* 'yes' 댓글 받기 · 'no' 조르지 않기 · '' 글마다 알아서 */
+  if (['yes', 'no', ''].indexOf(patch.askComments) >= 0) out.askComments = patch.askComments;
 
   return out;
 }
@@ -116,6 +126,7 @@ function clean(patch, opts) {
 const COLS = {
   name: 'name', enabled: 'enabled', slots: 'slots', jitterMin: 'jitter_min',
   topics: 'topics', forms: 'forms', mode: 'mode', cursor: 'cursor',
+  askComments: 'ask_comments',
   lastRunAt: 'last_run_at', lastError: 'last_error',
 };
 const JSON_COLS = new Set(['slots', 'topics', 'forms']);
@@ -222,7 +233,8 @@ function jitter(at, minutes, seed) {
 
 /** 화면에 「월 08:10」 처럼 */
 function slotLabel(slot) {
-  return DAY_NAMES[slot.day] + ' ' + slot.time;
+  const f = slot.form ? forms.byId(slot.form) : null;
+  return DAY_NAMES[slot.day] + ' ' + slot.time + (f ? ' · ' + f.label : '');
 }
 
 /**

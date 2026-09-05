@@ -18,6 +18,16 @@ const MIN_SAMPLES = 10;   // 이보다 적으면 말투가 안 잡힌다
 const MAX_SAMPLES = 40;   // 넘으면 프롬프트만 길어지고 나아지지 않는다
 const MIN_CHARS = 10;     // 한 줄짜리는 글로 치지 않는다
 
+/*
+ * 글 개수가 모자라도 **분량이 넉넉하면** 받아준다.
+ *
+ * 스레드 글을 그대로 긁어 붙이면 글 사이가 안 띄어져 한 덩어리로 읽힌다.
+ * 그러면 스무 줄을 넣어도 「글 1개」가 되어 아무리 넣어도 안 열린다.
+ * 실제로 그렇게 막혔다. 말투를 잡는 데 필요한 건 「글 열 개」가 아니라
+ * 「그 사람 문장이 충분히 많이」이므로, 줄 수로도 열어준다.
+ */
+const MIN_LINES = 25;     // 이만큼이면 글이 몇 덩어리든 말투가 잡힌다
+
 /**
  * 붙여넣은 덩어리를 글 여러 개로 가른다.
  * 「---」 로 나눴으면 그것으로, 아니면 빈 줄로 가른다.
@@ -40,18 +50,47 @@ function toSamples(input) {
   return splitSamples(input);
 }
 
+/** 알맹이 있는 줄 수 */
+function lineCount(input) {
+  const NL = String.fromCharCode(10);
+  const CR = String.fromCharCode(13);
+  const text = Array.isArray(input) ? input.join(NL) : String(input || '');
+  return text.split(NL)
+    .map((l) => l.split(CR).join('').trim())
+    .filter((l) => l.length >= 2)
+    .length;
+}
+
+/**
+ * 분석을 돌려도 되는지.
+ * 글 개수로 열거나, 개수가 모자라도 줄이 넉넉하면 열어준다.
+ * 반환 { ok, chunks, lines, why }
+ */
+function enough(input) {
+  const chunks = toSamples(input).length;
+  const lines = lineCount(input);
+  if (chunks >= MIN_SAMPLES) return { ok: true, chunks, lines };
+  if (lines >= MIN_LINES) return { ok: true, chunks, lines };
+
+  return {
+    ok: false, chunks, lines,
+    why: '글 ' + chunks + '개 · ' + lines + '줄로 읽었습니다. ' +
+      '글 ' + MIN_SAMPLES + '개나 ' + MIN_LINES + '줄 중 하나는 넘어야 합니다.' +
+      (chunks <= 2 && lines < MIN_LINES
+        ? String.fromCharCode(10) + '글을 더 붙여넣거나, 글 사이를 한 줄 띄워주세요.'
+        : ''),
+  };
+}
+
 /**
  * 말투 팩을 뽑아 저장한다.
  * 반환 { voicePack, used }  — used 는 실제로 쓴 글 개수
  */
 async function analyze(userId, openaiKey, input) {
   const list = toSamples(input);
-
-  if (list.length < MIN_SAMPLES) {
-    const e = new Error(
-      '글이 ' + list.length + '개뿐입니다. 최소 ' + MIN_SAMPLES + '개는 있어야 말투가 잡힙니다. ' +
-      '글 사이를 한 줄 띄워서 붙여넣어주세요.'
-    );
+  const gate = enough(input);
+  if (!gate.ok) {
+    const e = new Error(gate.why);
     e.code = 'TOO_FEW';
     throw e;
   }
@@ -164,4 +203,5 @@ function resolve(settings) {
   return s.voicePack || null;
 }
 
-module.exports = { analyze, patch, clear, resolve, splitSamples, MIN_SAMPLES, MAX_SAMPLES };
+module.exports = { analyze, patch, clear, resolve, splitSamples, enough, lineCount,
+  MIN_SAMPLES, MAX_SAMPLES, MIN_LINES };

@@ -264,6 +264,8 @@
 #ta .ta-slots{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
 #ta .ta-slot{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);
   background:#faf8f4;border-radius:100px;padding:5px 8px 5px 12px;font-size:13px;font-weight:700}
+#ta .ta-slot.fixed{border-color:#b08d57;background:#fdf8f0}
+#ta .ta-slot i{font-style:normal;font-weight:600;font-size:12px;color:#8a6100;margin-left:5px}
 #ta .ta-slot button{border:0;background:none;cursor:pointer;color:var(--dim);font-size:15px;
   line-height:1;padding:0 2px;font-family:inherit}
 #ta .ta-slot button:hover{color:var(--no)}
@@ -302,6 +304,10 @@
   line-height:1.65;color:var(--ink2)}
 #ta .ta-chip-why b.bang{flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;
   background:#b08d57;color:#fff;font-size:11px;font-weight:900;text-align:center;line-height:16px}
+
+/* 못 올리는 것과 「고치면 좋은 것」을 눈으로 갈라야 한다.
+   예전엔 둘 다 빨간 ✕ 라서 짧은 글 하나도 못 올리는 줄 알았다. */
+#ta .ta-verdict.soft{background:#fdf8f0;color:#8a6100}
 
 #ta .ta-empty{text-align:center;color:var(--dim);font-size:14px;padding:34px 10px;line-height:1.8}
 #ta .ta-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
@@ -380,6 +386,17 @@
       <p class="ta-sub" style="margin:12px 0 0">
         1개 20초 · 3개 45초 · 8개 3분쯤 걸립니다. 오늘 <b id="taUsed"><%= usedToday %></b>/<%= dailyLimit %>번 썼습니다.
       </p>
+
+      <div style="margin:14px 0 0">
+        <label for="taAsk" style="margin:0 0 6px">댓글 유도</label>
+        <select id="taAsk" style="max-width:320px">
+          <option value="">알아서 (권합니다)</option>
+          <option value="yes">꼭 댓글을 받기</option>
+          <option value="no">댓글을 조르지 않기</option>
+        </select>
+        <p class="ta-sub" style="margin:6px 0 0">「알아서」로 두면 글마다 어울리는 마무리를 고릅니다.
+          전부 댓글을 조르면 받아만 가는 계정으로 보입니다.</p>
+      </div>
 
       <div class="ta-pick">
         <div class="ta-pick-top">
@@ -851,8 +868,10 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       <p class="ta-sub">본인이 쓴 글을 붙여넣으면 <b>말투를 뽑아 규칙서로 만듭니다.</b>
         그 뒤로 만드는 글이 전부 이 말투로 나옵니다. 어미·자주 쓰는 표현·줄바꿈 리듬·
         절대 안 쓰는 말까지 잡습니다.<br>
-        <b>글 사이는 한 줄 띄워주세요.</b> 그걸로 글을 가릅니다.
-        (<code>---</code> 로 나누셔도 됩니다.)</p>
+        <b>글 사이를 한 줄 띄우면</b> 글을 하나씩 가려서 더 정확합니다
+        (<code>---</code> 로 나누셔도 됩니다).<br>
+        안 띄우고 통째로 붙여넣어도 됩니다 — <b>글 <%= voiceMin %>개나 <%= voiceLines %>줄</b>
+        중 하나만 넘으면 분석합니다.</p>
 
       <div id="taVoiceNow"><% if (voicePack) { %>
         <div class="ta-voice-now">
@@ -869,7 +888,8 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
       <textarea id="taVoiceIn" rows="10"
         placeholder="스레드에 쓰셨던 글을 그대로 붙여넣으세요.&#10;&#10;글과 글 사이는 한 줄 띄웁니다.&#10;&#10;많을수록 정확합니다. 25~30개면 가장 좋습니다."></textarea>
-      <p class="ta-voice-count" id="taVoiceCount">글 <b>0</b>개 · 최소 <%= voiceMin %>개 필요합니다</p>
+      <p class="ta-voice-count" id="taVoiceCount">글 <b>0</b>개 · <b>0</b>줄 —
+        글 <%= voiceMin %>개나 <%= voiceLines %>줄 중 하나는 넘어야 합니다</p>
 
       <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="ta-btn" type="button" id="taVoiceRun">말투 분석</button>
@@ -1052,14 +1072,20 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   function checkHtml(c){
     if (!c) return '';
     var rows = c.rows.map(function(r){
-      var cls = r.ok ? 'pass' : (r.hard ? 'fail' : 'soft');
-      var mark = r.ok ? '✓' : (r.hard ? '✕' : '!');
+      /* ✕ 는 정말 못 올리는 것에만 쓴다 (길이).
+         나머지는 「고치면 좋은 것」이라 ! 로 보여준다. */
+      var cls = r.ok ? 'pass' : (r.blocking ? 'fail' : 'soft');
+      var mark = r.ok ? '✓' : (r.blocking ? '✕' : '!');
       return '<div class="ta-chk '+cls+'"><i>'+mark+'</i><div><b>'+esc(r.label)+'</b>'+
              (r.detail ? ' <span>'+esc(r.detail)+'</span>' : '')+'</div></div>';
     }).join('');
+    var n = (c.advice || []).length;
     return '<div class="ta-check">' +
-      (c.passHard ? '<div class="ta-verdict ok">지침 통과</div>'
-                  : '<div class="ta-verdict no">고쳐야 올릴 수 있습니다</div>') +
+      (!c.passBlock
+        ? '<div class="ta-verdict no">이대로는 못 올립니다 — 길이를 줄여주세요</div>'
+        : c.passHard
+          ? '<div class="ta-verdict ok">지침 통과</div>'
+          : '<div class="ta-verdict soft">올릴 수는 있습니다 · 고치면 좋은 것 ' + n + '가지</div>') +
       rows + '</div>';
   }
 
@@ -1086,7 +1112,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   function whyNot(p){
     if (!HAS_ACCOUNT) return '올릴 계정을 먼저 등록해주세요';
     if (!ALLOWED) return '설정에서 올리기를 허용해주세요';
-    if (p.check && !p.check.passHard) return '지침에 걸려 올릴 수 없습니다';
+    if (p.check && !p.check.passBlock) return '500자를 넘어 올릴 수 없습니다';
     return '';
   }
 
@@ -1312,7 +1338,10 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     msg(out, 'warn', '후킹 26가지를 훑어보고 글을 쓰는 중입니다. 창을 닫지 마세요.\n' +
       (limit>=8 ? '8개는 3분쯤 걸립니다.' : limit>=5 ? '1분쯤 걸립니다.' : limit<=1 ? '20초쯤 걸립니다.' : '45초쯤 걸립니다.'));
 
-    post('/api/threads/generate', { topic: topic, limit: limit }).then(function(r){
+    post('/api/threads/generate', {
+      topic: topic, limit: limit,
+      askComments: $('#taAsk') ? $('#taAsk').value : '',
+    }).then(function(r){
       goBtn.disabled = false; goBtn.textContent = '만들기';
       if (!r.j.ok) { msg(out, 'err', r.j.error + (r.j.hint ? '\n\n' + r.j.hint : '')); return; }
       $('#taUsed').textContent = r.j.usedToday;
@@ -1611,7 +1640,18 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
     list.querySelectorAll('.ta-pub').forEach(function(b){
       b.addEventListener('click', function(){
-        if (!confirm('지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.')) return;
+        /* 지침에 걸리는 게 있으면 무엇이 걸리는지 보여주고 한 번 더 묻는다.
+           막지는 않는다 — 판단은 사람이 한다. 다만 모르고 나가면 안 된다. */
+        var card = b.closest('[data-id]') || b.parentElement;
+        var soft = card ? card.querySelectorAll('.ta-chk.soft') : [];
+        var names = [].slice.call(soft).map(function(x){
+          var t = x.querySelector('b'); return t ? t.textContent : '';
+        }).filter(Boolean);
+        var ask = names.length
+          ? '고치면 좋은 것이 ' + names.length + '가지 있습니다.\n · ' + names.join('\n · ') +
+            '\n\n그래도 지금 올릴까요? 올리고 나면 되돌릴 수 없습니다.'
+          : '지금 스레드에 올릴까요?\n올리고 나면 되돌릴 수 없습니다.';
+        if (!confirm(ask)) return;
         b.disabled = true; b.innerHTML = '<span class="ta-spin"></span> 올리는 중';
         post('/api/threads/posts/' + idOf(b) + '/publish', {}).then(function(r){
           if (!r.j.ok) {
@@ -1717,7 +1757,9 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
   function ruleHtml(r){
     var slots = (r.slots || []).map(function(s, i){
-      return '<span class="ta-slot">' + DAYS[s.day] + ' ' + esc(s.time) +
+      var fl = s.form ? (FORMS.filter(function(f){return f.id===s.form})[0]||{}).label : '';
+      return '<span class="ta-slot' + (fl ? ' fixed' : '') + '">' + DAYS[s.day] + ' ' + esc(s.time) +
+             (fl ? '<i>' + esc(fl) + '</i>' : '') +
              '<button type="button" data-del-slot="' + i + '" aria-label="빼기">×</button></span>';
     }).join('') || '<span class="ta-sub" style="margin:0">아직 없습니다. 아래에서 더하세요.</span>';
 
@@ -1747,6 +1789,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       '<div class="ta-slot-add">' +
         '<select class="d">' + dayOpts + '</select>' +
         '<input type="time" class="t" value="08:10">' +
+        '<select class="sf"><option value="">틀은 돌려쓰기</option>' +
+          FORMS.map(function(f){
+            var lock = f.needsIntro && !HAS_INTRO;
+            return '<option value="' + f.id + '"' + (lock ? ' disabled' : '') + '>' + esc(f.label) + '</option>';
+          }).join('') +
+        '</select>' +
         '<button type="button" class="ta-btn ghost sm add-slot">더하기</button>' +
         '<span class="ta-sub" style="margin:0 0 0 6px">시각 어긋내기 ±' +
           '<input type="number" class="j" min="0" max="30" value="' + (r.jitterMin == null ? 7 : r.jitterMin) + '"' +
@@ -1764,7 +1812,16 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       '<textarea id="k-' + esc(r.id) + '" class="kw" rows="3" placeholder="역마살&#10;현침살&#10;개운법">' +
         esc((r.topics || []).join('\n')) + '</textarea>' +
 
-      '<label style="margin-top:14px">만든 다음</label>' +
+      '<label style="margin-top:16px">댓글 유도</label>' +
+      '<p class="ta-sub" style="margin:0 0 6px">「알아서」로 두면 글마다 어울리는 마무리를 고릅니다. ' +
+        '전부 댓글을 조르면 받아만 가는 계정으로 보입니다.</p>' +
+      '<select class="ac">' +
+        '<option value=""' + (r.askComments ? '' : ' selected') + '>알아서 (권합니다)</option>' +
+        '<option value="yes"' + (r.askComments === 'yes' ? ' selected' : '') + '>꼭 댓글을 받기</option>' +
+        '<option value="no"' + (r.askComments === 'no' ? ' selected' : '') + '>댓글을 조르지 않기</option>' +
+      '</select>' +
+
+      '<label style="margin-top:16px">만든 다음</label>' +
       '<select class="md">' +
         '<option value="draft"' + (r.mode === 'draft' ? ' selected' : '') + '>원고로만 두기 (내가 보고 올린다)</option>' +
         '<option value="publish"' + (r.mode === 'publish' ? ' selected' : '') + '>바로 예약까지 (손 안 대도 올라간다)</option>' +
@@ -1786,10 +1843,10 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   }
 
   function readRule(box){
-    var slots = [].slice.call(box.querySelectorAll('.ta-slot')).map(function(el){
-      var t = el.textContent.replace('×', '').trim().split(/\s+/);
-      return { day: DAYS.indexOf(t[0]), time: t[1] };
-    }).filter(function(s){ return s.day >= 0 && s.time; });
+    /* ⚠️ 화면 글자에서 되읽지 않는다. 틀 이름까지 섞여 있어 날아간다.
+       기억해둔 값(mine.slots)을 그대로 쓴다. */
+    var keep = RULES.filter(function(x){ return x.id === box.dataset.id; })[0];
+    var slots = (keep && keep.slots) || [];
 
     return {
       id: box.dataset.id,
@@ -1800,6 +1857,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       forms: [].slice.call(box.querySelectorAll('.ta-form.on')).map(function(b){ return b.dataset.form; }),
       topics: box.querySelector('.kw').value.split('\n').map(function(t){ return t.trim(); }).filter(Boolean),
       mode: box.querySelector('.md').value,
+      askComments: box.querySelector('.ac').value,
     };
   }
 
@@ -1819,9 +1877,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     box.querySelector('.add-slot').addEventListener('click', function(){
       var day = Number(box.querySelector('.d').value);
       var time = box.querySelector('.t').value;
+      var sform = box.querySelector('.sf').value;
       if (!time) return;
       if (mine.slots.some(function(s){ return s.day === day && s.time === time; })) return;
-      mine.slots = mine.slots.concat([{ day: day, time: time }])
+      var one = { day: day, time: time };
+      if (sform) one.form = sform;
+      mine.slots = mine.slots.concat([one])
         .sort(function(a, b){ return (a.day - b.day) || a.time.localeCompare(b.time); });
       Object.assign(mine, readRuleKeep(box));
       drawRules();
@@ -2059,26 +2120,39 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
     return parts.map(function(t){ return t.trim(); }).filter(function(t){ return t.length >= 10; });
   }
   var VOICE_MIN = <%= voiceMin %>;
+  var VOICE_LINES = <%= voiceLines %>;
+  /* 스레드에서 글을 그대로 긁어 붙이면 사이가 안 띄어져 「글 1개」로 읽힌다.
+     스무 줄을 넣어도 안 열려서 아무리 붙여넣어도 분석이 안 되던 자리다.
+     그래서 줄 수로도 열어준다 — 서버와 같은 기준이다. */
+  function voiceLineCount(text){
+    return String(text || '').split(String.fromCharCode(10))
+      .filter(function(l){ return l.trim().length >= 2; }).length;
+  }
   function voiceCount(){
-    var el = $('#taVoiceIn'); if (!el) return 0;
+    var el = $('#taVoiceIn');
+    if (!el) return { ok: false, n: 0, lines: 0 };
     var n = voiceChunks(el.value).length;
+    var lines = voiceLineCount(el.value);
+    var ok = n >= VOICE_MIN || lines >= VOICE_LINES;
     var box = $('#taVoiceCount');
     if (box) {
-      box.className = 'ta-voice-count' + (n >= VOICE_MIN ? ' enough' : '');
-      box.innerHTML = n >= VOICE_MIN
-        ? '글 <b>' + n + '</b>개 · 분석할 수 있습니다'
-        : '글 <b>' + n + '</b>개 · 최소 ' + VOICE_MIN + '개 필요합니다';
+      box.className = 'ta-voice-count' + (ok ? ' enough' : '');
+      box.innerHTML = ok
+        ? '글 <b>' + n + '</b>개 · <b>' + lines + '</b>줄 — 분석할 수 있습니다'
+        : '글 <b>' + n + '</b>개 · <b>' + lines + '</b>줄 — 글 ' + VOICE_MIN +
+          '개나 ' + VOICE_LINES + '줄 중 하나는 넘어야 합니다';
     }
-    return n;
+    return { ok: ok, n: n, lines: lines };
   }
   $('#taVoiceIn') && $('#taVoiceIn').addEventListener('input', voiceCount);
 
   $('#taVoiceRun') && $('#taVoiceRun').addEventListener('click', function(){
-    var n = voiceCount();
-    if (n < VOICE_MIN) {
+    var c = voiceCount();
+    if (!c.ok) {
       msg($('#taVoiceMsg'), 'err',
-        '글이 ' + n + '개뿐입니다. 최소 ' + VOICE_MIN + '개는 있어야 말투가 잡힙니다.\n'
-        + '글이 적으면 없는 말버릇을 지어내고, 그게 앞으로 만드는 모든 글에 박힙니다.');
+        '글 ' + c.n + '개 · ' + c.lines + '줄로 읽었습니다.\n'
+        + '글 ' + VOICE_MIN + '개나 ' + VOICE_LINES + '줄 중 하나는 넘어야 합니다.\n'
+        + '분량이 적으면 없는 말버릇을 지어내고, 그게 앞으로 만드는 모든 글에 박힙니다.');
       return;
     }
     var b = this;

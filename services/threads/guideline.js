@@ -206,6 +206,11 @@ function checkPost(post) {
 
   const over = lengths.findIndex((n) => n > THREADS_MAX);
   rows.push({
+    /* ⚠️ 이것만 발행을 막는다(blocking).
+          500자가 넘으면 스레드가 아예 안 받는다 — 우리 취향이 아니라 남의 한계다.
+          나머지는 「고치면 좋은 것」이다. 다 지켜야만 올릴 수 있게 해두었더니
+          짧은 글 하나 시험 삼아 올려보는 것도 막혔다. */
+    blocking: true,
     label: '모든 편 500자 이내',
     ok: over === -1,
     hard: true,
@@ -390,8 +395,13 @@ function checkPost(post) {
     });
   }
 
+  /* passHard  — 지침을 다 지켰나. 자동 발행은 이걸 본다 (사람이 안 보니까).
+     passBlock — 올릴 수는 있나. 사람이 직접 올릴 때는 이것만 본다.
+                 나머지는 「고치면 좋습니다」로 보여주고 판단은 사람이 한다. */
   const passHard = rows.filter((r) => r.hard).every((r) => r.ok);
-  return { rows, passHard, lengths };
+  const passBlock = rows.filter((r) => r.blocking).every((r) => r.ok);
+  const advice = rows.filter((r) => r.hard && !r.blocking && !r.ok).map((r) => r.label);
+  return { rows, passHard, passBlock, advice, lengths };
 }
 
 module.exports = { checkPost, scareViolation, pointsToSaju, hookWordsIn, needsBreaks, vagueIn, BANNED, TERMS, POINTED };

@@ -39,8 +39,24 @@ async function taken(userId, ruleId, at) {
   return rows.length > 0;
 }
 
-/** 이번 차례에 쓸 주제. 규칙에 적어둔 것을 돌려 쓰고, 비었으면 반응 터진 소재에서. */
-function pickTopic(rule, n) {
+/**
+ * 이번 차례에 쓸 주제. 규칙에 적어둔 것을 돌려 쓰고, 비었으면 반응 터진 소재에서.
+ *
+ * ⚠️ 틀이 주제를 정해버리는 경우가 있다.
+ *    「오늘의 운세」에 키워드 「역마살」을 주면 프롬프트에
+ *    「주제: 역마살」과 「이번 글은 오늘의 운세」가 같이 들어가 서로 싸운다.
+ *    실제로 운세를 고르고 키워드를 적었더니 일간별 정보글이 나왔다.
+ *    이런 틀은 키워드를 무시하고 자기 주제를 쓴다.
+ */
+const FIXED_TOPIC = {
+  daily: '오늘의 운세',
+  intro: '무료사주 인사',
+};
+
+function pickTopic(rule, n, form) {
+  const fixed = form && FIXED_TOPIC[form.id];
+  if (fixed) return fixed;
+
   const list = (rule.topics || []).filter(Boolean);
   if (list.length) return list[Math.abs(n) % list.length];
   const hot = topicsLib.HOT.map((h) => h.topic);
@@ -71,8 +87,10 @@ async function runRule(rule) {
     if (made.length >= PER_TICK) break;
     if (await taken(rule.userId, rule.id, s.sendAt)) continue;
 
-    const form = forms.next(pickable, cursor);
-    const topic = pickTopic(rule, cursor);
+    /* 슬롯이 틀을 콕 집어뒀으면 그것을 쓴다 — 「토 아침은 운세」처럼.
+       안 집었으면 고른 것들을 돌려 쓴다. */
+    const form = (s.slot.form && forms.byId(s.slot.form)) || forms.next(pickable, cursor);
+    const topic = pickTopic(rule, cursor, form);
 
     try {
       /* 한 자리에 글 하나만 만든다. 여러 개 만들어 고르는 건 사람이 할 때 이야기다. */
@@ -80,13 +98,18 @@ async function runRule(rule) {
         form,
         /* 지금이 아니라 이 글이 올라갈 시각. 「오늘의 운세」가 이걸 보고 날짜를 적는다. */
         at: s.sendAt,
+        /* 이 규칙이 댓글을 받기로 했는지. 슬롯이 「댓글 유도형」이면 그건 당연히 받는다. */
+        askComments: rule.askComments === 'yes' ? true
+          : rule.askComments === 'no' ? false : null,
         auto: true,
       });
       const post = (out.posts || [])[0];
       if (!post) { errors.push(rules.slotLabel(s.slot) + ': 글이 비었습니다'); continue; }
 
       const ids = await store.insertPosts(rule.userId, [{
-        topic: out.topic || topic,
+        /* 틀이 주제를 정한 경우엔 모델이 고쳐 보낸 주제를 쓰지 않는다.
+           「오늘의 운세」가 「일간별 성격」으로 둔갑해 저장되던 일이 있었다. */
+        topic: FIXED_TOPIC[form.id] || out.topic || topic,
         situation: out.situation || '',
         hooks: post.hooks,
         postType: post.postType,
@@ -108,7 +131,7 @@ async function runRule(rule) {
       if (rule.mode === 'publish') {
         try {
           const saved = await store.getPost(rule.userId, ids[0]);
-          await publish.scheduleAt(rule.userId, saved, s.sendAt);
+          await publish.scheduleAt(rule.userId, saved, s.sendAt, { auto: true });
         } catch (e) {
           errors.push(rules.slotLabel(s.slot) + ': 예약 실패 — ' + e.message);
         }

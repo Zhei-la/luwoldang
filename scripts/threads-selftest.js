@@ -505,6 +505,86 @@ function done() {
   process.exit(fail ? 1 : 0);
 }
 
+/* ── 막는 것과 고치면 좋은 것 ── */
+section('막는 것과 권하는 것');
+/* ⚠️ 예전엔 지침을 다 지켜야만 올릴 수 있었다. 그래서 「테스트」 세 글자를
+   시험 삼아 올려보는 것도 막혔다. 이제 길이만 막고 나머지는 권한다. */
+const tiny = checkPost({ postType: '정보형', form: 'single', parts: ['테스트'] });
+t('짧은 글도 올릴 수는 있다', tiny.passBlock, true);
+t('다만 지침은 못 지켰다고 알려준다', tiny.passHard, false);
+t('무엇을 고치면 좋은지 준다', tiny.advice.length >= 1, true);
+t('고칠 것에 사주 근거가 들어 있다', tiny.advice.indexOf('사주를 실제로 가리킴') >= 0, true);
+
+const tooLong = checkPost({ postType: '정보형', form: 'single', parts: ['가'.repeat(600)] });
+t('500자를 넘으면 못 올린다', tooLong.passBlock, false);
+/* 스레드가 안 받는 길이라 이것만은 막아야 한다 */
+t('막는 것은 길이 하나뿐',
+  tooLong.rows.filter((r) => r.blocking).map((r) => r.label), ['모든 편 500자 이내']);
+
+const good = checkPost({ postType: '정보형', form: 'single',
+  parts: ['경금 일간은 거절을 못 합니다' + NL + '그래서 일이 몰립니다'] });
+t('멀쩡한 글은 둘 다 통과', [good.passBlock, good.passHard], [true, true]);
+t('멀쩡하면 고칠 것도 없다', good.advice.length, 0);
+
+/* 자동은 사람이 안 보고 나간다 — 지침을 다 지킨 글만 */
+const pubSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'publish.js'), 'utf8');
+t('사람이 올릴 땐 길이만 막는다', /if \(!check\.passBlock\)/.test(pubSrc), true);
+t('자동일 땐 지침을 다 본다', /if \(auto && !check\.passHard\)/.test(pubSrc), true);
+const autoSrc3 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
+t('자동 예약은 auto 로 부른다', /scheduleAt\([^)]*\{ auto: true \}\)/.test(autoSrc3), true);
+
+/* ── 틀이 주제를 이기는가 ── */
+section('틀과 주제');
+/* ⚠️ 「오늘의 운세」를 고르고 키워드에 「역마살」을 적었더니
+   프롬프트에 「주제: 역마살」과 「이번 글은 오늘의 운세」가 같이 들어가
+   모델이 주제를 따라가 일간별 정보글이 나왔다. 틀이 이겨야 한다. */
+const autoSrc2 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
+t('운세와 인사는 주제를 스스로 정한다',
+  /FIXED_TOPIC = \{[^}]*daily:[^}]*intro:/.test(autoSrc2.replace(/\n/g, '')), true);
+t('주제를 고를 때 틀을 본다', /pickTopic\(rule, cursor, form\)/.test(autoSrc2), true);
+t('모델이 고친 주제로 덮어쓰지 않는다', /FIXED_TOPIC\[form\.id\] \|\| out\.topic/.test(autoSrc2), true);
+t('슬롯이 정한 틀을 먼저 쓴다', /s\.slot\.form && forms\.byId\(s\.slot\.form\)/.test(autoSrc2), true);
+/* 슬롯마다 틀을 못 박을 수 있어야 「토 아침은 운세」가 된다 */
+const slotForm = R.clean({ slots: [{ day: 6, time: '08:10', form: 'daily' }] }, {}).slots[0];
+t('슬롯에 틀이 붙는다', slotForm.form, 'daily');
+t('슬롯 이름표에 틀이 보인다', R.slotLabel(slotForm), '토 08:10 · 오늘의 운세');
+t('없는 틀은 안 붙는다',
+  R.clean({ slots: [{ day: 6, time: '08:10', form: '없는것' }] }, {}).slots[0].form, undefined);
+t('재료 없으면 인사형은 안 붙는다',
+  R.clean({ slots: [{ day: 6, time: '08:10', form: 'intro' }] }, { hasIntro: false }).slots[0].form, undefined);
+
+/* ── 댓글 유도 고르기 ── */
+section('댓글 유도 고르기');
+const pAsk = buildPrompt('역마살', { ledger: {}, limit: 1, askComments: true });
+const pNo = buildPrompt('역마살', { ledger: {}, limit: 1, askComments: false });
+const pAuto = buildPrompt('역마살', { ledger: {}, limit: 1 });
+t('받기로 하면 그렇게 이른다', pAsk.includes('댓글을 받는 것이 목적'), true);
+t('받기로 하면 그냥 끊기를 막는다', pAsk.includes('④(그냥 끊기)는 이번에는 쓰지 마라'), true);
+t('안 받기로 하면 질문을 막는다', pNo.includes('질문으로 닫지 마라'), true);
+t('안 받기인데 받으라고 하지 않는다', pNo.includes('댓글을 받는 것이 목적'), false);
+t('안 고르면 둘 다 없다',
+  pAuto.includes('댓글을 받는 것이 목적') || pAuto.includes('조르지 않는다'), false);
+t('규칙에 저장된다', R.clean({ askComments: 'yes' }, {}).askComments, 'yes');
+t('이상한 값은 안 받는다', R.clean({ askComments: '아무거나' }, {}).askComments, undefined);
+
+/* ── 말투 — 줄 수로도 열어준다 ── */
+section('말투 분량 판정');
+/* ⚠️ 스레드 글을 그대로 긁어 붙이면 사이가 안 띄어져 「글 1개」로 읽힌다.
+   스무 줄을 넣어도 안 열려서 아무리 붙여넣어도 분석이 안 되던 자리다. */
+const glue = (n) => Array.from({ length: n }, (_, i) => '운 좋은 띠는 이런 흐름입니다 ' + (i + 1)).join(NL);
+t('한 덩어리라도 줄이 넉넉하면 열린다', voice.enough(glue(30)).ok, true);
+t('줄이 모자라면 안 열린다', voice.enough(glue(12)).ok, false);
+t('막힐 땐 무엇이 모자란지 알려준다',
+  voice.enough(glue(12)).why.includes('글 1개 · 12줄'), true);
+t('빈 줄로 나눈 10개는 열린다',
+  voice.enough(Array.from({ length: 10 }, (_, i) => '열 개짜리 글입니다 반갑습니다 ' + i).join(NL + NL)).ok, true);
+t('빈 칸은 안 열린다', voice.enough('').ok, false);
+t('줄 수를 센다', voice.lineCount(glue(7)), 7);
+t('빈 줄은 안 센다', voice.lineCount('가나다' + NL + '' + NL + '라마바'), 2);
+
 /* ── 같은 자리를 두 번 만들지 않기 ── */
 section('같은 자리 두 번 안 만들기');
 /* ⚠️ 돈이 새던 자리다.

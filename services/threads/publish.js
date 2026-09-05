@@ -13,8 +13,17 @@ const tail = require('./tail');
 const { checkPost } = require('./guideline');
 const { numberParts } = require('./length');
 
-/** 올리기 전에 꼭 보는 것들. 화면과 서버가 같은 기준을 쓴다. */
-async function readyToSend(userId, post) {
+/**
+ * 올리기 전에 꼭 보는 것들. 화면과 서버가 같은 기준을 쓴다.
+ *
+ * opts.auto — 자동 규칙이 올리는 경우.
+ *   사람이 직접 올릴 때는 **500자만** 막는다. 스레드가 안 받는 길이라 어쩔 수 없다.
+ *   나머지 지침은 「고치면 좋은 것」으로 보여주고 판단은 사람이 한다 —
+ *   다 지켜야만 올릴 수 있게 해두었더니 짧은 글 하나 시험해보는 것도 막혔다.
+ *
+ *   자동은 다르다. 사람이 안 보고 나가므로 지침을 다 지킨 글만 내보낸다.
+ */
+async function readyToSend(userId, post, opts) {
   const s = await store.getSettings(userId);
   const acc = await accounts.active(userId);
 
@@ -28,11 +37,18 @@ async function readyToSend(userId, post) {
   const check = checkPost(Object.assign({}, post, {
     allowChain: (post.parts || []).length > 1,
   }));
-  if (!check.passHard) {
-    const bad = check.rows.filter((r) => r.hard && !r.ok).map((r) => r.label).join(', ');
-    return { ok: false, why: '지침에 걸립니다 — ' + bad };
+  const auto = !!(opts && opts.auto);
+
+  /* 길이는 누구든 막는다. 스레드가 안 받는다. */
+  if (!check.passBlock) {
+    const bad = check.rows.filter((r) => r.blocking && !r.ok);
+    return { ok: false, why: bad[0].label + ' — ' + (bad[0].detail || '') };
   }
-  return { ok: true, acc: acc };
+  /* 자동은 사람이 안 보고 나간다. 지침을 다 지킨 글만 내보낸다. */
+  if (auto && !check.passHard) {
+    return { ok: false, why: '지침에 걸립니다 — ' + check.advice.join(', ') };
+  }
+  return { ok: true, acc: acc, advice: check.advice };
 }
 
 /**
@@ -70,8 +86,8 @@ async function bodyToSend(userId, post) {
  * 정한 시각에 올라가도록 Zernio 에 걸어둔다.
  * 성공하면 저장된 글을 돌려준다. 못 걸면 던진다.
  */
-async function scheduleAt(userId, post, when) {
-  const ready = await readyToSend(userId, post);
+async function scheduleAt(userId, post, when, opts) {
+  const ready = await readyToSend(userId, post, opts);
   if (!ready.ok) {
     const e = new Error(ready.why);
     e.code = 'NOT_READY';

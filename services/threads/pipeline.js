@@ -98,6 +98,8 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     wantsDaily,
     daily,
     chain: dailyChain,
+    /* 댓글을 받을지 말지를 사람이 정할 수 있다. null 이면 글마다 알아서 고른다. */
+    askComments: o.askComments == null ? null : !!o.askComments,
     limit,
     /* 스케줄러가 「이번 글은 이 모양으로」를 정해 보낼 때가 있다 */
     extra: [

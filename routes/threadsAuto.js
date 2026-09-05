@@ -82,6 +82,7 @@ router.get('/threads', ...guard, async (req, res, next) => {
       defaultModel: DEFAULT_MODEL,
       voicePack: settings.voicePack || null,
       voiceMin: voice.MIN_SAMPLES,
+      voiceLines: voice.MIN_LINES,
       voicePresets: VOICES.PRESETS,
       voiceMode: settings.voiceMode || '',
       intro: settings.intro || { name: '', career: '', sample: '' },
@@ -468,8 +469,12 @@ router.post('/api/threads/generate', ...guard, async (req, res, next) => {
       }, 429);
     }
 
+    /* 'yes' 꼭 받기 · 'no' 조르지 않기 · 그 외는 글마다 알아서 */
+    const ask = String((req.body && req.body.askComments) || '');
+    const askComments = ask === 'yes' ? true : ask === 'no' ? false : null;
+
     await store.markRun(req.user.id, topic);
-    const out = await pipeline.generate(req.user.id, req.user.openai_key, topic, limit);
+    const out = await pipeline.generate(req.user.id, req.user.openai_key, topic, limit, { askComments });
     res.json({ ok: true, batch: out, usedToday: used + 1, dailyLimit: store.DAILY_LIMIT });
   } catch (e) { outsideFail(res, e, next); }
 });
