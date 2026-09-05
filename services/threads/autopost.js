@@ -64,6 +64,45 @@ function pickTopic(rule, n, form) {
 }
 
 /**
+ * 시각이 지났는데 아직 안 올라간 원고를 **다음 차례로 민다.**
+ *
+ * 안 밀면 「올라갈 글」에 어제 자리가 그대로 남아 영영 안 나간다.
+ * 시각이 지났다고 글을 버리는 것도 아깝다 — 자리만 옮겨준다.
+ *
+ * 예약(scheduled)까지 걸린 글은 건드리지 않는다. Zernio 가 이미 들고 있어서
+ * 여기서 시각만 바꾸면 화면과 실제가 어긋난다.
+ *
+ * 반환 옮긴 개수
+ */
+async function rollForward(rule) {
+  const now = new Date();
+  const { rows } = await pool.query(
+    `SELECT id, slot_at FROM th_posts
+      WHERE user_id = $1 AND rule_id = $2
+        AND status = 'draft' AND slot_at IS NOT NULL AND slot_at < $3
+      ORDER BY slot_at`,
+    [rule.userId, rule.id, now.toISOString()]
+  );
+  if (!rows.length) return 0;
+
+  let moved = 0;
+  for (const r of rows) {
+    const slot = rules.slotOf(rule, r.slot_at);
+    /* 규칙에서 그 자리를 없앤 경우다. 자리가 없으니 밀 곳도 없다. */
+    if (!slot) continue;
+
+    const at = rules.nextSlotTime(slot, now);
+    const sendAt = rules.jitter(at, rule.jitterMin, rule.id + at.toISOString());
+    /* 그 자리에 이미 다른 글이 있으면 밀지 않는다. 두 개가 겹친다. */
+    if (await taken(rule.userId, rule.id, sendAt)) continue;
+
+    await store.updatePost(rule.userId, r.id, { slotAt: sendAt.toISOString() });
+    moved++;
+  }
+  return moved;
+}
+
+/**
  * 규칙 하나를 훑어 빈 자리를 채운다.
  * 반환 { made, errors }
  */
@@ -79,6 +118,16 @@ async function runRule(rule) {
   const hasIntro = !!(settings.intro &&
     (settings.intro.name || settings.intro.career || settings.intro.sample));
   const pickable = forms.clean(rule.forms, { hasIntro });
+
+  /* 지난 자리에 남은 원고부터 다음 차례로 민다.
+     이걸 먼저 해야 「빈 자리」가 제대로 계산된다 — 안 그러면 민 자리에
+     새 글을 또 만들어 두 개가 겹친다. */
+  let moved = 0;
+  try {
+    moved = await rollForward(rule);
+  } catch (e) {
+    console.error('[스레드] 지난 자리 밀기 실패:', e.message);
+  }
 
   const slots = rules.upcoming(rule, LOOKAHEAD_H);
   let cursor = rule.cursor || 0;
@@ -153,18 +202,19 @@ async function runRule(rule) {
     lastError: errors.length ? errors[0] : '',
   });
 
-  return { made, errors };
+  return { made, errors, moved };
 }
 
 /** 켜져 있는 규칙을 전부 훑는다 */
 async function tick() {
   const list = await rules.active();
-  const out = { rules: 0, made: 0, errors: [] };
+  const out = { rules: 0, made: 0, moved: 0, errors: [] };
   for (const rule of list) {
     out.rules++;
     try {
       const r = await runRule(rule);
       out.made += r.made.length;
+      out.moved += r.moved || 0;
       r.errors.forEach((e) => out.errors.push((rule.name || rule.id) + ': ' + e));
     } catch (e) {
       out.errors.push((rule.name || rule.id) + ': ' + e.message);
@@ -173,4 +223,4 @@ async function tick() {
   return out;
 }
 
-module.exports = { tick, runRule, LOOKAHEAD_H, PER_TICK };
+module.exports = { tick, runRule, rollForward, LOOKAHEAD_H, PER_TICK };

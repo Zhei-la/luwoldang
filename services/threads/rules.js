@@ -231,6 +231,24 @@ function jitter(at, minutes, seed) {
   return new Date(at.getTime() + Math.round(off) * 60 * 1000);
 }
 
+/**
+ * 이 시각이 이 규칙의 어느 슬롯이었는지 되찾는다.
+ *
+ * 저장된 시각은 어긋내기(jitter)가 얹힌 값이라 슬롯 시각과 딱 맞지 않는다.
+ * 요일이 같고 시각이 어긋내기 폭 안이면 그 슬롯으로 본다.
+ */
+function slotOf(rule, at) {
+  const k = kstParts(new Date(at));
+  const span = Math.max(0, Number(rule.jitterMin) || 0) + 1;
+  const mins = k.h * 60 + k.m;
+
+  return (rule.slots || []).find((s) => {
+    if (s.day !== k.day) return false;
+    const [h, mi] = s.time.split(':').map(Number);
+    return Math.abs(mins - (h * 60 + mi)) <= span;
+  }) || null;
+}
+
 /** 화면에 「월 08:10」 처럼 */
 function slotLabel(slot) {
   const f = slot.form ? forms.byId(slot.form) : null;
@@ -257,6 +275,6 @@ function sameTimeWarning(slots) {
 
 module.exports = {
   list, get, active, save, remove, clean,
-  upcoming, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter,
+  upcoming, nextSlotTime, slotLabel, sameTimeWarning, kstParts, hhmm, jitter, slotOf,
   DAY_NAMES, MAX_SLOTS, MAX_RULES,
 };

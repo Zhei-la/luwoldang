@@ -505,6 +505,37 @@ function done() {
   process.exit(fail ? 1 : 0);
 }
 
+/* ── 지난 자리 다음으로 밀기 ── */
+section('지난 자리 밀기');
+/* ⚠️ 시각이 지났는데 안 올라간 원고가 그대로 남아 「올라갈 글」에
+   어제 자리가 계속 떠 있었다. 자리만 다음 차례로 옮겨준다. */
+const rollRule = { id: 'r9', jitterMin: 7,
+  slots: [{ day: 1, time: '08:10' }, { day: 3, time: '12:40' }] };
+/* 저장된 시각은 어긋내기가 얹혀 있어 슬롯 시각과 딱 안 맞는다 */
+t('어긋난 시각에서도 슬롯을 되찾는다',
+  R.slotOf(rollRule, new Date('2026-09-07T08:16:00+09:00')), { day: 1, time: '08:10' });
+t('반대로 어긋나도 찾는다',
+  R.slotOf(rollRule, new Date('2026-09-07T08:04:00+09:00')), { day: 1, time: '08:10' });
+t('어긋내기 폭을 넘으면 못 찾는다',
+  R.slotOf(rollRule, new Date('2026-09-07T09:30:00+09:00')), null);
+t('요일이 다르면 못 찾는다',
+  R.slotOf(rollRule, new Date('2026-09-08T08:10:00+09:00')), null);
+t('다른 슬롯도 제대로 찾는다',
+  R.slotOf(rollRule, new Date('2026-09-09T12:40:00+09:00')), { day: 3, time: '12:40' });
+/* 민 자리는 반드시 지금보다 뒤여야 한다 */
+const past = new Date('2026-09-07T08:16:00+09:00');
+const rolled = R.nextSlotTime(R.slotOf(rollRule, past), new Date('2026-09-08T00:00:00+09:00'));
+t('민 자리는 앞으로 온다', rolled.getTime() > new Date('2026-09-08T00:00:00+09:00').getTime(), true);
+const autoSrc4 = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
+t('원고만 민다', /status = 'draft'[\s\S]{0,60}slot_at < \$3/.test(autoSrc4), true);
+/* 예약까지 걸린 글을 밀면 Zernio 가 든 것과 화면이 어긋난다 */
+t('밀기를 먼저 하고 채운다',
+  autoSrc4.indexOf('rollForward(rule)') < autoSrc4.indexOf('rules.upcoming(rule, LOOKAHEAD_H)'), true);
+t('시각을 고칠 수 있게 열어뒀다',
+  /slotAt: \['slot_at'/.test(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'services', 'threads', 'store.js'), 'utf8')), true);
+
 /* ── 막는 것과 고치면 좋은 것 ── */
 section('막는 것과 권하는 것');
 /* ⚠️ 예전엔 지침을 다 지켜야만 올릴 수 있었다. 그래서 「테스트」 세 글자를

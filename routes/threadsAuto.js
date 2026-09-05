@@ -335,6 +335,46 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
 });
 
 /**
+ * 예정된 글의 시각을 사람이 직접 바꾼다.
+ *
+ * 자동 규칙이 정해준 자리가 늘 맞는 것은 아니다 — 운세가 저녁에 걸리거나,
+ * 그날만 다른 시각에 올리고 싶을 때가 있다.
+ *
+ * ⚠️ 이미 Zernio 에 걸어둔 글이면 예약을 풀고 다시 걸어야 한다.
+ *    여기서 시각만 바꾸면 화면과 실제가 어긋난다.
+ */
+router.post('/api/threads/upcoming/:id/slot', ...guard, async (req, res, next) => {
+  try {
+    const when = new Date(String((req.body && req.body.at) || ''));
+    if (isNaN(when.getTime())) return fail(res, { message: '시각을 정해주세요.' });
+    if (when.getTime() < Date.now() - 60000) {
+      return fail(res, { message: '지난 시각으로는 옮길 수 없습니다.' });
+    }
+    const post = await store.getPost(req.user.id, req.params.id);
+    if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
+    if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
+
+    /* 예약이 걸려 있던 글이면 그 자리에서 다시 건다.
+       못 걸면 원고로 되돌린다 — 옛 예약이 그대로 나가면 안 된다. */
+    if (post.status === 'scheduled' && post.zernioId) {
+      try {
+        await zernio.remove(
+          (await accounts.active(req.user.id) || {}).key, post.zernioId
+        );
+      } catch (e) { /* 이미 없어졌으면 그만이다 */ }
+      await store.updatePost(req.user.id, post.id, {
+        status: 'draft', zernioId: null, scheduledFor: null,
+      });
+    }
+
+    const saved = await store.updatePost(req.user.id, post.id, {
+      slotAt: when.toISOString(),
+    });
+    res.json({ ok: true, post: pipeline.view(saved) });
+  } catch (e) { outsideFail(res, e, next); }
+});
+
+/**
  * 예정된 글 하나를 다시 만든다.
  * topic 을 주면 그 주제로, 안 주면 **같은 주제로** 다시 만든다.
  */

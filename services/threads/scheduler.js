@@ -125,6 +125,7 @@ async function tick() {
   try {
     const out = await autopost.tick();
     if (out.made) console.log('[스레드] 자동 규칙으로 ' + out.made + '개 만들어 걸었습니다');
+    if (out.moved) console.log('[스레드] 지난 자리 ' + out.moved + '개를 다음 차례로 밀었습니다');
     if (out.errors.length) console.error('[스레드] 자동 규칙 오류:', out.errors.slice(0, 3).join(' / '));
   } catch (e) {
     console.error('[스레드] 자동 만들기 실패:', e.message);
