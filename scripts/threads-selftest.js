@@ -1537,7 +1537,11 @@ t('무엇이 걸렸는지 말해준다',
 t('한글로 바꾸라고 알려준다',
   engRow('Threads 에서').detail.indexOf('스레드') > 0, true);
 t('DM 도 잡는다', engRow('디엠 말고 DM 으로').ok, false);
-t('vs 도 잡는다', engRow('A vs B 중에 골라봐').ok, false);
+/* ⚠️ vs 는 대조형에서 늘 쓰는 꼴이다 — 막으면 대조형이 통째로 안 나간다 */
+t('vs 는 봐준다', engRow('인성 많은 사주 vs 식상 강한 사주').ok, true);
+t('대문자 VS 도 봐준다', engRow('인성 많은 사주 VS 식상 강한 사주').ok, true);
+t('vs 를 봐줘도 나머지는 막는다', engRow('vs 는 되지만 MBTI 는 안 됨').ok, false);
+t('봐주는 말 목록에 vs 가 있다', !!G4.ENGLISH_OK.vs, true);
 /* 첫 댓글도 눈에 보이는 글이다 */
 t('첫 댓글에 섞여도 잡는다', engRow('멀쩡한 본문임', 'DM 주세요').ok, false);
 
@@ -1557,6 +1561,7 @@ const P5 = require(require('path').join(__dirname, '..', 'services', 'threads', 
 const engPrompt = P5.buildPrompt('재물운', { ledger: {}, facts: [], limit: 1 });
 t('프롬프트가 영어를 막는다', engPrompt.indexOf('영어를 쓰지 마세요') > 0, true);
 t('바꿔 쓸 말을 알려준다', engPrompt.indexOf('Threads → 스레드') > 0, true);
+t('vs 는 써도 된다고 알려준다', engPrompt.indexOf('vs 는 그대로 써도 됩니다') > 0, true);
 
 /* ── 첫 댓글도 고칠 수 있어야 한다 ──
    ⚠️ 「수정하기」가 본문만 고쳤다. 리스트형은 알맹이가 댓글에 있어서

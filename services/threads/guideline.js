@@ -73,11 +73,17 @@ const SOLUTION = new RegExp([
  * 신청 링크는 발행 직전에 답글로 따로 붙으므로 여기 안 걸린다. */
 const ENGLISH_RE = /[A-Za-z]{2,}/g;
 
-/** 글에 들어간 영어 낱말들. 없으면 빈 배열. */
+/* 이건 한글로 안 바꿔도 되는 말.
+   「인성 많은 사주 vs 식상 강한 사주」처럼 대조형에서 늘 쓰는 꼴이라
+   막으면 대조형이 통째로 안 나간다. 소문자로 견준다. */
+const ENGLISH_OK = { vs: true };
+
+/** 글에 들어간 영어 낱말들. 봐주는 말은 뺀다. 없으면 빈 배열. */
 function englishIn(text) {
   const hit = String(text == null ? '' : text).match(ENGLISH_RE) || [];
   const seen = {};
   return hit.filter((w) => {
+    if (ENGLISH_OK[w.toLowerCase()]) return false;
     if (seen[w]) return false;
     seen[w] = true;
     return true;
@@ -511,4 +517,4 @@ function checkPost(post) {
 }
 
 module.exports = {
-  englishIn, checkPost, scareViolation, pointsToSaju, hookWordsIn, needsBreaks, vagueIn, BANNED, TERMS, POINTED };
+  englishIn, ENGLISH_OK, checkPost, scareViolation, pointsToSaju, hookWordsIn, needsBreaks, vagueIn, BANNED, TERMS, POINTED };
