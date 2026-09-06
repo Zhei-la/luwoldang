@@ -31,9 +31,13 @@ function block(type) {
     return `${head}\n${note}${sub}`;
   }).join('\n');
 
+  const q = QUESTION_CHAPTER.sub.length;
+
   return `## ${type}
 
 ${type} — ${chapters.length}장, 소제목 ${subs}개
+질문을 남긴 분이면 「${QUESTION_CHAPTER.title}」 장이 마지막 장 앞에 들어가
+${chapters.length + 1}장 ${subs + q}개가 됩니다.
 
 \`\`\`
 [${type}] ${chapters.length}장

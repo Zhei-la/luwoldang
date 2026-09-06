@@ -21,7 +21,11 @@ const FIXED = 9;
 const FIXED_PAIR = 11;
 const PAIR_TYPES = ['연인궁합'];
 
-const LIMIT = 30;   // 목표 — 이 장수를 넘으면 실패
+/* 목표 장수 — 이걸 넘으면 실패.
+   종합사주만 평생을 보는 프리미엄이라 40장이고, 나머지는 30장이다. */
+const LIMIT = 30;
+const LIMIT_BY_TYPE = { 종합사주: 40 };
+const limitOf = (type) => LIMIT_BY_TYPE[type] || LIMIT;
 
 /* n자짜리 본문을 문단 3개로 만든다.
  *
@@ -54,16 +58,17 @@ function bodyPages(chapters, len) {
 }
 
 function run(len) {
-  console.log(`\n소제목당 ${len}자로 가정. 목표는 총 ${LIMIT}장 이내.\n`);
+  console.log(`\n소제목당 ${len}자로 가정. 목표는 ${LIMIT}장 이내 (종합사주만 ${LIMIT_BY_TYPE['종합사주']}장).\n`);
   const head = '리포트'.padEnd(12) + '장  소제목   본문자수   본문p  고정p   합계';
   console.log(head);
   console.log('-'.repeat(head.length + 6));
 
-  let worst = 0;
+  let over = 0;
   const rows = [];
 
   for (const type of Object.keys(OUTLINES)) {
     const fixed = PAIR_TYPES.indexOf(type) >= 0 ? FIXED_PAIR : FIXED;
+    const limit = limitOf(type);
 
     // 질문이 있으면 장이 하나 늘어난다. 늘어난 쪽이 최악이므로 그걸 기준으로 본다.
     for (const q of ['', '올해 이직해도 될까요?']) {
@@ -71,14 +76,15 @@ function run(len) {
       const subs = chapters.reduce((a, c) => a + c.sub.length, 0);
       const body = bodyPages(chapters, len);
       const total = body + fixed;
-      if (total > worst) worst = total;
-      rows.push({ type, q: !!q, chs: chapters.length, subs, chars: subs * len, body, fixed, total });
+      if (total > limit) over++;
+      rows.push({ type, q: !!q, chs: chapters.length, subs, chars: subs * len, body, fixed, total, limit });
     }
   }
 
-  rows.sort((a, b) => b.total - a.total);
+  // 목표에 가장 바짝 붙은(또는 넘긴) 것부터 보여준다
+  rows.sort((a, b) => (b.total - b.limit) - (a.total - a.limit));
   for (const r of rows) {
-    const mark = r.total > LIMIT ? '  ✗ 초과' : '';
+    const mark = r.total > r.limit ? `  ✗ ${r.limit}장 초과` : '';
     console.log(
       (r.type + (r.q ? '+질문' : '')).padEnd(14) +
       String(r.chs).padStart(2) + String(r.subs).padStart(7) +
@@ -88,11 +94,12 @@ function run(len) {
   }
 
   console.log('');
-  if (worst > LIMIT) {
-    console.log(`✗ 가장 두꺼운 리포트가 ${worst}장 — ${LIMIT}장을 넘습니다.`);
+  if (over) {
+    console.log(`✗ 목표 장수를 넘긴 리포트가 ${over}개 있습니다.`);
     process.exitCode = 1;
   } else {
-    console.log(`✓ 가장 두꺼운 리포트가 ${worst}장 — ${LIMIT}장 이내입니다.`);
+    const worst = rows.reduce((a, r) => Math.max(a, r.total), 0);
+    console.log(`✓ 전부 목표 장수 안입니다. 가장 두꺼운 것이 ${worst}장.`);
   }
 }
 
