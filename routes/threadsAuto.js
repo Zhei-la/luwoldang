@@ -599,6 +599,12 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
     list.forEach((x) => { if (x.planKey) written[x.planKey] = true; });
 
     const AHEAD_MS = rules.LOOKAHEAD_DAYS * 24 * 3600 * 1000;
+    /* 사람이 지운 자리. 그 자리는 다시 안 채우므로 그렇다고 적어줘야 한다 —
+       「곧 만듭니다」가 뜨면 지운 글이 또 올라오는 줄 안다. */
+    const skipped = {};
+    (await store.skippedSlots(req.user.id, since)).forEach((s) => {
+      skipped[s.ruleId + '|' + s.slotAt] = s.topic;
+    });
     const slots = [];
     /* ⚠️ 꺼진 규칙을 빼버리면 요일 판이 조용히 빈다.
           「일곱 요일을 다 잡아놨는데 왜 아무것도 안 보이냐」가 된다.
@@ -612,17 +618,26 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
         if (written[key]) return;
         const f = x.slot.form ? FORMS.byId(x.slot.form) : null;
         const soon = new Date(x.sendAt).getTime() - Date.now() <= AHEAD_MS;
+        const sendIso = new Date(x.sendAt).toISOString();
+        /* 지운 자리인가. 지웠으면 이 자리는 영영 안 채운다. */
+        const gone = skipped[r.id + '|' + sendIso];
         slots.push({
           planKey: key,
-          slotAt: new Date(x.sendAt).toISOString(),
+          slotAt: sendIso,
           ruleName: r.name || '',
           formLabel: f ? f.label : '',
           off: !r.enabled,
-          note: !r.enabled
-            ? '이 규칙이 꺼져 있어 글을 만들지 않습니다. 위 규칙에서 「켜기」를 체크해주세요.'
-            : soon
-              ? '곧 만듭니다. 5분마다 확인해서 ' + rules.LOOKAHEAD_DAYS + '일치를 채웁니다.'
-              : rules.LOOKAHEAD_DAYS + '일 앞까지만 미리 만듭니다. 날짜가 가까워지면 여기에 글이 보입니다.',
+          /* 화면이 이걸 보고 회색이 아니라 「지웠음」으로 그린다 */
+          deleted: gone !== undefined,
+          note: gone !== undefined
+            ? '이 게시글은 삭제되어 올라가지 않습니다' +
+              (gone ? ' (' + gone + ')' : '') + '. ' +
+              '되돌리시려면 「내 원고」의 「되살리기」를 눌러주세요.'
+            : !r.enabled
+              ? '이 규칙이 꺼져 있어 글을 만들지 않습니다. 위 규칙에서 「켜기」를 체크해주세요.'
+              : soon
+                ? '곧 만듭니다. 5분마다 확인해서 ' + rules.LOOKAHEAD_DAYS + '일치를 채웁니다.'
+                : rules.LOOKAHEAD_DAYS + '일 앞까지만 미리 만듭니다. 날짜가 가까워지면 여기에 글이 보입니다.',
         });
       });
     });
@@ -964,6 +979,12 @@ router.post('/api/threads/delete', ...guard, async (req, res, next) => {
       if (post.zernioId && post.status !== 'published') {
         const off = await dropSchedule(req.user.id, post);
         if (!off.ok) { stuck.push(off.why); continue; }
+      }
+      /* ⚠️ 지운 자리를 적어둔다. 안 적으면 자동 규칙이 그 자리를 「비었다」고
+            보고 **똑같이 다시 채운다** — 지운 보람이 없다.
+            「되살리기」를 하면 store 가 이 기록도 같이 푼다. */
+      if (post.ruleId && post.slotAt) {
+        await store.skipSlot(req.user.id, post.ruleId, post.slotAt, post.topic);
       }
       okIds.push(id);
     }

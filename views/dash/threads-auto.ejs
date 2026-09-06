@@ -392,6 +392,10 @@
 /* 꺼진 규칙 자리 — 조용히 비면 「왜 안 보이지」가 된다 */
 #ta .ta-hold.off{border-color:#e3c9c5;background:#fdf6f5}
 #ta .ta-hold.off b{color:#8f2a22}
+/* 사람이 지운 자리. 「안 나감」과 뜻이 달라서 색을 따로 준다 —
+   저건 고쳐야 하는 것이고 이건 일부러 그렇게 한 것이다. */
+#ta .ta-hold.gone{border-color:#d8d4cc;background:#f4f2ee;opacity:.85}
+#ta .ta-hold.gone b{color:#6b6459}
 /* 왜 자동으로 안 올라가는지 */
 #ta .ta-why{margin-top:10px;font-size:13px;line-height:1.7;border-radius:8px;padding:9px 12px}
 #ta .ta-why.no{background:#fdf3f2;color:#8f2a22}
@@ -2614,9 +2618,13 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   /** 아직 글이 안 만들어진 자리. 「빈 날」과 구별되어야 한다. */
   function slotHtml(x){
     var tag = [x.formLabel, x.ruleName].filter(Boolean).map(esc).join(' · ');
-    return '<div class="ta-hold' + (x.off ? ' off' : '') + '">' +
-      '<b>' + esc(whenFull(x.slotAt)) + '</b> — ' +
-      (x.off ? '자리는 잡혔지만 <b>안 나갑니다</b>' : '자리는 잡혀 있습니다') +
+    /* ⚠️ 지운 자리에 「자리는 잡혀 있습니다 · 곧 만듭니다」가 뜨면
+       지운 글이 또 올라오는 줄 안다. 지웠다고 똑똑히 적는다. */
+    var head = x.deleted ? '<b>삭제됐습니다 — 올라가지 않습니다</b>'
+      : x.off ? '자리는 잡혔지만 <b>안 나갑니다</b>'
+      : '자리는 잡혀 있습니다';
+    return '<div class="ta-hold' + (x.off ? ' off' : '') + (x.deleted ? ' gone' : '') + '">' +
+      '<b>' + esc(whenFull(x.slotAt)) + '</b> — ' + head +
       (tag ? ' · ' + tag : '') +
       '<span class="sub">' + esc(x.note || ('글은 그 자리가 ' + AHEAD + '일 안에 들어오면 만들어집니다. 그때 여기에 보입니다.')) +
       '</span></div>';

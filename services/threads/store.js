@@ -194,9 +194,64 @@ async function restoreLatest(userId) {
   );
   if (!rows[0]) return { restored: 0 };
   const posts = rows[0].posts || [];
+  /* 되살린 글이 자기 자리를 되찾아야 한다 — 건너뛰기부터 푼다 */
+  await unskip(userId, posts);
   await insertPosts(userId, posts);
   await pool.query('DELETE FROM th_trash WHERE id = $1', [rows[0].id]);
   return { restored: posts.length };
+}
+
+/* ── 지운 자리 ────────────────────────────────────
+ *
+ * ⚠️ 글을 지우면 th_posts 에서 아예 빠진다. 그러면 자동 규칙이 그 자리를
+ *    「비었다」고 보고 다시 채운다 — 지운 보람이 없다.
+ *    지운 자리를 적어두고 건너뛴다.
+ * ── */
+
+/** 이 자리는 건너뛴다고 적어둔다 */
+async function skipSlot(userId, ruleId, slotAt, topic) {
+  if (!ruleId || !slotAt) return;
+  await pool.query(
+    `INSERT INTO th_skips (user_id, rule_id, slot_at, topic) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, rule_id, slot_at) DO NOTHING`,
+    [userId, String(ruleId), new Date(slotAt).toISOString(), topic || '']
+  );
+}
+
+/** 이 자리를 건너뛰기로 했었나 */
+async function isSkipped(userId, ruleId, slotAt) {
+  if (!ruleId || !slotAt) return false;
+  const { rows } = await pool.query(
+    'SELECT 1 FROM th_skips WHERE user_id = $1 AND rule_id = $2 AND slot_at = $3',
+    [userId, String(ruleId), new Date(slotAt).toISOString()]
+  );
+  return rows.length > 0;
+}
+
+/** 앞으로 건너뛸 자리들. 화면이 「지워서 안 올라갑니다」를 그리는 데 쓴다. */
+async function skippedSlots(userId, since) {
+  const { rows } = await pool.query(
+    `SELECT rule_id, slot_at, topic FROM th_skips
+      WHERE user_id = $1 AND slot_at >= $2
+      ORDER BY slot_at`,
+    [userId, new Date(since || Date.now() - 7 * 86400000).toISOString()]
+  );
+  return rows.map((r) => ({
+    ruleId: r.rule_id,
+    slotAt: new Date(r.slot_at).toISOString(),
+    topic: r.topic || '',
+  }));
+}
+
+/** 되살리면 건너뛰기도 푼다 — 안 그러면 살아난 글이 자리를 못 찾는다 */
+async function unskip(userId, posts) {
+  for (const p of posts || []) {
+    if (!p.ruleId || !p.slotAt) continue;
+    await pool.query(
+      'DELETE FROM th_skips WHERE user_id = $1 AND rule_id = $2 AND slot_at = $3',
+      [userId, String(p.ruleId), new Date(p.slotAt).toISOString()]
+    );
+  }
 }
 
 async function trashCount(userId) {
@@ -538,6 +593,7 @@ async function scheduledNear(userId, accountId, when, exceptId) {
 
 module.exports = {
   scheduledNear, SAME_SLOT_MIN,
+  skipSlot, isSkipped, skippedSlots, unskip,
   newId, DAILY_LIMIT,
   getPosts, getPost, insertPosts, updatePost,
   deletePosts, restoreLatest, trashCount,

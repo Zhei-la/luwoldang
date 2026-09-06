@@ -46,7 +46,11 @@ async function taken(userId, ruleId, at) {
     'SELECT 1 FROM th_posts WHERE user_id = $1 AND rule_id = $2 AND slot_at = $3',
     [userId, ruleId, at.toISOString()]
   );
-  return rows.length > 0;
+  if (rows.length) return true;
+  /* ⚠️ 사람이 지운 자리는 **비어 있는 게 아니다.** 지우면 th_posts 에서
+        아예 빠지므로 그냥 두면 다음 바퀴에 똑같이 다시 채운다.
+        지운 보람이 없다 — 지웠으면 그 날은 그냥 넘어간다. */
+  return store.isSkipped(userId, ruleId, at);
 }
 
 /**

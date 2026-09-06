@@ -842,6 +842,24 @@ async function initDb() {
       );
     `);
 
+    /* 사람이 지운 자리.
+     *
+     * ⚠️ 글을 지우면 th_posts 에서 **아예 빠진다.** 그러면 자동 규칙이
+     *    그 자리를 「비었다」고 보고 **똑같이 다시 채운다.** 지웠는데
+     *    다음 바퀴에 새 글이 걸리는 셈이라, 지운 보람이 없다.
+     *    지운 자리를 여기 적어두고 그 자리는 건너뛴다.
+     *    「되살리기」를 하면 여기서도 뺀다. */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS th_skips (
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        rule_id    TEXT NOT NULL,
+        slot_at    TIMESTAMPTZ NOT NULL,
+        topic      TEXT,
+        skipped_at TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (user_id, rule_id, slot_at)
+      );
+    `);
+
     /* 후킹 원장 — 이게 소재 재고다. 최근에 쓴 건 후순위로 밀린다. */
     await pool.query(`
       CREATE TABLE IF NOT EXISTS th_hooks (

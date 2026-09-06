@@ -1975,3 +1975,47 @@ t('요일 판 삭제가 지우기를 부른다',
   viewSrc.indexOf("post('/api/threads/delete', { ids: [id] })") > 0, true);
 t('무엇이 지워지는지 묻는다',
   viewSrc.indexOf('Zernio 예약도 같이 지웁니다 — 시간이 돼도 안 올라갑니다') > 0, true);
+
+/* ── 지운 자리는 다시 안 채운다 ──
+   ⚠️ 글을 지우면 th_posts 에서 **아예 빠진다.** 그러면 자동 규칙이 그 자리를
+      「비었다」고 보고 **똑같이 다시 채운다.** 지웠는데 다음 바퀴에 새 글이
+      걸리는 셈이라 지운 보람이 없다.
+      화면에도 「곧 만듭니다」가 떠서 지운 글이 또 올라오는 줄 알게 된다. */
+section('지운 자리는 다시 안 채운다');
+
+const dbSkip = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'db.js'), 'utf8');
+t('지운 자리를 담을 곳이 있다', dbSkip.indexOf('CREATE TABLE IF NOT EXISTS th_skips') > 0, true);
+/* 같은 자리를 두 번 지워도 터지면 안 된다 */
+t('자리마다 한 줄만', dbSkip.indexOf('PRIMARY KEY (user_id, rule_id, slot_at)') > 0, true);
+
+const stSkip = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'store.js'), 'utf8');
+t('적어두는 함수가 있다', stSkip.indexOf('async function skipSlot(') > 0, true);
+t('두 번 적어도 안 터진다', stSkip.indexOf('ON CONFLICT (user_id, rule_id, slot_at) DO NOTHING') > 0, true);
+t('되살리면 푼다', stSkip.indexOf('async function unskip(') > 0, true);
+/* ⚠️ 안 풀면 살아난 글이 자리를 못 찾는다 */
+t('되살리기가 먼저 푼다',
+  stSkip.indexOf('await unskip(userId, posts);') < stSkip.indexOf('await insertPosts(userId, posts);'), true);
+t('내보낸다', stSkip.indexOf('skipSlot, isSkipped, skippedSlots, unskip,') > 0, true);
+
+/* 자동이 그 자리를 건너뛰는가 — 여기가 핵심이다 */
+t('지운 자리는 찬 것으로 본다',
+  autoSrc3.indexOf('return store.isSkipped(userId, ruleId, at);') > 0, true);
+/* 글이 있으면 굳이 더 안 물어본다 */
+t('글이 있으면 바로 찬 것', autoSrc3.indexOf('if (rows.length) return true;') > 0, true);
+
+/* 지울 때 적어두는가 */
+t('지우면서 적어둔다',
+  delSrc.indexOf('store.skipSlot(req.user.id, post.ruleId, post.slotAt, post.topic)') > 0, true);
+/* 자동이 만든 글만 자리가 있다 — 손으로 만든 글은 적을 자리가 없다 */
+t('자리가 있는 글만 적는다', delSrc.indexOf('if (post.ruleId && post.slotAt)') > 0, true);
+
+/* 화면이 그렇다고 말해주는가 — 사람이 볼 수 있어야 고칠 수도 있다 */
+t('지운 자리를 읽어온다', routeSrc.indexOf('store.skippedSlots(req.user.id, since)') > 0, true);
+t('삭제됐다고 적는다',
+  routeSrc.indexOf('이 게시글은 삭제되어 올라가지 않습니다') > 0, true);
+t('되돌리는 법도 알려준다', routeSrc.indexOf('「내 원고」의 「되살리기」를 눌러주세요') > 0, true);
+t('화면이 그걸 그린다', viewSrc.indexOf('삭제됐습니다 — 올라가지 않습니다') > 0, true);
+/* 「안 나감(고쳐야 함)」과 「지웠음(일부러)」은 뜻이 다르다 */
+t('안 나감과 색을 가른다', viewSrc.indexOf('#ta .ta-hold.gone{') > 0, true);
