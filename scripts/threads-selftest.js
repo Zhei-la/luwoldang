@@ -1536,14 +1536,18 @@ t('무엇이 걸렸는지 말해준다',
   engRow('처음으로 Threads에서 신청 받아본다').detail.indexOf('Threads') === 0, true);
 t('한글로 바꾸라고 알려준다',
   engRow('Threads 에서').detail.indexOf('스레드') > 0, true);
-t('DM 도 잡는다', engRow('디엠 말고 DM 으로').ok, false);
-/* ⚠️ vs 는 대조형에서 늘 쓰는 꼴이다 — 막으면 대조형이 통째로 안 나간다 */
+t('Instagram 도 잡는다', engRow('인스타 말고 Instagram 으로').ok, false);
+/* ⚠️ vs · dm · mbti · 유형 이름은 대신 쓸 한글이 마땅치 않다.
+      막으면 대조형과 MBTI 글이 통째로 안 나간다. */
 t('vs 는 봐준다', engRow('인성 많은 사주 vs 식상 강한 사주').ok, true);
 t('대문자 VS 도 봐준다', engRow('인성 많은 사주 VS 식상 강한 사주').ok, true);
-t('vs 를 봐줘도 나머지는 막는다', engRow('vs 는 되지만 MBTI 는 안 됨').ok, false);
+t('DM 은 봐준다', engRow('DM 으로 보내주세요').ok, true);
+t('vs 를 봐줘도 나머지는 막는다', engRow('vs 는 되지만 Threads 는 안 됨').ok, false);
 t('봐주는 말 목록에 vs 가 있다', !!G4.ENGLISH_OK.vs, true);
+t('봐주는 말 목록에 dm 이 있다', !!G4.ENGLISH_OK.dm, true);
+t('봐주는 말 목록에 유형 이름이 있다', !!G4.ENGLISH_OK.infp, true);
 /* 첫 댓글도 눈에 보이는 글이다 */
-t('첫 댓글에 섞여도 잡는다', engRow('멀쩡한 본문임', 'DM 주세요').ok, false);
+t('첫 댓글에 섞여도 잡는다', engRow('멀쩡한 본문임', 'Threads 로 오세요').ok, false);
 
 /* 막지 말아야 할 것 — 여기가 새면 아무 글도 못 올린다 */
 t('한글만 있으면 통과', engRow('갑목은 곧게 자람').ok, true);
@@ -1552,8 +1556,9 @@ t('이모지는 통과', engRow('🍀 운 좋은 띠').ok, true);
 t('숫자는 통과', engRow('1. 생각을 다 끝내고 말함').ok, true);
 /* 한 글자는 「A형」처럼 쓰일 수 있어 봐준다 */
 t('한 글자는 봐준다', engRow('A형 성격이랑은 다름').ok, true);
-t('영어 낱말 찾기', G4.englishIn('Threads 와 DM'), ['Threads', 'DM']);
-t('같은 낱말은 한 번만', G4.englishIn('DM DM DM'), ['DM']);
+t('영어 낱말 찾기', G4.englishIn('Threads 와 Instagram'), ['Threads', 'Instagram']);
+t('봐주는 말은 빼고 준다', G4.englishIn('Threads 와 DM'), ['Threads']);
+t('같은 낱말은 한 번만', G4.englishIn('Threads Threads Threads'), ['Threads']);
 t('없으면 빈 배열', G4.englishIn('한글만 있음'), []);
 
 /* 애초에 안 쓰도록 프롬프트에도 적어둔다 */
@@ -1668,3 +1673,86 @@ t('첫 댓글까지 같이 본다', pipeSrc3.indexOf('(first.replyText') > 0, tr
 
 /* 마지막 줄은 done() 이 찍는다 — 「만들기 함수」 검사가 비동기라
    여기서 끝내버리면 그 결과를 못 보고 나간다. */
+
+/* ── MBTI ──
+   ⚠️ MBTI 는 사주가 아니다. 그래서 「사주를 실제로 가리킴」에 걸려
+      한 글자도 못 나갈 뻔했다. 그렇다고 지어내게 두면 안 된다 —
+      열여섯 유형을 적어두고 그 밖의 성향은 만들지 못하게 한다. */
+section('MBTI');
+
+const MB = require(require('path').join(__dirname, '..', 'services', 'threads', 'mbti'));
+
+t('열여섯 유형이 다 있다', MB.NAMES.length, 16);
+t('유형마다 성향이 있다', MB.NAMES.every((n) => MB.TYPES[n].length >= 3), true);
+t('MBTI 라는 말을 알아본다', MB.isMbti('MBTI별 연락 스타일'), true);
+t('유형 이름만 있어도 알아본다', MB.isMbti('INFP 가 헤어지고 나면'), true);
+t('소문자도 알아본다', MB.isMbti('infp 들 특징'), true);
+t('사주 주제는 아니라고 한다', MB.isMbti('도화살'), false);
+
+/* 늘 얹으면 사주 글에까지 MBTI 이야기가 섞인다 */
+t('MBTI 주제일 때만 얹는다', MB.block('도화살'), '');
+t('MBTI 주제면 유형표를 얹는다', MB.block('MBTI별 연락 스타일').indexOf('INTJ —') > 0, true);
+t('단정하지 말라고 적는다',
+  MB.block('MBTI별 연락 스타일').indexOf('성격을 확정하는 진단이 아닙니다') > 0, true);
+/* ⚠️ 두 이론을 같은 것처럼 붙이면 둘 다 틀린 말이 된다 */
+t('십성과 1대1로 잇지 말라고 적는다',
+  MB.block('MBTI별 연락 스타일').indexOf('1대1로 연결하지 않습니다') > 0, true);
+
+/* 프롬프트가 실제로 그 덩어리를 싣는지.
+   ⚠️ 한동안 buildPrompt 가 없는 값(o.topic)을 보고 있어서
+      MBTI 주제인데도 유형표가 한 번도 안 실렸다. */
+const P6 = require(require('path').join(__dirname, '..', 'services', 'threads', 'prompt'));
+t('MBTI 주제면 프롬프트에 실린다',
+  P6.buildPrompt('MBTI별 연락 스타일', {}).indexOf('MBTI 콘텐츠') > 0, true);
+t('사주 주제에는 안 실린다',
+  P6.buildPrompt('도화살', {}).indexOf('MBTI 콘텐츠') > 0, false);
+
+/* MBTI 글에는 사주 글자가 없다 — 「사주를 실제로 가리킴」에서 빼준다 */
+const mbtiPost = { postType: '정보형', form: 'single', topic: 'MBTI별 연락 스타일',
+  parts: ['답장 늦다고 관심 없는 건 아님\n\nINTJ 는 머릿속에서 이미 대화 몇 번 끝냄\n\n본인 유형 댓글에 남겨봐'] };
+t('MBTI 글은 사주 근거를 안 따진다', checkPost(mbtiPost).passHard, true);
+/* 유형 이름은 한글로 바꿀 말이 없다 — 막으면 MBTI 글이 통째로 못 나간다 */
+t('유형 이름은 영어라도 봐준다', engRow('INTJ 는 그런 편임').ok, true);
+t('MBTI 라는 말도 봐준다', engRow('MBTI 별 연락 스타일').ok, true);
+
+/* 키워드를 비워두면 여기서도 뽑힌다 */
+const TP = require(require('path').join(__dirname, '..', 'services', 'threads', 'topics'));
+t('주제 목록에 MBTI 칸이 있다', !!TP.TOPICS['MBTI'], true);
+t('MBTI 소재가 전체 목록에 섞인다',
+  TP.ALL.filter((x) => x.indexOf('MBTI') >= 0).length >= 10, true);
+
+/* ── 오늘의 운세는 일진을 먼저 검증한다 ──
+   ⚠️ 계미일인데 용띠·원숭이띠가 나온 적이 있다. 미(未)와 아무 관계도
+      없는 지지다. 띠부터 정해놓고 근거를 나중에 붙이면 이렇게 된다.
+      그래서 「먼저 검증하고 그 다음에 쓴다」를 덩어리 맨 앞에 둔다. */
+section('일진 먼저');
+
+const T4 = require(require('path').join(__dirname, '..', 'services', 'threads', 'today'));
+const gyemi = T4.block(new Date('2026-09-06T03:00:00Z'));
+
+t('그 날 일진을 뽑는다', gyemi.indexOf('계미일') > 0, true);
+t('먼저 검증하라고 적는다', gyemi.indexOf('일진을 먼저 검증한 뒤 글을 작성합니다') > 0, true);
+/* 날짜 줄보다 앞에 있어야 제일 먼저 읽힌다 */
+t('날짜보다 앞에 둔다',
+  gyemi.indexOf('일진을 먼저 검증한 뒤') < gyemi.indexOf('  날짜   '), true);
+t('순서를 적어준다', gyemi.indexOf('지지 관계(합·충·형·해·파) → 띠') > 0, true);
+/* 계미일에 나와야 하는 띠 — 여기가 틀리면 다 소용없다 */
+t('말띠가 좋은 쪽에 있다', gyemi.indexOf('말띠  — 미오합') > 0, true);
+t('용띠는 아예 없다', gyemi.indexOf('용띠') >= 0, false);
+t('원숭이띠도 없다', gyemi.indexOf('원숭이띠') >= 0, false);
+/* 숫자를 맞추려고 관계 없는 띠를 넣는 순간 틀린 글이 된다 */
+t('억지로 세 개를 채우지 말라고 적는다', gyemi.indexOf('세 번째 띠를 지어내지 마세요') > 0, true);
+
+/* 지침 문서에도 남긴다 — 사람이 읽고 고칠 수 있어야 한다 */
+const GDOC = require('fs').readFileSync(
+  require('path').join(__dirname, '..', 'services', 'threads', 'CONTENT-GUIDELINE.md'), 'utf8');
+t('지침에 검증 순서가 있다', GDOC.indexOf('일진을 먼저 검증한 뒤 글을 작성한다') > 0, true);
+t('육합이 1순위라고 적는다', GDOC.indexOf('육합이 1순위, 삼합이 2순위') > 0, true);
+t('억지로 채우지 말라고 적는다', GDOC.indexOf('억지로 3개를 채우지 않는다') > 0, true);
+t('출처를 적어둔다', GDOC.indexOf('DateDB') > 0, true);
+t('MBTI 출처도 적어둔다', GDOC.indexOf('myersbriggs.org') > 0, true);
+t('겁주는 말을 막는다', GDOC.indexOf('오늘 큰일 난다') > 0, true);
+t('경향으로 바꿔 쓰라고 적는다', GDOC.indexOf('흐름을 타기 좋은 편') > 0, true);
+/* 지침은 프롬프트에 통째로 실린다 — 실려야 의미가 있다 */
+t('지침이 프롬프트에 실린다',
+  P6.buildPrompt('도화살', {}).indexOf('일진을 먼저 검증한 뒤 글을 작성한다') > 0, true);

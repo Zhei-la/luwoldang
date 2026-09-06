@@ -76,7 +76,9 @@ const ENGLISH_RE = /[A-Za-z]{2,}/g;
 /* 이건 한글로 안 바꿔도 되는 말.
    「인성 많은 사주 vs 식상 강한 사주」처럼 대조형에서 늘 쓰는 꼴이라
    막으면 대조형이 통째로 안 나간다. 소문자로 견준다. */
-const ENGLISH_OK = { vs: true };
+const ENGLISH_OK = { vs: true, dm: true, mbti: true };
+/* MBTI 유형 이름 열여섯 개도 영어 그대로 쓴다 — 한글로 적을 수가 없다 */
+require('./mbti').NAMES.forEach((n) => { ENGLISH_OK[n.toLowerCase()] = true; });
 
 /** 글에 들어간 영어 낱말들. 봐주는 말은 뺀다. 없으면 빈 배열. */
 function englishIn(text) {
@@ -357,7 +359,11 @@ function checkPost(post) {
   /* 사주를 실제로 가리켰는가.
      이게 없으면 「사주 보는 게 처음이신가요?」 같은 아무 말이 나간다.
      무료사주 안내글은 풀이가 아니라 손님을 받는 글이라 뺀다. */
-  const isNotice = post.postType === '브랜딩형' || post.replyType === 'signup';
+  /* ⚠️ MBTI 글에는 사주 용어가 없어도 된다. 억지로 넣으면
+        「INFP 는 식상이 강하다」 같은 엉터리 연결이 나온다.
+        무료사주 안내글은 풀이가 아니라 손님을 받는 글이라 뺀다. */
+  const isNotice = post.postType === '브랜딩형' || post.replyType === 'signup'
+    || require('./mbti').isMbti(post.topic) || require('./mbti').isMbti(parts.join(' '));
   if (!isNotice) {
     const pointed = parts.some(pointsToSaju);
     rows.push({

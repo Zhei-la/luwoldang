@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { HOOKS } = require('./hooks');
 const shape = require('./dailyshape');
+const mbti = require('./mbti');
 
 const GUIDELINE_PATH = path.join(__dirname, 'CONTENT-GUIDELINE.md');
 /* 실제로 터진 글을 유형별로 뜯어본 것. 노션 「사주 글 벤치마킹」에서 옮겨 온다.
@@ -383,7 +384,7 @@ ${facts.length
   ? facts.map((f) => '- ' + f).join('\n')
   : '(비어 있음 — 실제 수치·이벤트·사례·개인 소식이 필요한 후킹은 blocked 로 처리하고, 무엇이 있으면 쓸 수 있는지 unlock 에 적어주세요)'}
 
-${sampleBlock(o.sample, o.sampleLabel)}${introBlock(o.intro)}
+${mbti.block(topic)}${sampleBlock(o.sample, o.sampleLabel)}${introBlock(o.intro)}
 ${o.wantsDaily ? dailyBlock(o.daily) : ''}${chainBlock(o.chain)}
 ${o.ctaLink ? '════════ 신청 안내 ════════\n신청 주소는 시스템이 글 맨 뒤에 따로 붙입니다. 본문에 URL 을 적지 마세요.\ncta: true 로 둔 글은 마지막을 안내하는 문장으로 닫기만 하세요.\n' : ''}
 ${o.extra || ''}
