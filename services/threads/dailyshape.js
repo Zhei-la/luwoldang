@@ -25,7 +25,12 @@ const LEAD_EMOJI = /^[\s]*(?:[←-⇿⌀-➿⬀-⯿️‍]|\uD83C[\uDC00-\uDFFF]
 function tone(text) {
   const t = String(text || '');
   const um = (t.match(/(음|함|됨|임)\s*$/gm) || []).length;
-  const nida = (t.match(/(입니다|습니다|합니다|됩니다)\s*$/gm) || []).length;
+  /* ⚠️ 예전엔 「입니다·습니다·합니다·됩니다」 넷만 셌다. 그래서
+        「열어봅니다」·「드립니다」·「갑니다」가 한 개도 안 잡혀,
+        합니다체로 쓴 인사글 틀이 「말투 없음」으로 나왔다.
+        말투가 안 잡히니 딴 말투로 나와도 그냥 통과했다.
+        한글 줄이 「니다」로 끝나면 그건 합니다체다. */
+  const nida = (t.match(/니다\s*$/gm) || []).length;
   const yo = (t.match(/요\s*$/gm) || []).length;
   /* 딱 하나가 앞설 때만 말투를 단정한다.
      비슷하면 아무 말도 안 한다 — 어중간한 판정으로 멀쩡한 글을
@@ -56,6 +61,9 @@ function outline(text) {
     blanks: raw.length - filled.length,
     emoji: filled.filter((l) => LEAD_EMOJI.test(l)).length,
     dash: filled.filter((l) => /\s[—–-]\s/.test(l)).length,
+    /* 「1. 생년월일시」처럼 번호를 매긴 줄. 틀에 없던 번호 목록이
+       새로 생기는 일이 잦아서 따로 센다. */
+    numbered: filled.filter((l) => /^\s*\d+\s*[.)]\s*\S/.test(l.trim())).length,
     longest: filled.reduce((m, l) => Math.max(m, l.trim().length), 0),
     tone: tone(text),
   };
@@ -170,6 +178,16 @@ function check(templateBody, madeBody) {
       ok: false,
       why: '틀은 이모지 줄이 ' + a.emoji + '개인데 ' + b.emoji + '개로 나왔습니다. ' +
         '개수를 맞추세요.',
+    };
+  }
+  /* ⚠️ 틀에 없던 **번호 목록**이 새로 생겼다.
+        인사글 틀이 「1. 생년월일시 / 2. 성별 / 3. 고민」으로 바뀌어 나갔다.
+        번호를 매기면 글 모양이 통째로 달라 보인다. */
+  if (!a.numbered && b.numbered >= 2) {
+    return {
+      ok: false,
+      why: '틀에 없는 번호 목록(' + b.numbered + '줄)이 생겼습니다. ' +
+        '틀에 번호가 없으면 번호를 매기지 마세요.',
     };
   }
   /* 이름만 적던 자리에 설명을 붙였다 — 가장 자주 어긋나는 곳 */

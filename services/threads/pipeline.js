@@ -255,6 +255,47 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     }
   }
 
+  /* ── 인사글도 내 틀대로 나왔는지 확인한다 ──────────
+     ⚠️ 설정에 인사글 틀을 넣어뒀는데도 자꾸 딴 모양으로 나왔다.
+          사주상담가 운결담이라고 한다
+          신청할 때 꼭 적어야 할 것 세 가지 알려준다
+          1. 생년월일시  2. 성별  3. …
+        번호 목록이 되고 말투도 「~한다」로 바뀌었다. 벤치마크의
+        「인사글이면 인사 → 계기 → 차별점 → 댓글 지정」이 본인 틀을 이긴 것이다.
+
+        운세에 쓰던 검사(dailyshape)를 그대로 쓴다. 줄 수·이모지·말투가
+        눈에 띄게 어긋나면 **무엇이 어긋났는지 짚어** 한 번만 다시 시킨다.
+     ⚠️ 발행을 막지는 않는다. 다시 만든 것이 **더 나을 때만** 바꾼다. */
+  const wantsIntro = !!(o.form && o.form.id === 'intro');
+  const introTpl = String((settings.intro && settings.intro.sample) || '').trim();
+  if (wantsIntro && introTpl && posts.length && !shapeNote) {
+    const c = dailyshape.check(introTpl, (posts[0].parts || [])[0] || '');
+    if (!c.ok) {
+      console.log('[스레드] 인사글이 틀과 다릅니다 — ' + c.why);
+      try {
+        const again = await runAi(openaiKey, makePrompt(
+          ['', '[다시 씁니다] 방금 만든 인사글이 **내 틀과 다르게** 나왔습니다.',
+            '- ' + c.why,
+            '위 「내 인사글」을 서식으로 두고 **그 안에 들어가는 말만** 바꾸세요.',
+            '줄 차례·줄 수·말투를 그대로 두세요. 새로 쓰지 마세요.',
+          ].join(String.fromCharCode(10))), { model });
+        const re5 = normalize(parseLoose(again.text).data);
+        if (re5.ok) {
+          const fresh = re5.value.posts.map((x) => fixShape(x, shapeOpts)).filter((p) => p.parts.length);
+          if (fresh.length && dailyshape.check(introTpl, fresh[0].parts[0] || '').ok) {
+            posts = fresh;
+            shapeNote = '인사글을 내 틀에 맞춰 다시 만들었습니다.';
+          } else {
+            shapeNote = '인사글이 틀과 조금 다릅니다 — ' + c.why;
+          }
+        }
+      } catch (e) {
+        console.error('[스레드] 인사글 다시 만들기 실패:', e.message);
+        shapeNote = '인사글이 틀과 조금 다릅니다 — ' + c.why;
+      }
+    }
+  }
+
   /* ⚠️ 번호(1/2 · 2/2)는 안 붙인다. 옛 글과 자리를 맞추려고 칸은 남기되
         늘 꺼둔다 — 붙일 방법이 없어야 다시 새지 않는다. */
   posts = posts.map((p) => decorate(
