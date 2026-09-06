@@ -455,9 +455,33 @@ router.post('/api/threads/rules', ...guard, async (req, res, next) => {
       });
     }
     const saved = await rules.save(req.user.id, b.id || null, patch);
+
+    /* ⚠️ 저장만 하고 5분을 기다리게 두면 아무것도 안 보인다. 「아직 한 번도
+          안 돌았습니다」만 뜬 채로 아래 요일 판이 텅 비어 있었다.
+          **저장을 누르면 바로 채우기 시작한다.**
+          기다렸다 답하면 안 된다 — 세 편 만드는 데 1~2분이 걸려서
+          브라우저가 먼저 끊는다. 뒤에서 돌리고 화면에는 바로 답한다.
+          같은 규칙을 두 군데서 돌리는 건 runRule 의 자물쇠가 막는다. */
+    const willFill = saved.enabled && saved.slots.length && !!req.user.openai_key;
+    if (willFill) {
+      const uid = req.user.id;
+      const key = req.user.openai_key;
+      setImmediate(() => {
+        autopost.runRule(Object.assign({}, saved, { userId: uid, openaiKey: key }))
+          .then((r) => {
+            if (r.skipped) return;
+            console.log('[스레드] 저장하자마자 ' + r.made.length + '개 만들었습니다' +
+              (r.errors.length ? ' (' + r.errors[0] + ')' : ''));
+          })
+          .catch((e) => console.error('[스레드] 저장 직후 만들기 실패:', e.message));
+      });
+    }
+
     res.json({
       ok: true,
       rule: saved,
+      /* 지금 채우는 중인지. 화면이 이걸 보고 목록을 다시 읽는다. */
+      filling: willFill,
       warning: rules.sameTimeWarning(saved.slots),
       /* 언제 올라가는지가 이 화면의 알맹이다. 저장하자마자 보여준다. */
       next: rules.upcoming(saved, 24 * 7).slice(0, 3).map((u) => u.sendAt.toISOString()),
@@ -475,27 +499,10 @@ router.delete('/api/threads/rules/:id', ...guard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/** 기다리지 않고 지금 한 번 돌린다 (확인용) */
-router.post('/api/threads/rules/:id/run', ...guard, async (req, res, next) => {
-  try {
-    if (!req.user.openai_key) {
-      return fail(res, { message: 'OpenAI 키가 없습니다. 「무료사주 · API 설정」에서 먼저 등록해주세요.' });
-    }
-    const rule = await rules.get(req.user.id, req.params.id);
-    if (!rule) return fail(res, { message: '규칙을 찾지 못했습니다.' }, 404);
-    if (!rule.slots.length) return fail(res, { message: '언제 올릴지를 먼저 정해주세요.' });
-
-    const out = await autopost.runRule(Object.assign({}, rule, {
-      userId: req.user.id, openaiKey: req.user.openai_key,
-    }));
-    res.json({
-      ok: true,
-      made: out.made.length,
-      errors: out.errors,
-      slots: out.made.map((m) => new Date(m.at).toISOString()),
-    });
-  } catch (e) { outsideFail(res, e, next); }
-});
+/* ⚠️ 「지금 한 번 만들어보기」는 없앴다.
+      저장을 눌러도 아무것도 안 생겨서, 그 단추를 눌러야만 글이 나왔다.
+      그런데 그 단추가 5분 주기와 겹치면 같은 자리에 두 개가 생겼다.
+      이제 **저장이 곧 만들기**다 (위 POST /rules 참고). */
 
 /**
  * 앞으로 올라갈 글들. 자동 규칙이 미리 만들어둔 것을 시각 순으로 보여준다.
@@ -898,7 +905,12 @@ router.get('/api/threads/posts', ...guard, async (req, res, next) => {
        목록을 열 때 한 번 맞춰준다. */
     await scheduler.checkUser(req.user.id);
     const list = await store.getPosts(req.user.id, { status: req.query.status });
-    res.json({ ok: true, posts: list.map(pipeline.view) });
+    /* ⚠️ 「내 원고」는 **손으로 만든 글**만 둔다.
+          자동 규칙이 만든 글까지 섞이니 목록이 자동 글로 뒤덮여서
+          내가 주제를 골라 만든 글을 찾을 수가 없었다.
+          자동 글은 아래 요일 판에서만 본다 — 거기가 그 글들의 자리다. */
+    const mine = list.filter((p) => !p.auto && !p.ruleId);
+    res.json({ ok: true, posts: mine.map(pipeline.view) });
   } catch (e) { next(e); }
 });
 

@@ -232,12 +232,35 @@ async function rollForward(rule) {
 }
 
 /**
+ * 지금 돌고 있는 규칙.
+ *
+ * ⚠️ 한 규칙을 **두 군데서 동시에** 돌리면 같은 자리에 두 개가 생긴다.
+ *    taken() 은 이미 **저장된** 것만 본다. 글 만드는 데 20~45초가 걸리니,
+ *    그 사이에 다른 쪽이 같은 자리를 「비었다」고 보고 또 만든다.
+ *    저장을 누른 순간에도 규칙을 돌리게 되면서 5분 주기와 겹칠 수 있다.
+ */
+const busy = new Set();
+
+/**
  * 규칙 하나를 훑어 빈 자리를 채운다.
  * 반환 { made, errors }
  */
 async function runRule(rule) {
   const made = [];
   const errors = [];
+
+  /* 이미 돌고 있으면 그냥 나간다. 그쪽이 채워줄 것이다. */
+  const lock = rule.userId + ':' + rule.id;
+  if (busy.has(lock)) return { made, errors, moved: 0, caught: 0, skipped: true };
+  busy.add(lock);
+  try {
+    return await runRuleInner(rule, made, errors);
+  } finally {
+    busy.delete(lock);
+  }
+}
+
+async function runRuleInner(rule, made, errors) {
 
   /* 이미 만들어둔 원고부터 걸어준다.
      ⚠️ OpenAI 키 검사보다 **위**에 있어야 한다 — 예약을 거는 데는

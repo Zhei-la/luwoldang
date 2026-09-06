@@ -138,6 +138,16 @@ function start() {
   if (timer) return;
   timer = setInterval(tick, EVERY_MS);
   if (timer.unref) timer.unref();
+
+  /* ⚠️ 예전엔 첫 바퀴가 **5분 뒤**에야 돌았다. 배포할 때마다 서버가
+        다시 뜨므로, 배포가 잦은 날에는 한 바퀴도 못 돌고 계속 미뤄진다.
+        「아직 한 번도 안 돌았습니다」가 그래서 떴다.
+        뜨자마자 한 번 돈다. 20초는 DB·설정이 자리잡을 틈이다. */
+  const first = setTimeout(() => {
+    tick().catch((e) => console.error('[스레드] 첫 확인 실패:', e.message));
+  }, 20 * 1000);
+  if (first.unref) first.unref();
+
   console.log('[스레드] 예약 글 상태 확인 시작 (5분 주기)');
 }
 

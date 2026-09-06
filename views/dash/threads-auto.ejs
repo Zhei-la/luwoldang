@@ -604,9 +604,10 @@
             저장 뒤 규칙 아래 <b>초록 줄</b>에 「몇 개를 만듭니다」라고 나오면 잘 켜진 겁니다.
             빨간 줄이면 거기 적힌 대로 고쳐주세요.</span></li>
 
-        <li><b>5분쯤 기다렸다가 아래 「요일별 글」을 봅니다</b>
-          <span>글은 바로 안 생깁니다. 5분마다 확인해서 채웁니다.
-            바로 보고 싶으시면 규칙의 <b>「지금 한 번 만들어보기」</b>를 누르세요.</span></li>
+        <li><b>1~2분 뒤 아래 「요일별 글」을 봅니다</b>
+          <span><b>저장을 누르면 그 자리에서 만들기 시작합니다.</b>
+            한 편에 30초쯤 걸려서 바로는 안 보입니다 — 잠시 뒤 저절로 나타납니다.
+            「바로 예약까지」로 두셨으면 만들면서 예약도 같이 걸립니다.</span></li>
       </ol>
 
       <h4>칸마다 무슨 뜻인가요</h4>
@@ -2266,7 +2267,6 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
       '<div class="ta-rule-act">' +
         '<button type="button" class="ta-btn save">저장</button>' +
-        '<button type="button" class="ta-btn ghost run">지금 한 번 만들어보기</button>' +
         '<button type="button" class="ta-btn ghost del" style="margin-left:auto">규칙 지우기</button>' +
       '</div>' +
       '<div class="msg"></div>' +
@@ -2348,20 +2348,6 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         .then(function(r){ return r.json(); })
         .then(function(){ RULES = RULES.filter(function(r){ return r.id !== id; }); drawRules(); });
     });
-    box.querySelector('.run').addEventListener('click', function(){
-      var b = this;
-      b.disabled = true; b.innerHTML = '<span class="ta-spin" style="border-top-color:#8A7340"></span> 만드는 중';
-      /* 눌러보기 전에 지금 화면 값을 먼저 저장한다. 안 그러면 예전 규칙으로 돈다. */
-      saveRule(box, readRule(box), true).then(function(){
-        return post('/api/threads/rules/' + encodeURIComponent(id) + '/run', {});
-      }).then(function(r){
-        b.disabled = false; b.textContent = '지금 한 번 만들어보기';
-        if (!r.j.ok) { msg(box.querySelector('.msg'), 'err', r.j.error); return; }
-        msg(box.querySelector('.msg'), r.j.made ? 'ok' : 'err',
-          r.j.made ? r.j.made + '개를 만들어 걸었습니다. 「내 원고」에서 보세요.'
-                   : (r.j.errors[0] || '앞으로 ' + AHEAD + '일 안에 빈 자리가 없습니다.'));
-      });
-    });
   }
 
   /* 다시 그릴 때 입력칸에 쳐둔 값을 잃지 않게 */
@@ -2383,11 +2369,23 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       if (!quiet) {
         drawRules();
         var again = document.querySelector('.ta-rule[data-id="' + r.j.rule.id + '"] .msg');
-        msg(again, 'ok', [
+        /* ⚠️ 예전엔 「5분 안에 채웁니다」라고만 하고 아무 일도 안 했다.
+           이제 저장을 누르면 그 자리에서 만들기 시작한다. */
+        msg(again, 'ok', r.j.filling ? [
+          '저장했습니다. 지금 ' + AHEAD + '일치를 만들고 있습니다.',
+          '한 편에 30초쯤 걸립니다 — 1~2분 뒤 아래 요일 판에 나타납니다.',
+          '「바로 예약까지」면 만들면서 예약도 같이 걸립니다.',
+        ].join(String.fromCharCode(10)) : [
           '저장했습니다.',
-          '글은 바로 안 생깁니다 — 5분 안에 확인해서 채웁니다.',
-          '지금 보고 싶으시면 「지금 한 번 만들어보기」를 눌러주세요.',
+          '규칙이 꺼져 있거나 자리를 안 정해서 아직 글은 안 만듭니다.',
+          '「켜기」를 체크하고 올릴 요일·시각을 정해주세요.',
         ].join(String.fromCharCode(10)));
+
+        /* 뒤에서 만드는 중이라 지금 읽으면 비어 있다. 조금 뒤 다시 읽어준다.
+           사람이 새로고침을 눌러야 보이면 「안 되는 것」으로 보인다. */
+        if (r.j.filling && typeof loadUpcoming === 'function') {
+          [20000, 50000, 90000].forEach(function(ms){ setTimeout(loadUpcoming, ms); });
+        }
       }
       return r;
     });
@@ -2644,8 +2642,9 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       var nothing = !UP_POSTS.length && !UP_SLOTS.length;
       box.innerHTML = '<div class="ta-empty">' + (nothing
         ? '아직 예정된 글이 없습니다.<br>' +
-          '규칙을 켜두면 <b>5분 안에</b> 확인해서 <b>' + AHEAD + '일치</b>를 채웁니다.<br>' +
-          '<span class="ta-sub">지금 보고 싶으시면 위 규칙의 「지금 한 번 만들어보기」를 눌러주세요.</span>'
+          '위 규칙에서 <b>「켜기」</b>를 체크하고 <b>「저장」</b>을 누르면 ' +
+          '그 자리에서 <b>' + AHEAD + '일치</b>를 만듭니다.<br>' +
+          '<span class="ta-sub">한 편에 30초쯤 걸립니다. 1~2분 뒤 저절로 여기에 나타납니다.</span>'
         : (d.getMonth()+1) + '월 ' + d.getDate() + '일 ' + DAYS[d.getDay()] + '요일에는 ' +
           '<b>잡아둔 자리가 없습니다.</b><br>' +
           '<span class="ta-sub">이 요일에도 올리시려면 위 규칙에서 「' +

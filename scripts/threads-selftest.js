@@ -597,9 +597,14 @@ t('자리가 없는 오류도 받아준다', whereRe.test('OpenAI 키가 없습�
 
 /* ── 화면 안내 ── */
 section('화면 안내');
-/* 규칙을 저장해도 글은 5분 뒤에 생긴다. 안 적어두면 「저장했는데 왜 없냐」가 된다. */
-t('저장 뒤 언제 생기는지 알려준다', viewSrc.indexOf('글은 바로 안 생깁니다') > 0, true);
-t('비어 있을 때도 알려준다', viewSrc.indexOf('규칙을 켜두면 <b>5분 안에</b>') > 0, true);
+/* ⚠️ 저장을 눌러도 아무 일이 없어서 「지금 한 번 만들어보기」를 눌러야만
+      글이 나왔다. 이제 **저장이 곧 만들기**다 — 그렇다고 말해줘야 한다. */
+t('저장하면 만든다고 알려준다',
+  viewSrc.indexOf('지금 ' + "' + AHEAD + '" + '일치를 만들고 있습니다') > 0, true);
+t('바로 안 보이는 이유도 말해준다', viewSrc.indexOf('한 편에 30초쯤 걸립니다') > 0, true);
+t('비어 있을 때도 알려준다', viewSrc.indexOf('「저장」</b>을 누르면') > 0, true);
+/* 뒤에서 만드는 중이라 지금 읽으면 비어 있다 — 저절로 다시 읽어야 한다 */
+t('조금 뒤 다시 읽는다', viewSrc.indexOf('setTimeout(loadUpcoming, ms)') > 0, true);
 /* 더하기 칸 기본 시각을 08:10 로 박아두면 매번 지워야 한다 */
 t('기본 시각은 지금으로', /function nowTime\(/.test(viewSrc), true);
 t('08:10 을 박아두지 않는다', viewSrc.indexOf('class="t" value="08:10"') > 0, false);
@@ -1894,3 +1899,49 @@ t('글 안에 2/2 도 없다', shaped.parts.join(LF).indexOf('2/2') >= 0, false)
 /* 설정을 저장해도 다시 켜지지 않는다 — 여기가 매번 켜던 자리였다 */
 t('설정에 번호 칸을 안 넣는다', routeSrc.indexOf('numbered: b.daily.numbered') > 0, false);
 t('운세 틀은 편 수만 정한다', routeSrc.indexOf('{ body, tail, mode }') > 0, true);
+
+/* ── 저장이 곧 만들기 ──
+   ⚠️ 저장을 눌러도 아무것도 안 생겼다. 「아직 한 번도 안 돌았습니다」만
+      뜨고 아래 요일 판이 텅 비어 있었다. 그래서 「지금 한 번 만들어보기」를
+      눌러야만 글이 나왔고, 그 단추가 5분 주기와 겹치면 같은 자리에
+      두 개가 생겼다. 단추를 없애고 저장이 그 일을 하게 했다. */
+section('저장이 곧 만들기');
+
+t('만들어보기 길을 없앴다', routeSrc.indexOf("rules/:id/run") > 0, false);
+t('화면에서도 단추를 뺐다', viewSrc.indexOf('지금 한 번 만들어보기') > 0, false);
+t('그 단추를 부르던 코드도 없다', viewSrc.indexOf("encodeURIComponent(id) + '/run'") > 0, false);
+
+/* 저장하면 그 자리에서 채운다 */
+t('저장하면 규칙을 돌린다',
+  /rules\.save[\s\S]{0,900}autopost\.runRule\(Object\.assign\(\{\}, saved/.test(routeSrc), true);
+/* ⚠️ 기다렸다 답하면 브라우저가 먼저 끊는다 — 세 편에 1~2분이 걸린다 */
+t('기다리지 않고 답한다', routeSrc.indexOf('setImmediate(() => {') > 0, true);
+t('채우는 중인지 알려준다', routeSrc.indexOf('filling: willFill,') > 0, true);
+/* 꺼진 규칙·자리 없는 규칙·키 없는 사람은 돌릴 것이 없다 */
+t('켜져 있고 자리가 있어야 돈다',
+  routeSrc.indexOf('saved.enabled && saved.slots.length && !!req.user.openai_key') > 0, true);
+
+/* ⚠️ 한 규칙을 두 군데서 동시에 돌리면 같은 자리에 두 개가 생긴다.
+      taken() 은 **저장된** 것만 보는데, 만드는 데 20~45초가 걸린다. */
+t('같은 규칙을 겹쳐 돌리지 않는다', autoSrc3.indexOf('const busy = new Set();') > 0, true);
+t('자물쇠는 사람·규칙마다',
+  autoSrc3.indexOf("const lock = rule.userId + ':' + rule.id;") > 0, true);
+t('이미 돌고 있으면 그냥 나간다', autoSrc3.indexOf('if (busy.has(lock))') > 0, true);
+/* 터져도 자물쇠는 풀려야 한다 — 안 풀리면 그 규칙이 영영 안 돈다 */
+t('터져도 자물쇠를 푼다', /finally \{\s*busy\.delete\(lock\);/.test(autoSrc3), true);
+
+/* ⚠️ 첫 바퀴가 5분 뒤에야 돌았다. 배포가 잦은 날엔 한 바퀴도 못 돈다. */
+const schSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'scheduler.js'), 'utf8');
+t('뜨자마자 한 번 돈다', schSrc.indexOf('}, 20 * 1000);') > 0, true);
+
+/* ── 내 원고는 손으로 만든 글만 ──
+   ⚠️ 자동 규칙이 만든 글까지 「내 원고」에 섞여서, 내가 주제를 골라
+      만든 글을 찾을 수가 없었다. 자동 글의 자리는 아래 요일 판이다. */
+section('내 원고는 손으로 만든 글만');
+
+t('자동 글을 걸러낸다',
+  routeSrc.indexOf('list.filter((p) => !p.auto && !p.ruleId)') > 0, true);
+t('거른 것만 내보낸다', routeSrc.indexOf('posts: mine.map(pipeline.view)') > 0, true);
+/* 요일 판은 그대로 자동 글을 본다 — 거기가 그 글들의 자리다 */
+t('요일 판은 그대로 본다', routeSrc.indexOf('const all = await store.getPosts(req.user.id);') > 0, true);
