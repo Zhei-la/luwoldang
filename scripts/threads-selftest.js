@@ -685,7 +685,37 @@ const autoSrc2 = require('fs')
   .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
 t('운세와 인사는 주제를 스스로 정한다',
   /FIXED_TOPIC = \{[^}]*daily:[^}]*intro:/.test(autoSrc2.replace(/\n/g, '')), true);
-t('주제를 고를 때 틀을 본다', /pickTopic\(rule, cursor, form\)/.test(autoSrc2), true);
+t('주제를 고를 때 틀을 본다', /pickTopic\(rule, cursor, form, recent\)/.test(autoSrc2), true);
+
+/* ── 키워드를 비워뒀을 때 ──
+   ⚠️ 예전엔 인기 소재 여덟 개만 차례로 돌았다. 여덟 번이면 한 바퀴라
+      같은 주제가 금세 되풀이됐다. 소재 전부에서 고르되
+      최근에 쓴 것은 뺀다. */
+const AP = require(require('path').join(__dirname, '..', 'services', 'threads', 'autopost'));
+const emptyRule = { topics: [] };
+const infoForm = FORMS.byId('info');
+const drawn = {};
+for (let i = 0; i < 80; i++) drawn[AP.pickTopic(emptyRule, i, infoForm, {})] = 1;
+t('여덟 가지보다 훨씬 많이 나온다', Object.keys(drawn).length > 20, true);
+/* 틀이 정하는 주제는 아무거나 뽑는 데서 빠져야 한다 */
+t('오늘의 운세는 안 섞인다', !!drawn['오늘의 운세'], false);
+t('무료사주 인사도 안 섞인다', !!drawn['무료사주 인사'], false);
+/* 최근에 쓴 것은 뺀다 */
+const usedAll = {};
+Object.keys(drawn).forEach(function (k) { usedAll[k] = true; });
+const after = {};
+for (let i = 0; i < 20; i++) after[AP.pickTopic(emptyRule, i, infoForm, usedAll)] = 1;
+t('최근에 쓴 것은 피한다',
+  Object.keys(after).some(function (k) { return !usedAll[k]; }), true);
+/* 적어둔 키워드가 있으면 그 차례를 지킨다 */
+const kwRule = { topics: ['역마살', '현침살', '개운법'] };
+t('키워드는 차례대로', AP.pickTopic(kwRule, 0, infoForm, {}), '역마살');
+t('키워드 차례가 돈다', AP.pickTopic(kwRule, 3, infoForm, {}), '역마살');
+t('키워드가 있어도 운세 틀은 고정',
+  AP.pickTopic(kwRule, 0, FORMS.byId('daily'), {}), '오늘의 운세');
+/* 최근 주제를 읽어두고 넘기는지 */
+t('최근 주제를 한 번만 읽는다', autoSrc2.indexOf('await recentTopics(rule.userId, 20)') > 0, true);
+t('못 읽어도 만들기를 막지 않는다', autoSrc2.indexOf('최근 주제 읽기 실패') > 0, true);
 t('모델이 고친 주제로 덮어쓰지 않는다', /FIXED_TOPIC\[form\.id\] \|\| out\.topic/.test(autoSrc2), true);
 t('슬롯이 정한 틀을 먼저 쓴다', /s\.slot\.form && forms\.byId\(s\.slot\.form\)/.test(autoSrc2), true);
 /* 슬롯마다 틀을 못 박을 수 있어야 「토 아침은 운세」가 된다 */

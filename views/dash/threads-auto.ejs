@@ -584,10 +584,14 @@
           <span>요일을 고르고 시각을 적고 <b>더하기</b>를 누르면 자리가 하나 생깁니다.
             올리고 싶은 만큼 여러 개 더하세요.</span></li>
 
-        <li><b>「어떤 글로」에서 틀을 고릅니다</b>
-          <span>여러 개 고르면 돌아가며 씁니다. <b>3개까지</b>가 좋습니다 —
-            다 고르면 결국 아무거나가 됩니다.
-            자리를 더할 때 <b>틀을 콕 집어</b>둘 수도 있습니다 (「토요일 아침은 운세」처럼).</span></li>
+        <li><b>어떤 글을 쓸지 정합니다</b> — 고르는 자리가 <b>두 군데</b>입니다
+          <span><b>①  자리마다 붙은 드롭다운</b> (요일·시각 옆)<br>
+            그 자리에 <b>늘 이 틀</b>을 씁니다. 「토요일 아침은 운세」처럼 딱 정해두는 자리입니다.<br>
+            <b>② 아래 「어떤 글로 — 돌려쓸 틀」</b><br>
+            ①에서 <b>「틀은 아래에서 돌려쓰기」</b>로 둔 자리들이 이 목록을 <b>차례로</b> 씁니다.
+            <b>3개까지</b>가 좋습니다 — 다 고르면 결국 아무거나가 됩니다.<br>
+            ⚠️ <b>자리에 틀을 집어두면 ②는 그 자리에 안 씁니다.</b>
+            모든 자리에 틀을 집어두셨다면 ②는 아무 일도 안 합니다.</span></li>
 
         <li><b>「만든 다음」을 정합니다</b> — <b>여기가 제일 중요합니다</b>
           <span><b>바로 예약까지</b> = 손 안 대도 알아서 올라갑니다.<br>
@@ -616,7 +620,9 @@
           <b>조르지 않기</b> = 정보만 주고 끝냅니다.</dd>
 
         <dt>주제 (키워드)</dt>
-        <dd>적어두면 돌아가며 씁니다. 비워두면 반응이 좋았던 소재에서 골라 옵니다.
+        <dd>적어두시면 <b>차례대로</b> 돌려 씁니다.<br>
+          <b>비워두시면 소재 78가지에서 알아서 고릅니다</b> —
+          반응이 터졌던 소재가 더 자주 걸리고, <b>최근에 쓴 주제는 빼서</b> 안 겹칩니다.<br>
           「오늘의 운세」·「인사·무료사주」 틀은 <b>주제를 무시하고</b> 자기 주제를 씁니다.</dd>
       </dl>
 
@@ -2140,7 +2146,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       '<div class="ta-slot-add">' +
         '<select class="d">' + dayOpts + '</select>' +
         '<input type="time" class="t" value="' + nowTime() + '">' +
-        '<select class="sf"><option value="">틀은 돌려쓰기</option>' +
+        '<select class="sf"><option value="">틀은 아래에서 돌려쓰기</option>' +
           FORMS.map(function(f){
             var lock = f.needsIntro && !HAS_INTRO;
             return '<option value="' + f.id + '"' + (lock ? ' disabled' : '') + '>' + esc(f.label) + '</option>';
@@ -2152,14 +2158,26 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
           ' style="width:58px;margin:0 4px;padding:5px 7px"> 분</span>' +
       '</div>' +
 
-      '<label style="margin-top:16px">어떤 글로</label>' +
-      '<p class="ta-sub" style="margin:0 0 6px">여러 개 고르면 돌아가며 씁니다. ' +
+      '<label style="margin-top:16px">어떤 글로 — 돌려쓸 틀</label>' +
+      /* ⚠️ 자리마다 붙은 드롭다운과 여기가 헷갈린다. 하는 일이 다르다.
+         자리에 틀을 집어두면 그 자리는 늘 그 틀이고, 여기는 안 본다.
+         여기는 「틀은 아래에서 돌려쓰기」로 둔 자리들이 나눠 쓰는 목록이다. */
+      '<p class="ta-sub" style="margin:0 0 6px">' +
+        '위에서 <b>「틀은 아래에서 돌려쓰기」</b>로 둔 자리들이 <b>이 목록을 차례로</b> 씁니다.<br>' +
+        '자리에 틀을 콕 집어두셨으면 그 자리는 늘 그 틀이라 여기를 안 봅니다.<br>' +
         '<b>' + FORM_MAX + '개까지</b> — 다 고르면 결국 아무거나가 됩니다.</p>' +
       '<div class="ta-forms">' + formBtns + '</div>' +
+      /* 자리를 다 집어두면 이 고르기가 아무 일도 안 한다 — 그렇다고 말해준다 */
+      ((r.slots || []).length && (r.slots || []).every(function(x){ return x.form; })
+        ? '<div class="ta-sub" style="margin:6px 0 0">자리 ' + r.slots.length +
+          '개에 <b>전부 틀을 집어두셨습니다.</b> 지금은 이 고르기가 안 쓰입니다 — ' +
+          '돌려쓰고 싶은 자리는 위에서 틀을 「아래에서 돌려쓰기」로 바꿔주세요.</div>'
+        : '') +
 
       '<label for="k-' + esc(r.id) + '" style="margin-top:16px">키워드 (한 줄에 하나)</label>' +
-      '<p class="ta-sub" style="margin:0 0 6px">차례대로 돌려 씁니다. ' +
-        '<b>비워두면 반응이 터진 소재</b>에서 알아서 고릅니다.</p>' +
+      '<p class="ta-sub" style="margin:0 0 6px">적어두시면 <b>차례대로</b> 돌려 씁니다.<br>' +
+        '<b>비워두시면 소재 78가지에서 알아서 고릅니다</b> — ' +
+        '반응이 터졌던 소재가 더 자주 걸리고, <b>최근에 쓴 주제는 뺍니다.</b></p>' +
       '<textarea id="k-' + esc(r.id) + '" class="kw" rows="3" placeholder="역마살&#10;현침살&#10;개운법">' +
         esc((r.topics || []).join('\n')) + '</textarea>' +
 

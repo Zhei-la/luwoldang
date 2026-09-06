@@ -66,14 +66,68 @@ const FIXED_TOPIC = {
 /* 날짜가 글 안에 박히는 주제. 다른 날로 밀면 틀린 날짜가 나간다. */
 const DATED_TOPIC = { '오늘의 운세': true };
 
-function pickTopic(rule, n, form) {
+/**
+ * 최근에 어떤 주제로 썼는지. 같은 주제가 되풀이되지 않게 하려고 본다.
+ *
+ * 규칙을 가리지 않고 그 사람 전체를 본다 — 계정이 달라도 같은 주제가
+ * 연달아 나가면 읽는 쪽에서는 똑같아 보인다.
+ */
+async function recentTopics(userId, howMany) {
+  const { rows } = await pool.query(
+    `SELECT DISTINCT topic FROM th_posts
+      WHERE user_id = $1 AND topic <> ''
+      ORDER BY topic
+      LIMIT 200`,
+    [userId]
+  );
+  /* 최근 것부터 세려면 시간순이 필요하다. 위는 중복만 걷어낸 것이고,
+     실제로 최근 몇 개를 쓸지는 아래에서 다시 시간순으로 뽑는다. */
+  const { rows: last } = await pool.query(
+    `SELECT topic FROM th_posts
+      WHERE user_id = $1 AND topic <> ''
+      ORDER BY COALESCE(slot_at, created_at) DESC
+      LIMIT $2`,
+    [userId, Math.max(1, Math.min(60, Number(howMany) || 20))]
+  );
+  const seen = {};
+  last.forEach((r) => { seen[r.topic] = true; });
+  return Object.keys(seen).length ? seen : (rows.length ? {} : {});
+}
+
+/**
+ * 이번 차례에 쓸 주제.
+ *
+ * ⚠️ 키워드를 비워두면 예전엔 **인기 소재 여덟 개만** 차례로 돌았다.
+ *    여덟 번이면 한 바퀴라 같은 주제가 금세 되풀이됐다.
+ *    이제 소재 전부에서 고르되, **최근에 쓴 것은 빼고** 아무거나 뽑는다.
+ *    인기 소재는 여러 번 넣어 조금 더 자주 걸리게 한다.
+ */
+function pickTopic(rule, n, form, recent) {
   const fixed = form && FIXED_TOPIC[form.id];
   if (fixed) return fixed;
 
+  /* 적어둔 키워드가 있으면 그것을 차례대로. 순서를 정해둔 것은 지킨다. */
   const list = (rule.topics || []).filter(Boolean);
   if (list.length) return list[Math.abs(n) % list.length];
+
+  const used = recent || {};
   const hot = topicsLib.HOT.map((h) => h.topic);
-  return hot[Math.abs(n) % hot.length];
+  /* 틀이 정하는 주제는 아무거나 뽑는 데서 뺀다 — 틀을 골라야 나오는 것이다 */
+  const skip = {};
+  Object.keys(FIXED_TOPIC).forEach((k) => { skip[FIXED_TOPIC[k]] = true; });
+
+  const pool = [];
+  topicsLib.ALL.forEach((t) => {
+    if (skip[t]) return;
+    pool.push(t);
+    /* 반응이 터졌던 소재는 세 번 넣어 조금 더 자주 걸리게 한다 */
+    if (hot.indexOf(t) >= 0) { pool.push(t); pool.push(t); }
+  });
+
+  const fresh = pool.filter((t) => !used[t]);
+  const from = fresh.length ? fresh : pool;
+  if (!from.length) return hot[0] || '일간별 성격';
+  return from[Math.floor(Math.random() * from.length)];
 }
 
 /**
@@ -161,6 +215,15 @@ async function runRule(rule) {
   const slots = rules.plan(rule, LOOKAHEAD_DAYS);
   let cursor = rule.cursor || 0;
 
+  /* 키워드를 안 적어두셨으면 소재를 아무거나 뽑는다.
+     그때 최근에 쓴 것이 또 나오지 않게 한 번만 읽어둔다. */
+  let recent = {};
+  try {
+    recent = await recentTopics(rule.userId, 20);
+  } catch (e) {
+    console.error('[스레드] 최근 주제 읽기 실패:', e.message);
+  }
+
   for (const s of slots) {
     if (made.length >= PER_TICK) break;
     if (await taken(rule.userId, rule.id, s.sendAt)) continue;
@@ -168,7 +231,7 @@ async function runRule(rule) {
     /* 슬롯이 틀을 콕 집어뒀으면 그것을 쓴다 — 「토 아침은 운세」처럼.
        안 집었으면 고른 것들을 돌려 쓴다. */
     const form = (s.slot.form && forms.byId(s.slot.form)) || forms.next(pickable, cursor);
-    const topic = pickTopic(rule, cursor, form);
+    const topic = pickTopic(rule, cursor, form, recent);
 
     try {
       /* 한 자리에 글 하나만 만든다. 여러 개 만들어 고르는 건 사람이 할 때 이야기다. */
@@ -256,4 +319,5 @@ async function tick() {
   return out;
 }
 
-module.exports = { tick, runRule, rollForward, LOOKAHEAD_DAYS, LOOKAHEAD_H, PER_TICK };
+module.exports = { tick, runRule, rollForward, pickTopic, recentTopics,
+  LOOKAHEAD_DAYS, LOOKAHEAD_H, PER_TICK };
