@@ -2019,3 +2019,47 @@ t('되돌리는 법도 알려준다', routeSrc.indexOf('「내 원고」의 「�
 t('화면이 그걸 그린다', viewSrc.indexOf('삭제됐습니다 — 올라가지 않습니다') > 0, true);
 /* 「안 나감(고쳐야 함)」과 「지웠음(일부러)」은 뜻이 다르다 */
 t('안 나감과 색을 가른다', viewSrc.indexOf('#ta .ta-hold.gone{') > 0, true);
+
+/* ── 인사글·운세는 사주 근거를 안 따진다 ──
+   ⚠️ 「안 올라갑니다 — 사주를 실제로 가리킴」에 걸려 인사글이 통째로
+      막혔다. 인사·무료사주는 풀이가 아니라 **손님을 받는 글**이다.
+      「댓글에 생년월일시 남겨줘」에 일간·십성을 억지로 끼우면
+      안내글이 아니라 이상한 강의가 된다.
+      오늘의 운세도 근거는 일진과 띠라서 이 검사와 안 맞는다. */
+section('인사글·운세는 사주 근거를 안 따진다');
+
+const sajuRow = (p) => (checkPost(p).rows || []).find((r) => r.label === '사주를 실제로 가리킴');
+const INTRO_BODY = ['안녕하세요 사주상담가 운결담 입니다', '',
+  '오늘은 사주 촉이 제대로 와서 무료로 열어봅니다',
+  '복채는 댓글에 스라리 한 번이면 충분해요', '',
+  '가볍게 신청하고 싶은 분들',
+  '댓글에 생년월일시 · 성별 · 요즘 제일 고민되는 거 하나 남겨줘'].join(LF);
+const DAILY_BODY = ['오늘 잘 갈리는 날', '', '9월 10일 오늘의 운세', '',
+  '🍀 운 좋은 띠', '🐉 용띠', '🐰 토끼띠'].join(LF);
+
+const introPost = { postType: '정보형', form: 'single', topic: '무료사주 인사', parts: [INTRO_BODY] };
+const dailyPost = { postType: '정보형', form: 'single', topic: '오늘의 운세', parts: [DAILY_BODY] };
+
+t('인사글이 나갈 수 있다', checkPost(introPost).passHard, true);
+t('인사글엔 그 검사가 아예 없다', !!sajuRow(introPost), false);
+t('운세가 나갈 수 있다', checkPost(dailyPost).passHard, true);
+t('운세에도 그 검사가 없다', !!sajuRow(dailyPost), false);
+/* 「고치면 좋은 것」에도 안 뜬다 — 고칠 것이 아니니까 */
+t('고칠 것으로도 안 뜬다',
+  checkPost(introPost).advice.some((a) => a.indexOf('사주를 실제로 가리킴') >= 0), false);
+
+/* 틀 이름으로 들어와도 봐준다 — 주제를 손으로 바꿔둔 경우 */
+t('틀 이름으로도 봐준다',
+  checkPost({ postType: '정보형', form: 'intro', topic: '아무거나', parts: [INTRO_BODY] }).passHard, true);
+t('운세 틀 이름도 봐준다',
+  checkPost({ postType: '정보형', form: 'daily', topic: '아무거나', parts: [DAILY_BODY] }).passHard, true);
+
+/* ⚠️ 여기가 새면 「사주 보는 게 처음이신가요?」 같은 아무 말이 나간다.
+      보통 글은 그대로 막혀야 한다. */
+const vague = { postType: '정보형', form: 'single', topic: '재물운',
+  parts: ['사주 보는 게 처음이신가요' + LF + LF + '한번 봐보세요'] };
+t('보통 글은 그대로 막는다', checkPost(vague).passHard, false);
+t('보통 글엔 그 검사가 있다', !!sajuRow(vague), true);
+/* 사주를 짚은 보통 글은 통과 */
+t('짚은 글은 통과', checkPost({ postType: '정보형', form: 'single', topic: '재물운',
+  parts: ['경금 일간은 거절을 못 합니다' + LF + '그래서 일이 몰립니다'] }).passHard, true);

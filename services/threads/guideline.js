@@ -358,11 +358,25 @@ function checkPost(post) {
 
   /* 사주를 실제로 가리켰는가.
      이게 없으면 「사주 보는 게 처음이신가요?」 같은 아무 말이 나간다.
-     무료사주 안내글은 풀이가 아니라 손님을 받는 글이라 뺀다. */
-  /* ⚠️ MBTI 글에는 사주 용어가 없어도 된다. 억지로 넣으면
+
+     ⚠️ 다만 **이 검사가 안 맞는 글이 있다.** 셋이다.
+
+     ① 인사·무료사주 — 풀이가 아니라 **손님을 받는 글**이다.
+        「안녕하세요 운결담입니다 / 댓글에 생년월일시 남겨줘」에 일간·십성을
+        억지로 끼우면 안내글이 아니라 이상한 강의가 된다. 매번 여기 걸려서
+        인사글이 통째로 못 나갔다.
+     ② 오늘의 운세 — 근거는 **일진과 띠**다. 그건 이 사이트 만세력으로
+        계산해서 넣어준 값이고, 틀에 일진이 없는 계정도 있다. 그런 틀에
+        일간·십성을 억지로 넣으면 본인이 쓰던 틀이 망가진다.
+     ③ MBTI — 사주 용어가 없어도 된다. 억지로 넣으면
         「INFP 는 식상이 강하다」 같은 엉터리 연결이 나온다.
-        무료사주 안내글은 풀이가 아니라 손님을 받는 글이라 뺀다. */
+
+     ⚠️ 주제 이름으로 가른다. 자동 규칙이 이 두 틀에는 주제를 **못 박아**
+        저장하기 때문이다 (autopost 의 FIXED_TOPIC). */
+  const NO_SAJU_TOPIC = { '무료사주 인사': true, '오늘의 운세': true };
   const isNotice = post.postType === '브랜딩형' || post.replyType === 'signup'
+    || NO_SAJU_TOPIC[String(post.topic || '').trim()]
+    || post.form === 'intro' || post.form === 'daily'
     || require('./mbti').isMbti(post.topic) || require('./mbti').isMbti(parts.join(' '));
   if (!isNotice) {
     const pointed = parts.some(pointsToSaju);
