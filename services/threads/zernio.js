@@ -150,9 +150,22 @@ async function getStatus(apiKey, postId) {
   };
 }
 
-/** 예약을 물린다 */
+/**
+ * 예약을 물린다.
+ *
+ * ⚠️ **없으면 지운 셈이다.** Zernio 대시보드에서 이미 손으로 지웠거나
+ *    벌써 올라가 버린 예약은 404 로 답한다. 그걸 실패로 보면,
+ *    「Zernio 에서 예약을 지우지 못했습니다: Post not found」가 떠서
+ *    우리 쪽에서도 못 지운다. 원하는 상태(Zernio 에 없다)는 이미 됐는데
+ *    글이 화면에 영영 남는다. 실제로 그래서 삭제가 막혔다.
+ */
 async function remove(apiKey, postId) {
-  return request('DELETE', '/posts/' + encodeURIComponent(postId), apiKey);
+  try {
+    return await request('DELETE', '/posts/' + encodeURIComponent(postId), apiKey);
+  } catch (e) {
+    if (e.code === 'ZERNIO_404') return { gone: true };
+    throw e;
+  }
 }
 
 /** 열쇠가 되는지 + 연결된 계정이 있는지 한 번에 본다 */

@@ -879,7 +879,7 @@ t('켜기를 짚어준다', viewSrc.indexOf('이걸 안 누르면 아무 일도 
 t('원고로만 두기를 짚어준다', viewSrc.indexOf('절대 안 올라갑니다') > 0, true);
 t('시각 어긋내기를 풀어준다', viewSrc.indexOf('계정이 막힐 수 있습니다') > 0, true);
 t('틀 목록을 자동으로 뽑는다', viewSrc.indexOf('formList.forEach') > 0, true);
-t('단추 뜻을 적어둔다', viewSrc.indexOf('이 자리의 예약을 취소') > 0, true);
+t('단추 뜻을 적어둔다', viewSrc.indexOf('<b>Zernio 예약도 같이 지웁니다</b>') > 0, true);
 t('되풀이되는 자리까지 편다', autoSrc4.indexOf('rules.plan(rule, LOOKAHEAD_DAYS)') > 0, true);
 /* ── 지난 자리 밀기 ──
    ⚠️ 일주일치를 미리 채우면 「그 요일의 다음 번」은 늘 차 있다.
@@ -1945,3 +1945,33 @@ t('자동 글을 걸러낸다',
 t('거른 것만 내보낸다', routeSrc.indexOf('posts: mine.map(pipeline.view)') > 0, true);
 /* 요일 판은 그대로 자동 글을 본다 — 거기가 그 글들의 자리다 */
 t('요일 판은 그대로 본다', routeSrc.indexOf('const all = await store.getPosts(req.user.id);') > 0, true);
+
+/* ── 지우면 Zernio 에서도 지운다 ──
+   ⚠️ 「지웠는데 시간 되면 올라오는 것」이 제일 나쁘다. 예전엔 우리 쪽
+      기록만 지워서, 화면에서 사라진 글이 제 시각에 그대로 나갔다.
+   ⚠️ 그리고 Zernio 가 404(Post not found)로 답하면 삭제가 통째로 막혔다.
+      대시보드에서 이미 손으로 지운 예약이 그렇다. 원하는 상태는 이미
+      됐는데 글이 화면에 영영 남았다. */
+section('지우면 Zernio 에서도 지운다');
+
+const zSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'zernio.js'), 'utf8');
+t('없으면 지운 셈으로 본다', zSrc.indexOf("if (e.code === 'ZERNIO_404') return { gone: true };") > 0, true);
+/* 404 말고 다른 오류는 그대로 던져야 한다 — 못 지운 걸 지웠다고 하면 안 된다 */
+t('다른 오류는 그대로 던진다', /ZERNIO_404[\s\S]{0,80}throw e;/.test(zSrc), true);
+
+const delSrc = routeSrc.slice(routeSrc.indexOf("api/threads/delete"));
+t('지우기 전에 예약을 뺀다', delSrc.indexOf('dropSchedule(req.user.id, post)') > 0, true);
+t('예약을 못 빼면 안 지운다', delSrc.indexOf('stuck.push(off.why); continue;') > 0, true);
+/* 이미 나간 글은 Zernio 에서 뺄 것이 없다 */
+t('이미 나간 글은 안 건드린다', delSrc.indexOf("post.status !== 'published'") > 0, true);
+t('못 뺀 것이 있으면 알려준다', delSrc.indexOf('stuck: stuck.length,') > 0, true);
+t('어떻게 하라고 알려준다', delSrc.indexOf('zernio.com 대시보드에서 직접 지운 뒤') > 0, true);
+
+/* 요일 판의 「삭제하기」가 그 길을 탄다.
+   ⚠️ 예전엔 자리만 떼고 글을 「내 원고」에 남겼다. 이제 「내 원고」는
+      손으로 만든 글만 두므로, 자리만 떼면 갈 곳이 없어진다. */
+t('요일 판 삭제가 지우기를 부른다',
+  viewSrc.indexOf("post('/api/threads/delete', { ids: [id] })") > 0, true);
+t('무엇이 지워지는지 묻는다',
+  viewSrc.indexOf('Zernio 예약도 같이 지웁니다 — 시간이 돼도 안 올라갑니다') > 0, true);

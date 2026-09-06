@@ -951,8 +951,37 @@ router.post('/api/threads/delete', ...guard, async (req, res, next) => {
   try {
     const ids = ((req.body && req.body.ids) || []).map(String).filter(Boolean);
     if (!ids.length) return fail(res, { message: '지울 글을 골라주세요.' });
-    const out = await store.deletePosts(req.user.id, ids);
-    res.json({ ok: true, deleted: out.deleted, trash: await store.trashCount(req.user.id) });
+
+    /* ⚠️ **지웠는데 시간 되면 올라오는 것**이 제일 나쁘다.
+          예약이 걸린 글은 Zernio 에서 먼저 빼야 한다. 예전엔 우리 쪽에서만
+          지워서, 화면에서 사라진 글이 제 시각에 그대로 나갔다.
+          Zernio 에 이미 없으면(404) 지운 셈으로 본다 — zernio.remove 가 봐준다. */
+    const stuck = [];
+    const okIds = [];
+    for (const id of ids) {
+      const post = await store.getPost(req.user.id, id);
+      if (!post) continue;
+      if (post.zernioId && post.status !== 'published') {
+        const off = await dropSchedule(req.user.id, post);
+        if (!off.ok) { stuck.push(off.why); continue; }
+      }
+      okIds.push(id);
+    }
+    if (!okIds.length && stuck.length) {
+      return fail(res, {
+        message: 'Zernio 에서 예약을 지우지 못했습니다: ' + stuck[0],
+        hint: '먼저 지우면 시간이 돼도 안 올라갑니다. zernio.com 대시보드에서 직접 지운 뒤 다시 눌러주세요.',
+      }, 502);
+    }
+
+    const out = await store.deletePosts(req.user.id, okIds);
+    res.json({
+      ok: true,
+      deleted: out.deleted,
+      /* 몇 개는 Zernio 에 남았다고 알려준다. 조용히 넘어가면 그게 나간다. */
+      stuck: stuck.length,
+      trash: await store.trashCount(req.user.id),
+    });
   } catch (e) { next(e); }
 });
 

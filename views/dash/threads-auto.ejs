@@ -651,7 +651,8 @@
         <li><b>시간 설정</b> — 이 글만 다른 요일·시각으로 옮깁니다.</li>
         <li><b>수정하기</b> — 본문을 직접 고칩니다. <b>고치면 예약이 풀립니다</b> — 다시 걸어야 나갑니다.</li>
         <li><b>글 재생성</b> — 같은 자리에 글을 새로 만듭니다. 주제와 틀을 바꿔서 만들 수도 있습니다.</li>
-        <li><b>삭제하기</b> — <b>이 자리의 예약을 취소</b>합니다. 글은 「내 원고」에 남습니다.</li>
+        <li><b>삭제하기</b> — 이 글을 지웁니다. <b>Zernio 예약도 같이 지웁니다</b> —
+          시간이 돼도 안 올라갑니다. 「되살리기」로 방금 지운 것은 되돌릴 수 있습니다.</li>
       </ul>
 
       <h4>오늘의 운세는 어떻게 만들어지나요</h4>
@@ -2721,9 +2722,16 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
       /* 삭제 — 이 자리를 없앤다. 예약이 걸려 있었으면 Zernio 에서도 뺀다.
          글은 「내 원고」에 남아 나중에 손으로 올릴 수 있다. */
       el.querySelector('.del').addEventListener('click', function(){
-        if (!confirm('이 글을 삭제할까요?\n자동으로 안 올라갑니다.\n글은 「내 원고」에 남습니다.')) return;
-        post('/api/threads/upcoming/' + encodeURIComponent(id) + '/unhook', {}).then(function(r){
-          if (!r.j.ok) { msg(el.querySelector('.msg'), 'err', r.j.error); return; }
+        /* ⚠️ 예전엔 자리만 떼고 글은 「내 원고」에 남겼다. 이제 「내 원고」는
+           손으로 만든 글만 두므로, 자리만 떼면 갈 곳이 없어진다.
+           그래서 아예 지운다 — Zernio 예약도 같이 뺀다. */
+        if (!confirm('이 글을 지울까요?\nZernio 예약도 같이 지웁니다 — 시간이 돼도 안 올라갑니다.')) return;
+        post('/api/threads/delete', { ids: [id] }).then(function(r){
+          if (!r.j.ok) {
+            msg(el.querySelector('.msg'), 'err',
+              r.j.error + (r.j.hint ? String.fromCharCode(10) + r.j.hint : ''));
+            return;
+          }
           loadUpcoming();
         });
       });
