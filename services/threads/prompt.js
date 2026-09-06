@@ -156,19 +156,35 @@ function introBlock(intro) {
   if (name) lines.push('계정 이름: ' + name);
   if (career) lines.push('경력·소개: ' + career);
   lines.push('');
-  lines.push('인사글을 만들 때는 위 값을 **그대로** 씁니다. 경력을 지어내지 마세요.');
-  lines.push('첫 줄에 이름과 경력이 같이 나오게 하되, **매번 같은 문장으로 시작하지 마세요.**');
-  lines.push('  「안녕, ' + (shortCareer ? shortCareer + ' ' : '') + who + iya(who) + '」');
-  lines.push('  「안녕하세요 ' + who + '입니다」');
-  if (shortCareer) lines.push('  「' + who + iya(who) + '. ' + shortCareer + '」');
-  lines.push('  — 이런 식으로 어순과 어미를 바꿔가며 돌립니다.');
+  lines.push('위 값은 **그대로** 씁니다. 경력을 지어내지 마세요.');
 
+  /* ⚠️ 예시글이 있으면 **그것이 주인**이다.
+        예전엔 여기서 「안녕, 10년차 ○○이야」 같은 본보기를 먼저 보여줬다.
+        그랬더니 모델이 **본인 예시글을 통째로 무시하고** 그 본보기를 따라
+        「운결담이야. 10년차 사주 상담가」로 시작해 버렸다.
+        이름과 경력은 예시글 안에 **끼워 넣는 재료**일 뿐이다. */
   if (sample) {
     lines.push('');
-    lines.push('아래는 본인이 실제로 쓴 인사글입니다.');
-    lines.push('**짜임새와 목소리를 이것에 맞추되 문장은 새로 쓰세요.** 그대로 베끼면 안 됩니다.');
+    lines.push('아래는 이 사람이 실제로 올렸던 인사글입니다.');
+    lines.push('**이것이 서식입니다. 참고 자료가 아닙니다.**');
+    lines.push('**줄 차례 · 여는 법 · 닫는 법 · 말투를 이대로** 가져가세요.');
+    lines.push('이름과 경력은 이 글이 그것을 적던 **그 자리에 그대로** 끼워 넣습니다.');
+    lines.push('');
+    lines.push('── 줄 차례 (이 순서 그대로) ──');
+    lines.push(shape.skeleton(sample, '걸어야 하는 자리. 이름·경력만 이 자리에 끼워 넣으세요'));
+    lines.push('');
     lines.push('--- 내 인사글 ---');
     lines.push(sample);
+    lines.push('');
+    lines.push('⚠️ 문장을 그대로 베끼지는 마세요. **짜임새와 목소리만** 그대로 두고');
+    lines.push('   말은 새로 씁니다. **첫 줄을 제 마음대로 바꾸지 마세요.**');
+  } else {
+    /* 예시글이 없을 때만 본보기를 준다. 아무것도 없으면 지어내니까. */
+    lines.push('첫 줄에 이름과 경력이 같이 나오게 하되, **매번 같은 문장으로 시작하지 마세요.**');
+    lines.push('  「안녕, ' + (shortCareer ? shortCareer + ' ' : '') + who + iya(who) + '」');
+    lines.push('  「안녕하세요 ' + who + '입니다」');
+    if (shortCareer) lines.push('  「' + who + iya(who) + '. ' + shortCareer + '」');
+    lines.push('  — 이런 식으로 어순과 어미를 바꿔가며 돌립니다.');
   }
   lines.push('');
   return lines.join('\n');
@@ -218,7 +234,7 @@ function dailyBlock(daily) {
             일진을 밀어넣어 「오늘은 을유일」로 시작한 적이 있다.
             몇 번째 줄이 무엇인지 하나씩 못 박아야 순서가 지켜진다. */
       '── 줄 차례 (이 순서 그대로) ──',
-      shape.skeleton(body),
+      shape.skeleton(body, '걸어야 하는 자리. 여기를 일진으로 바꾸지 마세요'),
       '',
       '--- 1편 (본문) ---',
       body,
@@ -320,6 +336,12 @@ function buildPrompt(topic, opts) {
 
 ════════ 지침 ════════
 ${loadGuideline()}
+
+════════ 한글로만 ════════
+⚠️ **영어를 쓰지 마세요.** 로마자가 두 글자만 이어져도 못 나갑니다.
+   Threads → 스레드 · DM → 디엠 · A vs B → A와 B (또는 「이쪽 저쪽」)
+   실제로 「처음으로 Threads에서 무료사주 신청 받아본다」가 나갔습니다.
+   서비스 이름도 한글로 적으세요.
 
 ${loadBenchmark() ? `════════ 실제로 터진 글 — 유형과 공식 ════════
 ${loadBenchmark()}

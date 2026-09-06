@@ -63,6 +63,27 @@ const SOLUTION = new RegExp([
   '할 것', '해야 함', '해야 됨', '두면 됨',            // 한 번 더 생각할 것
 ].join('|'));
 
+/* 영어 낱말 — 한글 글에 섞이면 눈에 걸린다.
+ *
+ * ⚠️ 실제로 「처음으로 Threads에서 무료사주 신청 받아본다」가 나갔다.
+ *    「스레드」라고 쓰면 될 것을 영어로 쓴 것이다.
+ *    로마자가 두 글자 이상 이어지면 낱말로 본다 — 한 글자는
+ *    「A형」처럼 쓰일 수 있어 봐준다.
+ *
+ * 신청 링크는 발행 직전에 답글로 따로 붙으므로 여기 안 걸린다. */
+const ENGLISH_RE = /[A-Za-z]{2,}/g;
+
+/** 글에 들어간 영어 낱말들. 없으면 빈 배열. */
+function englishIn(text) {
+  const hit = String(text == null ? '' : text).match(ENGLISH_RE) || [];
+  const seen = {};
+  return hit.filter((w) => {
+    if (seen[w]) return false;
+    seen[w] = true;
+    return true;
+  });
+}
+
 /* 사주 용어 — 한 문단에 너무 많으면 읽기 어렵다 */
 const TERMS = [
   '역마', '도화', '삼재', '공망', '화개', '백호', '괴강', '천을귀인',
@@ -298,6 +319,17 @@ function checkPost(post) {
     detail: scare ? '"' + scare + '…"' : '행동·시기를 지목하거나 경고 없음',
   });
 
+  /* 영어가 섞였는지. 첫 댓글도 같이 본다 — 눈에 보이는 글이다. */
+  const eng = englishIn(parts.concat([post.replyText || '']).join(String.fromCharCode(10)));
+  rows.push({
+    label: '영어 없이 한글로',
+    ok: !eng.length,
+    hard: true,
+    detail: eng.length
+      ? eng.slice(0, 5).join(', ') + ' — 한글로 바꿔주세요 (Threads → 스레드)'
+      : undefined,
+  });
+
   const banned = BANNED.filter((b) => parts.some((p) => String(p).includes(b)));
   rows.push({
     label: '금지 말투 없음',
@@ -478,4 +510,5 @@ function checkPost(post) {
   return { rows, passHard, passBlock, advice, lengths };
 }
 
-module.exports = { checkPost, scareViolation, pointsToSaju, hookWordsIn, needsBreaks, vagueIn, BANNED, TERMS, POINTED };
+module.exports = {
+  englishIn, checkPost, scareViolation, pointsToSaju, hookWordsIn, needsBreaks, vagueIn, BANNED, TERMS, POINTED };

@@ -130,6 +130,55 @@ function pickTopic(rule, n, form, recent) {
   return from[Math.floor(Math.random() * from.length)];
 }
 
+/* 한 바퀴에 몇 개까지 걸어볼지. Zernio 만 부르니 요금은 안 나가지만,
+   실패하는 글이 많으면 한 바퀴가 길어진다. */
+const CATCH_UP = 5;
+
+/**
+ * 이미 만들어둔 원고를 예약에 걸어준다.
+ *
+ * ⚠️ 예약은 **글을 새로 만들 때만** 걸었다. 그래서 이런 일이 생겼다 —
+ *      ① 「원고로만 두기」로 돌려 글이 쌓인다
+ *      ② 「바로 예약까지」로 바꾼다
+ *      ③ 쌓인 글은 taken() 에 걸려 다시 안 만들어진다
+ *      ④ 그래서 **영영 예약되지 않는다**
+ *    화면에는 「다음 확인 때 예약합니다」라고 떠 있는데 거짓말이었다.
+ *    지침에 걸려 예약을 놓친 글도 마찬가지로 그대로 남았다.
+ *
+ * 반환 { done, errors }
+ */
+async function catchUp(rule) {
+  if (rule.mode !== 'publish') return { done: 0, errors: [] };
+
+  const { rows } = await pool.query(
+    `SELECT id FROM th_posts
+      WHERE user_id = $1 AND rule_id = $2
+        AND status = 'draft' AND slot_at IS NOT NULL AND slot_at > NOW()
+      ORDER BY slot_at
+      LIMIT $3`,
+    [rule.userId, rule.id, CATCH_UP]
+  );
+  if (!rows.length) return { done: 0, errors: [] };
+
+  let done = 0;
+  const errors = [];
+  for (const r of rows) {
+    try {
+      const saved = await store.getPost(rule.userId, r.id);
+      if (!saved || !saved.slotAt) continue;
+      await publish.scheduleAt(rule.userId, saved, new Date(saved.slotAt), {
+        auto: true, accountId: rule.accountId || undefined,
+      });
+      done++;
+    } catch (e) {
+      /* 지침에 걸린 글은 다음 바퀴에도 또 걸린다. 첫 번째 것만 알린다 —
+         같은 말을 다섯 줄 쌓아봐야 읽는 데 방해만 된다. */
+      if (!errors.length) errors.push('이미 만든 글 예약 실패 — ' + e.message);
+    }
+  }
+  return { done, errors };
+}
+
 /**
  * 시각이 지났는데 아직 안 올라간 원고를 **다음 차례로 민다.**
  *
@@ -190,8 +239,20 @@ async function runRule(rule) {
   const made = [];
   const errors = [];
 
+  /* 이미 만들어둔 원고부터 걸어준다.
+     ⚠️ OpenAI 키 검사보다 **위**에 있어야 한다 — 예약을 거는 데는
+        키가 필요 없다. 키가 없다고 쌓인 원고까지 못 나가면 안 된다. */
+  let caught = 0;
+  try {
+    const up = await catchUp(rule);
+    caught = up.done;
+    up.errors.forEach((x) => errors.push(x));
+  } catch (e) {
+    console.error('[스레드] 이미 만든 글 예약 실패:', e.message);
+  }
+
   if (!rule.openaiKey) {
-    return { made, errors: ['OpenAI 키가 없습니다'] };
+    return { made, errors: errors.concat(['OpenAI 키가 없습니다']), caught };
   }
 
   /* 이 규칙이 어느 계정으로 나가는지. 말투·인사글·운세 틀이 계정마다 다르다. */
@@ -298,7 +359,7 @@ async function runRule(rule) {
     lastError: errors.length ? errors[0] : '',
   });
 
-  return { made, errors, moved };
+  return { made, errors, moved, caught };
 }
 
 /** 켜져 있는 규칙을 전부 훑는다 */
@@ -319,5 +380,5 @@ async function tick() {
   return out;
 }
 
-module.exports = { tick, runRule, rollForward, pickTopic, recentTopics,
+module.exports = { tick, runRule, rollForward, catchUp, pickTopic, recentTopics,
   LOOKAHEAD_DAYS, LOOKAHEAD_H, PER_TICK };

@@ -252,15 +252,29 @@ t('셋 다 빈 문자열이어도 같다',
 const ib = introBlock({ name: '루월당사주', career: '10년차', sample: '안녕하세요 반갑습니다' });
 t('이름이 들어간다', ib.includes('루월당사주'), true);
 t('경력이 들어간다', ib.includes('10년차'), true);
-t('첫 줄 예시를 여러 개 준다', ib.includes('안녕, 10년차 루월당사주야') && ib.includes('안녕하세요 루월당사주입니다'), true);
+/* ⚠️ 예시글이 있으면 **그것이 주인**이다.
+   예전엔 여기서 「안녕, 10년차 ○○이야」 같은 본보기를 먼저 보여줬다.
+   그랬더니 모델이 본인 예시글을 통째로 무시하고 그 본보기를 따라
+   「운결담이야. 10년차 사주 상담가」로 시작해 버렸다. */
+t('예시글이 있으면 내 본보기는 안 준다',
+  ib.includes('안녕, 10년차 루월당사주야'), false);
+t('예시글이 서식이라고 못 박는다', ib.includes('이것이 서식입니다'), true);
+t('줄 차례를 준다', ib.includes('줄 차례 (이 순서 그대로)'), true);
+t('이름·경력은 끼워 넣는 재료',
+  ib.includes('그 자리에 그대로** 끼워 넣습니다'), true);
+t('첫 줄을 바꾸지 말라고 한다', ib.includes('첫 줄을 제 마음대로 바꾸지 마세요'), true);
+/* 예시글이 없을 때는 본보기가 있어야 한다 — 아무것도 없으면 지어낸다 */
+const ibNo = introBlock({ name: '루월당사주', career: '10년차', sample: '' });
+t('예시글이 없으면 본보기를 준다',
+  ibNo.includes('안녕, 10년차 루월당사주야') && ibNo.includes('안녕하세요 루월당사주입니다'), true);
 /* 본보기로 주는 문장이라 조사가 틀리면 모델이 그대로 배운다 */
 t('받침 없으면 ~야', introBlock({ name: '루월당사주', career: '10년차' }).includes('루월당사주야'), true);
 t('받침 있으면 ~이야', introBlock({ name: '하늘문', career: '8년차' }).includes('하늘문이야'), true);
 t('긴 경력은 앞 토막만 예시에 쓴다',
   introBlock({ name: '루월당사주', career: '10년차 상담가, 철학관 5년' }).includes('안녕, 10년차 상담가 루월당사주야'), true);
-t('매번 같게 쓰지 말라고 한다', ib.includes('매번 같은 문장으로 시작하지 마세요'), true);
+t('매번 같게 쓰지 말라고 한다', ibNo.includes('매번 같은 문장으로 시작하지 마세요'), true);
 t('예시글이 들어간다', ib.includes('안녕하세요 반갑습니다'), true);
-t('예시를 베끼지 말라고 한다', ib.includes('그대로 베끼면 안 됩니다'), true);
+t('예시를 베끼지 말라고 한다', ib.includes('그대로 베끼지는 마세요'), true);
 t('예시 없이 이름만 있어도 만든다',
   introBlock({ name: '루월당사주' }).includes('만들지 마세요'), false);
 const pIntro = buildPrompt('역마살', { ledger: {}, limit: 1,
@@ -1485,6 +1499,65 @@ t('칸마다 줄 수를 보여준다', viewSrc.indexOf("x.el.querySelector('.cnt
 /* 큰 칸 하나짜리는 없어졌다 */
 t('옛 큰 칸은 없다', viewSrc.indexOf('id="taVoiceIn"') > 0, false);
 
+/* ── 이미 만들어둔 원고도 예약에 걸어준다 ──
+   ⚠️ 예약은 **글을 새로 만들 때만** 걸었다. 그래서
+        ① 「원고로만 두기」로 글이 쌓이고
+        ② 「바로 예약까지」로 바꾸면
+        ③ 쌓인 글은 taken() 에 걸려 다시 안 만들어지고
+        ④ **영영 예약되지 않았다.**
+      화면에는 「다음 확인 때 예약합니다」라고 떠 있었는데 거짓말이었다. */
+section('쌓인 원고 걸어주기');
+
+const upSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'autopost.js'), 'utf8');
+t('쌓인 원고를 걸어주는 자리가 있다', /async function catchUp\(rule\)/.test(upSrc), true);
+t('앞으로 올릴 원고만 본다', upSrc.indexOf("status = 'draft' AND slot_at IS NOT NULL AND slot_at > NOW()") > 0, true);
+t('원고 규칙에서는 안 건다', upSrc.indexOf("if (rule.mode !== 'publish') return { done: 0, errors: [] };") > 0, true);
+t('그 규칙의 계정으로 건다', /catchUp[\s\S]{0,900}accountId: rule\.accountId/.test(upSrc), true);
+/* 예약을 거는 데는 OpenAI 키가 필요 없다 — 키가 없다고 쌓인 원고까지 못 나가면 안 된다 */
+t('키 검사보다 먼저 돈다',
+  upSrc.indexOf('await catchUp(rule)') < upSrc.indexOf("errors.concat(['OpenAI 키가 없습니다'])"), true);
+/* 같은 말을 다섯 줄 쌓아봐야 읽는 데 방해만 된다 */
+t('실패는 첫 번째만 알린다', upSrc.indexOf('if (!errors.length) errors.push') > 0, true);
+t('한 바퀴에 다섯 개까지', upSrc.indexOf('const CATCH_UP = 5;') > 0, true);
+t('몇 개 걸었는지 돌려준다', upSrc.indexOf('return { made, errors, moved, caught };') > 0, true);
+
+/* ── 영어가 섞이면 못 나간다 ──
+   ⚠️ 실제로 「처음으로 Threads에서 무료사주 신청 받아본다」가 나갔다.
+      「스레드」라고 쓰면 될 것을 영어로 썼다. */
+section('한글로만');
+
+const G4 = require(require('path').join(__dirname, '..', 'services', 'threads', 'guideline'));
+const engRow = (t, rp) => checkPost({ postType: '정보형', form: 'single',
+  parts: [t], replyText: rp || '' }).rows.find((r) => r.label === '영어 없이 한글로');
+
+t('Threads 를 잡는다', engRow('처음으로 Threads에서 신청 받아본다').ok, false);
+t('무엇이 걸렸는지 말해준다',
+  engRow('처음으로 Threads에서 신청 받아본다').detail.indexOf('Threads') === 0, true);
+t('한글로 바꾸라고 알려준다',
+  engRow('Threads 에서').detail.indexOf('스레드') > 0, true);
+t('DM 도 잡는다', engRow('디엠 말고 DM 으로').ok, false);
+t('vs 도 잡는다', engRow('A vs B 중에 골라봐').ok, false);
+/* 첫 댓글도 눈에 보이는 글이다 */
+t('첫 댓글에 섞여도 잡는다', engRow('멀쩡한 본문임', 'DM 주세요').ok, false);
+
+/* 막지 말아야 할 것 — 여기가 새면 아무 글도 못 올린다 */
+t('한글만 있으면 통과', engRow('갑목은 곧게 자람').ok, true);
+t('간지도 통과', engRow('오늘은 계미일임').ok, true);
+t('이모지는 통과', engRow('🍀 운 좋은 띠').ok, true);
+t('숫자는 통과', engRow('1. 생각을 다 끝내고 말함').ok, true);
+/* 한 글자는 「A형」처럼 쓰일 수 있어 봐준다 */
+t('한 글자는 봐준다', engRow('A형 성격이랑은 다름').ok, true);
+t('영어 낱말 찾기', G4.englishIn('Threads 와 DM'), ['Threads', 'DM']);
+t('같은 낱말은 한 번만', G4.englishIn('DM DM DM'), ['DM']);
+t('없으면 빈 배열', G4.englishIn('한글만 있음'), []);
+
+/* 애초에 안 쓰도록 프롬프트에도 적어둔다 */
+const P5 = require(require('path').join(__dirname, '..', 'services', 'threads', 'prompt'));
+const engPrompt = P5.buildPrompt('재물운', { ledger: {}, facts: [], limit: 1 });
+t('프롬프트가 영어를 막는다', engPrompt.indexOf('영어를 쓰지 마세요') > 0, true);
+t('바꿔 쓸 말을 알려준다', engPrompt.indexOf('Threads → 스레드') > 0, true);
+
 /* ── 첫 댓글도 고칠 수 있어야 한다 ──
    ⚠️ 「수정하기」가 본문만 고쳤다. 리스트형은 알맹이가 댓글에 있어서
       본문만 고칠 수 있으면 반쪽짜리다.
@@ -1540,7 +1613,14 @@ t('틀에 없는 일진을 넣으면 잡는다',
 const skel = DS.skeleton(HOOK_TPL);
 t('줄마다 번호를 붙인다', skel.indexOf('1줄:') === 2, true);
 t('첫 줄을 후킹이라고 이름 붙인다', skel.indexOf('**후킹**') > 0, true);
-t('일진으로 바꾸지 말라고 적는다', skel.indexOf('여기를 일진으로 바꾸지 마세요') > 0, true);
+/* 첫 줄 주의는 틀마다 다르다 — 부르는 쪽이 정한다 */
+t('일진으로 바꾸지 말라고 적는다',
+  DS.skeleton(HOOK_TPL, '걸어야 하는 자리. 여기를 일진으로 바꾸지 마세요')
+    .indexOf('여기를 일진으로 바꾸지 마세요') > 0, true);
+t('인사글엔 다른 주의를 붙인다',
+  DS.skeleton(HOOK_TPL, '이름·경력만 이 자리에 끼워 넣으세요')
+    .indexOf('이름·경력만') > 0, true);
+t('안 주면 무난한 말로', DS.skeleton(HOOK_TPL).indexOf('함부로 바꾸지 마세요') > 0, true);
 t('날짜 줄을 알아본다', skel.indexOf('날짜 줄') > 0, true);
 t('빈 줄도 자리로 센다', skel.indexOf('(빈 줄)') > 0, true);
 t('이모지 줄을 알아본다', skel.indexOf('이모지로 시작') > 0, true);

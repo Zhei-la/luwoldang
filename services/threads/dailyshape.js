@@ -83,7 +83,10 @@ function firstLine(text) {
  *    아무도 안 읽는다 — 첫 줄은 걸어야 하는 자리다.
  *    몇 번째 줄이 무엇인지 하나씩 못 박아야 순서가 지켜진다.
  */
-function skeleton(text) {
+function skeleton(text, note) {
+  /* 첫 줄에 붙일 주의. 틀마다 어긋나는 자리가 달라서 부르는 쪽이 정한다.
+     운세는 「일진으로 바꾸지 마세요」, 인사글은 「이름·경력만 갈아끼우세요」. */
+  const first = note || '걸어야 하는 자리입니다. 여기를 함부로 바꾸지 마세요';
   const raw = String(text == null ? '' : text).trim().split(NL);
   return raw.map((line, i) => {
     const t = line.trim();
@@ -96,7 +99,7 @@ function skeleton(text) {
       return '  ' + n + ': 날짜 줄 — 「' + t + '」 (날짜만 이 날 것으로 바꿉니다)';
     }
     if (hasGanji(t)) return '  ' + n + ': 일진 줄 — 「' + t + '」';
-    if (i === 0) return '  ' + n + ': **후킹** — 「' + t + '」 (걸어야 하는 자리. 여기를 일진으로 바꾸지 마세요)';
+    if (i === 0) return '  ' + n + ': **후킹** — 「' + t + '」 (' + first + ')';
     return '  ' + n + ': 글 — 「' + t + '」';
   }).join(NL);
 }
