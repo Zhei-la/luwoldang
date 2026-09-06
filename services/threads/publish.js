@@ -132,6 +132,22 @@ async function scheduleAt(userId, post, when, opts) {
       throw err;
     }
   }
+  /* ⚠️ **같은 시각에 두 글이 나란히 올라간 일이 있다.** 규칙을 두 개 두면
+        각자 자기 자리를 채우는데, 그 자리가 같은 시각이면 둘 다 나간다.
+        자리 주인(rule_id)이 달라 유니크 색인에도 안 걸린다.
+        읽는 사람 눈에는 그냥 도배다 — 나가기 전에 여기서 막는다. */
+  const near = await store.scheduledNear(userId, ready.acc.id, when, post.id);
+  if (near) {
+    const e = new Error(
+      '이 시각에 이미 예약된 글이 있습니다' +
+      (near.topic ? ' (' + near.topic + ')' : '') + '. ' +
+      '같은 자리에 두 개가 나가면 도배로 보입니다. ' +
+      '규칙이 둘 다 같은 요일·시각을 잡고 있지 않은지 봐주세요.'
+    );
+    e.code = 'SAME_SLOT';
+    throw e;
+  }
+
   const send = await bodyToSend(userId, post, ready.acc.id);
   const out = await zernio.send({
     apiKey: ready.acc.key,

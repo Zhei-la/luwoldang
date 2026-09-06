@@ -2463,6 +2463,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         '</div>'
       : '';
 
+    /* ⚠️ 같은 시각에 두 개가 걸린 자리. 그대로 두면 둘 다 올라간다.
+       이미 걸린 것은 코드가 못 지우니 사람이 하나를 빼야 한다. */
+    var twin = p.twin
+      ? '<div class="ta-why no"><b>같은 시각에 두 개입니다.</b> ' + esc(p.twin) + '</div>'
+      : '';
+
     var why = (p.auto && p.status !== 'published' && p.status !== 'scheduled')
       ? '<div class="ta-why ' + (p.auto.ok ? 'yes' : 'no') + '">' +
         (p.auto.ok ? '' : '<b>안 올라갑니다.</b> ') + esc(p.auto.why) + '</div>'
@@ -2477,7 +2483,7 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         (p.postType ? ' · ' + esc(p.postType) : '') + '</span></div>' +
 
       '<div class="ta-up-read">' + esc(p.parts.join(CUT)) + '</div>' +
-      reply + done + tti + why + bad +
+      reply + done + twin + tti + why + bad +
 
       (p.status === 'published'
         ? ''

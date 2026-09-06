@@ -498,7 +498,46 @@ async function markRun(userId, topic) {
   await pool.query('INSERT INTO th_runs (user_id, topic) VALUES ($1, $2)', [userId, topic || '']);
 }
 
+/**
+ * 이 계정에 **이 시각쯤 이미 예약된 다른 글**이 있나.
+ *
+ * ⚠️ 같은 시각에 두 글이 나란히 올라간 일이 있다. 규칙을 두 개 두면
+ *    각자 자기 자리를 채우는데, 그 자리가 같은 시각이면 둘 다 나간다.
+ *    자리 주인(rule_id)이 달라서 유니크 색인에도 안 걸린다.
+ *    **읽는 사람 눈에는 그냥 도배다.** 나가기 전에 여기서 막는다.
+ *
+ * 어긋내기(jitter) 때문에 분 단위로 조금씩 밀리므로 앞뒤 몇 분을 같이 본다.
+ */
+const SAME_SLOT_MIN = 3;
+
+async function scheduledNear(userId, accountId, when, exceptId) {
+  const at = new Date(when);
+  if (isNaN(at.getTime())) return null;
+  const { rows } = await pool.query(
+    `SELECT id, topic, scheduled_for, account_name
+       FROM th_posts
+      WHERE user_id = $1
+        AND status = 'scheduled'
+        AND account_id IS NOT DISTINCT FROM $2
+        AND id <> COALESCE($3, '')
+        AND scheduled_for BETWEEN $4 AND $5
+      ORDER BY scheduled_for
+      LIMIT 1`,
+    [userId, accountId == null ? null : accountId, exceptId || null,
+      new Date(at.getTime() - SAME_SLOT_MIN * 60000).toISOString(),
+      new Date(at.getTime() + SAME_SLOT_MIN * 60000).toISOString()]
+  );
+  if (!rows.length) return null;
+  return {
+    id: rows[0].id,
+    topic: rows[0].topic || '',
+    at: rows[0].scheduled_for,
+    accountName: rows[0].account_name || '',
+  };
+}
+
 module.exports = {
+  scheduledNear, SAME_SLOT_MIN,
   newId, DAILY_LIMIT,
   getPosts, getPost, insertPosts, updatePost,
   deletePosts, restoreLatest, trashCount,

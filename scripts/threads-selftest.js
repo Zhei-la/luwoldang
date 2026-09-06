@@ -1782,7 +1782,7 @@ t('자리를 옮길 때도 뺀다',
   (routeSrc.match(/dropSchedule\(req\.user\.id, post\)/g) || []).length >= 3, true);
 /* ⚠️ 시각만 바꾸려고 「예약」을 다시 누르는 일이 흔하다 */
 t('이미 예약된 글을 또 예약하면 옛 것을 뺀다',
-  /if \(post\.zernioId\) \{[\s\S]{0,400}dropSchedule[\s\S]{0,600}zernio\.send/.test(routeSrc), true);
+  /if \(post\.zernioId\) \{[\s\S]{0,400}dropSchedule[\s\S]{0,1200}zernio\.send/.test(routeSrc), true);
 
 /* 마지막 방어선 — 라우트마다 챙기게 두면 언젠가 하나가 빠진다 */
 t('예약 함수 자체가 막는다', pubSrc.indexOf("if (post.zernioId) {") > 0, true);
@@ -1794,3 +1794,60 @@ t('걸려 있던 계정으로 지운다',
 t('못 지우면 새로 걸지 않는다',
   pubSrc.indexOf("err.code = 'STALE_SCHEDULE'") > 0, true);
 t('두 번 올라간다고 알려준다', pubSrc.indexOf('그대로 걸면 두 번 올라갑니다') > 0, true);
+
+/* ── 같은 시각에 두 개가 걸리지 않는다 ──
+   ⚠️ Zernio 대시보드가 통째로 두 개씩이었다. 규칙을 둘 두면 각자
+      자기 자리를 채우는데, 그 자리가 같은 시각이면 둘 다 나간다.
+      자리 주인(rule_id)이 달라서 유니크 색인에도 안 걸린다.
+      읽는 사람 눈에는 그냥 도배다. */
+section('같은 시각에 두 개가 걸리지 않는다');
+
+const stSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'store.js'), 'utf8');
+t('그 시각쯤 예약된 글을 찾는다', stSrc.indexOf('async function scheduledNear(') > 0, true);
+/* 어긋내기(jitter) 때문에 분 단위로 밀린다 — 앞뒤를 같이 봐야 한다 */
+t('앞뒤 몇 분을 같이 본다', stSrc.indexOf('const SAME_SLOT_MIN = 3;') > 0, true);
+t('자기 자신은 빼고 본다', stSrc.indexOf('id <> COALESCE($3') > 0, true);
+/* 계정이 다르면 각자 자기 계정에 올라간다 — 도배가 아니다 */
+t('같은 계정만 본다', stSrc.indexOf('account_id IS NOT DISTINCT FROM $2') > 0, true);
+t('예약된 것만 본다', stSrc.indexOf("status = 'scheduled'") > 0, true);
+t('내보낸다', stSrc.indexOf('scheduledNear, SAME_SLOT_MIN,') > 0, true);
+
+t('예약 함수가 먼저 본다', pubSrc.indexOf('store.scheduledNear(userId, ready.acc.id, when, post.id)') > 0, true);
+t('걸리면 안 건다', pubSrc.indexOf("e.code = 'SAME_SLOT'") > 0, true);
+/* Zernio 에 보내기 **전에** 봐야 한다. 보내고 나면 늦다. */
+t('보내기 전에 본다',
+  pubSrc.indexOf('store.scheduledNear') < pubSrc.indexOf('const out = await zernio.send'), true);
+t('손으로 걸 때도 본다', routeSrc.indexOf('store.scheduledNear(req.user.id, ready.acc.id, when, post.id)') > 0, true);
+
+/* 규칙 둘이 같은 계정 같은 시각을 잡고 있으면 미리 알려준다.
+   ⚠️ 예전엔 **틀을 집어둔 자리만** 봤다. 틀을 안 집으면 시각이 통째로
+      겹쳐도 한 마디도 안 했다. 이러다 두 개씩 올라갔다. */
+const R5 = require(require('path').join(__dirname, '..', 'services', 'threads', 'rules'));
+const clash = (a, b) => R5.clashWarning(a, [a, b]);
+const ruleA = { id: 'a', enabled: true, accountId: 3, slots: [{ day: 1, time: '08:10' }] };
+const ruleB = { id: 'b', name: '둘째', enabled: true, accountId: 3, slots: [{ day: 1, time: '08:10' }] };
+
+t('같은 계정 같은 시각이면 잡는다', clash(ruleA, ruleB).indexOf('두 개씩 올라갑니다') > 0, true);
+t('어느 자리인지 알려준다', clash(ruleA, ruleB).indexOf('월 08:10') > 0, true);
+t('규칙 이름도 알려준다', clash(ruleA, ruleB).indexOf('둘째') > 0, true);
+/* 계정이 다르면 각자 자기 계정으로 나간다 — 붙잡으면 멀쩡한 설정에 빨간 줄이 뜬다 */
+t('계정이 다르면 안 잡는다',
+  clash(ruleA, Object.assign({}, ruleB, { accountId: 9 })), '');
+t('시각이 다르면 안 잡는다',
+  clash(ruleA, Object.assign({}, ruleB, { slots: [{ day: 1, time: '20:10' }] })), '');
+t('요일이 다르면 안 잡는다',
+  clash(ruleA, Object.assign({}, ruleB, { slots: [{ day: 3, time: '08:10' }] })), '');
+t('꺼진 규칙은 안 잡는다',
+  clash(ruleA, Object.assign({}, ruleB, { enabled: false })), '');
+/* 계정을 둘 다 안 집었으면 같은 계정으로 나간다 */
+t('둘 다 계정을 안 집어도 잡는다',
+  clash(Object.assign({}, ruleA, { accountId: null }),
+    Object.assign({}, ruleB, { accountId: null })).indexOf('두 개씩 올라갑니다') > 0, true);
+
+/* 이미 걸린 것은 코드가 못 지운다 — 눈에 보여줘야 사람이 하나를 뺀다 */
+t('겹친 자리를 짚어준다', routeSrc.indexOf("p.twin = '이 시각에 글이 두 개 걸려 있습니다'") > 0, true);
+t('이미 나간 글은 안 짚는다',
+  /list\.forEach\(\(p, i\) => \{[\s\S]{0,120}p\.status === 'published'/.test(routeSrc), true);
+t('화면이 그걸 그린다', viewSrc.indexOf('같은 시각에 두 개입니다') > 0, true);
+t('어떻게 빼는지 알려준다', routeSrc.indexOf('「자리 빼기」로 빼주세요') > 0, true);

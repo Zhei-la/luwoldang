@@ -568,6 +568,22 @@ router.get('/api/threads/upcoming', ...guard, async (req, res, next) => {
           error: v.error || null,
         };
       });
+    /* ⚠️ **같은 시각에 두 개씩 걸린 적이 있다.** 규칙이 둘 다 같은 요일·시각을
+          잡고 있으면 각자 자기 자리를 채워서 그 시각에 두 글이 나란히 나간다.
+          앞으로는 막았지만 이미 걸린 것은 코드가 못 지운다 —
+          어느 자리가 겹쳤는지 **눈에 보여줘야** 사람이 하나를 뺄 수 있다. */
+    const NEAR_MS = 3 * 60 * 1000;
+    list.forEach((p, i) => {
+      if (p.status === 'published') return;
+      const t = new Date(p.slotAt).getTime();
+      const twin = list.find((q, j) => j !== i && q.status !== 'published' &&
+        Math.abs(new Date(q.slotAt).getTime() - t) <= NEAR_MS);
+      if (!twin) return;
+      p.twin = '이 시각에 글이 두 개 걸려 있습니다' +
+        (twin.topic ? ' (다른 하나는 「' + twin.topic + '」)' : '') + '. ' +
+        '그대로 두면 둘 다 올라갑니다 — 하나는 「자리 빼기」로 빼주세요.';
+    });
+
     /* 아직 글이 안 만들어진 자리도 보여준다.
        자동은 정해둔 며칠 앞까지만 채우니, 그 너머는 자리만 보여준다.
        빈칸만 보면 「예약이 안 걸렸나」 싶다 — 자리는 잡혀 있다고 알려줘야 한다. */
@@ -1013,6 +1029,16 @@ router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) 
 
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
+
+    /* ⚠️ 같은 시각에 두 글이 나란히 올라간 일이 있다. 손으로 걸 때도 본다. */
+    const near = await store.scheduledNear(req.user.id, ready.acc.id, when, post.id);
+    if (near) {
+      return fail(res, {
+        message: '그 시각에 이미 예약된 글이 있습니다' +
+          (near.topic ? ' (' + near.topic + ')' : '') + '.',
+        hint: '같은 자리에 두 개가 나가면 도배로 보입니다. 시각을 조금 옮겨주세요.',
+      }, 409);
+    }
 
     const send = await bodyToSend(req.user.id, post, ready.acc.id);
     try {

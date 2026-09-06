@@ -371,24 +371,43 @@ function sameTimeWarning(slots) {
  */
 function clashWarning(rule, others) {
   if (!rule || rule.enabled === false) return '';
-  const mine = {};
-  (rule.slots || []).forEach((s) => {
-    /* 틀을 안 집은 자리는 돌려 쓰므로 겹칠지 알 수 없다. 안 본다. */
-    if (s.form) mine[s.day + '|' + s.form] = true;
-  });
-  if (!Object.keys(mine).length) return '';
 
+  /* ⚠️ 예전엔 틀을 집어둔 자리만 봤다. 그래서 **자리 시각이 통째로 겹쳐도**
+        틀을 안 집었으면 한 마디도 안 했다. 실제로 이러다 같은 시각에
+        두 개씩 올라갔다. 시각이 겹치는 것부터 본다 — 틀이 뭐든 도배다. */
+  const mineTime = {};
+  const mineForm = {};
+  (rule.slots || []).forEach((s) => {
+    mineTime[s.day + '|' + s.time] = true;
+    if (s.form) mineForm[s.day + '|' + s.form] = true;
+  });
+
+  const same = [];
   const hit = [];
   (others || []).forEach((o) => {
     if (!o || o.id === rule.id || o.enabled === false) return;
+    /* 계정이 다르면 각자 자기 계정에 올라간다 — 시각이 같아도 도배가 아니다.
+       둘 다 계정을 안 집었으면 같은 계정으로 나가므로 본다. */
+    const sameAcct = (o.accountId || null) === (rule.accountId || null);
     (o.slots || []).forEach((s) => {
-      if (s.form && mine[s.day + '|' + s.form]) {
+      if (sameAcct && mineTime[s.day + '|' + s.time]) {
+        same.push(DAY_NAMES[s.day] + ' ' + s.time + (o.name ? ' (' + o.name + ')' : ''));
+      }
+      if (s.form && mineForm[s.day + '|' + s.form]) {
         const f = forms.byId(s.form);
         hit.push(DAY_NAMES[s.day] + '요일 ' + (f ? f.label : s.form) +
           (o.name ? ' (' + o.name + ')' : ''));
       }
     });
   });
+
+  /* 시각까지 같은 것이 제일 나쁘다. 같은 계정에 같은 시각이면 **두 개가 나간다.** */
+  if (same.length) {
+    return '⚠️ 다른 규칙이 **같은 계정 같은 시각**을 잡고 있습니다 — ' +
+      same.slice(0, 3).join(', ') + '. ' +
+      '그대로 두면 그 자리마다 **글이 두 개씩 올라갑니다.** ' +
+      '규칙 하나를 지우거나 시각을 갈라주세요.';
+  }
   if (!hit.length) return '';
 
   return '다른 규칙과 겹칩니다 — ' + hit.slice(0, 3).join(', ') + '. ' +
