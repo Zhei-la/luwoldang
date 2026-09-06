@@ -452,12 +452,22 @@ module.exports = { generateFreeSaju, UPSELL };
 
 
 /* ============================================================
- * 유료 PDF 리포트 생성 (7종)
+ * 유료 PDF 리포트 생성
  *
- * 60~80페이지를 만들려면 한 번의 호출로는 불가능(토큰 한계).
- * → 챕터 단위로 나눠서 여러 번 호출한다.
- *   챕터당 소제목 5개 × 700~900자 = 3,500~4,500자 ≈ 4~5페이지
- *   챕터 15개 → 본문 55~75페이지 (+ 표지/목차/만세력 5p)
+ * ★ 2026-09 개편 — 30장 리포트, 앞 장을 받아 이어 쓰기
+ *
+ *   예전에는 챕터 14~15개를 동시에(CONCURRENCY 2) 만들었다. 빨랐지만
+ *   장끼리 서로 뭘 썼는지 몰라서 같은 말을 되풀이하고 앞뒤가 어긋났다.
+ *   분량도 소제목 65개 × 800자 = 88페이지였다.
+ *
+ *   지금은 이렇게 만든다.
+ *     목차   6장 × 소제목 3개 = 18개 (질문이 있으면 7장 21개)
+ *     분량   소제목 하나 480~570자 → 대략 한 페이지
+ *     생성   앞 장부터 순서대로. 앞 장에서 한 말을 다음 장에 넘겨준다.
+ *     검수   다 만든 뒤 전문을 한 번에 놓고 본다 (짧아져서 가능해졌다)
+ *   → 본문 18~21페이지 + 고정 9페이지 = 27~30페이지
+ *
+ *   ⚠️ 분량이나 소제목 수를 건드리면 scripts/pdf-pagecheck.js 로 페이지를 다시 잴 것.
  * ============================================================ */
 
 const { OUTLINES, titles, outlineWithQuestion, QUESTION_CHAPTER, isSpecialist } = require('./outlines');
@@ -510,6 +520,20 @@ const PDF_SYSTEM = `당신은 30년 경력의 사주 명리학 상담가입니�
 ### 마무리 금지
 - 각 소제목을 "결국 ~할 것입니다" 같은 요약 문장으로 끝내지 마세요.
 - 마지막 문단도 그냥 내용으로 끝냅니다. 정리하지 마세요.
+
+### ⭐ 앞 장을 받아서 시작하세요 — 리포트는 한 편의 글입니다
+장을 하나씩 따로 만들다 보면 **각 장이 남남처럼 따로 놉니다.** 그게 "글이 이어지지
+않는다"는 말의 정체입니다. 아래에 [앞 장에서 이미 한 말]을 드립니다.
+
+- **첫 문단의 첫 문장에서 앞 장의 이야기를 한 번 받고 넘어가세요.**
+  받는다는 것은 요약이 아닙니다. 앞에서 한 말을 **디딤돌로 삼아 한 걸음 더 들어가는 것**입니다.
+  ❌ "앞에서 살펴본 것처럼 결단력이 좋습니다." ← 요약. 읽던 사람을 뒤로 되돌립니다.
+  ⭕ "혼자 결정하는 힘이 강한 만큼, 그 힘이 사람 사이에서는 다르게 작동합니다."
+     ← 앞 장의 결론을 받아 이 장의 주제로 넘어갑니다.
+- **앞 장에서 이미 한 말을 다시 설명하지 마세요.** 받되, 되풀이하지 않습니다.
+- "앞서 말씀드린", "위에서 살펴본", "다음 장에서는" 같은 안내 문구는 쓰지 마세요.
+  글이 저절로 이어져야지, 이어진다고 말하면 안 됩니다.
+- 1장은 받을 앞 장이 없습니다. 그냥 바로 시작하세요.
 
 ${STYLE_RULES}
 ## ⭐⭐ 가장 중요 — 쉬운 말로, 그러나 구체적으로
@@ -564,15 +588,17 @@ ${STYLE_RULES}
 ## 언어
 - **한국어로만 쓰세요.** 사람 이름을 영어로 바꿔 쓰지 마세요. (예: 김경태 → kim경태 금지)
 
-## 분량
-- **각 소제목마다 700~900자.** 짧게 끝내지 마세요.
-- 소제목당 3~4문단. 문단 구분은 \n\n 입니다.
+## 분량 — ⭐ 이 범위를 넘기면 안 됩니다
+- **각 소제목마다 480~570자.** 400자 밑으로 짧게 끝내지도, 590자를 넘기지도 마세요.
+- **정확히 3문단.** 문단 구분은 \n\n 입니다. 한 문단은 3~5문장.
+- 소제목 하나가 리포트의 한 페이지입니다. 590자를 넘으면 한 줄이 다음 장으로 밀리고,
+  그 한 줄 때문에 거의 빈 페이지가 한 장 더 생깁니다. 그래서 넘치면 안 됩니다.
 - 분량을 채우려고 같은 말을 표현만 바꿔 반복하지 마세요.
-  분량이 필요하면 **구체적인 생활 사례**를 넣으세요.
+  할 말이 남으면 **가장 중요한 것 하나만** 남기고 나머지는 버립니다.
 
 ## 출력 형식
 반드시 아래 JSON으로만 출력합니다. 다른 텍스트는 넣지 마세요.
-{ "blocks": [ { "sub": "소제목", "body": "본문 (700~900자)" }, ... ] }`;
+{ "blocks": [ { "sub": "소제목", "body": "본문 (3문단, 480~570자)" }, ... ] }`;
 
 /** 사주 정보 블록 (프롬프트용) */
 function sajuBlock(client, saju, partner, partnerSaju, type) {
@@ -760,7 +786,7 @@ async function callAI({ system, user, openaiKey, model, maxTokens, _tries = 4 })
           } else {
             wait = 3000 * attempt;
           }
-          if (res.status === 429) rateLimited = true;   // 이후로는 하나씩 만든다
+          if (res.status === 429) rateLimited = true;   // 분당 한도에 걸린 적이 있다는 표시
           console.error(`[AI] ${res.status} 사용량 초과 — ${Math.round(wait / 1000)}초 후 재시도 (${attempt}/${_tries})`);
           await sleep(wait);
           lastErr = new Error(msg);
@@ -1260,12 +1286,13 @@ function timeBlock(type) {
 
 function d0(dt) { return dt.getUTCDate(); }
 
-/* 출력 예약량 — 소제목 1개에 700~900자를 요구하므로 넉넉히 잡아도 1,100토큰이면 된다.
+/* 출력 예약량 — 소제목 1개에 480~570자를 요구하므로 800토큰이면 넉넉하다.
    OpenAI 는 max_tokens 도 분당 한도에 포함해 계산하기 때문에,
-   크게 잡아두면 교육생 키(분당 30,000토큰)가 바로 한도에 걸린다. */
+   크게 잡아두면 교육생 키(분당 30,000토큰)가 바로 한도에 걸린다.
+   모자라 잘리면 callAI 가 재시도에서 알아서 늘린다. */
 function outBudget(blockCount) {
   const n = Math.max(1, Number(blockCount) || 1);
-  return Math.min(6000, Math.max(1500, n * 900));
+  return Math.min(6000, Math.max(1200, n * 800));
 }
 
 /* ══════════════════════════════════════════════
@@ -1465,14 +1492,22 @@ ${row('일간', c.ilgan)}${row('강약', c.gangyak)}${row('격국', c.gyeok)}${r
  * 검수 — 다 만든 뒤 전체를 한 번 훑고, 어긋난 장만 다시 쓴다
  *
  *   본문 전문을 넣으면 입력 비용이 3배가 된다.
- *   장마다 앞부분만 모아도 어긋남은 다 드러나므로 앞부분만 보낸다.
+ *   리포트가 30장으로 줄면서 전문을 다 넣고 볼 수 있게 됐다.
  * ══════════════════════════════════════════════ */
 
-const REVIEW_HEAD = 320;   // 장마다 검수에 넣을 앞부분 글자 수
+/* 검수에 넣을 글자 수.
+ *
+ *   예전에는 장마다 앞부분 320자만 보냈다. 한 장이 4,000자였으니 8%만 보고
+ *   "어긋난 장"을 골라낸 셈이라, 중반 이후의 모순은 아예 보이지 않았다.
+ *   리포트가 짧아지면서(장당 1,500~1,800자) 이제 전문을 넣을 수 있다.
+ *   전체를 다 넣어도 입력이 1만 5천 자 안쪽이다.
+ *
+ *   ⚠️ 여기를 늘리면 검수 한 번의 입력 요금이 그만큼 오른다. */
+const REVIEW_HEAD = 2000;  // 장마다 검수에 넣을 글자 수 (장이 이보다 짧으면 전문이 들어간다)
 const REVIEW_MAX = 5;      // 다시 쓸 장은 최대 5개까지
 
 const REVIEW_SYSTEM = `당신은 사주 리포트 감수자입니다.
-리포트 한 편의 각 장 앞부분을 받아, **다시 써야 할 장만** 골라냅니다.
+리포트 한 편을 통째로 받아, **다시 써야 할 장만** 골라냅니다.
 
 아래만 봅니다. 그 밖의 것은 지적하지 마세요.
 1. **결론 카드와 어긋나는 장** — 카드에 없다고 한 것을 있다고 썼거나,
@@ -1480,7 +1515,9 @@ const REVIEW_SYSTEM = `당신은 사주 리포트 감수자입니다.
 2. **장끼리 서로 반대되는 장** — 4장에서 "결단력이 뛰어나다"고 하고
    5장에서 "우유부단하다"고 하는 식
 3. **사주 글자가 하나도 없고 누구에게나 맞는 말만 있는 장**
-4. **(궁합일 때) 두 사람이 뒤바뀐 장** ★ 가장 심각합니다
+4. **앞 장과 이어지지 않는 장** — 앞 장에서 한 이야기와 아무 연결 없이 처음부터
+   다시 설명을 시작하거나, 앞 장에서 한 말을 표현만 바꿔 되풀이한 장
+5. **(궁합일 때) 두 사람이 뒤바뀐 장** ★ 가장 심각합니다
    카드의 [두 사람의 대비]와 반대로 쓴 장을 찾으세요.
    카드가 "본인이 계획적, 상대가 즉흥적"이라고 했는데
    어떤 장이 "본인이 즉흥적, 상대가 계획적"이라고 썼으면 그 장입니다.
@@ -1499,14 +1536,17 @@ redo 의 각 줄은 "N장|이유" 형식입니다.
 
 { "redo": [] }`;
 
-/** 검수용 요약 — 장마다 앞부분만 모은다 */
+/** 검수용 본문 — 장마다 소제목을 붙여서 통째로 모은다 */
 function reviewDigest(chapters) {
   return chapters.map((ch, i) => {
-    const body = (ch && Array.isArray(ch.blocks))
-      ? ch.blocks.map((b) => String((b && b.body) || '')).join(' ')
-      : '';
-    const head = body.replace(/\s+/g, ' ').trim().slice(0, REVIEW_HEAD);
-    return `${i + 1}장 「${(ch && ch.title) || ''}」\n${head || '(내용 없음)'}`;
+    const blocks = (ch && Array.isArray(ch.blocks)) ? ch.blocks : [];
+    const body = blocks
+      .map((b) => `[${(b && b.sub) || ''}] ${String((b && b.body) || '')}`)
+      .join('\n')
+      .replace(/[ \t]+/g, ' ')
+      .trim()
+      .slice(0, REVIEW_HEAD);
+    return `${i + 1}장 「${(ch && ch.title) || ''}」\n${body || '(내용 없음)'}`;
   }).join('\n\n');
 }
 
@@ -1542,7 +1582,7 @@ async function reviewReport({ type, chapters, card, openaiKey, model }) {
   const digest = reviewDigest(chapters);
   const user = `리포트 종류: ${type}
 ${renderCard(card) || '\n(결론 카드 없음 — 2번·3번만 보세요)\n'}
-[각 장 앞부분]
+[리포트 전문]
 ${digest}
 
 ${card && card.pair ? `⚠️ 이것은 궁합 리포트입니다. 본인은 "${card.meName}님", 상대는 "${card.youName}님" 입니다.
@@ -1564,7 +1604,63 @@ redo 의 각 줄은 "3장|이유" 형식입니다. 문제가 없으면 빈 배�
 }
 
 
-async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters, card, redoReason }) {
+/* 분량 검사 — 소제목 하나가 대략 리포트 한 페이지다.
+ *
+ *   590자를 넘기면 한 줄이 다음 장으로 밀리고, 그게 장마다 쌓이면 30장을 훌쩍 넘긴다.
+ *   (3문단으로 나눴을 때 한 문단이 198자를 넘는 순간 문단마다 한 줄씩 더 먹는다)
+ *   400자 밑이면 돈 내고 받은 리포트치고 허전하다.
+ *   문단이 넷 이상이면 문단 사이 여백만으로 한 줄씩 더 먹는다.
+ *   (경계값은 pdfDoc.js 의 페이지 계산과 맞물려 있다 — scripts/pdf-pagecheck.js 참고)
+ */
+const BODY_MIN = 400;
+const BODY_MAX = 590;
+
+function lengthIssue(body) {
+  const t = String(body || '').trim();
+  const n = t.length;
+  if (n > BODY_MAX) return `[분량] ${n}자로 너무 깁니다 — 480~570자로 줄이세요 (페이지가 밀립니다)`;
+  if (n < BODY_MIN) return `[분량] ${n}자로 너무 짧습니다 — 480~570자로 늘리세요`;
+  const paras = t.split(/\n{2,}/).filter((x) => x.trim()).length;
+  if (paras > 3) return `[분량] 문단이 ${paras}개입니다 — 3문단으로 묶으세요`;
+  return null;
+}
+
+/* 앞 장에서 한 말을 다음 장에 넘겨줄 요약을 만든다.
+ *
+ *   전문을 넘기면 프롬프트가 금세 1만 자를 넘고 요금도 그만큼 든다.
+ *   장마다 "어떤 소제목에서 무슨 결론을 냈는지" 한 줄씩이면 충분하다.
+ *   직전 장만은 마지막 문단을 통째로 준다. 바로 그 문장을 받아서 시작해야 하기 때문이다.
+ */
+function handoffBlock(done) {
+  const list = (done || []).filter(Boolean);
+  if (!list.length) return '';
+
+  const said = list.map((ch, i) => {
+    const lines = (ch.blocks || []).map((b) => {
+      const first = String((b && b.body) || '').split(/(?<=[.!?])\s+/)[0] || '';
+      return `     · ${b.sub} — ${first.trim().slice(0, 60)}`;
+    }).join('\n');
+    return `  ${i + 1}. ${ch.title}\n${lines}`;
+  }).join('\n');
+
+  const last = list[list.length - 1];
+  const paras = String((last.blocks || []).map((b) => b.body).filter(Boolean).pop() || '')
+    .split(/\n{2,}/).filter(Boolean);
+  const tail = (paras[paras.length - 1] || '').trim().slice(0, 400);
+
+  return `
+
+[앞 장에서 이미 한 말 — 다시 설명하지 마세요]
+${said}
+
+[직전 장(${last.title})은 이 문장으로 끝났습니다]
+"${tail}"
+
+⚠️ 이 흐름을 받아서 첫 문장을 시작하세요. 요약하지 말고, 여기서 한 걸음 더 들어갑니다.
+⚠️ 위에 이미 나온 결론을 다시 설명하면 "같은 말을 반복한다"는 말이 나옵니다.`;
+}
+
+async function generateChapter({ type, chapter, index, total, client, saju, partner, partnerSaju, openaiKey, model, allChapters, card, redoReason, done }) {
   const info = sajuBlock(client, saju, partner, partnerSaju, type) + renderCard(card);
   const subs = chapter.sub || [];
 
@@ -1674,6 +1770,7 @@ ${redoBlock}
 ${fieldBlock(type)}
 ${roleBlock}${summaryBlock}
 ${mapBlock}
+${handoffBlock(done)}
 
 ${timeBlock(type)}
 
@@ -1682,12 +1779,13 @@ ${timeBlock(type)}
 챕터 ${index + 1}/${total}: ${chapter.title}
 ${questionGuide}
 ${chapter.note ? `\n[이 장에서 특히 지킬 것]\n${chapter.note}\n` : ''}
-아래 소제목 ${subs.length}개를 각각 **700~900자**로 작성해주세요.
+아래 소제목 ${subs.length}개를 각각 **3문단, 480~570자**로 작성해주세요.
 blocks 배열에 소제목 순서대로 담아주세요. sub는 아래 소제목 그대로 쓰세요.
 
 ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
 
-⚠️ 각 소제목마다 반드시 700자 이상 써주세요.
+⚠️ 소제목 하나가 **480자 이상 570자 이하**입니다. 넘치면 페이지가 밀립니다.
+   할 말이 남아도 가장 중요한 것 하나만 남기고 접으세요.
 ⚠️ **전문용어를 쓰지 마세요.** 명식은 당신 머릿속에서만 보고, 글에는 결과만 쉬운 말로 씁니다.
 ⚠️ **구체적으로 쓰세요.** "어떤 상황에서·어떻게 행동하는지"가 없으면 누구에게나 해당되는 말이 됩니다.
 ⚠️ **없는 일을 지어내지 마세요.** 이 사람이 무슨 일을 겪었는지 우리는 모릅니다.
@@ -1716,7 +1814,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     console.error(`[PDF] "${chapter.title}" 내용이 비어 다시 생성합니다.`);
     out = await callAI({
       system: PDF_SYSTEM,
-      user: user + '\n\n⚠️ 반드시 blocks 배열의 각 항목에 sub(소제목)와 body(본문 700~900자)를 모두 채워 JSON으로만 답하세요. body를 비우지 마세요.',
+      user: user + '\n\n⚠️ 반드시 blocks 배열의 각 항목에 sub(소제목)와 body(본문 3문단 480~570자)를 모두 채워 JSON으로만 답하세요. body를 비우지 마세요.',
       openaiKey,
       model,
       maxTokens: outBudget(subs.length),
@@ -1741,6 +1839,8 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
     const probs = [];
     blocks.forEach((b, bi) => {
       const issues = checkStyle(b.body || '', client.name, { allowJargon: !spec || isSummary, question: client.question || '', partnerName: (partner && partner.name) || '' });
+      const len = lengthIssue(b.body || '');
+      if (len) issues.push(len);
       if (issues.length) {
         badIdx.push(bi);
         probs.push(`- "${b.sub}": ${issues.join(', ')}`);
@@ -1790,9 +1890,24 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
   ❌ "정관이 월지에 뿌리내려 건록에 놓였습니다."
   ⭕ "책임을 맡으면 끝까지 해내는 사람입니다."
 
-- 분량(700~900자)은 그대로 유지하세요. 줄이지 마세요.` : `
+- 분량은 3문단 480~570자를 지키세요.` : `
 
 ⚠️ 방금 쓴 글의 문체가 어색합니다. 해석과 내용은 그대로 두고 문장만 고쳐 다시 쓰세요.`;
+
+    /* 분량이 걸린 경우 — "문장만 다듬어라" 로는 절대 안 고쳐진다.
+       길면 무엇을 버릴지, 짧으면 무엇을 더할지 분명히 말해줘야 한다. */
+    const lengthFix = probs.some((p) => p.includes('[분량]')) ? `
+
+[⚠️ 분량 문제]
+소제목 하나가 리포트의 **한 페이지**입니다. **3문단, 480~570자**를 지키세요.
+
+**길다고 나왔으면** — 문장을 줄이는 것이 아니라 **할 말을 줄이세요.**
+  같은 이야기를 두 번 돌려 말한 대목, 예시가 둘 이상인 대목, 일반론으로 채운 대목을
+  통째로 덜어내세요. 남은 것 중 이 사람에게 가장 중요한 것 하나만 끝까지 씁니다.
+  ⚠️ 문장을 잘라 토막 내지 마세요. 문단은 그대로 3개, 문장은 그대로 이어져야 합니다.
+
+**짧다고 나왔으면** — 없는 사건을 지어내 채우지 말고,
+  이미 쓴 성향이 **어떤 상황에서 어떻게 나타나는지**를 한 겹 더 씁니다.` : '';
 
     try {
       const fix = await callAI({
@@ -1802,7 +1917,7 @@ ${subs.map((x, i) => `${i + 1}. ${x}`).join('\n')}
 [다시 쓸 소제목] — **아래 ${badIdx.length}개만** 쓰세요. 나머지는 이미 통과했습니다.
 ${badIdx.map((bi, k) => `${k + 1}. ${blocks[bi].sub}`).join('\n')}
 blocks 배열에 이 ${badIdx.length}개만 순서대로 담아주세요.
-${contentFix}
+${contentFix}${lengthFix}
 
 [발견된 문제]
 ${probs.join('\n')}
@@ -1823,7 +1938,7 @@ ${probs.join('\n')}
 - 짧은 구 뒤에는 쉼표를 찍지 마세요.
 - 이름("${client.name}")은 소제목당 2번 이하. **한글 그대로** 쓰고 영어 표기 금지.
 - "또한 / 따라서 / 즉 / 이러한" 으로 문장을 시작하지 마세요.
-- 분량은 줄이지 마세요.
+- 분량은 3문단 480~570자를 지키세요.
 
 **숫자 표기 (반드시 지킬 것):**
 - 나이·연도·금액·개수는 **아라비아 숫자**로 씁니다. 한글로 풀어 쓰지 마세요.
@@ -1854,8 +1969,9 @@ ${JSON.stringify({ blocks: blocks.map((b) => ({ sub: b.sub, body: b.body })) })}
       useIdx.forEach((bi, k) => {
         const nb = fixed[fixed.length === blocks.length ? bi : k] || {};
         const nbody = String(nb.body || '').trim();
-        const obody = String(blocks[bi].body || '').trim();
-        if (!nbody || (obody && nbody.length < obody.length * 0.5)) return;
+        /* 반토막으로 돌아온 응답은 버린다. 그대로 덮으면 내용이 사라진다.
+           단, 길어서 걸린 글은 줄어드는 것이 정상이므로 목표 분량까지는 받아준다. */
+        if (nbody.length < BODY_MIN) return;
         blocks[bi] = { sub: blocks[bi].sub, body: nb.body };
         replaced++;
       });
@@ -1996,10 +2112,17 @@ function tidyName(body, name) {
  * PDF 리포트 전체 생성 (챕터별 순차 호출)
  * @param onProgress (done, total, title) => void
  */
-const CONCURRENCY = 2;   // 동시에 굴릴 챕터 수 (올릴수록 빠르지만 OpenAI 레이트리밋에 걸린다)
+/* 챕터는 앞에서부터 하나씩 만든다.
+ *
+ *   예전에는 두 개씩 동시에 만들었다. 빨랐지만 서로 뭘 썼는지 모르는 채로 나와서
+ *   같은 말을 되풀이하고 앞뒤가 어긋났다. "글이 이어지지 않는다"는 말의 원인이다.
+ *   지금은 장이 6~7개뿐이라 순서대로 만들어도 예전과 걸리는 시간이 비슷하다.
+ *   대신 앞 장에서 한 말을 다음 장에 넘겨줄 수 있다 (handoffBlock).
+ */
 
 /* 교육생 키는 분당 한도가 낮다(보통 30,000토큰).
-   한 번이라도 429 를 만나면 이 리포트는 한 번에 하나씩 만든다. */
+   429 를 한 번이라도 만났는지 기록해 둔다. 지금은 장을 하나씩 만들기 때문에
+   이 값으로 동시 실행 수를 줄일 일은 없고, 로그에서 원인을 찾을 때 쓴다. */
 let rateLimited = false;
 
 async function generatePdfReport({ type, client, saju, partner, partnerSaju, openaiKey, model, onProgress }) {
@@ -2026,48 +2149,38 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
     console.error('[PDF] 결론 카드 생성 실패 — 카드 없이 진행합니다:', e.message);
   }
 
-  let cursor = 0;
-  let done = 0;
+  /* 앞 장부터 순서대로. 만들어진 장은 다음 장에게 넘겨준다.
+     한 장이 실패하면 그 자리는 비워두고 계속 간다 — 넘겨줄 말이 한 장 없을 뿐이다. */
+  for (let i = 0; i < chapters.length; i++) {
+    const ch = chapters[i];
 
-  // 순차로 하나씩 돌리면 16챕터 × 30초 = 8분. 동시에 여러 개 굴린다.
-  async function worker() {
-    for (;;) {
-      const i = cursor++;
-      if (i >= chapters.length) return;
-      const ch = chapters[i];
+    const args = {
+      type, chapter: ch, index: i, total: chapters.length,
+      client, saju, partner, partnerSaju, openaiKey, model,
+      allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
+      card,                    // 모든 장이 같은 뼈대를 보고 쓴다
+      done: out.slice(0, i).filter((x) => x && x.blocks && x.blocks.length),
+    };
 
-      const args = {
-        type, chapter: ch, index: i, total: chapters.length,
-        client, saju, partner, partnerSaju, openaiKey, model,
-        allChapters: chapters,   // 챕터끼리 내용이 겹치지 않게 전체 목차를 보여준다
-        card,                    // 모든 장이 같은 뼈대를 보고 쓴다
-      };
-
+    try {
+      out[i] = await generateChapter(args);
+    } catch (e) {
+      // 한 챕터가 실패해도 포기하지 않고 한 번 더 시도한다.
+      //   (실패한 채로 두면 "소제목만 있고 내용 없는 장"이 리포트에 남는다)
+      // 분당 한도에 걸린 것이면 3초로는 안 풀린다. 한도는 1분 단위로 회복된다.
+      const isRate = /429|rate limit|사용량/i.test(e.message || '');
+      console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패 — ${isRate ? 65 : 3}초 후 다시 시도합니다:`, e.message);
+      await sleep(isRate ? 65000 : 3000);
       try {
         out[i] = await generateChapter(args);
-      } catch (e) {
-        // 한 챕터가 실패해도 포기하지 않고 한 번 더 시도한다.
-        //   (실패한 채로 두면 "소제목만 있고 내용 없는 장"이 리포트에 남는다)
-        // 분당 한도에 걸린 것이면 3초로는 안 풀린다. 한도는 1분 단위로 회복된다.
-        const isRate = /429|rate limit|사용량/i.test(e.message || '');
-        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 실패 — ${isRate ? 65 : 3}초 후 다시 시도합니다:`, e.message);
-        await sleep(isRate ? 65000 : 3000);
-        try {
-          out[i] = await generateChapter(args);
-        } catch (e2) {
-          console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 최종 실패:`, e2.message);
-          out[i] = { title: ch.title, blocks: [], error: e2.message };
-        }
+      } catch (e2) {
+        console.error(`[PDF] 챕터 ${i + 1} (${ch.title}) 최종 실패:`, e2.message);
+        out[i] = { title: ch.title, blocks: [], error: e2.message };
       }
-
-      done++;
-      if (onProgress) onProgress(done, chapters.length, ch.title);
     }
-  }
 
-  await Promise.all(
-    Array.from({ length: Math.min(rateLimited ? 1 : CONCURRENCY, chapters.length) }, worker)
-  );
+    if (onProgress) await onProgress(i + 1, chapters.length, ch.title);
+  }
 
   /* ② 검수 — 다 만든 뒤 전체를 한 번 훑고, 어긋난 장만 골라낸다.
      본문 전문이 아니라 장마다 앞부분만 보낸다 (전문을 넣으면 입력 비용이 3배). */
@@ -2096,6 +2209,8 @@ async function generatePdfReport({ type, client, saju, partner, partnerSaju, ope
         type, chapter: ch, index: ri, total: chapters.length,
         client, saju, partner, partnerSaju, openaiKey, model,
         allChapters: chapters, card, redoReason: reason,
+        // 다시 쓸 때도 앞 장을 보여준다. 안 그러면 고친 장이 또 혼자 논다.
+        done: out.slice(0, ri).filter((x) => x && x.blocks && x.blocks.length),
       });
       // 빈 껍데기가 오면 원래 장을 지키는 것이 낫다
       const hasBody = fixed && Array.isArray(fixed.blocks)

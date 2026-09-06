@@ -473,16 +473,24 @@ function sajuPages({ client, saju, type }) {
  *   본문 한 줄 ≈ 7.7mm → 페이지당 약 32줄
  * ── */
 
-/* 실측값 기준 (한 줄 = 14.2px × 2.05 = 29.1px = 7.70mm)
- * 예전에는 여백을 전부 '1줄'로 올려 세서 페이지가 25%씩 비었다. 소수점으로 정확히 센다. */
-/* 본문 18.5px × 1.95 = 36.1px = 9.54mm.
- * 241mm ÷ 9.54mm = 25.3줄. 각주 자리 3.5줄 빼면 21.8줄. */
-const LINES_PER_PAGE = 24.6;    // 실측 26.3줄 - 각주 여유 1.7줄 (각주는 용어가 나온 페이지에만 생긴다)
+/* 한 줄 = 본문 18.5px × line-height 1.9 = 35.2px
+ * 쓸 수 있는 높이 = 297mm - 위 22mm - 아래 24mm = 251mm = 949px → 26.9줄
+ *
+ * ⚠️ 2026-09 재측정
+ *   예전 값은 실제 CSS 높이보다 크게 잡혀 있었다. 특히 챕터 제목을 5줄로 봤는데
+ *   실제로는 ch-head(30px × 1.9 = 57px) + pg-line(14+1+26 = 41px) = 98px = 2.8줄이다.
+ *   그래서 장마다 마지막에 문단 하나만 실린 빈 페이지가 한 장씩 더 생겼다.
+ *   각주도 지금은 쓰지 않으므로(chapterPages 주석 참고) 그 자리도 뺄 이유가 없다.
+ *
+ *   값을 올려 잡으면 페이지가 비고, 내려 잡으면 넘친 만큼 브라우저 리플로우가
+ *   다음 장으로 밀어낸다. 글이 잘리지는 않지만 장수가 늘어나므로 실측에 맞춘다.
+ */
+const LINES_PER_PAGE = 25.3;    // 실측 26.9줄 - 안전 여유 1.6줄
 const CHARS_PER_LINE = 33;      // 170mm ÷ (18.5px = 4.90mm) = 34.7자. 여유 두고 33.
-const LINES_CH_TITLE = 5;       // 챕터 제목 + 구분선
-const LINES_SUB = 1.4;          // 소제목(21px) + margin 14px
-const LINES_PARA_GAP = 0.45;    // 문단 margin-bottom 12px = 3.17mm
-const LINES_BLOCK_GAP = 1.05;   // .ch-block margin-bottom 30px = 7.94mm
+const LINES_CH_TITLE = 3.0;     // ch-head 57px + pg-line 41px = 98px = 2.8줄
+const LINES_SUB = 1.5;          // 소제목(21px × 1.9 = 40px) + margin 14px = 54px
+const LINES_PARA_GAP = 0.4;     // 문단 margin-bottom 12px
+const LINES_BLOCK_GAP = 0.9;    // .ch-block margin-bottom 30px
 const OVERFLOW_TOLERANCE = 1.4; // 이만큼은 넘쳐도 한 장에 붙인다 (빈 공간을 남기지 않는다)
 const MIN_START_LINES = 3;      // 소제목 + 최소 이만큼 들어가면 이 페이지에서 시작한다
 
