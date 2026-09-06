@@ -24,11 +24,12 @@ function block(type) {
 
   const lines = chapters.map((c, i) => {
     const head = `${i + 1}. ${c.title}`;
+    const ev = c.evidence ? `   ▶ 근거로 쓸 것: ${c.evidence}\n` : '';
     const note = c.note
       ? c.note.split('\n').map((x) => `   ※ ${x.trim()}`).join('\n') + '\n'
       : '';
     const sub = c.sub.map((s) => `   · ${s}`).join('\n');
-    return `${head}\n${note}${sub}`;
+    return `${head}\n${ev}${note}${sub}`;
   }).join('\n');
 
   const q = QUESTION_CHAPTER.sub.length;
@@ -66,6 +67,10 @@ ${TYPES.join(' / ')}
 
 소제목 하나가 리포트의 한 페이지입니다. **소제목 하나에 3문단, 480~570자**로 씁니다.
 길게 쓰면 페이지가 밀려 리포트가 두꺼워집니다.
+
+\`▶ 근거로 쓸 것\` 은 그 장에서 **명식의 어느 부분을 근거로 삼아야 하는지**입니다.
+그 근거가 본문에 한 번도 안 나오면 그 장은 실패입니다.
+장 제목은 명리학인데 본문이 누구에게나 해줄 수 있는 상담문이면 손님이 바로 알아챕니다.
 
 \`※\` 로 시작하는 줄은 그 장에서 특히 지켜야 할 것입니다. 본문에 그대로 옮겨 적지 마세요.
 
