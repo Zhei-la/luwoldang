@@ -10,6 +10,7 @@ const path = require('path');
 const { HOOKS } = require('./hooks');
 const shape = require('./dailyshape');
 const mbti = require('./mbti');
+const speech = require('./speech');
 
 const GUIDELINE_PATH = path.join(__dirname, 'CONTENT-GUIDELINE.md');
 /* 실제로 터진 글을 유형별로 뜯어본 것. 노션 「사주 글 벤치마킹」에서 옮겨 온다.
@@ -220,7 +221,8 @@ function dailyBlock(daily) {
     '  거기에 일진이나 날짜를 밀어넣으면 아무도 안 읽습니다.',
     '- 띠·일간별로 갈라 쓰는 틀이면 **그 개수까지 맞추세요.** 셋을 꼽았으면 셋입니다.',
     '- 날짜와 일진은 위 「이 글이 올라갈 날」의 값을 씁니다. 지어내지 마세요.',
-    '- 1/2 · 2/2 같은 번호는 **적지 마세요.** 시스템이 붙입니다.',
+    /* ⚠️ 예전엔 시스템이 붙였다. 끌 방법이 없어서 뺐다 — 이제 아무도 안 붙인다. */
+    '- 1/2 · 2/2 같은 번호는 **적지 마세요.** 아무 데도 안 붙습니다.',
     '',
     /* ⚠️ 「짜임새를 그대로」라고 적어두는 것만으로는 안 지켜진다.
           틀에 「🐑 양띠」만 있어도 모델은 「🐵 원숭이띠 — 오늘은 …」로
@@ -345,6 +347,7 @@ ${loadGuideline()}
    실제로 「처음으로 Threads에서 무료사주 신청 받아본다」가 나갔습니다.
    서비스 이름도 한글로 적으세요.
 
+${speech.block(o.sample && o.sample.text)}
 ${loadBenchmark() ? `════════ 실제로 터진 글 — 유형과 공식 ════════
 ${loadBenchmark()}
 

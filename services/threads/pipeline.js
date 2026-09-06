@@ -19,6 +19,7 @@ const { hookName } = require('./hooks');
 const dailyshape = require('./dailyshape');
 const jiji = require('./jiji');
 const today = require('./today');
+const speech = require('./speech');
 
 /**
  * 모델이 준 form 은 믿지 않는다. 편 개수로 다시 정한다.
@@ -255,6 +256,53 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     }
   }
 
+  /* ── 말투가 한 글 안에서 섞였는지 ──────────────────
+     ⚠️ 실제로 이렇게 나갔다.
+          안녕하세요 사주상담가 운결담 입니다
+          … 무료로 열어봅니다 / … 충분해요
+          댓글에 생년월일시 · 성별 · 고민되는 거 하나 남겨줘   ← 여기만 반말
+        앞은 존댓말인데 마지막 줄만 반말이다. 사람이 쓴 글로 안 보인다.
+        프롬프트에 적어두는 것만으로는 안 지켜져서 기계로 한 번 더 본다.
+
+     ⚠️ 이건 **발행을 막지 않는다.** 잘못 잡으면 멀쩡한 글이 통째로 못
+        나간다. 여기서 한 번 다시 시키는 데만 쓴다 — 틀려도 요금이 조금
+        더 나갈 뿐이고 글은 어차피 나간다. */
+  let speechNote = null;
+  if (posts.length) {
+    const mix = posts
+      .map((p, i) => ({ i, c: speech.mixedIn(p.parts, p.replyText) }))
+      .filter((x) => !x.c.ok);
+
+    if (mix.length) {
+      console.log('[스레드] 말투가 섞였습니다 — ' + mix[0].c.why);
+      try {
+        const again = await runAi(openaiKey, makePrompt(
+          ['', '[다시 씁니다] 방금 만든 글의 **말투가 한 글 안에서 섞였습니다.**']
+            .concat(mix.map((x) => '- ' + (mix.length > 1 ? (x.i + 1) + '번째 글 — ' : '') + x.c.why))
+            .concat([
+              '내용은 그대로 두고 **끝맺음만** 하나로 맞추세요.',
+              '첫 댓글도 본문과 같은 말투로 씁니다.',
+            ]).join(String.fromCharCode(10))), { model });
+        const re4 = normalize(parseLoose(again.text).data);
+        if (re4.ok) {
+          const fresh = re4.value.posts.map((x) => fixShape(x, shapeOpts)).filter((p) => p.parts.length);
+          /* 다시 만든 것이 **정말 나아졌을 때만** 바꾼다.
+             더 섞여 왔으면 처음 것이 낫다. */
+          const stillBad = fresh.filter((p) => !speech.mixedIn(p.parts, p.replyText).ok).length;
+          if (fresh.length && stillBad < mix.length) {
+            posts = fresh;
+            speechNote = '말투가 섞여서 하나로 맞춰 다시 만들었습니다.';
+          } else {
+            speechNote = '말투가 조금 섞였습니다 — ' + mix[0].c.why;
+          }
+        }
+      } catch (e) {
+        console.error('[스레드] 말투 다시 만들기 실패:', e.message);
+        speechNote = '말투가 조금 섞였습니다 — ' + mix[0].c.why;
+      }
+    }
+  }
+
   /* ⚠️ 번호(1/2 · 2/2)는 안 붙인다. 옛 글과 자리를 맞추려고 칸은 남기되
         늘 꺼둔다 — 붙일 방법이 없어야 다시 새지 않는다. */
   posts = posts.map((p) => decorate(
@@ -285,9 +333,10 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     hookScan: v.hookScan,
     unusable: v.unusable,
     posts,
-    warning: parsed.warning || copyNote || shapeNote || fixNote || null,
+    warning: parsed.warning || copyNote || shapeNote || speechNote || fixNote || null,
     copyNote,
     shapeNote,
+    speechNote,
     fixNote,
     usage,
   };
