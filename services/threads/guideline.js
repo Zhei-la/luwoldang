@@ -10,7 +10,7 @@
  * 사주 콘텐츠의 신뢰는 여기서 갈린다.
  * ============================================================ */
 
-const { threadsLength, THREADS_MAX, numberParts, proseSentences } = require('./length');
+const { threadsLength, THREADS_MAX, proseSentences } = require('./length');
 
 /* 지침 「쓰지 않는 말투」 */
 const BANNED = [
@@ -299,8 +299,8 @@ function termsInParagraph(text) {
 function checkPost(post) {
   const rows = [];
   const parts = Array.isArray(post.parts) ? post.parts : [];
-  const numbered = post.form === 'chain' ? numberParts(parts) : parts;
-  const lengths = numbered.map(threadsLength);
+  /* 번호(1/2)를 안 붙이므로 글자 수도 글 그대로 잰다 */
+  const lengths = parts.map(threadsLength);
 
   /* ── 하드 규칙 — 하나라도 어기면 발행 못 함 ── */
 

@@ -26,7 +26,7 @@ const rules = require('../services/threads/rules');
 const autopost = require('../services/threads/autopost');
 const FORMS = require('../services/threads/forms');
 const VOICES = require('../services/threads/voices');
-const { numberParts, formOf } = require('../services/threads/length');
+const { formOf } = require('../services/threads/length');
 const { checkPost } = require('../services/threads/guideline');
 const { HOOKS } = require('../services/threads/hooks');
 const today = require('../services/threads/today');
@@ -344,7 +344,8 @@ router.post('/api/threads/settings', ...guard, async (req, res, next) => {
       /* 이어지는 글이 비었는데 나눈다고 하면 앞뒤가 안 맞는다 */
       if (!tail) mode = 'single';
       patch.daily = body
-        ? { body, tail, mode, numbered: b.daily.numbered !== false }
+        /* ⚠️ numbered 는 뺐다 — 「1/2 · 2/2」가 늘 붙어서 나갔다 */
+        ? { body, tail, mode }
         : null;
     }
     if (Array.isArray(b.facts)) {

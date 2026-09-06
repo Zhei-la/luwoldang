@@ -29,15 +29,10 @@ function threadsLength(text) {
   return extra + [...rest].length;
 }
 
-/**
- * 각 편 끝에 1/4 같은 번호를 붙인다.
- * 번호도 글자 수에 들어가므로 길이를 잴 때와 저장 직전에만 붙인다.
- */
-function numberParts(parts) {
-  const n = parts.length;
-  if (n <= 1) return parts.slice();
-  return parts.map((t, i) => t + '\n\n' + (i + 1) + '/' + n);
-}
+/* ⚠️ 예전엔 각 편 끝에 「1/2 · 2/2」를 붙였다. 뺐다.
+      켤 방법도 없이 늘 붙었고, 운세 글 끝에 번호가 달려 나갔다.
+      본문 아래 이어지는 글은 스레드에서 이미 이어져 보인다 —
+      번호를 손으로 달아줄 이유가 없다. */
 
 /** 산문 문장 수. 리스트 항목(1. / - / <소제목>)은 세지 않는다 */
 function proseSentences(text) {
@@ -66,4 +61,4 @@ function formOf(count) {
   return 'single';
 }
 
-module.exports = { THREADS_MAX, threadsLength, numberParts, proseSentences, formOf };
+module.exports = { THREADS_MAX, threadsLength, proseSentences, formOf };

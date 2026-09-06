@@ -6,7 +6,7 @@
  * ============================================================ */
 
 const { checkPost } = require('../services/threads/guideline');
-const { threadsLength, numberParts, proseSentences, formOf } = require('../services/threads/length');
+const { threadsLength, proseSentences, formOf } = require('../services/threads/length');
 const { parseLoose, normalize } = require('../services/threads/parse');
 const { HOOKS } = require('../services/threads/hooks');
 const { buildPrompt, buildVoicePrompt, loadGuideline } = require('../services/threads/prompt');
@@ -25,8 +25,6 @@ t('한글은 1자로 센다', threadsLength('가'.repeat(300)), 300);
 t('한글 300자가 500 넘지 않는다', threadsLength('가'.repeat(300)) <= 500, true);
 t('이모지는 바이트로 센다', threadsLength('🔥'), 4);
 t('URL 은 글자 그대로', threadsLength('https://a.co'), 12);
-t('연재 번호가 붙는다', numberParts(['가', '나'])[0], '가\n\n1/2');
-t('한 편이면 번호 안 붙인다', numberParts(['가']), ['가']);
 t('편 수로 형태를 정한다', [formOf(1), formOf(2), formOf(3)], ['single', 'pair', 'chain']);
 t('리스트 줄은 문장으로 안 센다', proseSentences('1. 하나\n2. 둘'), 0);
 
@@ -448,7 +446,9 @@ section('나누기');
 t('기본은 한 편', fixShape({ parts: ['가', '나', '다'] }).parts.length, 1);
 t('틀이 정하면 그만큼',
   fixShape({ parts: ['가', '나', '다'] }, { chain: { on: true, max: 2 } }).parts.length, 2);
-t('번호 여부를 흘리지 않는다', fixShape({ parts: ['가'], numbered: true }).numbered, true);
+/* ⚠️ 「1/2 · 2/2」가 운세 글 끝에 달려 나갔다. 끌 방법이 아예 없었다.
+      이제 아무 데서도 안 붙는다 — 옛 글에 켜져 있어도 무시한다. */
+t('번호를 켜도 안 붙인다', fixShape({ parts: ['가'], numbered: true }).numbered, false);
 /* 편이 여럿인 것은 틀이 정한 것이라 「한 편으로 끝남」으로 막으면 안 된다 */
 const twoPartPost = { postType: '정보형', form: 'chain',
   parts: ['경금 일간은 이렇습니다', '이어지는 글입니다'] };
@@ -1851,3 +1851,46 @@ t('이미 나간 글은 안 짚는다',
   /list\.forEach\(\(p, i\) => \{[\s\S]{0,120}p\.status === 'published'/.test(routeSrc), true);
 t('화면이 그걸 그린다', viewSrc.indexOf('같은 시각에 두 개입니다') > 0, true);
 t('어떻게 빼는지 알려준다', routeSrc.indexOf('「자리 빼기」로 빼주세요') > 0, true);
+
+/* ── 1/2 · 2/2 를 붙이지 않는다 ──
+   ⚠️ Zernio 예약 글 끝에 「1/2」가 달려 나갔다. 두 편으로 나눠 올리는
+      운세 틀에서 늘 붙었고, **끌 방법이 아예 없었다** — 화면에 칸이
+      없는데 저장할 때마다 켜졌다. 아예 뺐다. */
+section('번호를 붙이지 않는다');
+
+const lenSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'length.js'), 'utf8');
+t('번호 붙이는 함수를 없앴다', lenSrc.indexOf('function numberParts') > 0, false);
+t('내보내지도 않는다', Object.keys(require(
+  require('path').join(__dirname, '..', 'services', 'threads', 'length')
+)).indexOf('numberParts') >= 0, false);
+
+/* 나가는 글 — 여기가 새면 그대로 스레드에 올라간다 */
+t('내보낼 때 안 붙인다', pubSrc.indexOf('numberParts') > 0, false);
+t('옛 글에 켜져 있어도 무시한다', pubSrc.indexOf('let body = post.parts;') > 0, true);
+
+const pipeNum = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'pipeline.js'), 'utf8');
+t('만들 때도 안 켠다', pipeNum.indexOf('numbered: false,') > 0, true);
+/* 미리보기가 나가는 글과 달라지면 사람이 못 믿는다 */
+t('미리보기에도 안 붙인다', pipeNum.indexOf('numberParts') > 0, false);
+t('글자 수도 글 그대로 잰다',
+  require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'services', 'threads', 'guideline.js'), 'utf8'
+  ).indexOf('numberParts') > 0, false);
+
+/* 모델도 손으로 적으면 안 된다 */
+const numPrompt = P6.buildPrompt('오늘의 운세', { chain: { on: true, max: 2 } });
+t('모델에게도 적지 말라고 한다', numPrompt.indexOf('번호(1/2 · 2/2)는 붙이지 않습니다') > 0, true);
+
+/* 두 편짜리 운세를 끝에서 끝까지 — 어디에도 「1/2」가 없어야 한다 */
+const twoParts = ['오늘은 정해일' + LF + '먼저 흐름 타는 띠 있음', '조심할 띠는 이렇습니다'];
+const shaped = fixShape({ parts: twoParts, numbered: true }, { chain: { on: true, max: 2 } });
+t('두 편 그대로 나온다', shaped.parts.length, 2);
+t('번호 칸이 꺼져 있다', shaped.numbered, false);
+t('글 안에 1/2 가 없다', shaped.parts.join(LF).indexOf('1/2') >= 0, false);
+t('글 안에 2/2 도 없다', shaped.parts.join(LF).indexOf('2/2') >= 0, false);
+
+/* 설정을 저장해도 다시 켜지지 않는다 — 여기가 매번 켜던 자리였다 */
+t('설정에 번호 칸을 안 넣는다', routeSrc.indexOf('numbered: b.daily.numbered') > 0, false);
+t('운세 틀은 편 수만 정한다', routeSrc.indexOf('{ body, tail, mode }') > 0, true);

@@ -11,7 +11,6 @@ const accounts = require('./accounts');
 const zernio = require('./zernio');
 const tail = require('./tail');
 const { checkPost } = require('./guideline');
-const { numberParts } = require('./length');
 const dupe = require('./dupe');
 
 /**
@@ -80,17 +79,13 @@ async function bodyToSend(userId, post, accountId) {
   /* 꼬리말·링크는 계정마다 다르다. 그 계정 몫을 읽어야 한다. */
   const settings = await store.getSettings(userId, accountId);
 
-  /* 번호(1/2 · 2/2)는 **이 글이 붙이기로 한 경우에만** 붙인다.
-     예전에는 편이 셋 이상이면 무조건 붙었다. 그래서 원치 않는 사람에게도
-     1/3 · 2/3 이 나갔다.
-     ⚠️ 전역 설정이 아니라 글마다 본다. 운세만 나눠 올리고 나머지는
-        한 편으로 쓰는 사람이 있기 때문이다. */
-  const wantNum = !!post.numbered;
-  let body = (wantNum && post.parts.length > 1) ? numberParts(post.parts) : post.parts;
+  /* ⚠️ 번호(1/2 · 2/2)는 붙이지 않는다. 예전엔 붙였는데, 끌 방법도 없이
+        늘 붙어서 운세 글 끝에 「1/2」가 달려 나갔다.
+        본문 아래 이어지는 글은 스레드에서 이미 이어져 보인다.
+        옛 글에 numbered 가 켜져 있어도 여기서 무시한다. */
+  let body = post.parts;
 
-  /* 리스트형의 댓글. 본문 바로 뒤에 답글 한 편으로 붙는다.
-     ⚠️ 여기서 붙는 것은 연작이 아니다. numberParts 를 타지 않으므로
-        1/2 같은 번호가 붙지 않는다. 본문 한 편 + 첫 댓글이다. */
+  /* 리스트형의 댓글. 본문 바로 뒤에 답글 한 편으로 붙는다. */
   if (post.replyText && String(post.replyText).trim()) {
     body = body.concat([String(post.replyText).trim()]);
   }

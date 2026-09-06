@@ -14,7 +14,7 @@ const { runAi } = require('./llm');
 const { parseLoose, normalize } = require('./parse');
 const copycheck = require('./copycheck');
 const { checkPost } = require('./guideline');
-const { formOf, threadsLength, numberParts } = require('./length');
+const { formOf, threadsLength } = require('./length');
 const { hookName } = require('./hooks');
 const dailyshape = require('./dailyshape');
 const jiji = require('./jiji');
@@ -47,7 +47,9 @@ function fixShape(p, opts) {
     /* 댓글은 연작이 아니다. 본문은 한 편 그대로 두고 따로 담는다. */
     replyText: String(p.reply == null ? (p.replyText || '') : p.reply).trim(),
     replyType: p.replyType || 'none',
-    numbered: !!p.numbered,
+    /* ⚠️ 번호(1/2 · 2/2)는 안 붙인다. 끌 방법이 없어 운세 글 끝에
+          「1/2」가 달려 나갔다. 여기서 늘 꺼둔다. */
+    numbered: false,
     cta: !!p.cta,
     cutNote: '',
   };
@@ -62,12 +64,12 @@ function decorate(p, topic, situation, opts) {
     allowChain: !!(o.chain && o.chain.on),
   });
   const check = checkPost(post);
-  const shown = post.form === 'chain' ? numberParts(post.parts) : post.parts;
+  /* 번호(1/2)는 안 붙인다 — 미리보기가 나가는 글 그대로여야 한다 */
   return Object.assign({}, post, {
     check,
     lengths: check.lengths,
     hookNames: post.hooks.map(hookName),
-    preview: shown,
+    preview: post.parts,
   });
 }
 
@@ -90,7 +92,8 @@ async function generate(userId, openaiKey, topic, limit, opts) {
   /* 운세 틀이 「두 편으로 나눔」이면, 이 글만은 두 편을 쓸 수 있어야 한다.
      짧아도 나누는 게 그 계정의 모양이다. */
   const dailyChain = wantsDaily && daily && daily.mode === 'chain' && String(daily.tail || '').trim()
-    ? { on: true, max: 2, numbered: daily.numbered !== false }
+    /* ⚠️ numbered 는 뺐다. 「1/2 · 2/2」가 늘 붙었고 끌 방법이 없었다. */
+    ? { on: true, max: 2 }
     : null;
 
   /* 이 종류 글의 본보기. 말투만으로는 **짜임새**가 안 잡힌다 —
@@ -252,11 +255,10 @@ async function generate(userId, openaiKey, topic, limit, opts) {
     }
   }
 
-  /* 이 글이 번호를 붙일지 여기서 정해 새겨 둔다. 나중에 발행할 때
-     설정을 다시 보면, 그 사이 설정이 바뀌었을 때 엉뚱하게 붙는다. */
-  const wantNum = !!(shapeOpts.chain && shapeOpts.chain.on && shapeOpts.chain.numbered);
+  /* ⚠️ 번호(1/2 · 2/2)는 안 붙인다. 옛 글과 자리를 맞추려고 칸은 남기되
+        늘 꺼둔다 — 붙일 방법이 없어야 다시 새지 않는다. */
   posts = posts.map((p) => decorate(
-    Object.assign({}, p, { numbered: wantNum && p.parts.length > 1 }),
+    Object.assign({}, p, { numbered: false }),
     topicOut, v.situation, shapeOpts
   ));
 
@@ -405,12 +407,12 @@ function view(post) {
   const check = checkPost(Object.assign({}, post, {
     allowChain: (post.parts || []).length > 1,
   }));
-  const shown = post.form === 'chain' ? numberParts(post.parts) : post.parts;
+  /* 번호(1/2)는 안 붙인다 — 미리보기가 나가는 글 그대로여야 한다 */
   return Object.assign({}, post, {
     check,
     lengths: check.lengths,
     hookNames: (post.hooks || []).map(hookName),
-    preview: shown,
+    preview: post.parts,
   });
 }
 
