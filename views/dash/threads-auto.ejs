@@ -70,6 +70,8 @@
 
 /* 글 카드 */
 #ta .ta-post{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:14px;overflow:hidden}
+/* 첫 댓글 — 본문과 구별되게 왼쪽에 줄을 세운다 */
+#ta .ta-part.reply{border-left:3px solid var(--line);padding-left:12px;background:#fbfbf9}
 #ta .ta-post.picked{border-color:var(--gold);box-shadow:0 0 0 2px rgba(181,154,98,.18)}
 #ta .ta-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
   padding:13px 16px;background:var(--sub);border-bottom:1px solid var(--line2)}
@@ -1385,12 +1387,20 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
   }
 
   function partsHtml(p){
+    /* ⚠️ 첫 댓글이 아예 안 보였다. 리스트형은 알맹이가 댓글에 있어서
+       본문만 보면 무슨 글인지 알 수가 없다. */
+    var reply = String(p.replyText || '').trim();
     return p.preview.map(function(t, i){
       var len = p.lengths[i];
       return '<div class="ta-part"><div class="no">'+(p.preview.length>1?(i+1)+'편':'본문')+'</div>'+
              '<div class="txt">'+esc(t)+'</div>'+
              '<div class="len'+(len>500?' over':'')+'">'+len+' / 500자</div></div>';
-    }).join('');
+    }).join('') +
+    (reply
+      ? '<div class="ta-part reply"><div class="no">첫 댓글</div>' +
+        '<div class="txt rp">'+esc(reply)+'</div>' +
+        '<div class="len'+(reply.length>500?' over':'')+'">'+reply.length+' / 500자</div></div>'
+      : '');
   }
 
   function formName(p){
@@ -1899,12 +1909,24 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
         if (box.dataset.editing === '1') return;
         box.dataset.editing = '1';
 
-        var texts = [].map.call(el.querySelectorAll('.ta-part .txt'), function(t){ return t.textContent; });
+        /* 본문과 첫 댓글을 갈라 담는다 — 댓글은 parts 가 아니라 따로 저장된다 */
+        var rpNode = el.querySelector('.ta-part .txt.rp');
+        var rpText = rpNode ? rpNode.textContent : '';
+        var texts = [].map.call(el.querySelectorAll('.ta-part .txt'), function(t){
+          return t.classList.contains('rp') ? null : t.textContent;
+        }).filter(function(t){ return t !== null; });
+
         box.innerHTML = texts.map(function(t, i){
           return '<div class="ta-part"><div class="no">'+(texts.length>1?(i+1)+'편':'본문')+'</div>'+
                  '<textarea rows="'+Math.max(4, Math.min(16, t.split('\n').length + 2))+'">'+esc(t)+'</textarea>'+
                  '<div class="len">'+t.length+'자</div></div>';
         }).join('') +
+        /* 첫 댓글도 고칠 수 있어야 한다. 없던 글에도 칸을 열어둔다 —
+           나중에 댓글을 붙이고 싶을 수 있다. */
+        '<div class="ta-part"><div class="no">첫 댓글</div>'+
+          '<textarea class="rp-edit" rows="'+Math.max(3, Math.min(12, rpText.split('\n').length + 2))+'"'+
+          ' placeholder="비우면 댓글 없이 나갑니다">'+esc(rpText)+'</textarea>'+
+          '<div class="len">'+rpText.length+'자</div></div>' +
         '<div style="display:flex;gap:8px;margin-top:6px">'+
           '<button class="ta-btn sm ta-save-edit" type="button">고친 내용 저장</button>'+
           '<button class="ta-btn ghost sm ta-cancel-edit" type="button">취소</button>'+
@@ -1921,11 +1943,17 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
         $('.ta-cancel-edit', box).addEventListener('click', function(){ loadList(); });
         $('.ta-save-edit', box).addEventListener('click', function(){
-          var parts = [].map.call(box.querySelectorAll('textarea'), function(t){ return t.value.trim(); })
+          var rpBox = box.querySelector('.rp-edit');
+          var parts = [].map.call(box.querySelectorAll('textarea'), function(t){ return t; })
+                        .filter(function(t){ return t !== rpBox; })
+                        .map(function(t){ return t.value.trim(); })
                         .filter(Boolean);
           if (!parts.length) { alert('본문이 비어 있습니다.'); return; }
           var sb = this; sb.disabled = true; sb.textContent = '저장하는 중';
-          post('/api/threads/posts/' + el.dataset.id, { parts: parts }).then(function(r){
+          post('/api/threads/posts/' + el.dataset.id, {
+            parts: parts,
+            replyText: rpBox ? rpBox.value : undefined,
+          }).then(function(r){
             if (!r.j.ok) { sb.disabled = false; sb.textContent = '고친 내용 저장'; alert(r.j.error); return; }
             loadList();
           });
@@ -2474,7 +2502,15 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
 
       /* ── 수정하기 ── */
       '<div class="ta-up-open edit-box" hidden>' +
+        '<label style="margin:0 0 5px">본문</label>' +
         '<textarea class="body" rows="' + rows + '">' + esc(p.parts.join(CUT)) + '</textarea>' +
+        /* 리스트형은 알맹이가 댓글에 있다. 본문만 고칠 수 있으면 반쪽짜리다.
+           댓글이 없던 글에도 칸을 열어둔다 — 나중에 붙이고 싶을 수 있다. */
+        '<label style="margin:12px 0 5px">첫 댓글 ' +
+          '<span class="ta-sub" style="font-weight:600">— 비우면 댓글 없이 나갑니다</span></label>' +
+        '<textarea class="reply" rows="' + Math.min(10, Math.max(3,
+          (p.replyText || '').split(String.fromCharCode(10)).length + 1)) + '"' +
+          ' placeholder="본문 다음에 첫 댓글로 달릴 내용">' + esc(p.replyText || '') + '</textarea>' +
         '<div style="margin-top:8px"><button type="button" class="ta-btn sm save">저장</button></div>' +
       '</div>' +
 
@@ -2633,7 +2669,12 @@ Zernio 열쇠   sk_e1aa0dbb…   밑줄(_)    ← 글을 올리는 열쇠, 아�
           .split(/\n*─{2,}\s*다음 편\s*─{2,}\n*/)
           .map(function(t){ return t.trim(); }).filter(Boolean);
         if (!parts.length) { msg(el.querySelector('.msg'), 'err', '본문이 비었습니다.'); return; }
-        post('/api/threads/posts/' + encodeURIComponent(id), { parts: parts }).then(function(r){
+        var rp = el.querySelector('.reply');
+        post('/api/threads/posts/' + encodeURIComponent(id), {
+          parts: parts,
+          /* 칸이 있을 때만 보낸다. 안 보내면 서버가 안 건드린다. */
+          replyText: rp ? rp.value : undefined,
+        }).then(function(r){
           if (!r.j.ok) { msg(el.querySelector('.msg'), 'err', r.j.error); return; }
           loadUpcoming();
         });

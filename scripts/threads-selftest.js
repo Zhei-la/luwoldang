@@ -1485,6 +1485,28 @@ t('칸마다 줄 수를 보여준다', viewSrc.indexOf("x.el.querySelector('.cnt
 /* 큰 칸 하나짜리는 없어졌다 */
 t('옛 큰 칸은 없다', viewSrc.indexOf('id="taVoiceIn"') > 0, false);
 
+/* ── 첫 댓글도 고칠 수 있어야 한다 ──
+   ⚠️ 「수정하기」가 본문만 고쳤다. 리스트형은 알맹이가 댓글에 있어서
+      본문만 고칠 수 있으면 반쪽짜리다.
+      「내 원고」 탭에서는 첫 댓글이 아예 보이지도 않았다. */
+section('첫 댓글 고치기');
+
+t('서버가 댓글을 받는다', routeSrc.indexOf("typeof b.replyText === 'string'") > 0, true);
+/* 안 보내면 건드리지 않는다 — 빈 문자열만 「지우기」로 본다 */
+t('안 보내면 안 건드린다', routeSrc.indexOf('patch.replyText = b.replyText.trim()') > 0, true);
+
+/* 올라갈 글 — 수정하기 칸 */
+t('수정하기에 댓글 칸이 있다', viewSrc.indexOf("<textarea class=\"reply\"") > 0, true);
+t('비우면 없이 나간다고 알려준다', viewSrc.indexOf('비우면 댓글 없이 나갑니다') > 0, true);
+t('저장할 때 댓글도 담는다', viewSrc.indexOf('replyText: rp ? rp.value : undefined') > 0, true);
+
+/* 내 원고 탭 */
+t('원고에 첫 댓글이 보인다', viewSrc.indexOf("<div class=\"txt rp\">") > 0, true);
+t('원고에서도 고칠 수 있다', viewSrc.indexOf("<textarea class=\"rp-edit\"") > 0, true);
+/* 댓글을 본문으로 잘못 넣으면 두 편짜리 글이 되어버린다 */
+t('댓글을 본문에서 갈라낸다', viewSrc.indexOf("t.classList.contains('rp') ? null : t.textContent") > 0, true);
+t('저장할 때도 갈라낸다', viewSrc.indexOf('.filter(function(t){ return t !== rpBox; })') > 0, true);
+
 /* ── 첫 줄은 후킹 자리 ──
    ⚠️ 「일진을 그대로 쓰라」고 일러줬더니 모델이 첫 줄을 일진으로 바꿔
       「오늘은 을유일」로 시작했다. 그렇게 시작하면 아무도 안 읽는다.

@@ -838,12 +838,19 @@ router.get('/api/threads/posts', ...guard, async (req, res, next) => {
 
 router.post('/api/threads/posts/:id', ...guard, async (req, res, next) => {
   try {
-    const parts = ((req.body && req.body.parts) || [])
+    const b = req.body || {};
+    const parts = (b.parts || [])
       .map((t) => String(t == null ? '' : t).trim()).filter(Boolean);
     if (!parts.length) return fail(res, { message: '본문이 비어 있습니다.' });
-    const p = await store.updatePost(req.user.id, req.params.id, {
-      parts, form: formOf(parts.length),
-    });
+
+    const patch = { parts, form: formOf(parts.length) };
+    /* 첫 댓글도 고칠 수 있어야 한다. 리스트형은 알맹이가 댓글에 있어서
+       본문만 고칠 수 있으면 반쪽짜리다.
+       안 보내면 건드리지 않는다 — 빈 문자열은 「지우기」로 본다. */
+    if (typeof b.replyText === 'string') {
+      patch.replyText = b.replyText.trim();
+    }
+    const p = await store.updatePost(req.user.id, req.params.id, patch);
     if (!p) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
     res.json({ ok: true, post: pipeline.view(p) });
   } catch (e) { next(e); }
