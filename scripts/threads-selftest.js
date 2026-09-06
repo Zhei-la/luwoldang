@@ -1756,3 +1756,41 @@ t('경향으로 바꿔 쓰라고 적는다', GDOC.indexOf('흐름을 타기 좋�
 /* 지침은 프롬프트에 통째로 실린다 — 실려야 의미가 있다 */
 t('지침이 프롬프트에 실린다',
   P6.buildPrompt('도화살', {}).indexOf('일진을 먼저 검증한 뒤 글을 작성한다') > 0, true);
+
+/* ── 두 번 올라가지 않는다 ──
+   ⚠️ 실제로 글이 두 개 올라갔다. 예정 글을 「다시 만들기」 하면
+      우리 쪽 zernioId 만 지우고 **Zernio 쪽 예약은 그대로 뒀다.**
+      옛 내용이 걸린 예약이 살아 있는 채로 새 내용을 또 걸어서
+      같은 자리에 두 개가 나갔다. */
+section('두 번 올라가지 않는다');
+
+t('예약 빼는 곳이 한 군데다', routeSrc.indexOf('async function dropSchedule(') > 0, true);
+/* ⚠️ 계정이 둘이면 「지금 고른 계정」 키로는 못 지운다.
+      못 지운 예약은 제 시각에 그대로 나간다. */
+t('글이 걸린 그 계정으로 지운다',
+  /dropSchedule[\s\S]{0,600}accounts\.byId\(userId, post\.accountId\)/.test(routeSrc), true);
+
+const reSrc = routeSrc.slice(routeSrc.indexOf("upcoming/:id/regenerate"));
+t('다시 만들기가 옛 예약을 뺀다', reSrc.indexOf('dropSchedule(req.user.id, old)') > 0, true);
+/* 못 뺐는데 새로 만들면 옛 글이 그대로 나간다 — 거기서 멈춰야 한다 */
+t('못 빼면 다시 만들지 않는다',
+  reSrc.indexOf('dropSchedule(req.user.id, old)') < reSrc.indexOf('pipeline.generate'), true);
+t('무슨 일인지 알려준다', reSrc.indexOf('옛 글이 그대로 올라갑니다') > 0, true);
+
+/* 자리 옮기기·자리 떼기·예약 풀기도 같은 길을 탄다 */
+t('자리를 옮길 때도 뺀다',
+  (routeSrc.match(/dropSchedule\(req\.user\.id, post\)/g) || []).length >= 3, true);
+/* ⚠️ 시각만 바꾸려고 「예약」을 다시 누르는 일이 흔하다 */
+t('이미 예약된 글을 또 예약하면 옛 것을 뺀다',
+  /if \(post\.zernioId\) \{[\s\S]{0,400}dropSchedule[\s\S]{0,600}zernio\.send/.test(routeSrc), true);
+
+/* 마지막 방어선 — 라우트마다 챙기게 두면 언젠가 하나가 빠진다 */
+t('예약 함수 자체가 막는다', pubSrc.indexOf("if (post.zernioId) {") > 0, true);
+t('자동 예약도 그 길을 탄다',
+  /scheduleAt[\s\S]{0,900}zernio\.remove\(held\.key, post\.zernioId\)/.test(pubSrc), true);
+t('걸려 있던 계정으로 지운다',
+  pubSrc.indexOf('accounts.byId(userId, post.accountId)) || ready.acc') > 0, true);
+/* 못 지웠으면 새로 걸지 않고 던진다 */
+t('못 지우면 새로 걸지 않는다',
+  pubSrc.indexOf("err.code = 'STALE_SCHEDULE'") > 0, true);
+t('두 번 올라간다고 알려준다', pubSrc.indexOf('그대로 걸면 두 번 올라갑니다') > 0, true);

@@ -200,6 +200,33 @@ function ttiWarn(post) {
   return c.ok ? null : { ok: false, why: c.why };
 }
 
+/**
+ * Zernio 에 걸어둔 예약을 뺀다.
+ *
+ * ⚠️ **글이 두 번 올라간 적이 있다.** 예정 글을 「다시 만들기」 하면
+ *    우리 쪽 zernioId 만 지우고 Zernio 쪽 예약은 그대로 뒀다. 그래서
+ *    ① 옛 내용이 걸린 예약이 살아 있고 ② 새 내용으로 예약이 또 걸려
+ *    같은 자리에 **두 개가 나갔다.** 예약을 푸는 곳은 반드시 여기를 거친다.
+ *
+ * ⚠️ 계정도 조심해야 한다. 예전엔 늘 「지금 고른 계정」의 키로 지웠다.
+ *    계정이 둘이면 다른 계정 키로 지우려 들어 실패하고, 실패한 예약은
+ *    제 시각에 그대로 나간다. **글이 걸린 그 계정**으로 지운다.
+ *
+ * 반환 { ok, why }  — 못 뺐으면 ok:false. 부르는 쪽이 멈출지 정한다.
+ */
+async function dropSchedule(userId, post) {
+  if (!post || !post.zernioId) return { ok: true };
+  const acc = (post.accountId && await accounts.byId(userId, post.accountId))
+    || await accounts.active(userId);
+  if (!acc) return { ok: false, why: '올릴 계정을 찾지 못했습니다.' };
+  try {
+    await zernio.remove(acc.key, post.zernioId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, why: e.message };
+  }
+}
+
 /* ── 화면 ─────────────────────────────────────────── */
 
 router.get('/threads', ...guard, async (req, res, next) => {
@@ -617,14 +644,17 @@ router.post('/api/threads/upcoming/:id/slot', ...guard, async (req, res, next) =
     if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
     if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
 
-    /* 예약이 걸려 있던 글이면 그 자리에서 다시 건다.
-       못 걸면 원고로 되돌린다 — 옛 예약이 그대로 나가면 안 된다. */
+    /* 예약이 걸려 있던 글이면 옛 예약부터 뺀다.
+       ⚠️ 못 뺀 채 자리만 옮기면 옛 자리와 새 자리에 **두 개가 나간다.** */
     if (post.status === 'scheduled' && post.zernioId) {
-      try {
-        await zernio.remove(
-          (await accounts.active(req.user.id) || {}).key, post.zernioId
-        );
-      } catch (e) { /* 이미 없어졌으면 그만이다 */ }
+      const off = await dropSchedule(req.user.id, post);
+      if (!off.ok) {
+        return fail(res, {
+          message: 'Zernio 에서 옛 예약을 지우지 못했습니다: ' + off.why,
+          hint: '이대로 옮기면 옛 시각에도 글이 하나 더 올라갑니다. ' +
+            'zernio.com 대시보드에서 직접 지운 뒤 다시 옮겨주세요.',
+        }, 502);
+      }
       await store.updatePost(req.user.id, post.id, {
         status: 'draft', zernioId: null, scheduledFor: null,
       });
@@ -651,12 +681,14 @@ router.post('/api/threads/upcoming/:id/unhook', ...guard, async (req, res, next)
     if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
 
     if (post.status === 'scheduled' && post.zernioId) {
-      try {
-        const acc = await accounts.active(req.user.id);
-        if (acc) await zernio.remove(acc.key, post.zernioId);
-      } catch (e) {
-        /* Zernio 에서 이미 없어졌거나 못 뺐다. 우리 쪽은 정리하되 알려준다. */
-        console.error('[스레드] 예약 취소 실패:', e.message);
+      const off = await dropSchedule(req.user.id, post);
+      /* ⚠️ 화면에서는 뗐는데 시간 되면 올라가는 게 제일 나쁘다.
+            못 뺐으면 우리 쪽도 그대로 두고 사람에게 알린다. */
+      if (!off.ok) {
+        return fail(res, {
+          message: 'Zernio 에서 예약을 지우지 못했습니다: ' + off.why,
+          hint: '그대로 두면 제 시각에 올라갑니다. zernio.com 대시보드에서 직접 지워주세요.',
+        }, 502);
       }
     }
     await store.updatePost(req.user.id, post.id, {
@@ -682,6 +714,23 @@ router.post('/api/threads/upcoming/:id/regenerate', ...guard, async (req, res, n
     if (!old) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
     if (old.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
 
+    /* ⚠️ **먼저 예약을 뺀다.** 옛 예약을 살려둔 채 새 글을 걸면 같은 자리에
+          두 개가 나간다. 실제로 두 번 올라갔다.
+          못 빼면 여기서 멈춘다 — 다시 만들어봐야 옛 글이 그대로 나간다. */
+    if (old.status === 'scheduled' && old.zernioId) {
+      const off = await dropSchedule(req.user.id, old);
+      if (!off.ok) {
+        return fail(res, {
+          message: 'Zernio 에서 예약을 먼저 지우지 못했습니다: ' + off.why,
+          hint: '이대로 다시 만들면 옛 글이 그대로 올라갑니다. ' +
+            'zernio.com 대시보드에서 직접 지운 뒤 다시 눌러주세요.',
+        }, 502);
+      }
+      await store.updatePost(req.user.id, old.id, {
+        status: 'draft', zernioId: null, scheduledFor: null,
+      });
+    }
+
     const b = req.body || {};
     const topic = String(b.topic || old.topic || '').trim();
     if (!topic) return fail(res, { message: '주제를 정해주세요.' });
@@ -700,8 +749,8 @@ router.post('/api/threads/upcoming/:id/regenerate', ...guard, async (req, res, n
     const made = (out.posts || [])[0];
     if (!made) return fail(res, { message: '글이 비어 있습니다. 다시 눌러주세요.' }, 422);
 
-    /* 자리는 그대로 두고 내용만 갈아끼운다. Zernio 에 이미 걸어둔 것이 있으면
-       그건 그대로 남으므로, 예약을 다시 걸어야 한다는 뜻으로 상태를 되돌린다. */
+    /* 자리는 그대로 두고 내용만 갈아끼운다. 옛 예약은 위에서 이미 뺐으니
+       여기서는 「다시 걸어야 한다」는 뜻으로 원고로 돌려놓기만 한다. */
     const saved = await store.updatePost(req.user.id, old.id, {
       parts: made.parts,
       replyText: made.replyText || '',
@@ -947,6 +996,21 @@ router.post('/api/threads/posts/:id/schedule', ...guard, async (req, res, next) 
     if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
     if (post.status === 'published') return fail(res, { message: '이미 올린 글입니다.' }, 409);
 
+    /* ⚠️ 이미 예약된 글을 또 예약하면 옛 예약이 남아 **두 개가 나간다.**
+          시각만 바꾸려고 다시 누르는 일이 흔하다. */
+    if (post.zernioId) {
+      const off = await dropSchedule(req.user.id, post);
+      if (!off.ok) {
+        return fail(res, {
+          message: 'Zernio 에서 옛 예약을 지우지 못했습니다: ' + off.why,
+          hint: '이대로 예약하면 두 번 올라갑니다. zernio.com 대시보드에서 직접 지운 뒤 다시 눌러주세요.',
+        }, 502);
+      }
+      await store.updatePost(req.user.id, post.id, {
+        status: 'draft', zernioId: null, scheduledFor: null,
+      });
+    }
+
     const ready = await readyToSend(req.user.id, post);
     if (!ready.ok) return fail(res, { message: ready.why });
 
@@ -982,18 +1046,15 @@ router.post('/api/threads/posts/:id/unschedule', ...guard, async (req, res, next
     if (!post) return fail(res, { message: '글을 찾지 못했습니다.' }, 404);
     if (post.status !== 'scheduled') return fail(res, { message: '예약된 글이 아닙니다.' });
 
+    /* Zernio 쪽에서 못 지우면 우리 쪽도 풀지 않는다.
+       화면에는 없는데 시간 되면 올라가버리는 게 제일 나쁘다. */
     if (post.zernioId) {
-      const acc = await accounts.active(req.user.id);
-      /* Zernio 쪽에서 못 지우면 우리 쪽도 풀지 않는다.
-         화면에는 없는데 시간 되면 올라가버리는 게 제일 나쁘다. */
-      if (acc) {
-        try { await zernio.remove(acc.key, post.zernioId); }
-        catch (e) {
-          return fail(res, {
-            message: 'Zernio 에서 예약을 지우지 못했습니다: ' + e.message,
-            hint: 'zernio.com 대시보드에서 직접 지워주세요. 그대로 두면 제 시각에 올라갑니다.',
-          }, 502);
-        }
+      const off = await dropSchedule(req.user.id, post);
+      if (!off.ok) {
+        return fail(res, {
+          message: 'Zernio 에서 예약을 지우지 못했습니다: ' + off.why,
+          hint: 'zernio.com 대시보드에서 직접 지워주세요. 그대로 두면 제 시각에 올라갑니다.',
+        }, 502);
       }
     }
 

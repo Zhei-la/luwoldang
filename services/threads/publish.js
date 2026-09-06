@@ -107,6 +107,10 @@ async function bodyToSend(userId, post, accountId) {
 /**
  * 정한 시각에 올라가도록 Zernio 에 걸어둔다.
  * 성공하면 저장된 글을 돌려준다. 못 걸면 던진다.
+ *
+ * ⚠️ **같은 글을 두 번 걸면 두 번 올라간다.** 예약을 새로 걸기 전에
+ *    이 글에 걸려 있던 옛 예약부터 뺀다. 여기가 마지막 방어선이다 —
+ *    라우트마다 따로 챙기게 두면 언젠가 하나가 빠진다.
  */
 async function scheduleAt(userId, post, when, opts) {
   const ready = await readyToSend(userId, post, opts);
@@ -114,6 +118,19 @@ async function scheduleAt(userId, post, when, opts) {
     const e = new Error(ready.why);
     e.code = 'NOT_READY';
     throw e;
+  }
+  if (post.zernioId) {
+    /* 글이 걸려 있던 **그 계정**의 키로 지운다.
+       지금 고른 계정으로 지우려 들면 계정이 둘일 때 실패한다. */
+    const held = (post.accountId && await accounts.byId(userId, post.accountId)) || ready.acc;
+    try {
+      await zernio.remove(held.key, post.zernioId);
+    } catch (e) {
+      const err = new Error('옛 예약을 지우지 못했습니다 (' + e.message + '). ' +
+        '그대로 걸면 두 번 올라갑니다.');
+      err.code = 'STALE_SCHEDULE';
+      throw err;
+    }
   }
   const send = await bodyToSend(userId, post, ready.acc.id);
   const out = await zernio.send({
