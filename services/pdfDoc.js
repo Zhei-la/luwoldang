@@ -781,9 +781,21 @@ function endPage({ teacher, reviewUrl, reviewMode }) {
     ${cta}
     ${reviewCta}
     <p class="end-brand">${esc(teacher.site_name || teacher.name || '')}</p>
+    ${DISCLAIMER}
   </div>
 </section>`;
 }
+
+/* 면책 안내 — 맺음말 아래에 작게 넣는다.
+ *
+ *   사주 풀이가 의료·금융·법률 판단을 대신하지 않는다는 것을 한 번은 밝혀야 한다.
+ *   본문에서도 건강·재물 장이 이 선을 넘지 않게 막아 두었지만(ai.js),
+ *   문서에 한 줄 남겨두는 편이 파는 쪽에도 사는 쪽에도 안전하다.
+ *   페이지를 따로 쓰지 않으려고 맺음말 하단에 붙인다. */
+const DISCLAIMER = `
+    <p class="end-note">이 리포트는 전통 명리 해석에 따른 참고 자료입니다.
+    의료·금융·법률적 판단을 대신하지 않습니다.
+    건강에 이상이 느껴지시면 의료진의 진료를, 투자나 계약은 전문가의 확인을 함께 받으시길 권합니다.</p>`;
 
 /* ── CSS ── */
 const CSS_TEMPLATE = `
@@ -1240,6 +1252,12 @@ body {
 }
 
 .end-brand { font-family: 'Nanum Myeongjo', serif; font-size: 17px; letter-spacing: 6px; color: #a08a5c; }
+/* 면책 안내 — 눈에 띄되 맺음말을 가리지 않게 작고 흐리게 */
+.end-note {
+  margin-top: 34px; padding-top: 14px; border-top: 1px dotted #ddd3bd;
+  font-size: 11.5px; line-height: 1.75; color: #a8a294; word-break: keep-all;
+  max-width: 118mm; margin-left: auto; margin-right: auto;
+}
 
 /* ============================================================
  * 인쇄 — 실제 PDF

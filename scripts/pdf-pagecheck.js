@@ -22,9 +22,11 @@ const FIXED_PAIR = 11;
 const PAIR_TYPES = ['연인궁합'];
 
 /* 목표 장수 — 이걸 넘으면 실패.
-   종합사주만 평생을 보는 프리미엄이라 40장이고, 나머지는 30장이다. */
+   종합사주만 평생을 보는 프리미엄이라 더 두껍고, 나머지는 30장이다.
+   「연운」 장이 다섯 해를 각각 한 소제목으로 받아(=다섯 장) 43장이 된다.
+   해마다 세운 간지와 십성을 근거로 대게 하려면 그만큼이 필요하다. */
 const LIMIT = 30;
-const LIMIT_BY_TYPE = { 종합사주: 40 };
+const LIMIT_BY_TYPE = { 종합사주: 43 };
 const limitOf = (type) => LIMIT_BY_TYPE[type] || LIMIT;
 
 /* n자짜리 본문을 문단 3개로 만든다.
