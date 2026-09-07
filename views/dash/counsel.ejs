@@ -1,0 +1,122 @@
+<%- include('../partials/dash-top', { user: user, active: active, title: '상담 응대' }) %>
+
+<link rel="stylesheet" href="/css/counsel.css">
+
+<%
+  /* 손님에게 나갈 문장이 여기서 HTML 로 새면 안 된다. 막기만 한다. */
+  function e(s){ return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+%>
+
+<p class="cs-lead">
+  손님이 한 말을 <b>그대로 붙여넣어 보세요.</b>
+  바로 보낼 문장과, 왜 그렇게 답하는지가 같이 나옵니다.
+  <span class="cs-noapi">API 안 씁니다 · 0원</span>
+</p>
+
+<%# ── 내 기준 ──
+    문구 안의 ○○ 를 메우는 값이다. 한 번 채워두면 그 뒤로 안 건드려도 된다.
+    안 채우면 ○○ 로 남는다. 지어낸 숫자가 손님에게 나가는 것보다 낫다. %>
+<details class="cs-set" id="csSet" <%= (!st.concept || !st.days || !st.times || !st.refund) ? 'open' : '' %>>
+  <summary>
+    <span>내 기준</span>
+    <em id="csSetSum"></em>
+  </summary>
+  <div class="cs-set-in">
+    <p class="cs-hint">여기 채워두면 문구의 <b>○○</b> 가 저절로 메워집니다.
+      안 채우면 ○○ 로 남습니다 — 지어낸 숫자가 그대로 손님에게 나가는 것보다 낫습니다.</p>
+
+    <label class="cs-f">
+      <span>컨셉</span>
+      <div class="cs-radios">
+        <button type="button" data-c="A" class="<%= st.concept === 'A' ? 'on' : '' %>">점사와 사주를 함께</button>
+        <button type="button" data-c="B" class="<%= st.concept === 'B' ? 'on' : '' %>">사주 명리만</button>
+      </div>
+    </label>
+    <p class="cs-sub">「신점인가요?」의 답이 이 선택에 따라 <b>정반대</b>로 갈립니다.</p>
+
+    <label class="cs-f"><span>제작 기간</span>
+      <input type="text" id="csDays" value="<%= e(st.days) %>" placeholder="예) 3일"></label>
+    <label class="cs-f"><span>추가 질문</span>
+      <input type="text" id="csTimes" value="<%= e(st.times) %>" placeholder="예) 2회"></label>
+    <label class="cs-f"><span>환불 기준</span>
+      <input type="text" id="csRefund" value="<%= e(st.refund) %>"
+             placeholder="예) 제작 전 전액 환불 / 제작 후 환불 불가"></label>
+
+    <label class="cs-f"><span>손님 이름</span>
+      <input type="text" id="csName" placeholder="비워두면 ○○ 로 나옵니다"></label>
+    <p class="cs-sub">이 칸은 저장하지 않습니다. 지금 응대하는 손님 이름만 넣으세요.</p>
+
+    <button type="button" class="cs-save" id="csSave">기준 저장</button>
+    <span class="cs-saved" id="csSaved" hidden>저장했습니다 ✓</span>
+  </div>
+</details>
+
+<%# ── 찾기 ── %>
+<div class="cs-sbox">
+  <input class="cs-sin" id="csQ" type="search" autocomplete="off"
+         placeholder="손님 말을 붙여넣거나 한 글자만 쳐도 됩니다">
+</div>
+<div class="cs-cats" id="csCats">
+  <button type="button" aria-pressed="true">전체</button>
+  <% cats.forEach(function(c){ %><button type="button" aria-pressed="false"><%= c %></button><% }); %>
+</div>
+
+<%# ── 위험 신호 ──
+    찾아보게 두면 안 되는 것이라 검색 결과가 아니라 경보로 띄운다. %>
+<div class="cs-danger" id="csDanger" hidden>
+  <h3>지금은 사주를 볼 때가 아닙니다</h3>
+  <p class="cs-danger-p">손님 말에 위험 신호가 있습니다.
+    <b>사주 이야기를 멈추고</b> 아래를 보내신 뒤 상담을 끝내세요.</p>
+  <div class="cs-say">
+    <button type="button" class="cs-copy" data-copy="danger">복사</button>
+    <pre id="csDangerSay"><%= danger.say %></pre>
+  </div>
+  <table class="cs-tb"><tbody>
+    <% danger.numbers.forEach(function(n){ %>
+      <tr><td class="n"><%= n.n %></td><td><%= n.d %></td></tr>
+    <% }); %>
+  </tbody></table>
+  <h4>절대 하지 말 것</h4>
+  <table class="cs-tb"><tbody>
+    <% danger.never.forEach(function(r){ %>
+      <tr><td><%= r[0] %></td><td class="d"><%= r[1] %></td></tr>
+    <% }); %>
+  </tbody></table>
+  <ul class="cs-keep">
+    <% danger.keep.forEach(function(k){ %><li><%= k %></li><% }); %>
+  </ul>
+  <p class="cs-danger-p">혼자 감당하려 하지 마세요. <b>상담사는 치료자가 아닙니다.</b></p>
+</div>
+
+<div id="csList"></div>
+
+<%# ── 미리 막는 법 ──
+    응대는 이미 문제가 생긴 뒤다. 처음부터 적어두면 대부분 안 생긴다. %>
+<details class="cs-prev">
+  <summary>미리 막는 법 — 판매 페이지에 이 다섯 줄</summary>
+  <div class="cs-prev-in">
+    <p class="cs-hint">가장 많은 클레임은 <b>기대와 결과가 달라서</b> 생깁니다.
+      이 다섯 줄이 미리 적혀 있으면 어려운 상황의 절반은 애초에 생기지 않습니다.</p>
+    <table class="cs-tb"><tbody>
+      <% prevent.forEach(function(p){ %>
+        <tr><td class="k"><%= p[0] %></td><td><%= p[1] %></td></tr>
+      <% }); %>
+    </tbody></table>
+  </div>
+</details>
+
+<p class="cs-foot">
+  이 문구들은 자료집 「상담 응대 / 대처 방법」에서 그대로 가져왔습니다.
+  답변은 복사해서 쓰셔도 되고 본인 말투로 바꾸셔도 됩니다.<br>
+  <b>왜 그렇게 답하는지</b>를 같이 읽어두시면, 처음 보는 질문에도 스스로 답을 만드실 수 있습니다.
+</p>
+
+<script>
+var CS_SITS = <%- JSON.stringify(situations) %>;
+var CS_ST   = <%- JSON.stringify(st) %>;
+var CS_DANGER_WORDS = <%- JSON.stringify(danger.words) %>;
+</script>
+<script src="/js/counsel.js"></script>
+
+<%- include('../partials/dash-bottom') %>

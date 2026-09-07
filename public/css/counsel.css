@@ -1,0 +1,189 @@
+/* 상담 응대 — 손님 말을 붙여넣으면 보낼 문장이 나오는 화면
+ *
+ * 대시보드 옷(--card --beige --gold --navy)을 그대로 입는다.
+ * 다만 「보낼 말」만은 눈에 확 띄어야 한다. 이 화면에서 복사해 가는 건 그것 하나다.
+ */
+
+.cs-lead { font-size:14.5px; line-height:1.85; color:#4A4438; margin:0 0 16px;
+  word-break:keep-all; }
+.cs-lead b { color:var(--ink); }
+.cs-noapi { display:inline-block; margin-left:6px; font-size:11.5px; font-weight:700;
+  letter-spacing:.02em; padding:3px 9px; border-radius:100px;
+  background:#EDF3EE; border:1px solid #C8DCCC; color:#3B6B47; }
+
+/* ── 내 기준 ── */
+.cs-set { background:var(--card); border:1px solid var(--beige); border-radius:14px;
+  margin-bottom:18px; overflow:hidden; }
+.cs-set summary { cursor:pointer; list-style:none; padding:14px 17px; font-size:14.5px;
+  font-weight:700; color:var(--ink); display:flex; align-items:center; gap:10px;
+  user-select:none; }
+.cs-set summary::-webkit-details-marker { display:none; }
+.cs-set summary:before { content:'＋'; color:var(--gold); font-weight:400; width:13px; }
+.cs-set[open] summary:before { content:'－'; }
+.cs-set[open] summary { border-bottom:1px solid var(--beige); }
+.cs-set summary em { font-style:normal; font-size:12.5px; font-weight:500; color:#8A8271;
+  margin-left:auto; text-align:right; }
+.cs-set-in { padding:16px 17px 18px; }
+.cs-hint { font-size:13px; line-height:1.8; color:#6B6656; margin:0 0 14px;
+  word-break:keep-all; }
+.cs-hint b { color:var(--ink); }
+.cs-sub { font-size:12.5px; line-height:1.7; color:#8A8271; margin:-6px 0 14px;
+  word-break:keep-all; }
+.cs-sub b { color:#8A5A2B; }
+.cs-f { display:block; margin-bottom:12px; }
+.cs-f > span { display:block; font-size:12px; font-weight:700; letter-spacing:.05em;
+  color:#8A8271; margin-bottom:6px; }
+.cs-f input { width:100%; padding:12px 14px; border:1px solid var(--beige); border-radius:10px;
+  font-size:15px; font-family:inherit; background:#fff; color:var(--ink); outline:none;
+  line-height:1.7; }
+.cs-f input:focus { border-color:var(--gold); }
+.cs-radios { display:flex; gap:7px; flex-wrap:wrap; }
+.cs-radios button { padding:11px 16px; border:1px solid var(--beige); background:#fff;
+  border-radius:100px; font-size:13.5px; font-weight:600; color:#6B6656;
+  cursor:pointer; font-family:inherit; }
+.cs-radios button.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+.cs-save { padding:12px 22px; background:var(--navy); color:#fff; border:0; border-radius:11px;
+  font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+.cs-saved { margin-left:10px; font-size:13px; font-weight:700; color:#3B6B47; }
+
+/* ── 찾기 ── */
+.cs-sbox { margin-bottom:12px; }
+.cs-sin { width:100%; padding:15px 16px; border:1px solid var(--beige); border-radius:12px;
+  font-size:16px; font-weight:600; font-family:inherit; background:#fff; color:var(--ink);
+  outline:none; line-height:1.6; }
+.cs-sin:focus { border-color:var(--gold); }
+.cs-cats { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 18px; }
+.cs-cats button { font-family:inherit; font-size:12.5px; font-weight:600; padding:8px 14px;
+  border-radius:100px; border:1px solid var(--beige); background:var(--card);
+  color:#6B6656; cursor:pointer; }
+.cs-cats button[aria-pressed="true"] { background:var(--navy); border-color:var(--navy); color:#fff; }
+
+/* ── 상황 카드 ── */
+.cs-card { background:var(--card); border:1px solid var(--beige); border-radius:14px;
+  padding:18px 19px; margin:0 0 12px; }
+.cs-card h3 { margin:0 0 4px; font-size:18px; font-weight:800; color:var(--ink);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap; word-break:keep-all; }
+.cs-card .cat { font-size:11px; font-weight:700; letter-spacing:.03em; padding:3px 9px;
+  border-radius:100px; background:#F2ECDF; color:#8A7B58; border:1px solid var(--beige); }
+.cs-card .star { font-size:11px; font-weight:700; padding:3px 9px; border-radius:100px;
+  background:#FBEEE6; color:#A65A28; border:1px solid #EBD3C2; }
+.cs-when { font-size:13px; color:#6B6656; margin:0 0 14px; line-height:1.75;
+  word-break:keep-all; }
+
+/* 먼저 확인할 것 — 보내기 전에 읽어야 하는 줄 */
+.cs-check { border:1px solid #E0CDA8; background:#FBF4E4; border-radius:10px;
+  padding:12px 14px; margin:0 0 14px; font-size:13.5px; line-height:1.8; color:#6A5426;
+  word-break:keep-all; }
+.cs-check b { color:#4A3A15; }
+
+/* 보낼 말 — 이 화면에서 가져가는 건 이것 하나다 */
+/* 오른쪽 여백은 복사 단추 자리다. 안 비우면 단추가 첫 줄을 덮는다.
+   문구는 줄을 미리 나눠 둬서 짧다 — 여백을 줘도 줄이 더 밀리지 않는다. */
+.cs-say { position:relative; border-left:3px solid var(--navy); background:#fff;
+  border-radius:0 10px 10px 0; padding:15px 78px 15px 16px; margin:0 0 10px; }
+.cs-say pre { margin:0; font-family:inherit; font-size:15.5px; line-height:1.9;
+  white-space:pre-wrap; word-break:keep-all; color:var(--ink); }
+.cs-copy { position:absolute; top:9px; right:9px; font-family:inherit; font-size:11.5px;
+  font-weight:700; padding:6px 12px; border-radius:100px; border:1px solid var(--beige);
+  background:var(--card); color:#6B6656; cursor:pointer; }
+.cs-copy:active, .cs-copy.done { background:var(--navy); border-color:var(--navy); color:#fff; }
+.cs-lbl { font-size:11.5px; font-weight:700; letter-spacing:.05em; color:#8A8271;
+  margin:0 0 6px; }
+
+/* 아직 안 채운 칸이 남았을 때 */
+.cs-miss { font-size:12.5px; line-height:1.7; color:#A65A28; margin:0 0 12px;
+  word-break:keep-all; }
+.cs-miss b { color:#7A3F17; }
+
+/* 왜 이렇게 답하나 · 조심할 것 */
+.cs-why { border-radius:10px; overflow:hidden; background:#F4F0E5;
+  border:1px solid var(--beige); margin:0 0 10px; }
+.cs-why summary { cursor:pointer; list-style:none; padding:10px 14px; font-size:12.5px;
+  font-weight:700; color:#6B6656; user-select:none; }
+.cs-why summary::-webkit-details-marker { display:none; }
+.cs-why summary:before { content:'＋ '; color:var(--gold); font-weight:400; }
+.cs-why[open] summary:before { content:'－ '; }
+.cs-why .in { padding:0 14px 14px; font-size:13.5px; line-height:1.85; color:#4A4438;
+  word-break:keep-all; }
+.cs-care { border-color:#EBD3C2; background:#FBF1EA; }
+.cs-care summary { color:#A65A28; }
+.cs-care summary:before { color:#C98A5E; }
+.cs-care .in { color:#6A3D20; }
+
+/* 갈래 고르기 — 컨셉이나 상황에 따라 문구가 여럿일 때 */
+.cs-picks { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px; }
+.cs-picks button { font-family:inherit; font-size:12.5px; font-weight:600; padding:8px 14px;
+  border-radius:100px; border:1px solid var(--beige); background:#fff; color:#6B6656;
+  cursor:pointer; }
+.cs-picks button[aria-pressed="true"] { background:var(--gold); border-color:var(--gold); color:#fff; }
+.cs-hidden { display:none; }
+
+/* 컨셉을 안 정했을 때 — 답이 갈리는 상황이라 먼저 정해야 한다 */
+.cs-needc { border:1px solid #E0CDA8; background:#FBF4E4; border-radius:10px;
+  padding:12px 14px; margin:0 0 12px; font-size:13.5px; line-height:1.8; color:#6A5426; }
+.cs-needc b { color:#4A3A15; }
+
+/* ── 「다른 데랑 왜 달라요」 계산기 ── */
+.cs-calc { border:1px dashed var(--gold); border-radius:12px; padding:15px 16px;
+  margin:0 0 12px; background:#FCFAF4; }
+.cs-calc h4 { margin:0 0 4px; font-size:14.5px; font-weight:800; color:var(--ink); }
+.cs-calc p { font-size:13px; line-height:1.8; color:#6B6656; margin:0 0 12px;
+  word-break:keep-all; }
+.cs-calc-row { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+.cs-calc-row input, .cs-calc-row select { padding:11px 13px; border:1px solid var(--beige);
+  border-radius:10px; font-size:14.5px; font-family:inherit; background:#fff;
+  color:var(--ink); outline:none; flex:1 1 130px; min-width:0; }
+.cs-calc-row input:focus, .cs-calc-row select:focus { border-color:var(--gold); }
+.cs-calc-go { padding:12px 20px; background:var(--gold); color:#fff; border:0; border-radius:10px;
+  font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.cs-calc-out { margin-top:12px; }
+.cs-verdict { font-size:14px; font-weight:700; line-height:1.75; margin:0 0 10px;
+  word-break:keep-all; }
+.cs-verdict.yes { color:#8A4A1E; }
+.cs-verdict.no { color:#3B6B47; }
+.cs-err { color:#A03A2A; font-size:13.5px; line-height:1.75; margin:0; }
+
+/* ── 위험 신호 ── */
+.cs-danger { border:2px solid #C0432F; background:#FBEDEA; border-radius:14px;
+  padding:18px 19px; margin:0 0 16px; }
+.cs-danger h3 { margin:0 0 8px; font-size:19px; font-weight:800; color:#A0331F; }
+.cs-danger h4 { margin:16px 0 8px; font-size:14px; font-weight:800; color:#A0331F; }
+.cs-danger-p { font-size:13.5px; line-height:1.8; color:#6A3227; margin:0 0 12px;
+  word-break:keep-all; }
+.cs-danger-p b { color:#8A2818; }
+.cs-danger .cs-say { border-left-color:#C0432F; }
+.cs-keep { margin:12px 0 0; padding-left:19px; }
+.cs-keep li { font-size:13.5px; line-height:1.85; color:#6A3227; margin-bottom:4px;
+  word-break:keep-all; }
+
+/* ── 표 ── */
+.cs-tb { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--beige);
+  border-radius:10px; overflow:hidden; }
+.cs-tb td { padding:10px 13px; border-bottom:1px solid #F0E9DA; font-size:13.5px;
+  line-height:1.7; color:var(--ink); vertical-align:top; word-break:keep-all; }
+.cs-tb tr:last-child td { border-bottom:0; }
+.cs-tb td.n { font-weight:800; width:88px; color:#A0331F; font-variant-numeric:tabular-nums; }
+.cs-tb td.k { font-weight:700; width:92px; color:#6B6656; }
+.cs-tb td.d { color:#8A8271; font-size:13px; }
+
+/* ── 미리 막는 법 ── */
+.cs-prev { background:var(--card); border:1px solid var(--beige); border-radius:14px;
+  margin:20px 0 0; overflow:hidden; }
+.cs-prev summary { cursor:pointer; list-style:none; padding:14px 17px; font-size:14.5px;
+  font-weight:700; color:var(--ink); user-select:none; }
+.cs-prev summary::-webkit-details-marker { display:none; }
+.cs-prev summary:before { content:'＋ '; color:var(--gold); font-weight:400; }
+.cs-prev[open] summary:before { content:'－ '; }
+.cs-prev[open] summary { border-bottom:1px solid var(--beige); }
+.cs-prev-in { padding:16px 17px 18px; }
+
+.cs-none { color:#8A8271; font-size:14px; text-align:center; padding:34px 0; line-height:1.9;
+  word-break:keep-all; }
+.cs-foot { font-size:12.5px; color:#8A8271; line-height:1.85; margin:22px 0 40px;
+  padding-top:16px; border-top:1px solid var(--beige); word-break:keep-all; }
+.cs-foot b { color:#6B6656; }
+
+@media (max-width:520px) {
+  .cs-card { padding:16px 15px; }
+  .cs-say pre { font-size:15px; }
+}

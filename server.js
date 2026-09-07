@@ -21,6 +21,7 @@ const pushRouter = require('./routes/push');
 const manseRouter = require('./routes/manse');   // 만세력(명리) 계산기
 const threadsAutoRouter = require('./routes/threadsAuto'); // 스레드 도구
 const guideRouter = require('./routes/guide');     // 사주 자료집
+const counselRouter = require('./routes/counsel'); // 상담 응대 (손님 응대 문구)
 const boardRouter = require('./routes/board');     // 공지사항 · 문의하기
 const lpReviewRouter = require('./routes/lpReview'); // 판매 페이지 후기
 const manseLinkRouter = require('./routes/manseLink'); // 만세력 연동
@@ -163,6 +164,8 @@ app.use('/', manseRouter);
 app.use('/', guideRouter);
 // 공지사항 · 문의하기 — /notice, /support, /admin/notice, /admin/support
 app.use('/', boardRouter);
+// 상담 응대 — 손님 말에 바로 보낼 문구. API 를 쓰지 않는다
+app.use('/', counselRouter);
 // 멘트 메모장 기기 간 연동
 app.use('/', require('./routes/memo'));
 // 홈 + 대시보드 전체 (사이드바 메뉴 페이지들)

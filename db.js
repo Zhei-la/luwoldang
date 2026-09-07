@@ -751,6 +751,11 @@ async function initDb() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_set TEXT;`);
   // 교육생이 고른 본문 배경지 키 (null=기본 frame)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_paper TEXT;`);
+
+  /* 상담 응대 — 내 기준 (컨셉 · 제작 기간 · 추가 질문 횟수 · 환불).
+     사람마다 다른 값이라 문구에 ○○ 로 비워 두고 여기서 메운다.
+     안 채워두면 ○○ 로 남는다. 지어낸 숫자가 손님에게 나가는 것보다 낫다. */
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS counsel JSONB;`);
   // 관리자가 만든 커스텀 세트 (기본 4세트는 코드 내장이라 여기 없음)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS cover_sets (
