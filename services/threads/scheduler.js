@@ -25,7 +25,7 @@ let running = false;
  * 조회 대상에서 통째로 빠져 영영 「예약중」에 머물렀다.
  * 계정 칸이 비어 있는 옛 글은 그 사람의 아무 계정이나 써서 물어본다.
  */
-function dueSql(extra) {
+function dueSql(extra, when) {
   return `SELECT * FROM (
             SELECT p.*, COALESCE(own.zernio_key, fa.zernio_key) AS zernio_key
               FROM th_posts p
@@ -38,7 +38,7 @@ function dueSql(extra) {
               ) f ON f.user_id = p.user_id
               LEFT JOIN th_accounts fa ON fa.id = f.aid
              WHERE p.status = 'scheduled'
-               AND p.scheduled_for <= NOW()
+               AND p.scheduled_for ${when || '<= NOW()'}
                AND p.zernio_id IS NOT NULL
                ${extra}
           ) q
@@ -56,6 +56,30 @@ async function dueRowsFor(userId, limit) {
   const { rows } = await pool.query(
     dueSql('AND p.user_id = $1') + ' LIMIT $2', [userId, limit || 20]
   );
+  return rows;
+}
+
+/**
+ * **아직 시각이 안 된** 예약들.
+ *
+ * ⚠️ 우리 화면에는 「예약해뒀습니다」인데 Zernio 에는 그 글이 없는 일이
+ *    있었다. Zernio 대시보드에서 손으로 지웠거나, Zernio 쪽에서 없어진
+ *    경우다. 그런데 우리는 **시각이 지난 뒤에야** 물어봤고, 물어보다
+ *    404 가 나면 그냥 넘어가서 영영 「예약됨」으로 남았다.
+ *    시간이 돼도 안 올라가는데 화면은 올라간다고 하고 있었다.
+ *
+ *    그래서 앞으로 올라갈 것도 미리 확인한다. 없어졌으면 그 자리에서
+ *    「안 올라갑니다」로 바꿔 사람이 다시 걸 수 있게 한다.
+ */
+async function aheadRows(limit) {
+  const { rows } = await pool.query(
+    dueSql('', '> NOW()') + ' LIMIT $1', [limit || 10]);
+  return rows;
+}
+
+async function aheadRowsFor(userId, limit) {
+  const { rows } = await pool.query(
+    dueSql('AND p.user_id = $1', '> NOW()') + ' LIMIT $2', [userId, limit || 10]);
   return rows;
 }
 
@@ -81,7 +105,21 @@ async function checkOne(row) {
     }
     return 'waiting';          /* 아직 처리 중이면 다음 회차에 다시 본다 */
   } catch (e) {
-    /* 물어보다 실패한 것뿐이다. 글 상태는 건드리지 않는다. */
+    /* ⚠️ **Zernio 에 그 글이 없다.** 대시보드에서 손으로 지웠거나
+          Zernio 쪽에서 없어진 경우다. 예전엔 이걸 「물어보다 실패」로 보고
+          그냥 넘어가서, 화면에는 「예약해뒀습니다」인데 시간이 돼도
+          아무것도 안 올라가는 상태가 영영 남았다.
+          없어졌으면 없어졌다고 화면에 적어야 사람이 다시 걸 수 있다. */
+    if (e.code === 'ZERNIO_404') {
+      await pool.query(
+        `UPDATE th_posts SET status='failed', zernio_id=NULL, error=$2 WHERE id=$1`,
+        [row.id, 'Zernio 에 이 예약이 없습니다. 지워졌거나 없어졌습니다 — ' +
+          '이대로 두면 안 올라갑니다. 「시간 설정」으로 다시 걸어주세요.']
+      );
+      return 'gone';
+    }
+    /* 그 밖의 실패는 물어보다 못 물어본 것뿐이다. 글 상태는 안 건드린다 —
+       Zernio 가 잠깐 느린 것을 「없어졌다」로 보면 멀쩡한 예약을 푼다. */
     return 'unknown';
   }
 }
@@ -97,11 +135,19 @@ async function checkUser(userId) {
     const rows = await dueRowsFor(userId, 10);
     for (const r of rows) {
       const out = await checkOne(r);
-      if (out === 'published' || out === 'failed') changed++;
+      if (out === 'published' || out === 'failed' || out === 'gone') changed++;
     }
   } catch (e) {
     /* 확인에 실패해도 목록은 보여줘야 한다 */
   }
+  /* ⚠️ 앞으로 올라갈 것도 본다. Zernio 에서 없어진 예약을 시각이 지난
+        뒤에야 알면 늦다 — 그 날 글이 통째로 빠진 뒤다.
+        목록을 열 때 몇 개만 훑는다. 많이 물어보면 화면이 느려진다. */
+  try {
+    for (const r of await aheadRowsFor(userId, 8)) {
+      if ((await checkOne(r)) === 'gone') changed++;
+    }
+  } catch (e) { /* 못 물어봐도 목록은 보여준다 */ }
   return changed;
 }
 
@@ -111,11 +157,19 @@ async function tick() {
   try {
     const rows = await dueRows(20);
     let done = 0;
+    let gone = 0;
     for (const r of rows) {
       const out = await checkOne(r);
       if (out === 'published' || out === 'failed') done++;
+      if (out === 'gone') gone++;
+    }
+    /* ⚠️ 앞으로 올라갈 것도 훑는다. Zernio 에서 없어진 예약을 시각이
+          지난 뒤에야 알면 그 날 글이 통째로 빠진 뒤다. */
+    for (const r of await aheadRows(10)) {
+      if ((await checkOne(r)) === 'gone') gone++;
     }
     if (done) console.log('[스레드] 예약 글 ' + done + '건 상태 갱신');
+    if (gone) console.log('[스레드] Zernio 에서 사라진 예약 ' + gone + '건 — 안 올라갑니다');
   } catch (e) {
     console.error('[스레드] 예약 확인 실패:', e.message);
   }
@@ -156,4 +210,4 @@ function stop() {
   timer = null;
 }
 
-module.exports = { start, stop, tick, checkOne, checkUser, dueRows, dueRowsFor };
+module.exports = { start, stop, tick, checkOne, checkUser, dueRows, dueRowsFor, aheadRows, aheadRowsFor };

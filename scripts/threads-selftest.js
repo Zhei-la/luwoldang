@@ -2129,3 +2129,33 @@ t('내 인사글 틀로 잰다', pipeSrc3.indexOf('dailyshape.check(introTpl,') 
 /* 다시 만든 것이 더 나을 때만 바꾼다 — 못 고쳐도 글은 나가야 한다 */
 t('나아졌을 때만 바꾼다',
   pipeSrc3.indexOf("dailyshape.check(introTpl, fresh[0].parts[0] || '').ok") > 0, true);
+
+/* ── Zernio 에서 사라진 예약 ──
+   ⚠️ 우리 화면에는 「예약해뒀습니다」인데 Zernio 에는 그 글이 없었다.
+      대시보드에서 손으로 지웠거나 Zernio 쪽에서 없어진 경우다.
+      그런데 우리는 **시각이 지난 뒤에야** 물어봤고, 물어보다 404 가 나면
+      그냥 넘어가서 영영 「예약됨」으로 남았다.
+      시간이 돼도 안 올라가는데 화면은 올라간다고 하고 있었다. */
+section('Zernio 에서 사라진 예약');
+
+const schGone = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'scheduler.js'), 'utf8');
+
+t('없어졌으면 없어졌다고 바꾼다', schGone.indexOf("if (e.code === 'ZERNIO_404')") > 0, true);
+t('안 올라간다고 적는다', schGone.indexOf("status='failed', zernio_id=NULL") > 0, true);
+t('무슨 일인지 알려준다', schGone.indexOf('Zernio 에 이 예약이 없습니다') > 0, true);
+t('어떻게 하라고 알려준다', schGone.indexOf('다시 걸어주세요') > 0, true);
+/* ⚠️ Zernio 가 잠깐 느린 것을 「없어졌다」로 보면 멀쩡한 예약을 푼다 */
+t('못 물어본 것은 안 건드린다', schGone.indexOf("return 'unknown';") > 0, true);
+
+/* 시각이 지난 뒤에야 알면 그 날 글이 통째로 빠진 뒤다 */
+t('앞으로 올 것도 훑는다', schGone.indexOf('async function aheadRows(') > 0, true);
+t('사람마다도 훑는다', schGone.indexOf('async function aheadRowsFor(') > 0, true);
+t('아직 안 된 것을 고른다', schGone.indexOf("dueSql('', '> NOW()')") > 0, true);
+t('5분 주기가 그걸 쓴다', schGone.indexOf('await aheadRows(10)') > 0, true);
+t('목록 열 때도 쓴다', schGone.indexOf('aheadRowsFor(userId, 8)') > 0, true);
+t('몇 개 사라졌는지 알린다',
+  schGone.indexOf('Zernio 에서 사라진 예약 ') > 0, true);
+/* 화면이 그 글을 「올리지 못했습니다」로 그린다 */
+t('화면이 안 올라갔다고 그린다', viewSrc.indexOf('올리지 못했습니다') > 0, true);
+t('이유까지 붙여 그린다', viewSrc.indexOf("(p.error ? ' — ' + esc(p.error) : '')") > 0, true);
