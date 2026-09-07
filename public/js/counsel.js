@@ -75,25 +75,29 @@
     render();
   });
 
+  function saveSettings(done) {
+    fetch('/counsel/settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(st),
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.ok) st = j.st;
+      setSummary();
+      if (done) done(j && j.ok);
+    }).catch(function () { if (done) done(false); });
+  }
+
   var saveBtn = $('#csSave');
   if (saveBtn) saveBtn.addEventListener('click', function () {
     st.days = ($('#csDays').value || '').trim();
     st.times = ($('#csTimes').value || '').trim();
     st.refund = ($('#csRefund').value || '').trim();
     saveBtn.disabled = true;
-    fetch('/counsel/settings', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(st),
-    }).then(function (r) { return r.json(); }).then(function (j) {
+    saveSettings(function (ok) {
       saveBtn.disabled = false;
-      if (!j.ok) { alert(j.error || '저장하지 못했습니다.'); return; }
-      st = j.st;
-      var ok = $('#csSaved');
-      if (ok) { ok.hidden = false; setTimeout(function () { ok.hidden = true; }, 2000); }
-      setSummary(); render();
-    }).catch(function () {
-      saveBtn.disabled = false;
-      alert('저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      if (!ok) { alert('저장하지 못했습니다. 잠시 후 다시 시도해주세요.'); return; }
+      var m = $('#csSaved');
+      if (m) { m.hidden = false; setTimeout(function () { m.hidden = true; }, 2000); }
+      render();
     });
   });
 
@@ -162,8 +166,12 @@
     return false;
   }
 
-  /* ── 카드 그리기 ── */
-  function card(sit, idx) {
+  /* ── 카드 그리기 ──
+     목록과 봇이 같은 것을 쓴다. 두 곳이 다른 문구를 보여주면 안 된다.
+     갈래 보이기/숨기기가 카드마다 따로 놀아야 해서 번호를 자체로 매긴다. */
+  var uid = 0;
+  function card(sit) {
+    var idx = ++uid;
     var h = '<div class="cs-card" data-k="' + esc(sit.k) + '">';
     h += '<h3>' + esc(sit.t);
     if (sit.star) h += '<span class="star">가장 중요</span>';
@@ -321,6 +329,154 @@
     });
   });
 
+  /* ── 봇 ──
+     처음 쓰는 사람은 뭘 쳐야 할지도 모른다. 봇이 먼저 말을 건다.
+     속은 위 검색과 같은 것이다. 대화처럼 보이게 감쌌을 뿐이라 API 를 쓰지 않는다.
+
+     되묻는 자리는 두 곳이다.
+       · 어느 상황인지 헷갈릴 때 — 후보를 눌러서 고르게 한다
+       · 컨셉에 따라 답이 갈릴 때 — 먼저 고르게 한다. 모르고 보내면 반은 틀린다
+     그 밖에는 되묻지 않는다. 상담 중에 세 번 눌러야 답이 나오면 안 쓴다. */
+  var logEl = $('#csLog'), askForm = $('#csAsk'), askIn = $('#csAskIn');
+
+  function bubble(who, html) {
+    if (!logEl) return null;
+    var d = document.createElement('div');
+    d.className = 'cs-b cs-b-' + who;
+    d.innerHTML = html;
+    logEl.appendChild(d);
+    d.scrollIntoView({ block: 'nearest' });
+    return d;
+  }
+  function chips(list) {
+    return '<div class="cs-chips">' + list.map(function (c) {
+      return '<button type="button" data-go="' + esc(c.go) + '"' +
+        (c.v != null ? ' data-v="' + esc(c.v) + '"' : '') + '>' + esc(c.t) + '</button>';
+    }).join('') + '</div>';
+  }
+
+  function greet() {
+    bubble('bot',
+      '<p>손님이 뭐라고 하셨나요? <b>그대로 붙여넣으셔도 됩니다.</b></p>' +
+      '<p class="cs-b-sub">아래에서 골라도 되고, 밑에 직접 치셔도 됩니다.</p>' +
+      chips([
+        { go: 'q', v: '신점인가요', t: '신점인가요?' },
+        { go: 'q', v: 'AI 돌린거 아니에요', t: 'AI 쓴 거 아니냐' },
+        { go: 'q', v: '좀 안 맞는 것 같아요', t: '안 맞는 것 같다' },
+        { go: 'q', v: '다른데서 본거랑 달라요', t: '다른 데랑 다르다' },
+        { go: 'q', v: '환불해주세요', t: '환불해달라' },
+        { go: 'q', v: '하나만 더 봐주세요', t: '질문이 계속 온다' },
+      ]));
+  }
+
+  /* 모르는 것은 모른다고 한다. 지어내면 그게 그대로 손님에게 나간다. */
+  function notFound(q) {
+    bubble('bot',
+      '<p><b>「' + esc(q) + '」는 정리된 내용이 없습니다.</b></p>' +
+      '<p>지어내서 답을 드리면 그게 그대로 손님한테 나가서, 여기서는 없는 건 없다고 합니다.</p>' +
+      '<p class="cs-b-sub">겪으신 상황을 <b>루월당에 카톡으로 물어봐 주세요.</b> ' +
+      '알려주시면 여기에 넣어두겠습니다 — 다음 사람이 같은 일로 헤매지 않게요.</p>' +
+      '<div class="cs-chips"><a class="cs-b-link" href="/support">문의하기로 남기기</a>' +
+      '<button type="button" data-go="list">목록에서 직접 찾아보기</button></div>');
+  }
+
+  function askWhich(list, q) {
+    bubble('bot',
+      '<p>비슷한 상황이 여럿입니다. <b>어느 쪽인가요?</b></p>' +
+      chips(list.slice(0, 5).map(function (s) { return { go: 'sit', v: s.k, t: s.t }; })));
+  }
+
+  function askConcept(k) {
+    bubble('bot',
+      '<p>이 질문은 <b>컨셉에 따라 답이 정반대</b>입니다. 어느 쪽으로 하고 계세요?</p>' +
+      '<p class="cs-b-sub">한 번만 고르시면 저장해두고 다음부터 안 여쭤봅니다.</p>' +
+      chips([
+        { go: 'c', v: 'A|' + k, t: '점사와 사주를 함께 봅니다' },
+        { go: 'c', v: 'B|' + k, t: '사주 명리만 봅니다' },
+      ]));
+  }
+
+  function answer(sit) {
+    if (sit.concept === 'AB' && !st.concept) { askConcept(sit.k); return; }
+    var b = bubble('bot', '<p>이렇게 보내세요.</p>');
+    b.classList.add('cs-b-wide');
+    var box = document.createElement('div');
+    box.innerHTML = card(sit);
+    b.appendChild(box.firstChild);
+    b.scrollIntoView({ block: 'nearest' });
+  }
+
+  function ask(q) {
+    var text = String(q || '').trim();
+    if (!text) return;
+    bubble('me', '<p>' + esc(text) + '</p>');
+
+    if (isDanger(text)) {
+      var d = $('#csDanger');
+      if (d) d.hidden = false;
+      bubble('bot',
+        '<p class="cs-b-warn">지금은 사주를 볼 때가 아닙니다.</p>' +
+        '<p>손님 말에 <b>위험 신호</b>가 있습니다. 사주 이야기를 멈추고 아래를 보내신 뒤 상담을 끝내세요.</p>' +
+        '<div class="cs-say"><button type="button" class="cs-copy">복사</button>' +
+        '<pre>' + esc(CS_DANGER_SAY) + '</pre></div>' +
+        '<p class="cs-b-sub">109(자살예방) · 1577-0199(정신건강 위기) · 1388(청소년) · 1366(여성 긴급)<br>' +
+        '판단하지 말고 들어주세요. 번호를 알려주세요. 상담을 끝내세요. ' +
+        '환불이 필요하면 해드리세요 — 돈보다 중요합니다.</p>' +
+        '<p class="cs-b-sub">자세한 것은 <b>아래 빨간 칸</b>에 펼쳐 뒀습니다.</p>');
+      return;
+    }
+
+    var k = norm(text);
+    var hits = CS_SITS.map(function (s) { return { s: s, v: score(s, k) }; })
+      .filter(function (o) { return o.v >= 40; })
+      .sort(function (a, b) { return b.v - a.v || a.s.t.length - b.s.t.length; });
+
+    if (!hits.length) { notFound(text); return; }
+    /* 1등이 확실히 앞서면 되묻지 않는다. 상담 중에 한 번이라도 덜 누르는 게 낫다. */
+    if (hits.length === 1 || hits[0].v - hits[1].v >= 20) { answer(hits[0].s); return; }
+    askWhich(hits.map(function (o) { return o.s; }), text);
+  }
+
+  if (askForm) askForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var v = askIn.value;
+    askIn.value = '';
+    ask(v);
+  });
+
+  /* 말풍선 안의 단추들 */
+  if (logEl) logEl.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('[data-go]') : null;
+    if (!b) return;
+    var go = b.getAttribute('data-go'), v = b.getAttribute('data-v') || '';
+    if (go === 'q') { ask(v); return; }
+    if (go === 'sit') {
+      var sit = CS_SITS.filter(function (s) { return s.k === v; })[0];
+      if (sit) { bubble('me', '<p>' + esc(sit.t) + '</p>'); answer(sit); }
+      return;
+    }
+    if (go === 'c') {
+      var parts = v.split('|');
+      st.concept = parts[0];
+      bubble('me', '<p>' + (parts[0] === 'A' ? '점사와 사주를 함께 봅니다' : '사주 명리만 봅니다') + '</p>');
+      $$('.cs-radios button').forEach(function (x) {
+        x.classList.toggle('on', x.getAttribute('data-c') === parts[0]);
+      });
+      saveSettings(function () {
+        var sit = CS_SITS.filter(function (s) { return s.k === parts[1]; })[0];
+        if (sit) answer(sit);
+        render();
+      });
+      return;
+    }
+    if (go === 'list') {
+      var q = $('#csQ');
+      if (q) { q.focus(); q.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    }
+  });
+
+
   setSummary();
   render();
+  greet();
 })();
