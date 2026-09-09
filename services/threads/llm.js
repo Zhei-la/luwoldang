@@ -116,7 +116,33 @@ async function callOnce(key, body, ctrl) {
  * OpenAI 에 물어보고 글자 그대로 돌려준다.
  * 실패하면 교육생이 뭘 해야 하는지 알 수 있는 문장으로 바꿔 던진다.
  */
+/**
+ * 무엇으로 글을 쓸지.
+ *
+ *   openai (기본)  — OpenAI API. 요금이 나간다. 서버가 이걸 쓴다.
+ *   claude         — **내 PC 에 깔린 Claude Code.** 요금이 안 나간다.
+ *                    이미 Claude 를 쓰는데 API 요금을 또 내는 게 아까워서 열어뒀다.
+ *
+ * ⚠️ claude 는 **내 PC 에서만** 된다. 서버에는 Claude Code 가 없다.
+ *    scripts/threads-local.js 가 이걸 켜고 돈다.
+ */
+const ENGINE = String(process.env.THREADS_ENGINE || 'openai').trim().toLowerCase();
+
+/** 지금 무엇으로 쓰고 있나 */
+function engine() { return ENGINE === 'claude' ? 'claude' : 'openai'; }
+
+/**
+ * 글을 한 번 만든다.
+ * 어느 쪽으로 갈지는 여기서 한 번만 가른다 — 부르는 쪽은 몰라도 된다.
+ */
 async function runAi(apiKey, prompt, opts) {
+  if (engine() === 'claude') {
+    return require('./llm-claude').runAi(apiKey, prompt, opts);
+  }
+  return runOpenAi(apiKey, prompt, opts);
+}
+
+async function runOpenAi(apiKey, prompt, opts) {
   const o = opts || {};
   const key = String(apiKey || '').trim();
   if (!key) {
@@ -214,7 +240,7 @@ async function testKey(apiKey, model) {
 }
 
 module.exports = {
-  runAi, testKey, looksLikeKey, pickModel, MODELS, DEFAULT_MODEL,
+  runAi, runOpenAi, engine, testKey, looksLikeKey, pickModel, MODELS, DEFAULT_MODEL,
   MODEL: DEFAULT_MODEL,                     // 예전 이름을 쓰는 곳이 남아 있어 같이 내보낸다
   buildBody, isLegacyParamModel, unsupportedParam,   // 자가 점검용
 };

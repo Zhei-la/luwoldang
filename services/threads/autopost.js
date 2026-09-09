@@ -278,7 +278,9 @@ async function runRuleInner(rule, made, errors) {
     console.error('[스레드] 이미 만든 글 예약 실패:', e.message);
   }
 
-  if (!rule.openaiKey) {
+  /* ⚠️ 내 PC 의 Claude Code 로 쓸 때는 OpenAI 키가 필요 없다.
+        키가 없다고 여기서 돌아서면 로컬 자동화가 한 글자도 못 만든다. */
+  if (!rule.openaiKey && require('./llm').engine() !== 'claude') {
     return { made, errors: errors.concat(['OpenAI 키가 없습니다']), caught };
   }
 
@@ -310,6 +312,20 @@ async function runRuleInner(rule, made, errors) {
     recent = await recentTopics(rule.userId, 20);
   } catch (e) {
     console.error('[스레드] 최근 주제 읽기 실패:', e.message);
+  }
+
+  /* ⚠️ **글 만들기를 서버에서 끌 수 있다.**
+        내 PC 의 Claude Code 로 만들기로 했으면 서버는 만들면 안 된다 —
+        서버가 먼저 자리를 채워버리면 OpenAI 요금이 그대로 나가고,
+        로컬이 만든 글은 갈 자리가 없어진다.
+        끄더라도 위의 catchUp(쌓인 원고 예약)과 rollForward(지난 자리 밀기)는
+        그대로 돈다. 그건 요금이 안 드는 일이고 꼭 필요하다. */
+  if (String(process.env.THREADS_AUTOGEN || '').trim().toLowerCase() === 'off') {
+    await rules.save(rule.userId, rule.id, {
+      lastRunAt: new Date().toISOString(),
+      lastError: errors.length ? errors[0] : '',
+    });
+    return { made, errors, moved, caught, genOff: true };
   }
 
   for (const s of slots) {

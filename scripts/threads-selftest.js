@@ -2159,3 +2159,56 @@ t('몇 개 사라졌는지 알린다',
 /* 화면이 그 글을 「올리지 못했습니다」로 그린다 */
 t('화면이 안 올라갔다고 그린다', viewSrc.indexOf('올리지 못했습니다') > 0, true);
 t('이유까지 붙여 그린다', viewSrc.indexOf("(p.error ? ' — ' + esc(p.error) : '')") > 0, true);
+
+/* ── 내 PC 의 Claude Code 로 쓰기 ──
+   이미 Claude 를 쓰고 있는데 OpenAI API 요금을 또 내는 게 아까웠다.
+   글 하나에 프롬프트가 1만 토큰이라 쌓이면 적지 않다.
+   그래서 **글쓰기만** 내 PC 의 Claude Code 로 돌릴 수 있게 열었다. */
+section('내 PC 의 Claude Code 로 쓰기');
+
+const LC = require(require('path').join(__dirname, '..', 'services', 'threads', 'llm-claude'));
+const lcSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'llm-claude.js'), 'utf8');
+const llmSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'services', 'threads', 'llm.js'), 'utf8');
+
+t('부를 함수가 있다', typeof LC.runAi, 'function');
+t('되는지 볼 수 있다', typeof LC.check, 'function');
+/* ⚠️ 프롬프트가 4만 자다. 인자로 넘기면 윈도우가 자른다 */
+t('프롬프트를 표준입력으로 넘긴다', lcSrc.indexOf("child.stdin.end(prompt, 'utf8')") > 0, true);
+t('인자로는 안 넘긴다', /spawn\([^)]*prompt/.test(lcSrc), false);
+/* 셸을 거치므로 모델 이름을 그대로 이어 붙이면 안 된다 */
+t('모델 이름을 조인다', lcSrc.indexOf('/^[A-Za-z0-9._-]+$/.test(model)') > 0, true);
+t('오래 기다려준다', LC.TIMEOUT_MS >= 300000, true);
+
+/* 엔진 가르기 — 부르는 쪽은 어느 쪽인지 몰라도 된다 */
+t('기본은 OpenAI', require(require('path').join(__dirname, '..', 'services', 'threads', 'llm')).engine(), 'openai');
+t('한 군데서만 가른다', llmSrc.indexOf("if (engine() === 'claude')") > 0, true);
+t('예전 길은 그대로 둔다', llmSrc.indexOf('async function runOpenAi(') > 0, true);
+t('환경변수로 켠다', llmSrc.indexOf('process.env.THREADS_ENGINE') > 0, true);
+
+/* ⚠️ Claude Code 는 열쇠가 필요 없다. 키 검사에 걸리면 한 글자도 못 만든다 */
+t('열쇠 없이도 돈다',
+  autoSrc3.indexOf("!rule.openaiKey && require('./llm').engine() !== 'claude'") > 0, true);
+
+/* ⚠️ 서버가 먼저 자리를 채우면 OpenAI 요금이 그대로 나간다.
+      서버의 **만들기만** 끌 수 있어야 한다. */
+t('서버에서 만들기를 끌 수 있다',
+  autoSrc3.indexOf("process.env.THREADS_AUTOGEN || '').trim().toLowerCase() === 'off'") > 0, true);
+t('껐다고 알려준다', autoSrc3.indexOf('genOff: true') > 0, true);
+/* 꺼도 예약 걸기와 지난 자리 밀기는 돌아야 한다 — 요금이 안 드는 일이다 */
+t('꺼도 쌓인 원고는 예약한다',
+  autoSrc3.indexOf('const up = await catchUp(rule);') <
+  autoSrc3.indexOf("THREADS_AUTOGEN"), true);
+
+/* 로컬 실행기 */
+const localSrc = require('fs')
+  .readFileSync(require('path').join(__dirname, '..', 'scripts', 'threads-local.js'), 'utf8');
+t('로컬 실행기가 있다', localSrc.indexOf("process.env.THREADS_ENGINE = 'claude';") > 0, true);
+/* ⚠️ require 보다 먼저 정해야 한다. 나중에 정하면 이미 읽힌 뒤다 */
+t('엔진을 먼저 정한다',
+  localSrc.indexOf("THREADS_ENGINE = 'claude'") < localSrc.indexOf("require(ROOT + '/db')"), true);
+t('자기 자신은 안 꺼진다', localSrc.indexOf("process.env.THREADS_AUTOGEN = 'on';") > 0, true);
+t('DATABASE_URL 이 없으면 알려준다', localSrc.indexOf('DATABASE_PUBLIC_URL') > 0, true);
+t('만들기 전에 확인만 할 수 있다', localSrc.indexOf("--dry") > 0, true);
+t('쓰는 법을 적어뒀다', localSrc.indexOf('--help') > 0, true);
