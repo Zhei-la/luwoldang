@@ -673,3 +673,5 @@ module.exports.localTimeCorrection = localTimeCorrection;
 module.exports.standardMeridian = standardMeridian;
 /* 서머타임 판정 — manseCalc.js 가 엔진에 넘길 보정분에 넣는다 */
 module.exports.isDST = isDST;
+/* 서머타임 구간 목록 — dstCorrection.js 가 안내 문구의 「이 시기(1987~1988년)」를 여기서 뽑는다 */
+module.exports.DST_PERIODS = DST_PERIODS;

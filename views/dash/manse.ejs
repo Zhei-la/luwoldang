@@ -243,6 +243,9 @@
 /* 지역시 보정 체크박스 */
 #manse-app .corr-note { margin:7px 0 0; font-size:12px; line-height:1.75; color:#8A8574; }
 #manse-app .corr-note b { color:#4A4438; }
+/* 서머타임 구간 태생에게만 붙는 안내 — 표 캡처 영역 안에도 들어가 이미지에 같이 찍힌다 */
+#manse-app .dst-note { margin:0 0 12px; padding:11px 14px; border:1px solid #E6D9B8; border-radius:8px; background:#FFFBEF; font-size:13px; line-height:1.75; color:#4A4438; }
+#manse-app .dst-note hr { border:0; border-top:1px dashed #E6D9B8; margin:8px 0; }
 #manse-app .corr-chk { display:flex; align-items:center; gap:6px; margin-top:6px;
   font-size:13px; color:#444; font-weight:500; cursor:pointer; white-space:normal; }
 #manse-app .corr-chk input { width:17px; height:17px; flex:0 0 auto; cursor:pointer; }
@@ -1103,8 +1106,21 @@ function setActiveResultTab(tab) {
   viewColor.style.display = tab === 'color' ? 'block' : 'none';
 }
 
+// 서머타임 구간 태생에게만 「왜 1시간을 뺐는지」 안내 상자를 만든다. 문구는 서버(dstCorrection.js)가 보낸다.
+// 해당자가 없으면 서버가 dstNotice 를 안 보내므로 빈 글자를 돌려준다 — 결과 화면이 예전과 같다.
+function dstNoticeHtml(list) {
+  if (!Array.isArray(list) || !list.length) return '';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return '<div class="dst-note">' + list.map((n) =>
+    (n.who ? '<b>' + esc(n.who) + '</b><br>' : '') + (n.lines || []).map(esc).join('<br>')
+  ).join('<hr>') + '</div>';
+}
+
 // 개인 모드/궁합 모드 공용: 계산 결과(text/pdfHtml/colorHtml)를 결과 탭 3개로 렌더링한다.
+// 서머타임 안내는 세 탭 맨 위에 넣는다. 표 두 개는 캡처 영역 안에 넣어 저장·복사 이미지에도 찍히게 한다
+// (LLM용 텍스트 복사 내용에는 들어가지 않는다).
 function renderResultTabs(data) {
+  const dstNote = dstNoticeHtml(data.dstNotice);
   resultDiv.innerHTML =
     '<div class="result-tabs">' +
       '<button type="button" class="tab-btn" id="tabLlm">LLM용 텍스트</button>' +
@@ -1112,16 +1128,17 @@ function renderResultTabs(data) {
       '<button type="button" class="tab-btn" id="tabColor">컬러 표</button>' +
     '</div>' +
     '<div class="result-box" id="viewLlm">' +
+      dstNote +
       '<pre></pre>' +
       '<div class="result-bottom-actions">' +
         '<button type="button" class="secondary" id="copyBtnBottom">복사하기</button>' +
       '</div>' +
     '</div>' +
     '<div class="pdf-view" id="viewPdf">' +
-      '<div id="pdfCaptureArea">' + data.pdfHtml + '</div>' +
+      '<div id="pdfCaptureArea">' + dstNote + data.pdfHtml + '</div>' +
     '</div>' +
     '<div class="pdf-view" id="viewColor">' +
-      '<div id="colorCaptureArea">' + data.colorHtml + '</div>' +
+      '<div id="colorCaptureArea">' + dstNote + data.colorHtml + '</div>' +
     '</div>';
   resultDiv.querySelector('pre').textContent = data.text;
   document.getElementById('copyBtnBottom').addEventListener('click', (e) => copyToButton(e.currentTarget));

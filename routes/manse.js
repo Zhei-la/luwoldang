@@ -18,7 +18,7 @@ const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const engine = require('../services/cbEngine');
 /* 엔진은 서머타임을 모른다. 넘기기 직전에 얹고, 엔진이 적은 보정 문구를 바로잡는다. */
-const { 서머타임반영, 보정문구 } = require('../services/dstCorrection');
+const { 서머타임반영, 보정문구, 서머타임안내 } = require('../services/dstCorrection');
 const { REGIONS } = require('../services/cbRegions');
 const pool = require('../db').pool;
 
@@ -99,6 +99,17 @@ function 일간십성(out) {
     .split('(일간, 나)').join('(일간, 나 · 십성 비견)');
 }
 
+/**
+ * 서머타임 구간 태생에게만 「왜 1시간을 뺐는지」 안내를 붙인다.
+ * 아무도 해당하지 않으면 dstNotice 키 자체를 보내지 않는다 — 응답이 예전과 똑같다.
+ * @param {Array<{ who: string, x: object }>} people  who: 궁합이면 '본인 (이름)', 개인이면 ''
+ */
+function 서머타임안내응답(people) {
+  const list = people.map((p) => ({ who: p.who, lines: 서머타임안내(p.x) })).filter((p) => p.lines);
+  return list.length ? { dstNotice: list } : {};
+}
+const 누구 = (role, name) => (String(name || '').trim() ? `${role} (${String(name).trim()})` : role);
+
 const boundary = (b) => (b === 'split' ? 'splitJasi' : 'jasi');
 const 야자라벨 = (b) => (b === 'split' ? '적용(야자시)' : '미적용');
 
@@ -118,6 +129,7 @@ router.post('/api/manse/myeongsik', (req, res) => {
       ok: true,
       text: 일간십성(r.text), pdfHtml: 일간십성(r.pdfHtml), colorHtml: 일간십성(r.colorHtml),
       name: String(b.name || '').trim(),
+      ...서머타임안내응답([{ who: '', x }]),
     });
   } catch (e) {
     console.error('[만세력] 명식 계산 실패:', e.message);
@@ -141,6 +153,7 @@ router.post('/api/manse/gunghap', (req, res) => {
       ok: true,
       text: 일간십성(r.text), pdfHtml: 일간십성(r.pdfHtml), colorHtml: 일간십성(r.colorHtml),
       person1Name: p1.name.trim(), person2Name: p2.name.trim(),
+      ...서머타임안내응답([{ who: 누구('본인', p1.name), x: x1 }, { who: 누구('상대방', p2.name), x: x2 }]),
     });
   } catch (e) {
     console.error('[만세력] 궁합 계산 실패:', e.message);

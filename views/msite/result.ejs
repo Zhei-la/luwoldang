@@ -264,6 +264,8 @@
     <% if (typeof jasiNote !== 'undefined' && jasiNote) { %>
       <p class="bt jn">밤 11시 이후에 태어나셨습니다. 이 만세력은 <b>밤 11시부터를 다음 날</b>로 보고
         계산합니다. <a href="<%= base %>/guide/manseryeok">왜 그런가요</a></p>
+    <% } %><% if (typeof dstNotice !== 'undefined' && dstNotice) { %>
+      <p class="bt jn"><% dstNotice.forEach(function (line, i) { %><%= line %><% if (i < dstNotice.length - 1) { %><br><% } %><% }); %></p>
     <% } %>
   </section>
 
