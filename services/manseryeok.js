@@ -114,17 +114,31 @@ function localTimeCorrection(region, dateStr) {
   return Math.round((lon - meridian) * 4); // 음수 = 늦춰짐
 }
 
-/* ---------- 한국 서머타임 구간 (-60분) ---------- */
+/* ---------- 한국 서머타임 구간 (-60분) ----------
+ * 만세력 계산기(src/kst-history.ts)의 DST_PERIODS 와 같은 목록이다.
+ * 당시 벽시계 시각 기준 [시작, 종료) — 이 사이의 시계는 표준시보다 1시간 앞서 있었다.
+ * ⚠️ 1987·1988년은 자정이 아니라 02:00 에 시작해 03:00 에 끝났다.
+ *    날짜만 보면 1988-05-08 01:30 이나 1988-10-09 15:00 도 서머타임으로 잡힌다.
+ * 서머타임은 표준시 자체를 당긴 것이라 출생지와 상관없이 전국에 걸린다.
+ * 근거 없이 구간을 추가하지 말 것. */
 const DST_PERIODS = [
-  ['1948-06-01','1948-09-12'], ['1949-04-03','1949-09-10'],
-  ['1950-04-01','1950-09-09'], ['1951-05-06','1951-09-08'],
-  ['1955-05-05','1955-09-08'], ['1956-05-20','1956-09-29'],
-  ['1957-05-05','1957-09-21'], ['1958-05-04','1958-09-20'],
-  ['1959-05-03','1959-09-19'], ['1960-05-01','1960-09-17'],
-  ['1987-05-10','1987-10-11'], ['1988-05-08','1988-10-09'],
+  ['1948-06-01 00:00', '1948-09-13 00:00'],
+  ['1949-04-03 00:00', '1949-09-11 00:00'],
+  ['1950-04-01 00:00', '1950-09-10 00:00'],
+  ['1951-05-06 00:00', '1951-09-09 00:00'],
+  ['1955-05-05 00:00', '1955-09-09 00:00'],
+  ['1956-05-20 00:00', '1956-09-30 00:00'],
+  ['1957-05-05 00:00', '1957-09-22 00:00'],
+  ['1958-05-04 00:00', '1958-09-21 00:00'],
+  ['1959-05-03 00:00', '1959-09-20 00:00'],
+  ['1960-05-01 00:00', '1960-09-18 00:00'],
+  ['1987-05-10 02:00', '1987-10-11 03:00'],
+  ['1988-05-08 02:00', '1988-10-09 03:00'],
 ];
-function isDST(dateStr) {
-  return DST_PERIODS.some(function (p) { return dateStr >= p[0] && dateStr <= p[1]; });
+/** dateStr: 양력 'YYYY-MM-DD', hh·mm: 당시 벽시계 시각 */
+function isDST(dateStr, hh, mm) {
+  const wall = String(dateStr) + ' ' + pad(hh || 0) + ':' + pad(mm || 0);
+  return DST_PERIODS.some(function (p) { return wall >= p[0] && wall < p[1]; });
 }
 
 /* ---------- 시지 구간 ----------
@@ -164,7 +178,9 @@ function calcSaju(o) {
   const dayChangeMode = o.dayChangeMode || 'lateZiNextDay';
   const gender = o.gender || null;
   const useLocalSolarTime = o.useLocalSolarTime !== false;
-  const applyDST = o.applyDST === true; // 검증 결과 기본 off
+  /* 서머타임 기본 on. 만세력 계산기(cbEngine)·PDF 만세력 장(manseCalc)과 같은 시주를 내야 한다.
+     꺼져 있으면 같은 PDF 안에서 표는 갑오, 적용시각은 서머타임을 뺀 시각으로 갈린다. 끄려면 applyDST:false */
+  const applyDST = o.applyDST !== false;
 
   const parts = String(birthDate).split('-').map(Number);
   const y = parts[0], m = parts[1], d = parts[2];
@@ -188,7 +204,7 @@ function calcSaju(o) {
   let correction = 0;
   const notes = [];
   if (timeKnown) {
-    if (applyDST && isDST(dateStr)) { correction -= 60; notes.push('서머타임 -60분'); }
+    if (applyDST && isDST(dateStr, hh, mm)) { correction -= 60; notes.push('서머타임 -60분'); }
     if (useLocalSolarTime) {
       const lt = localTimeCorrection(region, dateStr);
       correction += lt;
@@ -655,3 +671,5 @@ module.exports.findCurrentDaewoon = findCurrentDaewoon;
 /* 진태양시 보정을 새 엔진 래퍼에서 재사용하기 위해 내보낸다 (계산 로직 변경 없음) */
 module.exports.localTimeCorrection = localTimeCorrection;
 module.exports.standardMeridian = standardMeridian;
+/* 서머타임 판정 — manseCalc.js 가 엔진에 넘길 보정분에 넣는다 */
+module.exports.isDST = isDST;

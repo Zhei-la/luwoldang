@@ -24,6 +24,8 @@ const fortune = require('../services/cbFortune');
 const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
 const solarTime = require('../services/solarTime');
+/* 엔진은 서머타임을 모른다. 넘기기 직전에 얹는다 (교육생 만세력 /manse 와 같은 처리) */
+const { 서머타임반영 } = require('../services/dstCorrection');
 const theme = require('../services/msiteTheme');
 const quota = require('../services/msiteQuota');
 const guest = require('../services/guestSite');
@@ -237,7 +239,9 @@ async function showResult(req, res, next) {
          빼면 밤 11시~자정 태생이 어느 관법과도 다른 시주를 받는다.
          (자시 미분리도 야자시도 아닌, 그냥 처리를 안 한 값이 나온다)
          교육생 만세력(/manse) 기본값과 똑같이 '자시 미분리'로 맞춘다. */
-      r = engine.명식표상세(b.input, 'jasi', '미적용');
+      /* 화면에 보여줄 값(b.input)은 그대로 두고 엔진에 넘길 입력에만 서머타임을 얹는다.
+         b.input 의 보정분을 바꾸면 「지역시 보정 켬」 표시(pre.localTime)까지 따라 바뀐다. */
+      r = engine.명식표상세(서머타임반영(b.input).info, 'jasi', '미적용');
     } catch (e) {
       console.error('[만세력] 계산 실패:', e.message);
       return res.render('msite/input', Object.assign(pageBits(req, t), {

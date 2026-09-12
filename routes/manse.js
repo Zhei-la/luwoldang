@@ -17,6 +17,8 @@ const solarTime = require('../services/solarTime');
 const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const engine = require('../services/cbEngine');
+/* 엔진은 서머타임을 모른다. 넘기기 직전에 얹고, 엔진이 적은 보정 문구를 바로잡는다. */
+const { 서머타임반영, 보정문구 } = require('../services/dstCorrection');
 const { REGIONS } = require('../services/cbRegions');
 const pool = require('../db').pool;
 
@@ -104,13 +106,14 @@ const 야자라벨 = (b) => (b === 'split' ? '적용(야자시)' : '미적용');
 router.post('/api/manse/myeongsik', (req, res) => {
   try {
     const b = req.body || {};
-    const r = 명식표상세(toInfo(b), boundary(b.jasi), 야자라벨(b.jasi), {
+    const x = 서머타임반영(toInfo(b));
+    const r = 보정문구(명식표상세(x.info, boundary(b.jasi), 야자라벨(b.jasi), {
       name: typeof b.name === 'string' ? b.name : '',
       concern: typeof b.concern === 'string' ? b.concern : '',
       세운년수: Number(b['세운년수']) || 5,
       월운개월수: Number(b['월운개월수']) || 12,
       연애상태: typeof b['연애상태'] === 'string' ? b['연애상태'] : '',
-    });
+    }), x);
     res.json({
       ok: true,
       text: 일간십성(r.text), pdfHtml: 일간십성(r.pdfHtml), colorHtml: 일간십성(r.colorHtml),
@@ -126,12 +129,14 @@ router.post('/api/manse/myeongsik', (req, res) => {
 router.post('/api/manse/gunghap', (req, res) => {
   try {
     const b = req.body || {};
-    const p1 = { info: toInfo(b.person1), name: String((b.person1 && b.person1.name) || '') };
-    const p2 = { info: toInfo(b.person2), name: String((b.person2 && b.person2.name) || '') };
-    const r = 궁합분석(p1, p2,
+    const x1 = 서머타임반영(toInfo(b.person1));
+    const x2 = 서머타임반영(toInfo(b.person2));
+    const p1 = { info: x1.info, name: String((b.person1 && b.person1.name) || '') };
+    const p2 = { info: x2.info, name: String((b.person2 && b.person2.name) || '') };
+    const r = 보정문구(보정문구(궁합분석(p1, p2,
       typeof b.relationType === 'string' ? b.relationType : '',
       boundary(b.jasi), 야자라벨(b.jasi),
-      { concern: typeof b.concern === 'string' ? b.concern : '' });
+      { concern: typeof b.concern === 'string' ? b.concern : '' }), x1), x2);
     res.json({
       ok: true,
       text: 일간십성(r.text), pdfHtml: 일간십성(r.pdfHtml), colorHtml: 일간십성(r.colorHtml),

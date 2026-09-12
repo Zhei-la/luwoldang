@@ -259,7 +259,7 @@
       <input type="checkbox" id="ltChk" <%= tc.useLocalSolarTime === false ? '' : 'checked' %>>
       <span><b>지역시(진태양시) 보정 적용</b>
         <small><%= tc.originalTime || '시간모름' %><%= tc.correctedTime && tc.correctedTime !== tc.originalTime ? ' → ' + tc.correctedTime : '' %>
-        <%= tc.correctionMinutes ? '(' + tc.correctionMinutes + '분)' : '' %> · <%= tc.region || '-' %></small>
+        <%= (tc.notes || []).some(function (n) { return String(n).indexOf('서머타임') === 0; }) ? '(' + tc.notes.join(', ') + ')' : (tc.correctionMinutes ? '(' + tc.correctionMinutes + '분)' : '') %> · <%= tc.region || '-' %></small>
       </span>
       <em id="ltMsg"></em>
     </label>
