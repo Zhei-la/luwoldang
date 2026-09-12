@@ -3,730 +3,897 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>루월당 · AI 사주 자동화 컨설팅 — 사주 몰라도, 퇴근 후 월 100</title>
-<meta name="description" content="사주를 몰라도 됩니다. 실제 명리학자와 함께 만든 전용 AI·자동화 프로그램으로 웹사이트부터 리포트 발송까지. 3기 10명 한정 모집.">
-<meta property="og:title" content="사주 몰라도, 퇴근 후 월 100 · 루월당">
-<meta property="og:description" content="전용 만세력 엔진 · 7종 리포트 PDF · 개인 사주 웹사이트 · 평생 피드백">
+<title>루월당 수강 안내 — 마지막 3기 · AI 사주 자동화 컨설팅</title>
+<meta name="description" content="사주를 몰라도 됩니다. 전용 만세력 엔진, 7종 리포트 PDF, 나만의 무료사주 웹사이트, 일진첩, 스레드 자동화, GPTs, 1:1 평생 피드백까지. 3기가 마지막 모집입니다.">
+<meta property="og:title" content="사주 몰라도, 퇴근 후 월 100 · 루월당 마지막 3기">
+<meta property="og:description" content="전용 만세력 엔진 · 7종 리포트 PDF · 무료사주 웹사이트 · 일진첩 · 스레드 자동화 · 1:1 평생 피드백">
 <meta property="og:type" content="website">
 <link rel="icon" href="/img/favicon.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Song+Myung&display=swap">
 <style>
-/* 판매 페이지는 늘 밝게 — 기기 다크모드를 따라가지 않는다 */
+/* 판매 페이지는 늘 밝게 — 기기 다크모드를 따라가지 않는다.
+   색과 글꼴은 홈(/)과 같은 것을 쓴다. */
 :root{
   color-scheme:light;
-  --paper:#FFFBF4; --card:#FFFFFF; --tint:#FFEEE0;
-  --ink:#1B1512; --ink-2:#4E443C; --ink-3:#6E6459;
-  --rule:#E6DCCB; --rule-soft:#F0E8DA;
-  --fire:#D0430D; --fire-ink:#B93A08; --fire-deep:#9E3006;
-  --jade:#0E7A5F; --jade-soft:#E3F1EC;
+  --bg:#F6F1E8; --paper:#FBF8F2; --card:#FFFDF9; --beige:#EFE7DA;
+  --line:#E4DACB; --pill:#D9CFBF;
+  --ink:#49443E; --muted:#5C574F; --faint:#8F887C;
+  --navy:#18223A; --gold:#A6844B; --gold-soft:#CDB88F; --gold-light:#F0CF8D;
+  --rust:#C64517; --rust-deep:#A0360F; --rust-soft:#F8E6DC; --green:#2E9E6A;
+  --serif:"Song Myung","Nanum Myeongjo",serif;
+  --sans:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 *{box-sizing:border-box}
-body{
-  margin:0; background:var(--paper); color:var(--ink);
-  font-family:'IBM Plex Sans KR','Malgun Gothic',sans-serif;
-  font-size:18px; line-height:1.82; letter-spacing:-.005em;
-  word-break:keep-all; -webkit-font-smoothing:antialiased;
-  padding-bottom:84px; overflow-x:hidden;
-}
-h1,h2,h3{margin:0;text-wrap:balance;font-family:'Noto Serif KR','Nanum Myeongjo',serif;
-  font-weight:900;letter-spacing:-.03em;line-height:1.24}
-p{margin:0}
-a{color:inherit}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:16.5px;line-height:1.8;word-break:keep-all;-webkit-font-smoothing:antialiased;
+  padding-bottom:72px;overflow-x:hidden}
+h1,h2,h3,p{margin:0}
+a{color:inherit;text-decoration:none}
 img{max-width:100%}
-/* 돈 숫자 전용 — 이 페이지에서 제일 크게 보여야 하는 것 */
-.money{font-family:'Black Han Sans','Noto Sans KR',sans-serif;font-weight:400;
-  font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
-.wrap{max-width:720px;width:100%;margin:0 auto;padding:0 22px;min-width:0}
+b{font-weight:700;color:var(--navy)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px;min-width:0}
+section{padding:110px 0}
 
-section{padding:76px 0}
-.stack{display:flex;flex-direction:column;gap:24px;min-width:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
+.h2{font-family:var(--serif);font-weight:400;font-size:clamp(30px,4.2vw,44px);line-height:1.3;
+  color:var(--navy);letter-spacing:-.01em;margin-top:14px}
+.lead{font-size:17px;color:var(--muted);margin-top:16px;max-width:40em}
+.head{margin-bottom:52px}
+.center{text-align:center}
+.center .lead{margin-left:auto;margin-right:auto}
+.rust{color:var(--rust)}
 
-/* 조용한 칸과 큰소리 치는 칸을 번갈아 둔다 */
-.band{background:var(--fire);color:#fff}
-.band.jade{background:var(--jade)}
-.band h2,.band h3{color:#fff}
-.band .lede,.band .body{color:#fff}
-.band .body b,.band .lede b{color:#fff}
-.band .eyebrow{color:#fff}
-.band .eyebrow s{background:rgba(255,255,255,.4)}
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 26px;
+  border:1.5px solid transparent;border-radius:0;font-family:inherit;font-size:15.5px;font-weight:700;line-height:1.2;
+  cursor:pointer;text-align:center;transition:transform .15s,box-shadow .15s,background .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(24,34,58,.14)}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.btn.rust{background:var(--rust);color:#fff}
+.btn.rust:hover{background:var(--rust-deep)}
+.btn.navy{background:var(--navy);color:#fff}
+.btn.outline{border-color:var(--navy);color:var(--navy);background:transparent}
+.dark .btn.outline,.offer .btn.outline{border-color:rgba(255,255,255,.55);color:#fff}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
 
-.eyebrow{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;
-  letter-spacing:.02em;color:var(--fire-ink)}
-.eyebrow s{text-decoration:none;width:20px;height:2px;background:var(--fire);display:inline-block;flex:none}
+/* 맨 위 한 줄 알림 */
+.strip{background:var(--navy);color:#D9D4C8;font-size:13px}
+.strip .in{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;padding:8px 20px;text-align:center}
+.strip b{color:var(--gold-light)}
 
-h2.head{font-size:clamp(31px,6.4vw,50px)}
-h3.sub{font-size:23px;font-weight:700}
-.lede{font-size:20px;line-height:1.72;color:var(--ink-2)}
-.body{font-size:17.5px;line-height:1.88;color:var(--ink-2)}
-.body b,.lede b{color:var(--ink);font-weight:600}
-.mark{color:var(--fire-ink);font-weight:700}
-/* 형광펜처럼 글자 뒤에 색을 깐다 — 상자가 윗줄을 덮지 않게 글자 높이에 맞춘다 */
-.slab{display:inline-block;background:var(--fire);color:#fff;
-  line-height:1.06;padding:.05em .16em .11em;
-  box-decoration-break:clone;-webkit-box-decoration-break:clone}
+/* 메뉴 */
+.top{position:sticky;top:0;z-index:60;background:rgba(251,248,242,.93);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:70px;position:relative}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .seal{width:36px;height:36px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:var(--serif);color:var(--gold);font-size:18px}
+.brand b{font-size:18px}
+.brand small{font-family:var(--serif);font-size:13px;color:var(--gold);margin-left:2px}
+.menu{display:flex;align-items:center;gap:28px;font-size:14px;color:var(--muted)}
+.menu a:not(.btn):hover{color:var(--navy)}
+.menu .btn{min-height:42px;padding:0 18px;font-size:14px}
+.menu-tog{display:none;background:none;border:0;font-size:24px;color:var(--navy);cursor:pointer;padding:6px}
 
-/* 상단 얇은 고정 바 */
-.topbar{position:fixed;top:0;left:0;right:0;z-index:70;background:var(--ink);color:#fff}
-.topbar .in{max-width:720px;margin:0 auto;padding:0 22px;height:42px;display:flex;align-items:center;
-  gap:12px;font-size:13.5px;font-weight:500}
-.topbar b{color:#FFC9A8;font-weight:700}
-.topbar .r{margin-left:auto;font-size:13px;color:rgba(255,255,255,.7)}
-@media(max-width:540px){.topbar .r{display:none}}
+/* 첫 화면 */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);border-bottom:1px solid var(--line)}
+.hero-text{display:flex;flex-direction:column;justify-content:center;
+  padding:76px 56px 76px max(28px, calc((100vw - 1180px) / 2 + 28px))}
+.chip{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:var(--card);
+  border:1px solid var(--pill);border-radius:100px;padding:6px 16px 6px 12px;font-size:13.5px;font-weight:600;color:var(--navy)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(46,158,106,.18)}
+.hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(42px,5.6vw,70px);line-height:1.25;
+  color:var(--navy);letter-spacing:-.02em;margin-top:24px}
+.slab{display:inline-block;background:var(--rust);color:#fff;line-height:1.08;padding:.02em .16em .08em}
+.hero .desc{font-size:18px;color:var(--muted);margin-top:22px;max-width:30em}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.pills span{background:var(--card);border:1px solid var(--pill);padding:4px 12px;font-size:13.5px}
+.pills b{color:var(--rust)}
+.herocta{display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px 28px;margin-top:30px;padding-top:24px;border-top:1px solid var(--line)}
+.pr .lbl{display:block;font-size:13px;color:var(--faint);font-weight:600}
+.pr .val{font-family:var(--serif);font-size:clamp(38px,4.6vw,50px);color:var(--navy);line-height:1.15}
+.pr .val s{font-family:var(--sans);font-size:15px;color:var(--faint);margin-left:10px}
+.hero .livegift{font-size:13.5px;color:var(--faint);margin-top:16px}
+.hero .livegift b{color:var(--muted)}
+.hero-img{position:relative;overflow:hidden;min-height:560px;background:url('/img/bg/hanji-paper.jpg') center/cover}
+.hero-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:42% 40%}
+.hero-img .vert{position:absolute;right:26px;bottom:34px;writing-mode:vertical-rl;font-family:var(--serif);
+  font-size:15px;letter-spacing:.3em;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.3)}
 
-/* HERO */
-.hero{padding-top:42px;background:
-  radial-gradient(120% 90% at 78% 0%, var(--tint) 0%, transparent 62%),
-  var(--paper)}
-.hero .wrap{padding-top:56px;padding-bottom:60px;display:flex;flex-direction:column;gap:26px}
-.chip{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;
-  background:var(--ink);color:#fff;border-radius:100px;padding:8px 18px 8px 14px;
-  font-size:14px;font-weight:600}
-.chip .dot{width:8px;height:8px;border-radius:50%;background:#5BE3A7;
-  box-shadow:0 0 0 4px rgba(91,227,167,.28)}
-.hero h1{font-size:clamp(40px,10.4vw,80px);line-height:1.26;letter-spacing:-.038em}
-.hero .sub{font-size:clamp(17px,2.6vw,20px);color:var(--ink-2);line-height:1.72;max-width:31em}
-.hero .sub b{color:var(--ink);font-weight:700}
-.hero .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0}
-.hero .meta span{background:var(--card);border:1.5px solid var(--rule);border-radius:100px;
-  padding:8px 16px;font-size:14.5px;font-weight:600;color:var(--ink-2)}
-.hero .meta span b{color:var(--fire-ink);font-weight:700}
-.herocta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  border-top:2px solid var(--ink);padding-top:24px;margin-top:4px}
-.herocta .pr{display:flex;flex-direction:column;gap:2px}
-.herocta .pr .lbl{font-size:13.5px;color:var(--ink-3);font-weight:600}
-.herocta .pr .val{font-size:clamp(34px,8vw,50px);color:var(--ink)}
-.herocta .pr .val s{font-family:'IBM Plex Sans KR',sans-serif;font-size:16px;color:var(--ink-3);
-  font-weight:500;margin-left:10px;letter-spacing:0}
+/* 마지막 기수 */
+.last{background:var(--paper);border-bottom:1px solid var(--line)}
+.last-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:64px;align-items:start}
+.stamp{display:inline-flex;align-items:center;justify-content:center;width:88px;height:88px;border:2px solid var(--rust);
+  border-radius:50%;color:var(--rust);font-family:var(--serif);font-size:15px;line-height:1.25;text-align:center;
+  transform:rotate(-8deg);margin-bottom:24px}
+.last .lead + .lead{margin-top:12px}
+.last .btns{margin-top:30px}
+.promise{margin-top:18px;border-left:3px solid var(--rust);background:var(--card);padding:16px 20px;font-size:15.5px;color:var(--ink)}
+.offer .when{margin-top:12px;font-size:15px;color:var(--gold-light);font-weight:600}
+.benefits{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bn{background:var(--card);border:1px solid var(--line);padding:26px 24px;position:relative}
+.bn .k{font-family:var(--serif);font-size:24px;color:var(--gold);line-height:1}
+.bn h3{font-size:17px;font-weight:700;color:var(--navy);margin-top:14px}
+.bn p{font-size:14.5px;color:var(--muted);margin-top:6px}
+.tag{position:absolute;top:22px;right:20px;font-size:11.5px;font-weight:700;color:var(--rust);
+  border:1px solid currentColor;border-radius:100px;padding:1px 9px;line-height:1.6}
+.next{margin-top:12px;background:var(--navy);color:#D9D4C8;padding:28px 28px 26px}
+.next .t{font-size:12.5px;letter-spacing:.16em;color:var(--gold-light);font-weight:600}
+.next ul{list-style:none;padding:0;margin:14px 0 0;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.next li{border:1px solid rgba(255,255,255,.16);padding:14px 16px;font-size:15px;color:#fff;font-weight:600;line-height:1.5}
+.next li span{display:block;font-size:12.5px;color:#B9B4A8;font-weight:400;margin-top:4px}
+.next p{font-size:15px;margin-top:18px}
+.next p b{color:var(--gold-light)}
 
-/* 무료 설명회 라이브 안내 */
-.livebar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;text-decoration:none;
-  background:var(--card);border:2px solid var(--fire);border-radius:12px;padding:16px 20px}
-.livebar .tag{background:var(--fire);color:#fff;font-size:12.5px;font-weight:700;
-  padding:5px 12px;border-radius:100px;flex:none}
-.livebar .txt{font-size:16px;color:var(--ink-2);line-height:1.55;flex:1;min-width:180px}
-.livebar .txt b{color:var(--ink);font-weight:700}
-.livebar .go{font-size:15px;font-weight:700;color:var(--fire-ink);flex:none}
-.livebar:hover{background:var(--tint)}
-.livegift{font-size:14.5px;color:var(--ink-3);line-height:1.6}
-.livegift b{color:var(--ink-2);font-weight:700}
+/* 같은 시간, 다른 결과 */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.vs>div{background:var(--card);border:1px solid var(--line);padding:34px 32px;display:flex;flex-direction:column}
+.vs .cap{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.04em}
+.vs h3{font-family:var(--serif);font-weight:400;font-size:26px;color:var(--navy);margin-top:6px}
+.vs ul{list-style:none;padding:0;margin:20px 0 0}
+.vs li{padding:11px 0 11px 22px;border-top:1px solid var(--line);position:relative;font-size:15.5px;color:var(--muted)}
+.vs li::before{content:"";position:absolute;left:0;top:1.4em;width:10px;height:1.5px;background:var(--faint)}
+.vs .amt{margin-top:auto;padding-top:24px;font-family:var(--serif);font-size:44px;line-height:1.1;color:var(--faint)}
+.vs .r{background:var(--navy);border-color:var(--navy)}
+.vs .r .cap{color:var(--gold-light)}
+.vs .r h3{color:#fff}
+.vs .r li{color:#D9D4C8;border-top-color:rgba(255,255,255,.12)}
+.vs .r li::before{background:var(--gold-light)}
+.vs .r .amt{color:var(--gold-light)}
 
-/* 큰 숫자 밴드 — 이 페이지에서 제일 센 화면 */
-.bigrow{display:flex;flex-direction:column;gap:34px}
-.big{display:flex;flex-direction:column;gap:8px;border-top:2px solid rgba(255,255,255,.34);padding-top:20px}
-.big .n{font-size:clamp(56px,15.5vw,112px);color:#fff}
-.big .n em{font-style:normal;font-size:.42em;margin-left:.06em}
-.big .c{font-size:16px;color:#fff;line-height:1.6;font-weight:500}
-.bandnote{margin-top:34px;background:rgba(0,0,0,.2);border-radius:10px;padding:20px 22px;
-  font-size:15.5px;line-height:1.8;color:#fff}
-.bandnote b{color:#fff;font-weight:700}
-
-/* ₩0 대 ₩300,000 */
-.vs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:640px){.vs{grid-template-columns:1fr}}
-.vs>div{background:var(--card);border:2px solid var(--rule);border-radius:14px;
-  padding:26px 22px;display:flex;flex-direction:column;gap:14px}
-.vs .r{border-color:var(--jade)}
-.vs .cap{font-size:14px;font-weight:700;color:var(--ink-3)}
-.vs .r .cap{color:var(--jade)}
-.vs ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;
-  font-size:15.5px;color:var(--ink-2)}
-.vs li{padding-left:17px;position:relative;line-height:1.6}
-.vs li:before{content:"";position:absolute;left:0;top:.72em;width:9px;height:2px;background:var(--ink-3)}
-.vs .r li:before{background:var(--jade)}
-.vs .amt{font-size:clamp(38px,9vw,58px);margin-top:auto;padding-top:10px;color:var(--ink-3)}
-.vs .r .amt{color:var(--jade)}
-
-/* 목록 */
-ul.plain{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0}
-ul.plain li{padding:16px 0 16px 34px;position:relative;font-size:18px;line-height:1.72;
-  color:var(--ink-2);border-bottom:1px solid var(--rule-soft)}
-ul.plain li:first-child{border-top:1px solid var(--rule-soft)}
-ul.plain li:before{content:"✓";position:absolute;left:2px;top:16px;color:var(--fire-ink);font-weight:700}
-ul.plain li b{color:var(--ink);font-weight:700}
-
-/* 흐름 */
-.flowline{border-radius:12px;padding:18px 20px;font-size:16px;line-height:1.7;font-weight:600}
-.flowline.off{background:rgba(255,255,255,.14);color:rgba(255,255,255,.88);
-  text-decoration:line-through;text-decoration-thickness:1.5px}
-.flowline.on{background:#fff;color:var(--jade);font-weight:700}
-
-/* 단계 */
-.days{display:flex;flex-direction:column;gap:10px}
-.days .d{display:flex;gap:16px;background:var(--card);border:1.5px solid var(--rule);
-  border-radius:12px;padding:18px 20px;align-items:flex-start}
-.days .d .n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--tint);color:var(--fire-ink);
-  font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
-.days .d.key{border-color:var(--jade);background:var(--jade-soft)}
-.days .d.key .n{background:var(--jade);color:#fff}
-.days .d b{display:block;font-size:18px;font-weight:700;color:var(--ink);line-height:1.45}
-.days .d span{font-size:15.5px;color:var(--ink-3);line-height:1.65}
-
-/* 포함 내역 */
-.incl{display:flex;flex-direction:column}
-.incl .i{display:flex;gap:14px;padding:16px 2px;border-bottom:1px solid var(--rule-soft);align-items:baseline}
-.incl .i:first-child{border-top:1px solid var(--rule-soft)}
-.incl .i em{font-style:normal;color:#fff;background:var(--jade);flex:none;font-weight:700;font-size:12px;
-  padding:3px 9px;border-radius:100px}
-.incl .i em.soon{background:var(--ink-3)}
-.incl .i b{font-size:17.5px;font-weight:700;color:var(--ink)}
-.incl .i span{display:block;font-size:15.5px;color:var(--ink-3);line-height:1.65;margin-top:2px}
-
-/* 대조표 */
-.diag{width:100%;border-collapse:collapse;font-size:15.5px;line-height:1.6}
-.diag th,.diag td{padding:14px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule-soft)}
-.diag th{font-size:13.5px;font-weight:700;color:var(--ink-3);border-bottom:2px solid var(--rule)}
-.diag th.hi{color:#fff;background:var(--jade);border-bottom-color:var(--jade);border-radius:8px 8px 0 0}
-.diag td:first-child{font-weight:700;color:var(--ink);width:24%}
-.diag td.n{color:var(--ink-3);width:34%}
-.diag td.p{color:var(--ink-2);width:42%;background:var(--jade-soft)}
-.diag td.p b{color:var(--jade);font-weight:700}
-.diag tr:last-child td.p{border-radius:0 0 8px 8px}
-.scroll{overflow-x:auto}
-
-blockquote{margin:0;padding:30px 32px;background:var(--ink);color:#fff;border-radius:14px;
-  font-family:'Noto Serif KR',serif;font-weight:900;font-size:clamp(21px,4.2vw,30px);
-  line-height:1.5;letter-spacing:-.03em}
-.note{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;padding:24px 26px;
-  display:flex;flex-direction:column;gap:10px}
-.note .t{font-size:14.5px;font-weight:700;color:var(--fire-ink)}
-.note p{font-size:16.5px;line-height:1.85;color:var(--ink-2)}
-.note p b{color:var(--ink);font-weight:700}
-.note.jade{background:var(--jade-soft);border-color:transparent}
-.note.jade .t{color:var(--jade)}
+/* 실제 수익 숫자 */
+.bigrow{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--navy)}
+.big{padding:30px 28px 4px;border-right:1px solid var(--line)}
+.big:first-child{padding-left:0}
+.big:last-child{border-right:0}
+.big .n{font-family:var(--serif);font-size:clamp(42px,5vw,62px);color:var(--rust);line-height:1.1;font-variant-numeric:tabular-nums}
+.big .n em{font-style:normal;font-size:.45em;margin-left:.08em;color:var(--navy)}
+.big .c{font-size:15px;color:var(--muted);margin-top:10px}
+.disclaim{margin-top:40px;background:var(--card);border-left:3px solid var(--gold);padding:18px 22px;font-size:14.5px;color:var(--muted)}
 
 /* 옆으로 넘겨 보는 칸 — 후기와 프로그램 화면이 같은 코드를 쓴다 */
-.swipebox{position:relative;margin:0 -22px;min-width:0}
+.swipebox{position:relative;margin:0 -28px;min-width:0}
 .swipe{display:flex;gap:14px;min-width:0;overflow-x:auto;overflow-y:hidden;
   scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
-  padding:4px 22px 12px;scrollbar-width:none;cursor:grab}
+  padding:4px 28px 12px;scrollbar-width:none;cursor:grab}
 .swipe::-webkit-scrollbar{display:none}
 .swipe.grabbing{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
 /* 카드 — 높이를 맞춰야 넘길 때 깔끔하다 */
-.swipe>*{flex:0 0 min(80vw,320px);scroll-snap-align:center;
-  background:var(--card);border:1.5px solid var(--rule);border-radius:14px;
+.swipe>*{flex:0 0 min(80vw,320px);scroll-snap-align:center;background:var(--card);border:1px solid var(--line);
   padding:18px;display:flex;flex-direction:column;gap:10px}
 /* 넘기기 단추 — 마우스 쓰는 화면에서만 */
-.swipenav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;
-  width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule);
-  background:#fff;color:var(--ink);font-size:22px;line-height:1;cursor:pointer;
-  display:none;align-items:center;justify-content:center;font-family:inherit;
-  box-shadow:0 3px 10px rgba(27,21,18,.12)}
-.swipenav:hover{border-color:var(--fire);color:var(--fire-ink)}
+.swipenav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:44px;height:44px;border-radius:50%;
+  border:1px solid var(--pill);background:#fff;color:var(--navy);font-size:22px;line-height:1;cursor:pointer;
+  display:none;align-items:center;justify-content:center;font-family:inherit;box-shadow:0 3px 10px rgba(24,34,58,.12)}
+.swipenav:hover{border-color:var(--gold)}
 .swipenav[disabled]{opacity:.3;cursor:default}
-.swipenav.prev{left:-4px} .swipenav.next{right:-4px}
+.swipenav.prev{left:6px} .swipenav.next{right:6px}
 @media(hover:hover) and (min-width:760px){.swipenav{display:flex}}
-.swipefoot{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-3);font-weight:600}
-.swipefoot b{color:var(--ink)}
+.swipefoot{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--faint);font-weight:600;margin-top:14px}
+.swipefoot b{color:var(--navy)}
 .swipefoot .hint{margin-left:auto;font-weight:500}
-
-/* 사진 한 장 — 누르면 크게 본다 */
-.shot{display:block;flex:1;min-height:0;border:1px solid var(--rule-soft);
-  border-radius:9px;overflow:hidden;background:var(--paper);cursor:zoom-in;
-  padding:0;width:100%}
+.shot{display:block;flex:1;min-height:0;border:1px solid var(--line);overflow:hidden;background:var(--paper);
+  cursor:zoom-in;padding:0;width:100%}
 .shot img{display:block;width:100%;height:100%;object-fit:contain}
 .thumbs{display:flex;gap:6px;flex:none}
-.thumbs button{display:block;width:42px;height:42px;border:1px solid var(--rule-soft);
-  border-radius:6px;overflow:hidden;background:var(--paper);cursor:zoom-in;padding:0}
+.thumbs button{display:block;width:42px;height:42px;border:1px solid var(--line);overflow:hidden;background:var(--paper);cursor:zoom-in;padding:0}
 .thumbs img{display:block;width:100%;height:100%;object-fit:cover}
-
-/* 후기 카드 */
 .rev{height:430px}
-.rev .stars{font-size:14px;letter-spacing:.16em;color:var(--fire-ink);flex:none}
-.rev p{font-size:15px;line-height:1.7;color:var(--ink-2);flex:none;
+.rev .stars{font-size:14px;letter-spacing:.16em;color:var(--gold);flex:none}
+.rev p{font-size:15px;line-height:1.7;color:var(--muted);flex:none;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .rev.noimg p{-webkit-line-clamp:13;flex:1}
-.rev .who{font-size:13.5px;color:var(--ink-3);font-weight:600;flex:none}
-.revmore{display:inline-flex;align-items:center;gap:8px;font-size:16px;color:var(--fire-ink);
-  font-weight:700;text-decoration:none;border-bottom:2px solid var(--fire);padding-bottom:2px;align-self:flex-start}
-
-/* 프로그램 실제 화면 카드 */
+.rev .who{font-size:13.5px;color:var(--faint);font-weight:600;flex:none}
+.revmore{display:inline-block;margin-top:22px;font-size:15px;color:var(--navy);font-weight:700;border-bottom:1.5px solid var(--gold)}
 .sh{height:460px}
-.sh h3{font-size:17px;font-weight:700;line-height:1.4;flex:none}
-.sh p{font-size:14.5px;color:var(--ink-3);line-height:1.6;flex:none;
+.sh h3{font-size:17px;font-weight:700;color:var(--navy);line-height:1.4;flex:none}
+.sh p{font-size:14.5px;color:var(--faint);line-height:1.6;flex:none;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 
-/* 사진 크게 보기 — 새 페이지로 나가지 않고 이 위에 덮는다 */
-.viewer{position:fixed;inset:0;z-index:200;background:rgba(27,21,18,.92);
-  display:none;align-items:center;justify-content:center;padding:16px}
-.viewer.open{display:flex}
-.viewer img{max-width:100%;max-height:calc(100vh - 120px);object-fit:contain;
-  border-radius:8px;background:#fff}
-.viewer .close{position:absolute;top:14px;right:14px;width:46px;height:46px;
-  border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;
-  font-size:26px;line-height:1;cursor:pointer;font-family:inherit;
-  display:flex;align-items:center;justify-content:center}
-.viewer .close:hover{background:rgba(255,255,255,.3)}
-.viewer .cap{position:absolute;left:0;right:0;bottom:22px;text-align:center;
-  color:rgba(255,255,255,.9);font-size:14.5px;padding:0 20px;line-height:1.6}
-.viewer .step{position:absolute;top:22px;left:0;right:0;text-align:center;
-  color:rgba(255,255,255,.75);font-size:13.5px;font-weight:600}
+/* 멈춘 이유 · 시장 */
+.beige{background:var(--beige)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+ul.plain{list-style:none;padding:0;margin:0}
+ul.plain li{padding:15px 0 15px 32px;border-top:1px solid var(--pill);position:relative;font-size:16.5px;color:var(--muted)}
+ul.plain li:last-child{border-bottom:1px solid var(--pill)}
+ul.plain li::before{content:"✓";position:absolute;left:2px;color:var(--rust);font-weight:700}
+.quote{margin-top:56px;font-family:var(--serif);font-size:clamp(22px,2.8vw,30px);line-height:1.55;color:var(--navy);
+  border-left:3px solid var(--rust);padding:4px 0 4px 26px}
+.flow{margin-top:30px}
+.flow .lbl{font-size:12.5px;letter-spacing:.12em;color:var(--gold);font-weight:600;margin:18px 0 8px}
+.flow .off{background:var(--card);border:1px dashed var(--pill);color:var(--faint);padding:18px 22px;
+  font-size:16px;font-weight:600;text-decoration:line-through}
+.flow .on{background:var(--navy);color:#fff;padding:18px 22px;font-size:16px;font-weight:700}
 
-/* 전자책 */
-.ebookbox{background:var(--card);border:2px solid var(--rule);border-radius:16px;padding:28px;
-  display:flex;flex-direction:column;gap:20px}
-.ebookbox .t{font-size:20px;font-weight:700;font-family:'Noto Serif KR',serif}
-.ebookbox ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;
-  font-size:16px;color:var(--ink-2)}
-.ebookbox li{padding-left:24px;position:relative;line-height:1.65}
-.ebookbox li:before{content:"✓";position:absolute;left:0;color:var(--fire-ink);font-weight:700}
-.ebookbox .pr{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
-  border-top:1px solid var(--rule-soft);padding-top:18px}
-.ebookbox .pr .v{font-size:38px;color:var(--ink)}
-.ebookbox .pr .lbl{font-size:14px;color:var(--ink-3);font-weight:600}
-.ebookbox .warn{font-size:14.5px;color:var(--fire-ink);font-weight:600;line-height:1.6}
-.ebookbox .up{font-size:14.5px;color:var(--ink-3)}
-.ebookbox .up a{color:var(--fire-ink);font-weight:700}
+/* 진행 방식 */
+.dark{background:var(--navy);color:#D9D4C8}
+.dark .h2{color:#fff}
+.dark .lead{color:#B9B4A8}
+.dark .eyebrow{color:var(--gold-light)}
+.dark b{color:#fff}
+.days{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.days .d{border:1px solid rgba(255,255,255,.14);padding:28px 24px}
+.days .d .n{font-family:var(--serif);font-size:30px;color:var(--gold-light);line-height:1}
+.days .d h3{font-size:17px;color:#fff;font-weight:700;margin-top:18px}
+.days .d p{font-size:14.5px;color:#B9B4A8;margin-top:6px}
+.days .d.key{background:rgba(240,207,141,.08);border-color:var(--gold-light)}
 
-/* 가격 밴드 */
-.pricebox{background:#fff;border-radius:16px;padding:30px 28px;display:flex;flex-direction:column;gap:20px}
-.pricebox .now{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.pricebox .now .v{font-size:clamp(46px,12vw,76px);color:var(--fire)}
-.pricebox .now s{font-size:19px;color:var(--ink-3);font-weight:500}
-.pricebox .now .tag{background:var(--tint);color:var(--fire-deep);font-size:14px;font-weight:700;
-  padding:5px 12px;border-radius:100px}
-.ladder{width:100%;border-collapse:collapse;font-size:16px}
-.ladder td{padding:13px 6px;border-bottom:1px solid var(--rule-soft);color:var(--ink-2)}
-.ladder td:last-child{text-align:right;font-weight:700;color:var(--ink);
-  font-variant-numeric:tabular-nums}
-.ladder tr.on td{color:var(--fire-ink);font-weight:700}
-.ladder tr.on td:last-child{color:var(--fire-ink)}
-.ladder tr.off td{color:var(--ink-3)}
-.ladder tr:last-child td{border-bottom:0}
-/* 주홍 밴드 안의 흰 카드 — 밴드가 칠한 흰 글씨를 되돌린다 */
-.band .pricebox .body{color:var(--ink-2)}
-.band .pricebox .body b{color:var(--ink)}
+/* 포함 내역 */
+.incl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.inc{background:var(--card);border:1px solid var(--line);padding:28px 26px;position:relative}
+.inc .no{font-family:var(--serif);font-size:24px;color:var(--gold);line-height:1}
+.inc h3{font-size:17px;font-weight:700;color:var(--navy);margin-top:16px}
+.inc p{font-size:14.5px;color:var(--muted);margin-top:6px}
+.inc p em{font-style:normal;color:var(--rust);font-weight:600}
+.inc.hl{background:#FFFBF1;border-color:var(--gold-soft)}
+.note0{margin-top:14px;background:var(--navy);color:#D9D4C8;padding:24px 28px}
+.note0 .t{color:#fff;font-weight:700;font-size:16px}
+.note0 p{font-size:14.5px;margin-top:4px}
 
-.anti{display:flex;flex-direction:column;gap:0}
-.anti div{display:flex;gap:14px;font-size:17px;line-height:1.75;color:var(--ink-2);
-  padding:15px 0;border-bottom:1px solid var(--rule-soft)}
-.anti div:first-child{border-top:1px solid var(--rule-soft)}
-.anti div i{font-style:normal;color:var(--fire-ink);flex:none;font-weight:700}
-.anti div b{color:var(--ink);font-weight:700}
+/* 맞는 분 · 안 맞는 분 */
+.fit-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.fit-col{background:var(--card);border:1px solid var(--line);padding:32px 30px}
+.fit-col h3{font-family:var(--serif);font-weight:400;font-size:24px;color:var(--navy)}
+.fit-col ul{list-style:none;padding:0;margin:18px 0 0}
+.fit-col li{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line);font-size:15.5px;color:var(--muted)}
+.fit-col li i{font-style:normal;font-weight:700;flex:none;color:var(--green)}
+.fit-col li small{display:block;font-size:13.5px;color:var(--faint);margin-top:2px}
+.fit-col.no{background:var(--navy);border-color:var(--navy)}
+.fit-col.no h3{color:#fff}
+.fit-col.no li{color:#D9D4C8;border-top-color:rgba(255,255,255,.12)}
+.fit-col.no li i{color:#F29A74}
+.fit-col.no li b{color:#fff}
+.fit-col.no li small{color:#9EA5B5}
+.fit-warn{margin-top:18px;border:1.5px solid var(--rust);background:var(--rust-soft);padding:22px 26px}
+.fit-warn .t{color:var(--rust);font-weight:700}
+.fit-warn p{font-size:15.5px;color:var(--ink);margin-top:4px}
+.fit-end{margin-top:22px;font-size:15.5px;color:var(--muted)}
 
-/* 버튼 */
-.cta{display:inline-flex;align-items:center;justify-content:center;background:var(--fire);color:#fff;
-  font-weight:700;font-size:17.5px;text-decoration:none;padding:17px 32px;border-radius:10px;flex:none;
-  border:0;font-family:inherit;cursor:pointer;text-align:center;
-  box-shadow:0 6px 0 var(--fire-deep);transition:transform .1s ease,box-shadow .1s ease}
-.cta:hover{transform:translateY(2px);box-shadow:0 4px 0 var(--fire-deep)}
-.cta:active{transform:translateY(6px);box-shadow:0 0 0 var(--fire-deep)}
-.cta:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
-.cta.dark{background:var(--ink);box-shadow:0 6px 0 #000}
-.cta.ghost{background:transparent;color:var(--ink-2);border:2px solid var(--rule);box-shadow:none}
-.cta.ghost:hover{transform:none;border-color:var(--ink-3)}
-.ctarow{display:flex;gap:10px}
-.ctarow .cta{flex:1 1 0;min-width:0}
-@media(max-width:460px){.ctarow .cta{padding:15px 8px;font-size:15.5px}}
+/* 수강료 */
+.offer{background:var(--navy);color:#D9D4C8}
+.offer .eyebrow{color:var(--gold-light)}
+.offer .h2{color:#fff}
+.offer b{color:#fff}
+.offer-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+.big-price{font-family:var(--serif);font-size:clamp(56px,6.4vw,76px);color:var(--gold-light);line-height:1.1;margin-top:26px}
+.was{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:8px;font-size:16px;color:#B9B4A8}
+.was .off{background:var(--rust);color:#fff;font-size:13px;font-weight:700;padding:2px 12px}
+.offer .btns{margin-top:30px}
+.offer .small{font-size:14px;color:#B9B4A8;margin-top:18px}
+.ladder{width:100%;border-collapse:collapse;font-size:15.5px}
+.ladder td{padding:16px 4px;border-bottom:1px solid rgba(255,255,255,.12);color:#D9D4C8}
+.ladder td:last-child{text-align:right;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.ladder tr.on td{color:var(--gold-light)}
+.ladder tr.off td{color:#8C93A6}
+.ladder tr.end td{color:#F29A74}
+.livebar{display:flex;align-items:center;gap:12px 14px;flex-wrap:wrap;margin-top:24px;border:1px solid rgba(255,255,255,.2);padding:16px 20px}
+.livebar:hover{border-color:var(--gold-light)}
+.livebar .t{background:var(--gold-light);color:var(--navy);font-size:12px;font-weight:700;padding:2px 10px}
+.livebar .txt{font-size:15px;color:#fff;flex:1;min-width:200px}
+.livebar .go{font-size:14.5px;font-weight:700;color:var(--gold-light)}
+.livenote{font-size:13.5px;color:#9EA5B5;margin-top:10px}
 
-/* FAQ */
-.faq details{border-bottom:1px solid var(--rule-soft)}
-.faq details:first-child{border-top:1px solid var(--rule-soft)}
-.faq summary{list-style:none;cursor:pointer;padding:19px 2px;font-size:17.5px;font-weight:700;
-  color:var(--ink);display:flex;gap:14px;align-items:baseline}
+/* 전자책과 비교 */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.diag{width:100%;min-width:600px;border-collapse:collapse;font-size:15px;line-height:1.6;background:var(--card)}
+.diag th,.diag td{padding:15px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.diag th{font-size:13px;color:var(--faint);font-weight:600;background:var(--paper)}
+.diag th.hi{background:var(--navy);color:var(--gold-light)}
+.diag td:first-child{font-weight:700;color:var(--navy);width:22%}
+.diag td.n{color:var(--faint);width:34%}
+.diag td.p{color:var(--ink);background:#FFFBF1;width:44%}
+.diag td.p b{color:var(--rust)}
+.ebookbox{margin-top:24px;display:grid;grid-template-columns:1.25fr .75fr;gap:32px;background:var(--card);border:1px solid var(--line);padding:34px 32px}
+.ebookbox .t{font-family:var(--serif);font-size:24px;color:var(--navy)}
+.ebookbox .s{font-size:15px;color:var(--muted);margin-top:8px}
+.ebookbox ul{list-style:none;padding:0;margin:16px 0 0}
+.ebookbox li{padding:6px 0 6px 24px;position:relative;font-size:15px;color:var(--muted)}
+.ebookbox li::before{content:"✓";position:absolute;left:0;color:var(--gold);font-weight:700}
+.ebookbox .buy{border-left:1px solid var(--line);padding-left:32px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.ebookbox .lbl{font-size:13px;color:var(--faint);font-weight:600}
+.ebookbox .v{font-family:var(--serif);font-size:40px;color:var(--navy);line-height:1.1}
+.ebookbox .warn{font-size:13.5px;color:var(--rust);font-weight:600;line-height:1.6}
+.ebookbox .up{font-size:13.5px;color:var(--faint)}
+.ebookbox .up a{color:var(--navy);font-weight:700;border-bottom:1px solid var(--gold)}
+
+/* 자주 묻는 질문 */
+.faq{max-width:880px;margin:0 auto}
+.faq details{border-top:1px solid var(--line)}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;padding:20px 4px;font-size:17px;font-weight:700;color:var(--navy);
+  display:flex;gap:14px;align-items:baseline}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary:before{content:"+";color:var(--fire-ink);flex:none;font-size:21px;line-height:1;font-weight:400}
-.faq details[open] summary:before{content:"−"}
-.faq p{padding:0 2px 22px 30px;font-size:16.5px;line-height:1.88;color:var(--ink-2)}
-.faq p b{color:var(--ink);font-weight:700}
+.faq summary::before{content:"+";color:var(--gold);font-size:22px;line-height:1;font-weight:400;flex:none}
+.faq details[open] summary::before{content:"−"}
+.faq p{padding:0 4px 22px 32px;font-size:15.5px;color:var(--muted)}
+
+/* 마지막으로 */
+.lastword{text-align:center}
+.lastword .lead{margin-left:auto;margin-right:auto}
+.lastword .btns{justify-content:center;margin-top:34px}
+
+footer{padding:44px 0 40px;text-align:center;font-size:13px;color:var(--faint);line-height:1.9}
+footer b{color:var(--muted)}
 
 /* 하단 고정 바 */
-.buybar{position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;
-  border-top:2px solid var(--ink);box-shadow:0 -6px 20px rgba(27,21,18,.09)}
-.buybar .in{max-width:720px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:14px}
-.buybar .pr{display:flex;flex-direction:column;gap:0;min-width:0}
-.buybar .pr .lbl{font-size:12px;color:var(--ink-3);font-weight:600}
-.buybar .pr .val{font-size:26px;color:var(--fire)}
-.buybar .left{margin-left:auto;font-size:12.5px;color:var(--ink-3);text-align:right;line-height:1.4;font-weight:600}
-.buybar .cta{padding:14px 24px;font-size:16.5px;box-shadow:0 4px 0 var(--fire-deep)}
-@media(max-width:560px){.buybar .left{display:none}.buybar .in{padding:11px 16px;gap:10px}
-  .buybar .cta{padding:13px 20px;font-size:16px}}
+.buybar{position:fixed;left:0;right:0;bottom:0;z-index:70;background:rgba(251,248,242,.97);
+  border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(24,34,58,.08)}
+.buybar .in{max-width:1180px;margin:0 auto;padding:9px 28px;display:flex;align-items:center;gap:16px}
+.buybar .lbl{display:block;font-size:12px;color:var(--faint);font-weight:600;line-height:1.4}
+.buybar .val{font-family:var(--serif);font-size:25px;color:var(--navy);line-height:1.15}
+.buybar .left{margin-left:auto;font-size:12.5px;color:var(--faint);text-align:right;line-height:1.45;font-weight:600}
+.buybar .btn{min-height:48px;padding:0 26px}
+
+/* 사진 크게 보기 — 새 페이지로 나가지 않고 이 위에 덮는다 */
+.viewer{position:fixed;inset:0;z-index:200;background:rgba(24,34,58,.94);display:none;align-items:center;justify-content:center;padding:16px}
+.viewer.open{display:flex}
+.viewer img{max-width:100%;max-height:calc(100vh - 120px);object-fit:contain;background:#fff}
+.viewer .close{position:absolute;top:14px;right:14px;width:46px;height:46px;border-radius:50%;border:0;
+  background:rgba(255,255,255,.16);color:#fff;font-size:26px;line-height:1;cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center}
+.viewer .close:hover{background:rgba(255,255,255,.3)}
+.viewer .cap{position:absolute;left:0;right:0;bottom:22px;text-align:center;color:rgba(255,255,255,.9);font-size:14.5px;padding:0 20px}
+.viewer .step{position:absolute;top:22px;left:0;right:0;text-align:center;color:rgba(255,255,255,.75);font-size:13.5px;font-weight:600}
 
 /* 결제 안내 창 */
-.pay-modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(27,21,18,.6);
-  align-items:center;justify-content:center;padding:18px}
+.pay-modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(24,34,58,.6);align-items:center;justify-content:center;padding:18px}
 .pay-modal.open{display:flex}
-.pay-card{background:#fff;border-radius:16px;padding:30px 26px 26px;max-width:430px;width:100%;
-  position:relative;max-height:88vh;overflow-y:auto}
-.pay-card h3{font-size:22px;font-weight:700}
-.pay-sub{font-size:14.5px;color:var(--ink-3);margin:6px 0 20px}
-.pay-close{position:absolute;top:10px;right:14px;background:none;border:0;font-size:30px;
-  color:var(--ink-3);cursor:pointer;line-height:1;font-family:inherit}
-.pay-close:hover{color:var(--ink)}
-.pay-hint{font-size:13.5px;color:var(--ink-3);margin-top:14px;line-height:1.6}
-.pay-card .cta{width:100%;margin-bottom:12px}
-.accbox{background:var(--tint);border-radius:12px;padding:20px;text-align:center;margin-bottom:18px}
-.accbox .who{font-size:13.5px;color:var(--ink-3);font-weight:600;margin-bottom:4px}
-.accbox .bank{font-size:15px;font-weight:600;color:var(--ink-2);margin-bottom:2px}
-.accbox .no{font-size:clamp(21px,6.4vw,26px);font-weight:700;color:var(--ink);letter-spacing:-.01em;
-  font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
-.accbox .nm{font-size:14.5px;font-weight:600;color:var(--ink-2);margin-top:4px}
-.copybtn{margin-top:14px;width:100%;padding:12px;border:2px solid var(--fire);background:#fff;
-  color:var(--fire-ink);border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
-.copybtn:active{background:var(--tint)}
-.askbox{border-top:1px solid var(--rule-soft);padding-top:18px}
-.askbox .t{font-size:15px;font-weight:700;margin-bottom:12px}
-.askbox label{display:block;font-size:13px;color:var(--ink-3);font-weight:600;margin-bottom:10px}
+.pay-card{background:var(--card);padding:32px 28px 26px;max-width:430px;width:100%;position:relative;max-height:88vh;overflow-y:auto;border-top:3px solid var(--gold)}
+.pay-card h3{font-family:var(--serif);font-weight:400;font-size:24px;color:var(--navy)}
+.pay-sub{font-size:14.5px;color:var(--faint);margin:6px 0 20px}
+.pay-close{position:absolute;top:10px;right:14px;background:none;border:0;font-size:30px;color:var(--faint);cursor:pointer;line-height:1;font-family:inherit}
+.pay-close:hover{color:var(--navy)}
+.pay-hint{font-size:13.5px;color:var(--faint);margin-top:14px;line-height:1.6}
+.pay-card .btn{width:100%;margin-bottom:12px}
+.accbox{background:var(--beige);padding:20px;text-align:center;margin-bottom:18px}
+.accbox .who{font-size:13.5px;color:var(--faint);font-weight:600;margin-bottom:4px}
+.accbox .bank{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:2px}
+.accbox .no{font-size:clamp(21px,6.4vw,26px);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
+.accbox .nm{font-size:14.5px;font-weight:600;color:var(--muted);margin-top:4px}
+.copybtn{margin-top:14px;width:100%;padding:12px;border:1.5px solid var(--navy);background:#fff;color:var(--navy);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.copybtn:active{background:var(--beige)}
+.askbox{border-top:1px solid var(--line);padding-top:18px}
+.askbox .t{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px}
+.askbox label{display:block;font-size:13px;color:var(--faint);font-weight:600;margin-bottom:10px}
 .askbox label .opt{font-weight:500}
-.askbox input{width:100%;margin-top:5px;padding:12px 13px;border:1.5px solid var(--rule);
-  border-radius:9px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
-.askbox input:focus{outline:0;border-color:var(--fire)}
-.askprev{padding:13px 15px;background:var(--paper);border:1px dashed var(--rule);border-radius:9px;
-  font-size:14px;line-height:1.7;color:var(--ink-2);white-space:pre-wrap;margin-bottom:12px}
+.askbox input{width:100%;margin-top:5px;padding:12px 13px;border:1px solid var(--pill);font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
+.askbox input:focus{outline:0;border-color:var(--gold)}
+.askprev{padding:13px 15px;background:var(--paper);border:1px dashed var(--pill);font-size:14px;line-height:1.7;color:var(--muted);white-space:pre-wrap;margin-bottom:12px}
 
-footer{padding:44px 0 60px;border-top:1px solid var(--rule)}
-footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
+/* 스크롤하면 천천히 떠오른다. 스크립트가 없으면 처음부터 다 보인다. */
+.js .reveal{opacity:0;transform:translateY(18px)}
+.js .reveal.in{opacity:1;transform:none;transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.3,1)}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.js .reveal,.js .reveal.in{opacity:1;transform:none;transition:none}}
 
-.reveal{opacity:0;transform:translateY(20px)}
-.reveal.in{opacity:1;transform:none;transition:opacity .55s ease,transform .55s cubic-bezier(.2,.7,.3,1)}
-@media(prefers-reduced-motion:reduce){.reveal,.reveal.in{opacity:1;transform:none;transition:none}}
+@media(max-width:960px){
+  section{padding:80px 0}
+  .hero{grid-template-columns:1fr}
+  .hero-text{padding:52px 28px 48px}
+  .hero-img{min-height:0;height:380px}
+  .last-grid,.split,.offer-grid{grid-template-columns:1fr;gap:36px}
+  .incl,.days{grid-template-columns:repeat(2,1fr)}
+  .bigrow{grid-template-columns:1fr}
+  .big,.big:first-child{padding:24px 0;border-right:0;border-bottom:1px solid var(--line)}
+  .ebookbox{grid-template-columns:1fr}
+  .ebookbox .buy{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:22px}
+}
+@media(max-width:860px){
+  .menu-tog{display:block}
+  .menu{display:none;position:absolute;top:70px;left:-28px;right:-28px;flex-direction:column;align-items:stretch;gap:0;
+    background:var(--paper);border-bottom:1px solid var(--line);padding:6px 24px 18px}
+  .menu.open{display:flex}
+  .menu a:not(.btn){padding:13px 4px;border-bottom:1px solid var(--line);font-size:15px}
+  .menu .btn{margin-top:14px;min-height:48px}
+}
+@media(max-width:640px){
+  .wrap{padding:0 20px}
+  .menu{left:-20px;right:-20px}
+  .hero-text{padding:40px 20px 40px}
+  .hero-img{height:300px}
+  .hero .desc{font-size:16px}
+  .btns .btn{flex:1 1 100%}
+  .benefits,.vs,.fit-grid,.incl,.days,.next ul{grid-template-columns:1fr}
+  .vs>div,.fit-col{padding:28px 22px}
+  .swipebox{margin:0 -20px}
+  .swipe{padding:4px 20px 12px}
+  .strip .r{display:none}
+  .buybar .left{display:none}
+  .buybar .btn{margin-left:auto;padding:0 20px}
+  .buybar .in{padding:9px 16px}
+}
 </style>
+<script>document.documentElement.className += ' js';</script>
 </head>
 <body>
 
-<div class="topbar">
+<div class="strip">
   <div class="in">
-    <span><span data-lp="cohort">3기</span> <b><span data-lp="seats">10</span>명</b> 한정</span>
-    <span>사전예약 <b><span data-lp="price">70</span>만</b></span>
-    <span class="r"><span data-lp="earlyUntil">9월 30일</span>까지 · 이후 <span data-lp="latePrice">80</span>만 · <span data-lp="deadline">10월 10일</span> 마감</span>
+    <span><b>마지막 <span data-lp="cohort">3기</span></b> · <span data-lp="seats">10</span>명 한정</span>
+    <span>라이브 특가 <b><span data-lp="price">75</span>만원</b></span>
+    <span class="r"><span data-lp="liveDate">10월 3일 저녁 7시</span> 라이브 · 끝난 뒤 <span data-lp="latePrice">90</span>만원 · 10월 6일(화) 수강 시작</span>
   </div>
 </div>
 
-<header class="hero">
-  <div class="wrap">
-    <div class="chip"><span class="dot" aria-hidden="true"></span><span><span data-lp="cohort">3기</span> 모집중 · 남은 자리 <span data-lp="seats">10</span>명</span></div>
-    <h1>사주 몰라도,<br>퇴근 후<br><span class="slab">월 100</span></h1>
-    <p class="sub">실제 명리학자와 함께 만든 <b>전용 AI·자동화 프로그램</b>을 통째로 드립니다.
+<header class="top">
+  <nav class="nav wrap">
+    <a class="brand" href="/"><span class="seal">月</span><b>루월당</b><small>樓月堂</small></a>
+    <button type="button" class="menu-tog" id="menuTog" aria-expanded="false" aria-controls="menu" aria-label="메뉴 열기">☰</button>
+    <div class="menu" id="menu">
+      <a href="#last">마지막 기수 혜택</a>
+      <a href="#structure">진행 방식</a>
+      <a href="#included">포함 내용</a>
+      <a href="#price">수강료</a>
+      <a class="btn outline" href="/">홈으로</a>
+    </div>
+  </nav>
+</header>
+
+<section class="hero" style="padding:0">
+  <div class="hero-text">
+    <div class="chip"><span class="dot" aria-hidden="true"></span><span>마지막 <span data-lp="cohort">3기</span> 모집중 · <span data-lp="seats">10</span>명 한정</span></div>
+    <h1>사주 몰라도,<br>퇴근 후 <span class="slab">월 100</span></h1>
+    <p class="desc">실제 명리학자와 함께 만든 <b>전용 AI·자동화 프로그램</b>을 통째로 드립니다.
       배우는 강의가 아니라, <b>오늘부터 손님을 받는 구조</b>입니다.</p>
-    <div class="meta">
+    <div class="pills">
       <span>만세력 <b>엔진 내장</b></span>
       <span>리포트 <b>7종 자동</b></span>
-      <span>피드백 <b>평생</b></span>
+      <span>1:1 피드백 <b>평생</b></span>
       <span>사주 지식 <b>필요 없음</b></span>
     </div>
-
-    <a class="livebar" href="https://open.kakao.com/o/gdlttwDi" data-lp-href="liveUrl" target="_blank" rel="noopener">
-      <span class="tag">무료 설명회</span>
-      <span class="txt"><b><span data-lp="liveDate">9월 30일</span> 라이브</b> — 어떻게 진행되는지 직접 보고 결정하세요</span>
-      <span class="go">대기방 입장 →</span>
-    </a>
-    <p class="livegift"><b>라이브 참여만 해도 드립니다</b> · 온라인 사주 큰 흐름을 담은 <b>무료 자료집</b> · 기초 전자책 <b>1만원 할인권</b></p>
-
     <div class="herocta">
       <div class="pr">
-        <span class="lbl"><span data-lp="cohort">3기</span> 사전예약가 · <span data-lp="earlyUntil">9월 30일</span>까지</span>
-        <span class="val money"><span data-lp="price">70</span>만원<s>정가 <span data-lp="listPrice">80</span>만원</s></span>
+        <span class="lbl"><span data-lp="cohort">3기</span> 라이브 특가 · <span data-lp="earlyUntil">10월 3일 라이브</span> 때까지</span>
+        <span class="val"><span data-lp="price">75</span>만원<s>정가 <span data-lp="listPrice">90</span>만원</s></span>
       </div>
-      <button class="cta pay-open" type="button" data-kind="course"
-        data-item="루월당 3기 수강 신청" data-amount="700000"
-        data-card="카드 결제 (준비 중)" data-bank="계좌이체"
-        data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중이며 4기부터 가능할 예정입니다."><span data-lp="cohort">3기</span> 신청하기</button>
+      <div class="btns">
+        <button class="btn rust pay-open" type="button" data-kind="course"
+          data-item="루월당 3기 수강 신청" data-amount="750000"
+          data-card="카드 결제 (준비 중)" data-bank="계좌이체"
+          data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중입니다."><span data-lp="cohort">3기</span> 신청하기</button>
+        <a class="btn outline" href="https://open.kakao.com/o/gdlttwDi" data-lp-href="liveUrl" target="_blank" rel="noopener">무료 설명회 대기방</a>
+      </div>
     </div>
+    <p class="livegift"><b><span data-lp="liveDate">10월 3일 저녁 7시</span> 무료 설명회 라이브</b> · 10월 6일(화) 수강 시작 · 참여만 해도 무료 자료집과 기초 전자책 1만원 할인권을 드립니다</p>
   </div>
-</header>
+  <div class="hero-img">
+    <img src="/img/hero-book.jpg" alt="" onerror="this.remove()">
+    <span class="vert">모르는 채로 시작하고 · 운영하며 배웁니다</span>
+  </div>
+</section>
 
 <main>
 
-<!-- 제일 센 화면을 두 번째에 둔다 -->
-<section class="band reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>1기 수강생이 첫 달에 만든 돈</div>
-    <h2 class="head">사주를 하나도 모르던<br>분들입니다.</h2>
-    <div class="bigrow">
-      <div class="big">
-        <div class="n money" data-count="175000">0<em>원</em></div>
-        <div class="c">7월 11일 시작 · 24일에 첫 입금</div>
-      </div>
-      <div class="big">
-        <div class="n money" data-count="223000">0<em>원</em></div>
-        <div class="c">게시글 하나에 1~2건씩 전환</div>
-      </div>
-      <div class="big">
-        <div class="n money" data-count="300000">0<em>원</em></div>
-        <div class="c">7월 한 달 · 카페에 인증글까지</div>
+<!-- 마지막 기수 — 3기를 끝으로 모집을 닫는다 -->
+<section class="last" id="last">
+  <div class="wrap last-grid">
+    <div class="reveal">
+      <div class="stamp">마지막<br>모집</div>
+      <p class="eyebrow">Last cohort</p>
+      <h2 class="h2"><span data-lp="cohort">3기</span>가<br><span class="rust">마지막 모집</span>입니다</h2>
+      <p class="lead"><span data-lp="cohort">3기</span>를 끝으로 사주 과정 수강생 모집을 마칩니다.
+        같은 방법을 너무 많은 분이 하게 되면, <b>먼저 시작한 수강생분들의 메리트가 사라지기 때문입니다.</b></p>
+      <p class="lead">그래서 <span data-lp="cohort">3기</span>를 마지막으로 <b>제 사주 운영은 자동화로 돌려두고</b>,
+        저는 다른 부업을 준비할 예정입니다. 사주는 이제 자동으로 돌아갑니다.</p>
+      <p class="promise"><b>다른 부업을 준비한다고 수강생분들을 신경 쓰지 않는 것은 절대 아닙니다.</b>
+        1기부터 3기까지 함께한 분들을 집중해서 챙기고, 공부는 따로 하면서 <b>피드백은 평생 봐드립니다.</b></p>
+      <p class="lead">마지막 기수인 만큼 <b>혜택을 가장 많이 넣었습니다.</b></p>
+      <div class="btns">
+        <button class="btn rust pay-open" type="button" data-kind="course"
+          data-item="루월당 3기 수강 신청" data-amount="750000"
+          data-card="카드 결제 (준비 중)" data-bank="계좌이체"
+          data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중입니다.">마지막 <span data-lp="cohort">3기</span> 신청하기</button>
       </div>
     </div>
-    <div class="bandnote">
-      <b>숫자에 대해 먼저 정직하게.</b> 실제 수강생이 남긴 금액이지만 수익은 시작 시기·투입 시간·꾸준함에 따라 사람마다 다르고, <b>이 금액을 보장하지 않습니다.</b> 보장한다고 말하는 곳이 있다면 그쪽이 거짓말입니다.
+    <div class="reveal">
+      <div class="benefits">
+        <div class="bn"><span class="tag">전부 포함</span><div class="k">一</div>
+          <h3>지금까지 만든 기능 전부</h3>
+          <p>신기능 업데이트를 마친 일진첩·스레드 자동화, 새로 업데이트한 무료사주 웹사이트, GPTs 7가지 이상까지 모두 드립니다.</p></div>
+        <div class="bn"><span class="tag">추가 비용 0원</span><div class="k">二</div>
+          <h3>사주 프로그램 평생 업데이트</h3>
+          <p>사주 프로그램에는 새 기능이 계속 붙습니다. 업데이트되어도 추가 비용은 없습니다.</p></div>
+        <div class="bn"><div class="k">三</div>
+          <h3>3기까지 집중 케어</h3>
+          <p>새 기수를 받지 않으니 1기부터 3기까지의 수강생에게만 집중하고, 1:1 피드백은 평생 봐드립니다.</p></div>
+        <div class="bn"><span class="tag">예정</span><div class="k">四</div>
+          <h3>다음 부업에도 기회</h3>
+          <p>사주 과정을 신청하신 분께는 앞으로 준비하는 다른 부업에도 함께할 기회를 드릴 예정입니다.</p></div>
+      </div>
+      <div class="next">
+        <p class="t">다음에 함께할 부업 · 예정</p>
+        <ul>
+          <li>홈페이지 외주 제작<span>외주를 받아 홈페이지를 만들어 드리는 일</span></li>
+          <li>블로그 또는 스레드 대행<span>둘 중 어떤 것으로 열지 준비 중입니다</span></li>
+        </ul>
+        <p>사주에서 끝나지 않고 <b>다른 부업까지 함께할 혜택</b>을 받고 싶으시다면, 이번 <span data-lp="cohort">3기</span>를 추천드립니다.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 후기 — 관리자 화면에서 올린 인증 사진과 글을 읽어온다. 없으면 칸째로 감춘다 -->
-<section class="stack reveal" id="revsec" style="display:none">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>직접 남겨주신 후기</div>
-    <h2 class="head">말이 아니라<br><span class="mark">인증</span>으로 보여드립니다</h2>
-    <div class="swipebox">
-      <div class="swipe" id="revwrap"></div>
-      <button class="swipenav prev" type="button" aria-label="이전 후기">&lsaquo;</button>
-      <button class="swipenav next" type="button" aria-label="다음 후기">&rsaquo;</button>
+<section>
+  <div class="wrap">
+    <div class="head center reveal">
+      <p class="eyebrow">Same time · Different result</p>
+      <h2 class="h2">공부한 사람은 많은데<br>버는 사람은 왜 적을까</h2>
+      <p class="lead">차이를 만드는 건 사주 실력이 아니라, 손님을 받는 순서입니다.</p>
     </div>
-    <div class="swipefoot"><span><b class="now">1</b> / <span class="total">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
-    <a class="revmore" href="https://cafe.naver.com/f-e/cafes/30688236/menus/4?viewType=L" target="_blank" rel="noopener">네이버 카페에서 더 보기 →</a>
-  </div>
-</section>
-
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>왜 지금까지 못 했나</div>
-    <h2 class="head">막는 건 재능이 아니라<br><span class="mark">구조</span>입니다</h2>
-    <p class="lede">사주를 몰라서 못 하는 게 아닙니다. 손님이 어디서 와서 어떻게 돈이 되는지, 그 <b>순서</b>를 몰라서 못 하는 겁니다.</p>
-    <ul class="plain">
-      <li>"사주? 나는 <b>전혀 모르는데</b>" 에서 이미 접었다</li>
-      <li>온라인으로 돈 버는 걸 알아보다 <b>강의만 두세 개</b> 사놓고 멈췄다</li>
-      <li>글을 몇 개 올려봤지만 <b>반응이 없어서</b> 조용히 그만뒀다</li>
-      <li>GPT로 사주를 뽑아봤는데 <b>말이 안 되는 소리</b>가 섞여 나와 못 쓰겠더라</li>
-      <li>해보고 싶은데 <b>첫 손님을 어디서 데려오는지</b>를 모르겠다</li>
-    </ul>
-  </div>
-</section>
-
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>같은 시간, 다른 결과</div>
-    <h2 class="head">공부한 사람은 많은데<br>버는 사람은 왜 적을까</h2>
-    <div class="vs">
+    <div class="vs reveal">
       <div class="l">
-        <div class="cap">혼자 배운 것 · 몇 달</div>
+        <span class="cap">혼자 배운 것 · 몇 달</span>
+        <h3>준비만 계속하는 구조</h3>
         <ul>
           <li>사주 기초 강의 두세 개</li>
           <li>무료 만세력으로 뽑아본 내 사주</li>
           <li>GPT에 붙여넣어 본 프롬프트</li>
           <li>올렸다 지운 SNS 글 몇 개</li>
         </ul>
-        <div class="amt money">0원</div>
+        <div class="amt">0원</div>
       </div>
       <div class="r">
-        <div class="cap">구조로 한 것 · 2주</div>
+        <span class="cap">루월당의 순서 · 2주</span>
+        <h3>먼저 접수받는 구조</h3>
         <ul>
           <li>링크 하나 있는 내 사주 웹사이트</li>
           <li>무료사주로 들어온 신청자 명단</li>
           <li>엔진이 만들어준 리포트 PDF</li>
+          <li>발송과 추가상담까지 한곳에서</li>
         </ul>
-        <div class="amt money">30만원</div>
+        <div class="amt">30만원</div>
       </div>
     </div>
-    <p class="body">두 칸의 차이는 <b>사주 실력이 아니라 순서</b>입니다.</p>
   </div>
 </section>
 
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>시장이 끝났다는 말</div>
-    <h2 class="head">사주 시장은<br>줄지 않았습니다</h2>
-    <p class="body">국내 점술·운세 시장은 <b>약 1.4조 원</b>이고, 10~40세는 <b>1인당 연 8만 원</b>가량을 씁니다. 한 번 보고 끝나는 게 아니라 새해에, 이직할 때, 헤어질 때 <b>다시 찾는 반복 소비</b>입니다. 시장이 준 게 아니라 파는 사람이 바뀐 겁니다.</p>
-    <blockquote>'사주를 얼마나 아는가'가 아니라<br>'구조를 아는가'로 돈이 옮겨갔다.</blockquote>
-    <p class="body">SNS에서 "AI로 사주 봐드립니다" 글 열 개를 찾아보세요. 그중 <b>"이걸로 얼마 벌었습니다"</b>까지 적힌 게 몇 개인지 세어보세요. 대개 하나 있을까 말까입니다. <b>그 간극이 지금 비어 있는 자리입니다.</b></p>
+<section class="beige">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">Real start · 1기 수강생이 첫 달에 만든 돈</p>
+      <h2 class="h2">사주를 하나도 모르던<br>분들입니다</h2>
+      <p class="lead">수강생은 공부를 끝내고 시작한 것이 아니라, 운영하면서 배웠습니다.</p>
+    </div>
+    <div class="bigrow reveal">
+      <div class="big"><div class="n" data-count="175000">0<em>원</em></div>
+        <p class="c">7월 11일 시작 · 24일에 첫 입금</p></div>
+      <div class="big"><div class="n" data-count="223000">0<em>원</em></div>
+        <p class="c">게시글 하나에 상담 1~2건씩 전환</p></div>
+      <div class="big"><div class="n" data-count="300000">0<em>원</em></div>
+        <p class="c">7월 한 달 · 카페에 인증글까지</p></div>
+    </div>
+    <p class="disclaim reveal"><b>숫자에 대해 먼저 정직하게.</b> 실제 수강생이 남긴 금액이지만 수익은 시작 시기·투입 시간·꾸준함에 따라 사람마다 다르고,
+      <b>이 금액을 보장하지 않습니다.</b> 보장한다고 말하는 곳이 있다면 그쪽이 거짓말입니다.</p>
   </div>
 </section>
 
-<section class="band jade reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>루월당이 하는 일</div>
-    <h2 class="head">순서를<br>거꾸로 뒤집습니다</h2>
-    <p class="body">보통은 이렇게 갑니다. 그리고 대부분 두 번째 칸에서 멈춥니다.</p>
-    <div class="flowline off">사주 공부 → 실력 쌓기 → 손님 받기 → 수익</div>
-    <p class="body">루월당은 이렇게 갑니다.</p>
-    <div class="flowline on">나만의 웹사이트 → 무료사주 유입 → 유료 전환 → 리포트 발송</div>
-    <p class="body"><b>왜 웹사이트가 먼저인가.</b> 내 이름으로 된 링크가 살아 있고 신청 버튼이 눌리는 순간부터, 당신은 "공부하는 사람"이 아니라 <b>"접수를 받는 사람"</b>이 됩니다. 사주 해석은 엔진이 합니다. 사람이 할 일은 <b>손님을 데려오는 것 하나</b>로 줄어듭니다.</p>
+<!-- 후기 — 관리자 화면에서 올린 인증 사진과 글을 읽어온다. 없으면 칸째로 감춘다 -->
+<section id="revsec" style="display:none">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">Review · 직접 남겨주신 후기</p>
+      <h2 class="h2">말이 아니라<br><span class="rust">인증</span>으로 보여드립니다</h2>
+    </div>
+    <div class="reveal">
+      <div class="swipebox">
+        <div class="swipe" id="revwrap"></div>
+        <button class="swipenav prev" type="button" aria-label="이전 후기">&lsaquo;</button>
+        <button class="swipenav next" type="button" aria-label="다음 후기">&rsaquo;</button>
+      </div>
+      <div class="swipefoot"><span><b class="now">1</b> / <span class="total">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
+      <a class="revmore" href="https://cafe.naver.com/f-e/cafes/30688236/menus/4?viewType=L" target="_blank" rel="noopener">네이버 카페에서 더 보기 →</a>
+    </div>
   </div>
 </section>
 
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>한 건이 끝나는 과정</div>
-    <h2 class="head">손이 가는 곳은<br><span class="mark">네 군데</span>뿐입니다</h2>
-    <p class="body">완전 자동은 아닙니다. 완전 자동이라고 말하지 않는 이유는 그게 사실이 아니기 때문입니다. 대신 복잡한 과정을 <b>가장 짧은 루트</b>로 깎아 놨습니다.</p>
-    <div class="days">
-      <div class="d"><div class="n">1</div><div><b>웹사이트 만들기</b><span>내 사주 랜딩페이지를 꾸미고 링크를 공유합니다 · 글·색·이미지 전부 내 스타일로</span></div></div>
-      <div class="d"><div class="n">2</div><div><b>신청 접수</b><span>방문자가 무료사주·상담을 신청하면 신청자 목록에 자동으로 쌓입니다</span></div></div>
-      <div class="d key"><div class="n">3</div><div><b>리포트 제작 — 엔진이 하는 부분</b><span>만세력만 넣으면 7종 PDF와 채팅 상담 답변까지 만들어 줍니다</span></div></div>
-      <div class="d"><div class="n">4</div><div><b>발송과 추가상담</b><span>내 이름으로 메일 발송 · 추가질문은 리포트를 파악한 AI가 이어서 응대</span></div></div>
+<section class="beige" id="why">
+  <div class="wrap split">
+    <div class="reveal">
+      <p class="eyebrow">Why you stopped</p>
+      <h2 class="h2">막는 건 재능이 아니라<br><span class="rust">구조</span>입니다</h2>
+      <p class="lead">사주를 몰라서가 아니라, 손님이 들어와 돈이 되는 <b>순서</b>를 몰라서 멈춥니다.</p>
+    </div>
+    <ul class="plain reveal">
+      <li>"사주? 나는 <b>전혀 모르는데</b>" 에서 이미 접었다</li>
+      <li>온라인 부업을 알아보다 <b>강의만 두세 개</b> 사놓고 멈췄다</li>
+      <li>글을 몇 개 올려봤지만 <b>반응이 없어서</b> 조용히 그만뒀다</li>
+      <li>GPT로 사주를 뽑아봤는데 <b>말이 안 되는 소리</b>가 섞여 나와 못 쓰겠더라</li>
+      <li>해보고 싶은데 <b>첫 손님을 어디서 데려오는지</b>를 모르겠다</li>
+    </ul>
+  </div>
+  <div class="wrap">
+    <p class="quote reveal">"사주를 얼마나 아는가"가 아니라<br>"손님을 받는 구조를 아는가"가 차이를 만듭니다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap split">
+    <div class="reveal">
+      <p class="eyebrow">The market</p>
+      <h2 class="h2">사주 시장은<br>줄지 않았습니다</h2>
+      <p class="lead">국내 점술·운세 시장은 <b>약 1.4조 원</b>이고, 10~40세는 <b>1인당 연 8만 원</b>가량을 씁니다.
+        새해에, 이직할 때, 헤어질 때 <b>다시 찾는 반복 소비</b>입니다. 시장이 준 게 아니라 파는 방식이 온라인으로 바뀌었습니다.</p>
+      <p class="lead">SNS에서 "AI로 사주 봐드립니다" 글 열 개를 찾아보세요. <b>"이걸로 얼마 벌었습니다"</b>까지 적힌 건 대개 하나 있을까 말까입니다.
+        <b>그 간극이 지금 비어 있는 자리입니다.</b></p>
+    </div>
+    <div class="flow reveal">
+      <p class="lbl">보통은 이렇게 갑니다 — 그리고 두 번째 칸에서 멈춥니다</p>
+      <div class="off">사주 공부 → 실력 쌓기 → 손님 받기 → 수익</div>
+      <p class="lbl">루월당은 순서를 거꾸로 뒤집습니다</p>
+      <div class="on">나만의 웹사이트 → 무료사주 유입 → 유료 전환 → 리포트 발송</div>
+      <p class="lead" style="font-size:15.5px">내 이름으로 된 링크가 살아 있고 신청 버튼이 눌리는 순간부터, 당신은 "공부하는 사람"이 아니라
+        <b>"접수를 받는 사람"</b>이 됩니다. 사주 해석은 엔진이 합니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="dark" id="structure">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">How it works</p>
+      <h2 class="h2">손이 가는 곳은<br>네 군데뿐입니다</h2>
+      <p class="lead">완전 자동이라고 말하지 않습니다. 그게 사실이 아니기 때문입니다. 대신 복잡한 과정을 가장 짧은 루트로 줄였습니다.</p>
+    </div>
+    <div class="days reveal">
+      <div class="d"><div class="n">1</div><h3>웹사이트 만들기</h3>
+        <p>내 사주 신청 페이지를 꾸미고 링크를 공유합니다. 글·색·이미지 전부 내 스타일로.</p></div>
+      <div class="d"><div class="n">2</div><h3>신청 접수</h3>
+        <p>방문자가 무료사주·상담을 신청하면 명단에 자동으로 쌓이고, 오늘 방문과 신청이 통계로 보입니다.</p></div>
+      <div class="d key"><div class="n">3</div><h3>리포트 제작 — 엔진이 하는 부분</h3>
+        <p>만세력만 넣으면 7종 PDF와 채팅 상담 답변까지 만들어 줍니다.</p></div>
+      <div class="d"><div class="n">4</div><h3>발송과 추가상담</h3>
+        <p>내 이름으로 메일을 보내고, 추가질문은 리포트를 파악한 AI가 이어서 응대합니다.</p></div>
     </div>
   </div>
 </section>
 
 <!-- 프로그램 실제 화면 — 관리자가 올린 사진이 있을 때만 나온다 -->
-<section class="stack reveal" id="shotsec" style="display:none">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>직접 보세요</div>
-    <h2 class="head">말로만 하지 않습니다.<br><span class="mark">실제 화면</span>입니다</h2>
-    <p class="body">수강하시면 바로 쓰시게 될 프로그램의 실제 모습입니다.</p>
-    <div class="swipebox">
-      <div class="swipe" id="shotlist"></div>
-      <button class="swipenav prev" type="button" aria-label="이전 화면">&lsaquo;</button>
-      <button class="swipenav next" type="button" aria-label="다음 화면">&rsaquo;</button>
+<section id="shotsec" style="display:none">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">Real screen · 직접 보세요</p>
+      <h2 class="h2">말로만 하지 않습니다.<br><span class="rust">실제 화면</span>입니다</h2>
+      <p class="lead">수강하시면 바로 쓰시게 될 프로그램의 실제 모습입니다.</p>
     </div>
-    <div class="swipefoot"><span><b class="now">1</b> / <span class="total">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
-  </div>
-</section>
-
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>수강료에 들어 있는 것</div>
-    <h2 class="head">프로그램과 노하우와<br>평생 피드백</h2>
-    <div class="incl">
-      <div class="i"><em>포함</em><div><b>전용 만세력 엔진</b><span>실제 명리학자가 만든 엔진. 별도 프롬프트 없이 만세력만 넣으면 풀이가 나옵니다</span></div></div>
-      <div class="i"><em>포함</em><div><b>7종 사주 리포트 PDF · 표지 커스텀</b><span>내담자 정보만 넣으면 만세력 이미지까지 포함해 만들어 줍니다. 표지는 계속 추가됩니다</span></div></div>
-      <div class="i"><em>포함</em><div><b>개인 사주 웹사이트 · 통계 대시보드</b><span>무료사주 유도형과 바로 신청형 둘 다. 방문 → 신청 → 유료 전환율이 숫자로 보입니다</span></div></div>
-      <div class="i"><em>포함</em><div><b>이메일 발송 · 추가질문 AI 응대</b><span>내 사주 이름으로 리포트 발송, 발송 기록 관리. 추가질문은 AI가 이어서 답합니다</span></div></div>
-      <div class="i"><em>포함</em><div><b>실제 상담용 AI 프롬프트와 대처법</b><span>첫 멘트, 유형별 응답, 연애·재회·금전 상담 흐름. 곤란한 질문과 환불 요청 대응까지</span></div></div>
-      <div class="i"><em>포함</em><div><b>SNS 실전 유입 구조</b><span>사람을 모으는 채널 운영과 유입 흐름을 실전 기준으로 공유합니다</span></div></div>
-      <div class="i"><em>포함</em><div><b>매일 사주 브리핑 (일진첩)</b><span>매일 밤 11시 다음날 일진 자동 갱신 · 스레드 원고 5종 + 블로그 프롬프트</span></div></div>
-      <div class="i"><em>포함</em><div><b>프로그램 안 교육생 자료집</b><span>순서대로 따라 하는 사용법이 화면 캡처와 함께. 검색됩니다. 계속 채워집니다</span></div></div>
-      <div class="i"><em>포함</em><div><b>평생 피드백</b><span>막히면 물어보세요. 올린 글도, 실제 상담 내용도 같이 봐드립니다. 기수가 끝나도 계속</span></div></div>
-      <div class="i"><em class="soon">예정</em><div><b>스레드 자동화</b><span>준비 중. 배포되면 수강생은 추가 결제 없이 바로 쓰실 수 있습니다</span></div></div>
-    </div>
-  </div>
-</section>
-
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>전자책과 뭐가 다른가</div>
-    <h2 class="head">혼자 배우기와<br>시스템으로 벌기</h2>
-    <div class="scroll">
-    <table class="diag">
-      <tr><th>항목</th><th>기초 전자책</th><th class="hi">루월당 수강</th></tr>
-      <tr><td>사주 계산</td><td class="n">무료 만세력 직접 조회</td><td class="p"><b>전용 만세력 엔진 내장</b></td></tr>
-      <tr><td>리포트 제작</td><td class="n">GPT에 직접 복붙</td><td class="p">만세력만 넣으면 <b>PDF·상담 답변까지</b></td></tr>
-      <tr><td>나만의 웹사이트</td><td class="n">없음 · 직접 구축</td><td class="p"><b>개인 사주 웹사이트 제공</b></td></tr>
-      <tr><td>발송·응대</td><td class="n">수동</td><td class="p">이메일 발송 + <b>AI 추가응대</b></td></tr>
-      <tr><td>마케팅·유입</td><td class="n">기본 개념 안내</td><td class="p"><b>SNS 실전 유입 구조</b></td></tr>
-      <tr><td>운영·수익화</td><td class="n">기본 팁</td><td class="p">상담·재구매·단골화 <b>전 과정 코칭</b></td></tr>
-      <tr><td>피드백</td><td class="n">없음 · 혼자 진행</td><td class="p"><b>평생 · 횟수 제한 없음</b></td></tr>
-      <tr><td>가격</td><td class="n"><span data-lp="ebookPriceFmt">89,000</span>원</td><td class="p"><b><span data-lp="price">70</span>만원</b> · <span data-lp="cohort">3기</span> 사전예약가</td></tr>
-    </table>
-    </div>
-    <div class="note jade">
-      <div class="t">루월당에 추가로 내는 돈은 0원입니다</div>
-      <p>전용 프로그램은 수강료에 <b>전부 포함</b>이고 평생 사용하며, 새 기능이 붙어도 추가 결제가 없습니다. PDF를 API로 자동 제작할 때 드는 비용은 <b>외부 사이트에 내는 것</b>이지 루월당 결제가 아니며, 무료 방식만 쓰면 이마저 들지 않습니다.</p>
-    </div>
-  </div>
-</section>
-
-<section class="stack reveal" id="ebook">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>먼저 가볍게 시작하고 싶다면</div>
-    <h2 class="head">AI 사주<br><span class="mark">기초 전자책</span></h2>
-    <p class="body">"수강은 아직 부담돼요." 그런 분을 위한 입문서입니다. 사주 부업의 기본기와 GPT 활용법을 혼자 익히실 수 있습니다.</p>
-    <div class="ebookbox">
-      <div class="t">AI 사주상담 실전 가이드 · 기초편</div>
-      <ul>
-        <li>사주 최소 원리 + 일간·오행·십성 해석 사전</li>
-        <li>만세력으로 사주 뽑는 법</li>
-        <li>상품별 리포트를 뽑는 GPT 프롬프트</li>
-      </ul>
-      <div class="pr">
-        <span class="lbl">1차 얼리버드</span>
-        <span class="v money"><span data-lp="ebookPriceFmt">89,000</span>원</span>
+    <div class="reveal">
+      <div class="swipebox">
+        <div class="swipe" id="shotlist"></div>
+        <button class="swipenav prev" type="button" aria-label="이전 화면">&lsaquo;</button>
+        <button class="swipenav next" type="button" aria-label="다음 화면">&rsaquo;</button>
       </div>
-      <div class="warn"><span data-lp="ebookSeats">10</span>명 구매 시 <span data-lp="ebookStepFmt">30,000</span>원 인상 — 다음 금액은 <span data-lp="ebookNextFmt">119,000</span>원입니다</div>
-      <button class="cta pay-open" type="button" id="ebookBtn" data-kind="ebook"
-        data-item="AI 사주 기초 전자책" data-amount="89000"
-        data-card="카드 결제 (준비 중)" data-bank="계좌이체"
-        data-hint="현재 계좌이체만 가능합니다.">전자책 구매하기</button>
-      <div class="up">더 깊이 배우고 싶다면 → <a href="#apply">루월당 수강 보기</a></div>
+      <div class="swipefoot"><span><b class="now">1</b> / <span class="total">0</span></span><span class="hint">옆으로 넘겨보세요</span></div>
     </div>
   </div>
 </section>
 
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>솔직하게 말씀드리면</div>
-    <h2 class="head">이런 분께는<br>권하지 않습니다</h2>
-    <div class="anti">
-      <div><i>✕</i><p>버튼만 누르면 <b>완전 자동</b>으로 돈이 벌리길 기대하는 분 — 손이 가는 곳이 네 군데 남아 있습니다</p></div>
-      <div><i>✕</i><p>사주를 <b>학문으로 깊이</b> 배우고 싶은 분 — 여기는 명리학 강의가 아니라 수익 구조 컨설팅입니다</p></div>
-      <div><i>✕</i><p>이번 달 안에 <b>원금을 회수</b>해야 하는 분 — 1기도 첫 수익까지 2주가 걸렸습니다</p></div>
-      <div><i>✕</i><p>듣기만 하고 <b>실행할 계획이 없는 분</b> — 프로그램은 켜야 돌아갑니다</p></div>
-      <div><i>✕</i><p>"이거 하면 얼마 벌어요?"의 <b>보장</b>이 필요한 분 — 보장하지 않습니다</p></div>
+<section id="included">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">All included · 수강료에 들어 있는 것</p>
+      <h2 class="h2">프로그램과 노하우와<br>1:1 평생 피드백</h2>
+      <p class="lead">수강 이후 바로 운영하는 데 필요한 도구를 한 번에 드립니다. 마지막 기수라 지금까지 만든 것을 전부 넣었습니다.</p>
     </div>
-    <p class="body">하나라도 해당되시면 안 하시는 게 맞습니다. 그렇게 적어두는 게 서로에게 낫습니다.</p>
+    <div class="incl reveal">
+      <div class="inc"><div class="no">01</div><h3>전용 만세력 엔진</h3>
+        <p>실제 명리학자가 만든 엔진. 별도 프롬프트 없이 만세력만 넣으면 풀이가 나옵니다.</p></div>
+      <div class="inc"><div class="no">02</div><h3>사주 리포트 PDF 7종</h3>
+        <p>내담자 정보만 넣으면 표지와 만세력 이미지까지 완성합니다. 표지는 계속 추가됩니다.</p></div>
+      <div class="inc hl"><span class="tag">고퀄리티 업데이트 완료</span><div class="no">03</div><h3>나만의 무료사주 웹사이트</h3>
+        <p>무료사주 유도형과 바로 신청형 페이지를 둘 다 드립니다. 고퀄리티로 업데이트를 마쳤습니다.</p></div>
+      <div class="inc"><div class="no">04</div><h3>당일 방문 통계</h3>
+        <p>오늘 몇 명이 들어와 만세력을 보고 신청했는지, 어제와 비교해 숫자로 봅니다.</p></div>
+      <div class="inc"><div class="no">05</div><h3>이메일 발송 · 추가질문 응대</h3>
+        <p>내 사주 이름으로 리포트를 보내고 발송 기록을 관리합니다. 추가질문은 AI가 이어서 답합니다.</p></div>
+      <div class="inc"><span class="tag">7가지 이상</span><div class="no">06</div><h3>GPTs</h3>
+        <p>상담과 리포트, 글쓰기에 바로 쓰는 전용 GPTs를 7가지 이상 드립니다.</p></div>
+      <div class="inc hl"><span class="tag">신기능 업데이트 완료</span><div class="no">07</div><h3>일진첩 · 매일 사주 브리핑</h3>
+        <p>매일 밤 11시 다음날 일진으로 자동 갱신. 스레드 원고와 블로그 프롬프트로 <em>블로그 글까지</em> 씁니다.</p></div>
+      <div class="inc hl"><span class="tag">신기능 업데이트 완료</span><div class="no">08</div><h3>스레드 자동화</h3>
+        <p>주제 한 단어로 스레드 글을 만들고, 미리 보고 점검한 뒤 바로 올리거나 예약합니다.</p></div>
+      <div class="inc"><span class="tag">추가 비용 0원</span><div class="no">09</div><h3>사주 프로그램 평생 업데이트</h3>
+        <p>새 기능이 계속 붙습니다. 업데이트되어도 사주 프로그램에 대한 추가 결제는 없습니다.</p></div>
+      <div class="inc"><div class="no">10</div><h3>상담 대처법 · SNS 유입 구조</h3>
+        <p>첫 멘트, 유형별 응답, 곤란한 질문과 환불 요청 대응, 사람을 모으는 채널 운영까지.</p></div>
+      <div class="inc"><div class="no">11</div><h3>교육생 자료집</h3>
+        <p>순서대로 따라 하는 사용법이 화면 캡처와 함께. 검색되고 계속 채워집니다.</p></div>
+      <div class="inc"><div class="no">12</div><h3>1:1 평생 피드백</h3>
+        <p>막히면 물어보세요. 올린 글도, 실제 상담 내용도 같이 봐드립니다. <em>단, 직접 실천하는 분께만</em> 드립니다.</p></div>
+    </div>
+    <div class="note0 reveal">
+      <p class="t">루월당 사주 프로그램에 추가로 내는 돈은 0원입니다</p>
+      <p>사주 프로그램은 수강료에 전부 포함이고 평생 사용합니다. 앞으로도 계속 업데이트되며, 새 기능이 붙어도 추가 비용이 없습니다.
+        PDF를 API로 자동 제작하거나 자동 발행에 쓰는 비용은 외부 사이트에 내는 것이지 루월당 결제가 아니며, 무료 방식만 쓰면 이마저 들지 않습니다.</p>
+      <p>※ 앞으로 준비하는 다른 부업은 사주 프로그램과 별개이며, 조건은 준비되는 대로 따로 안내드립니다.</p>
+    </div>
   </div>
 </section>
 
-<section class="band reveal" id="apply">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s><span><span data-lp="cohort">3기</span> 모집 · <span data-lp="seats">10</span>명 한정</span></div>
-    <h2 class="head">지금이<br>가장 저렴할 때입니다</h2>
-    <div class="pricebox">
-      <div class="now">
-        <span class="v money"><span data-lp="price">70</span>만원</span>
-        <s>정가 <span data-lp="listPrice">80</span>만원</s>
-        <span class="tag">사전예약 <span data-lp="discount">10</span>만원 할인</span>
+<section class="beige" id="fit">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">For you · Not for all</p>
+      <h2 class="h2">이런 분께 맞습니다</h2>
+      <p class="lead">무조건 권하지 않습니다. 실행 방식이 맞는지 먼저 확인하세요.</p>
+    </div>
+    <div class="fit-grid reveal">
+      <div class="fit-col yes">
+        <h3>이런 분께 권합니다</h3>
+        <ul>
+          <li><i>○</i><span>사주를 몰라도 부업을 시작하고 싶은 분</span></li>
+          <li><i>○</i><span>내 이름으로 된 상담 페이지가 필요한 분</span></li>
+          <li><i>○</i><span>리포트 제작과 발송을 간단하게 만들고 싶은 분</span></li>
+          <li><i>○</i><span>막힐 때 계속 물어볼 곳이 필요한 분</span></li>
+          <li><i>○</i><span>사주 다음 부업까지 함께 가고 싶은 분</span></li>
+        </ul>
       </div>
-      <table class="ladder">
-        <tr class="on"><td>지금 ~ <span data-lp="earlyUntil">9월 30일</span> · 사전예약</td><td><span data-lp="price">70</span>만원</td></tr>
-        <tr><td>10월 1일 ~ <span data-lp="deadline">10월 10일</span> · 정가</td><td><span data-lp="latePrice">80</span>만원</td></tr>
-        <tr class="off"><td><span data-lp="deadline">10월 10일</span> 이후</td><td>신청 마감</td></tr>
-        <tr class="off"><td><span data-lp="nextCohort">4기</span> 예정</td><td><span data-lp="nextPrice">110</span>만원</td></tr>
-      </table>
-      <p class="body" style="font-size:16px">현재는 <b>계좌이체로만</b> 신청받습니다. 버튼을 누르시면 입금 계좌를 안내해 드립니다. 카드 결제는 승인 심사 중이며 <span data-lp="nextCohort">4기</span>부터 가능할 것으로 보입니다.</p>
-      <div class="ctarow">
-        <button class="cta pay-open" type="button" id="applyBtn" data-kind="course"
-          data-item="루월당 3기 수강 신청" data-amount="700000"
+      <div class="fit-col no">
+        <h3>이런 분께는 권하지 않습니다</h3>
+        <ul>
+          <li><i>✕</i><span>버튼만 누르면 <b>완전 자동</b>으로 돈이 벌리길 기대하는 분<small>손이 가는 곳이 네 군데 남아 있습니다</small></span></li>
+          <li><i>✕</i><span><b>직접 실천하지 않고</b> 제가 다 해주길 바라는 분<small>이런 분은 받지 않습니다</small></span></li>
+          <li><i>✕</i><span>사주를 <b>학문으로 깊이</b> 배우고 싶은 분<small>명리학 강의가 아니라 수익 구조 컨설팅입니다</small></span></li>
+          <li><i>✕</i><span>이번 달 안에 <b>원금 회수</b>를 보장받아야 하는 분<small>1기도 첫 수익까지 2주가 걸렸습니다</small></span></li>
+          <li><i>✕</i><span>"이거 하면 얼마 벌어요?"의 <b>보장</b>이 필요한 분<small>보장하지 않습니다</small></span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="fit-warn reveal">
+      <p class="t">1:1 평생 피드백은 실천하는 분을 위한 것입니다</p>
+      <p>횟수 제한 없이 평생 1:1로 봐드립니다. 다만 직접 해보지 않고 제가 대신 다 해주길 바라시는 분은 받지 않습니다.
+        피드백은 움직이는 분이 막힌 곳을 같이 푸는 자리입니다.</p>
+    </div>
+    <p class="fit-end reveal">하나라도 해당되시면 안 하시는 게 맞습니다. 그렇게 적어두는 게 서로에게 낫습니다.</p>
+  </div>
+</section>
+
+<section class="offer" id="price">
+  <div class="wrap offer-grid">
+    <div class="reveal">
+      <p class="eyebrow">마지막 <span data-lp="cohort">3기</span> 모집 · <span data-lp="seats">10</span>명 한정</p>
+      <h2 class="h2">지금이<br>가장 저렴할 때입니다</h2>
+      <div class="big-price"><span data-lp="price">75</span>만원</div>
+      <div class="was"><s>정가 <span data-lp="listPrice">90</span>만원</s><span class="off">라이브 특가 <span data-lp="discount">15</span>만원 할인</span></div>
+      <p class="when"><span data-lp="liveDate">10월 3일 저녁 7시</span> 라이브 때까지, 단 하루만</p>
+      <div class="btns">
+        <button class="btn rust pay-open" type="button" id="applyBtn" data-kind="course"
+          data-item="루월당 3기 수강 신청" data-amount="750000"
           data-card="카드 결제 (준비 중)" data-bank="계좌이체"
-          data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중이며 4기부터 가능할 예정입니다."><span data-lp="cohort">3기</span> 신청하기</button>
-        <a class="cta ghost" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">먼저 물어보기</a>
+          data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중입니다."><span data-lp="cohort">3기</span> 신청하기</button>
+        <a class="btn outline" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">먼저 물어보기</a>
+      </div>
+      <p class="small">현재는 <b>계좌이체로만</b> 신청받습니다. 버튼을 누르시면 입금 계좌를 안내해 드립니다. 카드 결제는 승인 심사 중입니다.
+        수익은 시작 시기·투입 시간·꾸준함에 따라 다르며 특정 금액을 보장하지 않습니다.</p>
+    </div>
+    <div class="reveal">
+      <table class="ladder">
+        <tr class="on"><td><span data-lp="earlyUntil">10월 3일 라이브</span> 때까지 · 단 하루 특가</td><td><span data-lp="price">75</span>만원</td></tr>
+        <tr><td>라이브가 끝난 뒤 신청</td><td><span data-lp="latePrice">90</span>만원</td></tr>
+        <tr class="off"><td>수강 시작</td><td>10월 6일 (화)</td></tr>
+        <tr class="end"><td><span data-lp="cohort">3기</span> 이후</td><td>추가 모집 없음</td></tr>
+      </table>
+      <a class="livebar" href="https://open.kakao.com/o/gdlttwDi" data-lp-href="liveUrl" target="_blank" rel="noopener">
+        <span class="t">무료 설명회</span>
+        <span class="txt"><span data-lp="liveDate">10월 3일 저녁 7시</span> 라이브 — 어떻게 진행되는지 직접 보고 결정하세요</span>
+        <span class="go">대기방 입장 →</span>
+      </a>
+      <p class="livenote">라이브 참여만 해도 온라인 사주 큰 흐름을 담은 무료 자료집과 기초 전자책 1만원 할인권을 드립니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="beige" id="ebook">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">Compare · 전자책과 뭐가 다른가</p>
+      <h2 class="h2">혼자 배우기와<br>시스템으로 벌기</h2>
+      <p class="lead">전자책은 하는 방법과 프롬프트를 드리고 <b>직접 실행해 나가는 것</b>이고,
+        루월당 수강은 하나하나 다 알려드리며 <b>기본 툴에서 글이 자동으로 생성되게 만드는 것</b>입니다.</p>
+    </div>
+    <div class="scroll reveal">
+      <table class="diag">
+        <tr><th>항목</th><th>기초 전자책</th><th class="hi">루월당 수강</th></tr>
+        <tr><td>사주 계산</td><td class="n">무료 만세력 직접 조회</td><td class="p"><b>전용 만세력 엔진 내장</b></td></tr>
+        <tr><td>배우는 방식</td><td class="n">하는 방법 안내 · 직접 실행해 나감</td><td class="p"><b>하나하나 다 알려드림</b> · 1:1 평생 피드백</td></tr>
+        <tr><td>리포트 제작</td><td class="n">리포트 프롬프트 제공 · GPT에 직접 붙여넣어 실행</td><td class="p">기본 툴에서 <b>PDF·상담 답변이 자동 생성</b></td></tr>
+        <tr><td>나만의 웹사이트</td><td class="n">없음 · 직접 구축</td><td class="p"><b>무료사주 웹사이트 · 당일 통계</b></td></tr>
+        <tr><td>매일 올릴 글</td><td class="n">직접 고민</td><td class="p"><b>일진첩 · 스레드 자동화 · GPTs</b></td></tr>
+        <tr><td>발송·응대</td><td class="n">수동</td><td class="p">이메일 발송 + <b>AI 추가응대</b></td></tr>
+        <tr><td>마케팅·유입</td><td class="n">기본 개념 안내</td><td class="p"><b>SNS 실전 유입 구조</b></td></tr>
+        <tr><td>운영·수익화</td><td class="n">기본 팁</td><td class="p">상담·재구매·단골화 <b>전 과정 코칭</b></td></tr>
+        <tr><td>피드백</td><td class="n">없음 · 혼자 진행</td><td class="p"><b>1:1 평생 · 횟수 제한 없음</b></td></tr>
+        <tr><td>가격</td><td class="n"><span data-lp="ebookPriceFmt">89,000</span>원</td><td class="p"><b><span data-lp="price">75</span>만원</b> · <span data-lp="cohort">3기</span> 라이브 특가</td></tr>
+      </table>
+    </div>
+    <div class="ebookbox reveal">
+      <div>
+        <p class="eyebrow">먼저 가볍게 시작하고 싶다면</p>
+        <p class="t" style="margin-top:10px">AI 사주상담 실전 가이드 · 기초편</p>
+        <p class="s">"수강은 아직 부담돼요." 그런 분을 위한 입문서입니다. 하는 방법과 프롬프트를 드리고, 직접 실행해 나가실 수 있게 만든 책입니다.</p>
+        <ul>
+          <li>사주 최소 원리 + 일간·오행·십성 해석 사전</li>
+          <li>만세력으로 사주 뽑는 법</li>
+          <li>상품별 리포트를 뽑는 GPT 프롬프트 제공</li>
+        </ul>
+      </div>
+      <div class="buy">
+        <span class="lbl">1차 얼리버드</span>
+        <span class="v"><span data-lp="ebookPriceFmt">89,000</span>원</span>
+        <span class="warn"><span data-lp="ebookSeats">10</span>명 구매 시 <span data-lp="ebookStepFmt">30,000</span>원 인상 — 다음 금액은 <span data-lp="ebookNextFmt">119,000</span>원입니다</span>
+        <button class="btn navy pay-open" type="button" id="ebookBtn" data-kind="ebook"
+          data-item="AI 사주 기초 전자책" data-amount="89000"
+          data-card="카드 결제 (준비 중)" data-bank="계좌이체"
+          data-hint="현재 계좌이체만 가능합니다.">전자책 구매하기</button>
+        <span class="up">더 깊이 배우고 싶다면 → <a href="#price">루월당 수강 보기</a></span>
       </div>
     </div>
-    <div class="bandnote">
-      망설여지시면 <b>무료 설명회 라이브</b>부터 오셔도 됩니다. <span data-lp="liveDate">9월 30일</span>이고, 참여만 하셔도 <b>무료 자료집</b>과 <b>전자책 1만 원 할인권</b>을 드립니다.
-    </div>
   </div>
 </section>
 
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>자주 묻는 질문</div>
-    <h2 class="head">미리 풀어드릴게요</h2>
-    <div class="faq">
+<section>
+  <div class="wrap">
+    <div class="head center reveal">
+      <p class="eyebrow">FAQ</p>
+      <h2 class="h2">자주 묻는 질문</h2>
+    </div>
+    <div class="faq reveal">
       <details open><summary>사주를 하나도 몰라도 되나요?</summary><p>네. 실제 명리학자가 만든 전용 엔진이 계산과 해석을 하고, AI가 리포트를 씁니다. 알려드리는 순서대로만 따라오시면 됩니다. <b>20대부터 70대까지</b> 함께하고 있고, 70세 어머님도 수강 중이십니다. 나이보다 끝까지 해보시려는 마음이 더 중요합니다.</p></details>
-      <details><summary>프로그램 사용에 추가 비용이 드나요?</summary><p>루월당에 내는 추가 비용은 없습니다. 전용 프로그램은 수강료에 전부 포함이고 평생 사용·계속 업데이트됩니다. PDF를 API로 자동 제작하거나 스레드 자동화(추후)를 쓸 때 API 비용이 들 수 있는데, 이는 <b>외부 사이트에 내는 것</b>이며 무료 방식만 쓰면 들지 않습니다.</p></details>
+      <details><summary><span data-lp="cohort">3기</span> 이후에도 모집하나요?</summary><p>아니요. <b><span data-lp="cohort">3기</span>가 마지막 모집입니다.</b> 같은 방법을 하는 분이 너무 많아지면 먼저 시작한 수강생분들의 메리트가 줄어들기 때문입니다. 3기 이후 제 사주 운영은 자동화로 돌려두고, 저는 다른 부업을 준비할 예정입니다. 그렇다고 수강생분들을 신경 쓰지 않는 것은 <b>절대 아닙니다.</b> 1기부터 3기까지의 수강생을 집중해서 챙기고, 공부는 따로 하면서 피드백은 평생 봐드립니다. 사주 과정을 신청하신 분께는 <b>홈페이지 외주 제작, 블로그 또는 스레드 대행</b> 같은 다음 부업에도 함께할 기회를 드릴 예정입니다.</p></details>
+      <details><summary>피드백은 얼마나 받을 수 있나요?</summary><p><b>1:1로, 횟수 제한 없이 평생</b>입니다. 기수가 끝나도, 제가 다른 부업을 준비하더라도 질문은 계속 받습니다. 다만 <b>직접 해보지 않고 제가 대신 다 해주길 바라시는 분은 받지 않습니다.</b> 피드백은 실천하는 분이 막힌 곳을 같이 푸는 자리입니다. 물어보시는 분이 가장 빨리 갑니다.</p></details>
+      <details><summary>수강은 언제 시작하나요?</summary><p><b><span data-lp="liveDate">10월 3일 저녁 7시</span> 라이브</b>에서 모집하고, 수강은 <b>10월 6일(화)</b>에 시작합니다. 10월 3일 라이브 때까지만 <b><span data-lp="price">75</span>만원</b>이고, 라이브가 끝난 뒤 신청은 <span data-lp="latePrice">90</span>만원입니다.</p></details>
+      <details><summary>사주 프로그램 사용에 추가 비용이 드나요?</summary><p><b>루월당 사주 프로그램</b>에 내는 추가 비용은 없습니다. 수강료에 전부 포함이고 평생 사용하며, 앞으로도 계속 업데이트되고 새 기능이 붙어도 추가 비용이 없습니다. PDF를 API로 자동 제작하거나 자동 발행을 쓸 때 API 비용이 들 수 있는데, 이는 <b>외부 사이트에 내는 것</b>이며 무료 방식만 쓰면 들지 않습니다.</p></details>
+      <details><summary>스레드 자동화는 지금 쓸 수 있나요?</summary><p>네, <b>지금 바로 쓰실 수 있고, 신기능 업데이트도 마쳤습니다.</b> 주제 한 단어로 글을 만들고, 미리 보고 점검한 뒤 바로 올리거나 예약합니다. 수강생은 추가 결제 없이 사용합니다.</p></details>
+      <details><summary>사주 상담 경험이 없어도 괜찮나요?</summary><p>괜찮습니다. 첫 멘트와 상담 흐름, 곤란한 질문과 환불 요청에 답하는 방법까지 실전 자료로 드립니다.</p></details>
       <details><summary>결제는 어떻게 하나요?</summary><p><b>현재는 계좌이체만 가능합니다.</b> 신청 버튼을 누르시면 입금 계좌를 안내해 드리고, 입금 후 카카오톡으로 알려주시면 확인해 드립니다. 카드 결제는 승인 심사 중이며, 카드 결제 시에는 할인이 적용되지 않습니다.</p></details>
-      <details><summary>피드백은 얼마나 받을 수 있나요?</summary><p><b>횟수 제한 없이, 한 번 수강하면 평생</b>입니다. 기수가 끝나도 질문은 계속 받습니다. 다만 수강생이 늘면 제가 먼저 한 분씩 챙겨드리긴 어렵습니다. <b>물어보시는 분이 가장 빨리 갑니다.</b></p></details>
-      <details><summary>스레드 자동화는 지금 쓸 수 있나요?</summary><p>준비 중이며 추후 배포 예정입니다. 배포되면 수강생은 <b>추가 비용 없이</b> 바로 사용하실 수 있습니다.</p></details>
-      <details><summary>정원이 정해져 있나요?</summary><p><span data-lp="cohort">3기</span>는 <span data-lp="seats">10</span>명 제한입니다. 정원이 마감되면 조기 종료되며, <span data-lp="nextCohort">4기</span>부터 <span data-lp="nextPrice">110</span>만원으로 인상될 예정입니다.</p></details>
+      <details><summary>정원이 정해져 있나요?</summary><p><span data-lp="cohort">3기</span>는 <span data-lp="seats">10</span>명 제한입니다. 정원이 차면 조기 마감되며, 마지막 모집이라 <b>이후 추가 모집은 없습니다.</b></p></details>
     </div>
   </div>
 </section>
 
-<section class="stack reveal">
-  <div class="wrap stack">
-    <div class="eyebrow"><s></s>마지막으로</div>
-    <h2 class="head">달라지는 건 실력이 아니라<br><span class="mark">망설인 시간</span>뿐입니다</h2>
-    <p class="body">사주를 다 배우고 시작하겠다는 분은 영영 시작하지 못합니다. 모르는 채로 오늘 링크를 만든 사람이 두 달 뒤에 첫 입금 문자를 받습니다. 세상에 안 나온 완벽한 준비보다, <b>세상에 나온 어설픈 링크가 이깁니다.</b> 후자는 고칠 수 있고, 전자는 존재하지 않기 때문입니다.</p>
-    <p class="body">혼자 두지 않습니다. 막히는 지점마다 물어보시면 됩니다. <span class="mark">한 번 수강하면 평생입니다.</span></p>
-    <div class="ctarow">
-      <button class="cta pay-open" type="button" data-kind="course"
-        data-item="루월당 3기 수강 신청" data-amount="700000"
+<section class="dark lastword">
+  <div class="wrap reveal">
+    <p class="eyebrow">Last word</p>
+    <h2 class="h2">달라지는 건 실력이 아니라<br>망설인 시간뿐입니다</h2>
+    <p class="lead">사주를 다 배우고 시작하겠다는 분은 영영 시작하지 못합니다. 세상에 안 나온 완벽한 준비보다,
+      <b>오늘 만든 어설픈 링크가 이깁니다.</b> 후자는 고칠 수 있고, 전자는 존재하지 않기 때문입니다.</p>
+    <p class="lead">혼자 두지 않습니다. 막히는 지점마다 물어보시면 됩니다. 그리고 <b><span data-lp="cohort">3기</span>가 마지막입니다.</b></p>
+    <div class="btns">
+      <button class="btn rust pay-open" type="button" data-kind="course"
+        data-item="루월당 3기 수강 신청" data-amount="750000"
         data-card="카드 결제 (준비 중)" data-bank="계좌이체"
-        data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중이며 4기부터 가능할 예정입니다."><span data-lp="cohort">3기</span> 신청하기</button>
-      <a class="cta ghost" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">문의하기</a>
+        data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중입니다.">마지막 <span data-lp="cohort">3기</span> 신청하기</button>
+      <a class="btn outline" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener">문의하기</a>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <p><b style="color:var(--ink-2)">루월당</b> · AI 사주 자동화 컨설팅 · 문의 카카오톡 오픈채팅<br><br>
-    <span data-lp="cohort">3기</span> <span data-lp="seats">10</span>명 한정 · <span data-lp="earlyUntil">9월 30일</span>까지 사전예약가 <span data-lp="price">70</span>만원 · <span data-lp="deadline">10월 10일</span> 신청 마감 · 정원 마감 시 조기 종료.<br>
+    <b>루월당 樓月堂</b> · AI 사주 자동화 컨설팅 · 문의 카카오톡 오픈채팅<br>
+    마지막 <span data-lp="cohort">3기</span> <span data-lp="seats">10</span>명 한정 · <span data-lp="liveDate">10월 3일 저녁 7시</span> 라이브 때까지 <span data-lp="price">75</span>만원 · 이후 <span data-lp="latePrice">90</span>만원 · 10월 6일(화) 수강 시작 · 정원 마감 시 조기 종료<br>
     본 과정은 수익을 보장하지 않습니다. 결과는 시작 시기·투입 시간·꾸준함에 따라 각자 다릅니다.<br>
-    © 루월당 · 무단 복제·배포 금지</p>
+    © 루월당 · 무단 복제·배포 금지
   </div>
 </footer>
 
 </main>
 
-<!-- 사진 크게 보기 — 사진을 누르면 여기에 뜬다 -->,<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="사진 크게 보기">,  <button class="close" type="button" aria-label="닫기">&times;</button>,  <div class="step" id="viewerStep"></div>,  <img id="viewerImg" src="" alt="">,  <div class="cap" id="viewerCap"></div>,</div>,
+<!-- 사진 크게 보기 — 사진을 누르면 여기에 뜬다 -->
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="사진 크게 보기">
+  <button class="close" type="button" aria-label="닫기">&times;</button>
+  <div class="step" id="viewerStep"></div>
+  <img id="viewerImg" src="" alt="">
+  <div class="cap" id="viewerCap"></div>
+</div>
+
 <div class="buybar">
   <div class="in">
-    <div class="pr"><span class="lbl"><span data-lp="cohort">3기</span> 사전예약가</span><span class="val money"><span data-lp="price">70</span>만원</span></div>
-    <div class="left"><span data-lp="seats">10</span>명 한정<br><span data-lp="deadline">10월 10일</span> 마감</div>
-    <button class="cta pay-open" type="button" data-kind="course"
-      data-item="루월당 3기 수강 신청" data-amount="700000"
+    <div><span class="lbl">마지막 <span data-lp="cohort">3기</span> · 라이브 특가</span><span class="val"><span data-lp="price">75</span>만원</span></div>
+    <div class="left"><span data-lp="seats">10</span>명 한정 · 추가 모집 없음<br>10월 6일(화) 수강 시작</div>
+    <button class="btn rust pay-open" type="button" data-kind="course"
+      data-item="루월당 3기 수강 신청" data-amount="750000"
       data-card="카드 결제 (준비 중)" data-bank="계좌이체"
-      data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중이며 4기부터 가능할 예정입니다.">신청하기</button>
+      data-hint="현재 계좌이체만 가능합니다. 카드 결제는 승인 심사 중입니다.">신청하기</button>
   </div>
 </div>
 
@@ -736,8 +903,8 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
     <button class="pay-close" type="button" aria-label="닫기">&times;</button>
     <h3>어떻게 결제하시겠어요?</h3>
     <div class="pay-sub" id="payItem"></div>
-    <button class="cta dark" id="payCard" type="button" style="display:none"><span id="payCardPrice">카드 결제</span></button>
-    <button class="cta" id="payBank" type="button"><span id="payBankPrice">계좌이체</span></button>
+    <button class="btn navy" id="payCard" type="button" style="display:none"><span id="payCardPrice">카드 결제</span></button>
+    <button class="btn rust" id="payBank" type="button"><span id="payBankPrice">계좌이체</span></button>
     <p class="pay-hint" id="payHint"></p>
   </div>
 </div>
@@ -750,7 +917,7 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
     <div class="pay-sub" id="tossItem"></div>
     <div id="payment-method"></div>
     <div id="agreement"></div>
-    <button class="cta" id="tossPayBtn" type="button" style="margin-top:16px">결제하기</button>
+    <button class="btn rust" id="tossPayBtn" type="button" style="margin-top:16px">결제하기</button>
   </div>
 </div>
 
@@ -778,7 +945,7 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
         <input type="text" id="bkCode" placeholder="예: LW-1234" maxlength="20"></label>
       <div class="askprev" id="bkPrev"></div>
       <button type="button" class="copybtn" id="copyMsg">이 내용 복사하기</button>
-      <a class="cta" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener" style="margin-top:12px">카카오톡으로 보내기</a>
+      <a class="btn rust" href="https://open.kakao.com/o/sgxzjjwi" target="_blank" rel="noopener" style="margin-top:12px">카카오톡으로 보내기</a>
     </div>
   </div>
 </div>
@@ -795,6 +962,16 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
       .replace(/"/g,'&quot;');
   }
   function won(v){ return Number(v || 0).toLocaleString('ko-KR'); }
+
+  /* ── 폰 메뉴 ── */
+  var mt = document.getElementById('menuTog'), menu = document.getElementById('menu');
+  mt.addEventListener('click', function(){
+    var open = menu.classList.toggle('open');
+    mt.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  menu.addEventListener('click', function(e){
+    if (e.target.closest('a')) { menu.classList.remove('open'); mt.setAttribute('aria-expanded', 'false'); }
+  });
 
   /* ── 화면에 들어올 때 나타나기 ── */
   function showReveals(){
@@ -975,7 +1152,8 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
 
   /* ── 기수·금액 불러오기 ──
      루월당 관리자 화면에서 정한 값을 읽어와 화면을 채운다.
-     못 불러오면 미리 적힌 값이 그대로 보인다. */
+     못 불러오면 미리 적힌 값이 그대로 보인다.
+     3기가 마지막 모집이라 「다음 기수 · 다음 가격」 값은 더 이상 화면에 쓰지 않는다. */
   fetch('/api/lp/settings')
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -1066,8 +1244,6 @@ footer p{font-size:14px;line-height:1.9;color:var(--ink-3)}
     })
     .catch(function(){ /* 못 읽어오면 감춘 채로 둔다 */ });
 
-  /* ── 후기 옆으로 넘기기 ──
-     폰에서는 손가락으로, 마우스에서는 끌거나 단추로 넘긴다. */
   /* ── 옆으로 넘겨 보는 칸 ──
      후기와 프로그램 화면이 같이 쓴다.
      폰에서는 손가락으로, 마우스에서는 끌거나 좌우 단추로 넘긴다. */
