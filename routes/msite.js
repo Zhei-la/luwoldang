@@ -25,7 +25,7 @@ const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
 const solarTime = require('../services/solarTime');
 /* 엔진은 서머타임을 모른다. 넘기기 직전에 얹는다 (교육생 만세력 /manse 와 같은 처리) */
-const { 서머타임반영, 서머타임안내 } = require('../services/dstCorrection');
+const { 서머타임반영 } = require('../services/dstCorrection');
 const theme = require('../services/msiteTheme');
 const quota = require('../services/msiteQuota');
 const guest = require('../services/guestSite');
@@ -234,7 +234,6 @@ async function showResult(req, res, next) {
     }
 
     let r;
-    let dst = null;   /* 서머타임 반영 내역 — 안내 문구에 쓴다 */
     try {
       /* ⚠️ 두 번째 인자(날짜 경계)를 빼먹으면 안 된다.
          빼면 밤 11시~자정 태생이 어느 관법과도 다른 시주를 받는다.
@@ -242,8 +241,7 @@ async function showResult(req, res, next) {
          교육생 만세력(/manse) 기본값과 똑같이 '자시 미분리'로 맞춘다. */
       /* 화면에 보여줄 값(b.input)은 그대로 두고 엔진에 넘길 입력에만 서머타임을 얹는다.
          b.input 의 보정분을 바꾸면 「지역시 보정 켬」 표시(pre.localTime)까지 따라 바뀐다. */
-      dst = 서머타임반영(b.input);
-      r = engine.명식표상세(dst.info, 'jasi', '미적용');
+      r = engine.명식표상세(서머타임반영(b.input).info, 'jasi', '미적용');
     } catch (e) {
       console.error('[만세력] 계산 실패:', e.message);
       return res.render('msite/input', Object.assign(pageBits(req, t), {
@@ -281,8 +279,6 @@ async function showResult(req, res, next) {
       wonguk: r.raw.wonguk || [],
       /* 밤 11시 태생만 하루 경계가 결과를 바꾼다. 그때만 알려준다. */
       jasiNote: !b.input.hourUnknown && b.input.hour === 23,
-      /* 서머타임 구간 태생만 왜 1시간을 뺐는지 알려준다. 아니면 null 이라 아무것도 안 나온다. */
-      dstNotice: 서머타임안내(dst),
       /* 신청란 — 방금 넣으신 값이 그대로 담겨 있어 다시 적지 않아도 된다 */
       af: applyForm(t),
       /* 하루 정원 안내 — 남은 자리·할인 금액. 꺼두면 quota.on 이 false 라 아무것도 안 나온다 */

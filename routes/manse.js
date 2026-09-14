@@ -100,12 +100,13 @@ function 일간십성(out) {
 }
 
 /**
- * 서머타임 구간 태생에게만 「왜 1시간을 뺐는지」 안내를 붙인다.
+ * 서머타임 구간 태생에게만 「왜 1시간을 뺐는지」 안내를 붙인다. 화면은 보정 문구 옆 ⓘ 를 누르면 펼친다.
  * 아무도 해당하지 않으면 dstNotice 키 자체를 보내지 않는다 — 응답이 예전과 똑같다.
+ * idx 는 몇 번째 사람인지(0=본인·개인, 1=상대방). 화면이 idx 번째 「기본정보」 줄·표머리에 ⓘ 를 붙인다.
  * @param {Array<{ who: string, x: object }>} people  who: 궁합이면 '본인 (이름)', 개인이면 ''
  */
 function 서머타임안내응답(people) {
-  const list = people.map((p) => ({ who: p.who, lines: 서머타임안내(p.x) })).filter((p) => p.lines);
+  const list = people.map((p, idx) => ({ idx, who: p.who, lines: 서머타임안내(p.x) })).filter((p) => p.lines);
   return list.length ? { dstNotice: list } : {};
 }
 const 누구 = (role, name) => (String(name || '').trim() ? `${role} (${String(name).trim()})` : role);
