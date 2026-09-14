@@ -318,6 +318,20 @@ ul.plain li::before{content:"✓";position:absolute;left:2px;color:var(--rust);f
 footer{padding:44px 0 40px;text-align:center;font-size:13px;color:var(--faint);line-height:1.9}
 footer b{color:var(--muted)}
 
+/* 사업자정보 — 평소엔 접어두고, 눌러야 펴진다. 홈(/)과 같은 모양 */
+.biz{margin-top:18px}
+.biz-tog{font-family:inherit;font-size:12px;color:var(--faint);background:none;
+  border:1px solid var(--line);border-radius:100px;padding:5px 14px;cursor:pointer}
+.biz-tog:hover{color:var(--gold);border-color:var(--gold)}
+.biz-box{margin:14px auto 0;max-width:520px;text-align:left;font-size:12px;line-height:1.85;color:var(--faint)}
+.biz-box > div{display:flex;gap:10px;padding:3px 0}
+.biz-box dt{flex:0 0 122px;color:#B5AC9A}
+.biz-box dd{margin:0;flex:1;word-break:break-all}
+@media(max-width:520px){
+  .biz-box > div{flex-direction:column;gap:0;padding:6px 0}
+  .biz-box dt{flex:none;font-size:11px}
+}
+
 /* 하단 고정 바 */
 .buybar{position:fixed;left:0;right:0;bottom:0;z-index:70;background:rgba(251,248,242,.97);
   border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(24,34,58,.08)}
@@ -872,7 +886,17 @@ footer b{color:var(--muted)}
     <b>루월당 樓月堂</b> · AI 사주 자동화 컨설팅 · 문의 카카오톡 오픈채팅<br>
     마지막 <span data-lp="cohort">3기</span> <span data-lp="seats">10</span>명 한정 · <span data-lp="liveDate">10월 3일 저녁 7시</span> 라이브 때까지 <span data-lp="price">75</span>만원 · 이후 <span data-lp="latePrice">90</span>만원 · 10월 6일(화) 수강 시작 · 정원 마감 시 조기 종료<br>
     본 과정은 수익을 보장하지 않습니다. 결과는 시작 시기·투입 시간·꾸준함에 따라 각자 다릅니다.<br>
-    © 루월당 · 무단 복제·배포 금지
+
+    <!-- 사업자 정보 — 전자상거래법에 따라 손님이 볼 수 있는 곳에 적어야 한다.
+         값은 서버 환경변수에서 읽어온다. 하나도 없으면 칸째로 감춘 채로 둔다. -->
+    <div class="biz" id="biz" hidden>
+      <button type="button" class="biz-tog" id="bizTog" aria-expanded="false" aria-controls="bizBox">
+        사업자정보 <span aria-hidden="true">▾</span>
+      </button>
+      <dl class="biz-box" id="bizBox" hidden></dl>
+    </div>
+
+    <div style="margin-top:18px">© <span id="bizName">루월당</span> · 무단 복제·배포 금지</div>
   </div>
 </footer>
 
@@ -1187,6 +1211,26 @@ footer b{color:var(--muted)}
           b.setAttribute('data-bank', '계좌이체 · ' + won(s.ebookPrice) + '원');
         });
       }
+    })
+    .catch(function(){});
+
+  /* ── 사업자 정보 불러오기 ── 홈(/)과 같은 값 */
+  fetch('/api/lp/biz')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.has || !d.rows || !d.rows.length) return;
+      var box = document.getElementById('bizBox'), tog = document.getElementById('bizTog');
+      box.innerHTML = d.rows.map(function(row){
+        return '<div><dt>' + esc(row.label) + '</dt><dd>' + esc(row.value) + '</dd></div>';
+      }).join('');
+      if (d.name) document.getElementById('bizName').textContent = d.name;
+      document.getElementById('biz').removeAttribute('hidden');
+      tog.addEventListener('click', function(){
+        var open = box.hasAttribute('hidden');
+        if (open) box.removeAttribute('hidden'); else box.setAttribute('hidden', '');
+        tog.setAttribute('aria-expanded', open ? 'true' : 'false');
+        tog.querySelector('span').textContent = open ? '▴' : '▾';
+      });
     })
     .catch(function(){});
 

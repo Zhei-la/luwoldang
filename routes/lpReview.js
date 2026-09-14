@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { bizInfo } = require('../services/bizInfo');
 
 const MAX_IMG = 3 * 1024 * 1024;
 
@@ -146,6 +147,14 @@ router.get('/api/lp/settings', async (req, res) => {
       ebookNext: (st.ebook_price || 0) + (st.ebook_step || 0),
     },
   });
+});
+
+/* 판매 페이지 맨 아래 사업자 정보 — 홈(/)과 같은 값을 쓴다.
+   판매 페이지는 서버가 그리지 않는 파일이라, 여기서 읽어가 채운다. */
+router.get('/api/lp/biz', (req, res) => {
+  const b = bizInfo();
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ ok: true, has: b.has, name: b.name, rows: b.rows });
 });
 
 router.post('/admin/lp-settings', requireAuth, requireAdmin, async (req, res) => {
