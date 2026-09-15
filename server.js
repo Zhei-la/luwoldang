@@ -191,7 +191,13 @@ app.use((err, req, res, next) => {
   res.status(500).send('서버 오류가 발생했습니다.');
 });
 initDb()
-  .then(() => {
+  .then(async () => {
+    // 통합 사이트가 켜진 계정을 읽어 둔다 (실패해도 SITE_V2_SLUGS 로 켠 아이디는 그대로 열린다)
+    try {
+      await siteV2.init();
+    } catch (e) {
+      console.error('[통합 사이트] 켜진 계정 읽기 실패:', e.message);
+    }
     // 개인정보 자동 마스킹 스케줄 시작 (발송 7일 후 개인정보 파기)
     try {
       require('./services/privacy').startMaskingSchedule();

@@ -1,4 +1,4 @@
-/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151004 */
+/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151049 */
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -12865,8 +12865,14 @@ function Banner({ cfg }) {
 var SNS = [["instagram", "\uC778\uC2A4\uD0C0\uADF8\uB7A8"], ["threads", "\uC2A4\uB808\uB4DC"], ["kakao", "\uCE74\uCE74\uC624\uD1A1 \uCC44\uB110"], ["blog", "\uBE14\uB85C\uADF8"], ["youtube", "\uC720\uD29C\uBE0C"]];
 function SiteFooter({ cfg }) {
   const c = cfg.contact;
-  const need = (v) => v || "(\uC785\uB825 \uD544\uC694)";
-  const business = `\uC0C1\uD638 ${cfg.brand.name} \xB7 \uB300\uD45C ${need(c.ceo)} \xB7 \uC0AC\uC5C5\uC790\uB4F1\uB85D\uBC88\uD638 ${need(c.bizNo)} \xB7 \uD1B5\uC2E0\uD310\uB9E4\uC5C5 \uC2E0\uACE0 ${need(c.ecommerceNo)}`;
+  const bizParts = [
+    c.ceo && `\uB300\uD45C ${c.ceo}`,
+    c.bizNo && `\uC0AC\uC5C5\uC790\uB4F1\uB85D\uBC88\uD638 ${c.bizNo}`,
+    c.ecommerceNo && `\uD1B5\uC2E0\uD310\uB9E4\uC5C5 \uC2E0\uACE0 ${c.ecommerceNo}`,
+    c.address
+  ].filter(Boolean);
+  const business = bizParts.length ? [`\uC0C1\uD638 ${cfg.brand.name}`, ...bizParts].join(" \xB7 ") : "";
+  const contactText = [c.email, c.phone].filter(Boolean).join(" \xB7 ");
   const sns = SNS.filter(([k]) => c[k]);
   return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("footer", { className: `site-footer footer-${cfg.variants.footer}`, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "container", children: [
     /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "footer-top", children: [
@@ -12877,11 +12883,10 @@ function SiteFooter({ cfg }) {
       cfg.variants.footer === "detail" && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { className: "footer-tagline", children: cfg.brand.tagline })
     ] }),
     cfg.variants.footer === "detail" && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "footer-cols", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { children: [
+      (c.email || c.phone) && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("b", { children: "\uBB38\uC758" }),
         c.email && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: c.email }),
-        c.phone && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: c.phone }),
-        !c.email && !c.phone && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: "(\uC5F0\uB77D\uCC98 \uC785\uB825 \uD544\uC694)" })
+        c.phone && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: c.phone })
       ] }),
       sns.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("b", { children: "\uC18C\uC2DD" }),
@@ -12900,12 +12905,13 @@ function SiteFooter({ cfg }) {
       !cfg.base && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Link, { href: "/admin", children: "\uAD00\uB9AC\uC790" })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("p", { className: "footer-biz", children: [
-      business,
-      c.address ? ` \xB7 ${c.address}` : "",
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("br", {}),
-      cfg.variants.footer === "simple" && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+      business && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+        business,
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("br", {})
+      ] }),
+      cfg.variants.footer === "simple" && contactText && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
         "\uBB38\uC758 ",
-        c.email || c.phone || "(\uC5F0\uB77D\uCC98 \uC785\uB825 \uD544\uC694)",
+        contactText,
         " \xB7 "
       ] }),
       "\uC0AC\uC8FC \uD480\uC774\uB294 \uC0B6\uC758 \uBC29\uD5A5\uC744 \uCC38\uACE0\uD558\uB294 \uCF58\uD150\uCE20\uC608\uC694."
@@ -16187,9 +16193,15 @@ function DoneView({ cfg, no, bank, kakao }) {
   ] }) }) }) });
 }
 function PolicyView({ cfg }) {
+  const c = cfg.contact;
+  const contact = [c.email && `\uC774\uBA54\uC77C ${c.email}`, c.phone && `\uC804\uD654 ${c.phone}`].filter(Boolean).join(" \xB7 ");
+  const biz = [c.ceo && `\uB300\uD45C ${c.ceo}`, c.bizNo && `\uC0AC\uC5C5\uC790\uB4F1\uB85D\uBC88\uD638 ${c.bizNo}`, c.ecommerceNo && `\uD1B5\uC2E0\uD310\uB9E4\uC5C5 \uC2E0\uACE0 ${c.ecommerceNo}`, c.address].filter(Boolean).join(" \xB7 ");
   return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(SiteFrame, { cfg, children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("main", { className: "container", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "prose", children: [
     /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h1", { children: "\uAC1C\uC778\uC815\uBCF4\uCC98\uB9AC\uBC29\uCE68 \xB7 \uD658\uBD88 \uADDC\uC815" }),
-    /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { children: "\uC544\uB798 \uB0B4\uC6A9\uC740 \uCD08\uC548\uC774\uC5D0\uC694. \uC624\uD508 \uC804\uC5D0 \uC0AC\uC5C5\uC790 \uC815\uBCF4\uC640 \uD568\uAED8 \uD655\uC815\uD574\uC8FC\uC138\uC694." }),
+    /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { children: [
+      cfg.brand.name,
+      "\uC740 \uB9AC\uD3EC\uD2B8 \uC2E0\uCCAD\uC5D0 \uD544\uC694\uD55C \uCD5C\uC18C\uD55C\uC758 \uC815\uBCF4\uB9CC \uBC1B\uACE0, \uC544\uB798 \uAE30\uC900\uC5D0 \uB530\uB77C \uC548\uC804\uD558\uAC8C \uAD00\uB9AC\uD574\uC694."
+    ] }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h2", { id: "privacy", children: "\uC218\uC9D1\uD558\uB294 \uC815\uBCF4" }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("ul", { children: [
       /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uD544\uC218: \uC2E0\uCCAD\uC790 \uC774\uB984, \uC804\uD654\uBC88\uD638, \uC774\uBA54\uC77C, \uC785\uAE08\uC790\uBA85" }),
@@ -16202,7 +16214,7 @@ function PolicyView({ cfg }) {
       "\uC740 \uC0AC\uC8FC \uACC4\uC0B0, \uB9AC\uD3EC\uD2B8 \uC791\uC131, \uC774\uBA54\uC77C \uBC1C\uC1A1, \uBB38\uC758 \uC751\uB300\uC5D0\uB9CC \uC774\uC6A9\uD574\uC694. \uB9AC\uD3EC\uD2B8 \uBC1C\uC1A1 \uD6C4 1\uB144\uC774 \uC9C0\uB098\uBA74 \uC9C0\uCCB4 \uC5C6\uC774 \uC0AD\uC81C\uD574\uC694. \uBC95\uB839\uC5D0 \uB530\uB77C \uBCF4\uAD00\uD574\uC57C \uD558\uB294 \uAC70\uB798 \uAE30\uB85D\uC740 \uD574\uB2F9 \uAE30\uAC04 \uB3D9\uC548\uB9CC \uBCF4\uAD00\uD574\uC694."
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h2", { children: "\uC81C3\uC790 \uC81C\uACF5" }),
-    /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { children: "\uC774\uC6A9\uC790\uC758 \uB3D9\uC758 \uC5C6\uC774 \uC678\uBD80\uC5D0 \uC81C\uACF5\uD558\uC9C0 \uC54A\uC544\uC694. \uC774\uBA54\uC77C \uBC1C\uC1A1 \uB4F1 \uC11C\uBE44\uC2A4 \uC6B4\uC601\uC5D0 \uD544\uC694\uD55C \uC704\uD0C1 \uC5C5\uCCB4\uB294 \uC624\uD508 \uC804 \uC774 \uACF3\uC5D0 \uBA85\uC2DC\uD574\uC694." }),
+    /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { children: "\uC774\uC6A9\uC790\uC758 \uB3D9\uC758 \uC5C6\uC774 \uC678\uBD80\uC5D0 \uC81C\uACF5\uD558\uC9C0 \uC54A\uC544\uC694. \uB2E4\uB9CC \uBC95\uB839\uC5D0 \uB530\uB77C \uC81C\uCD9C \uC758\uBB34\uAC00 \uC788\uB294 \uACBD\uC6B0\uB294 \uC608\uC678\uB85C \uD574\uC694." }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h2", { id: "refund", children: "\uD658\uBD88 \uADDC\uC815" }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("ul", { children: [
       /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uD480\uC774 \uC791\uC131 \uC2DC\uC791 \uC804: \uC804\uC561 \uD658\uBD88" }),
@@ -16210,7 +16222,20 @@ function PolicyView({ cfg }) {
       /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uB9AC\uD3EC\uD2B8\uC5D0 \uC785\uB825 \uC815\uBCF4\uC640 \uB2E4\uB978 \uACC4\uC0B0 \uC624\uB958\uAC00 \uC788\uC73C\uBA74 \uBB34\uB8CC\uB85C \uB2E4\uC2DC \uC791\uC131\uD574\uB4DC\uB824\uC694." })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h2", { children: "\uCC38\uACE0 \uC0AC\uD56D" }),
-    /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { children: "\uC0AC\uC8FC \uD480\uC774\uB294 \uC0B6\uC758 \uBC29\uD5A5\uC744 \uCC38\uACE0\uD558\uB294 \uCF58\uD150\uCE20\uC774\uBA70, \uC758\uD559\xB7\uBC95\uB960\xB7\uD22C\uC790 \uD310\uB2E8\uC744 \uB300\uC2E0\uD558\uC9C0 \uC54A\uC544\uC694." })
+    /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { children: "\uC0AC\uC8FC \uD480\uC774\uB294 \uC0B6\uC758 \uBC29\uD5A5\uC744 \uCC38\uACE0\uD558\uB294 \uCF58\uD150\uCE20\uC774\uBA70, \uC758\uD559\xB7\uBC95\uB960\xB7\uD22C\uC790 \uD310\uB2E8\uC744 \uB300\uC2E0\uD558\uC9C0 \uC54A\uC544\uC694." }),
+    (contact || biz) && /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)(import_jsx_runtime15.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h2", { children: "\uBB38\uC758\uCC98" }),
+      contact && /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { children: [
+        "\uAC1C\uC778\uC815\uBCF4\xB7\uD658\uBD88 \uBB38\uC758: ",
+        contact
+      ] }),
+      biz && /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { children: [
+        "\uC0C1\uD638 ",
+        cfg.brand.name,
+        " \xB7 ",
+        biz
+      ] })
+    ] })
   ] }) }) });
 }
 
@@ -16598,7 +16623,7 @@ function renderPage(kind, cfg, opts = {}) {
       return { html: (0, import_server.renderToString)(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Landing, { cfg })), title: `${brand} \u2014 ${cfg.brand.tagline}`, description: fill(cfg.hero.lede, cfg) };
   }
 }
-var BUILD_ID = "202609151004";
+var BUILD_ID = "202609151049";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BUILD_ID,

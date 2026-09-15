@@ -66,6 +66,8 @@ async function initDb() {
   /* 통합 사이트(웹사이트 + 무료 만세력) 꾸미기 — { draft, published, history, draftSavedAt, publishedAt }
      routes/siteV2.js 가 읽고 쓴다. 비어 있으면 기본 디자인에 교육생 이름을 넣어 보여준다. */
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS site_v2 JSONB;`);
+  /* 통합 사이트가 켜진 계정 — 아이디를 바꿔도 꺼지지 않게 계정에 표시한다 */
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS site_v2_on BOOLEAN DEFAULT FALSE;`);
 
   // 상담 신청 (랜딩 폼)
   await pool.query(`

@@ -4,14 +4,15 @@
 
 <% if (saved) { %><div class="save-toast">저장되었습니다.</div><% } %>
 
-<% if (typeof siteV2On === 'function' && siteV2On(user.slug)) { %>
-<!-- 통합 사이트 — 웹사이트와 무료 만세력을 한 페이지로 합친 새 버전 -->
-<div class="settings-block" style="border:2px solid #2F7A55">
-  <h2 class="section-h">통합 사이트 링크 <span style="font-size:12px;color:#2F7A55;font-weight:700">새 버전 적용 중</span></h2>
+<% var v2on = typeof siteV2On === 'function' && siteV2On(user.slug); %>
+<% if (v2on) { %>
+<!-- 무료 만세력 사이트 — 웹사이트와 무료 만세력을 한 페이지로 합친 링크 (routes/siteV2.js) -->
+<div class="settings-block">
+  <h2 class="section-h">무료 만세력 사이트 링크</h2>
   <p class="block-desc">
-    내 웹사이트와 무료 만세력이 <b>한 페이지로 합쳐졌습니다.</b>
-    아래 「내 웹사이트 링크」와 「무료 만세력 링크」로 들어와도 모두 이 통합 사이트가 열립니다.<br>
-    무료사주 · 오늘의 운세 · 만세력은 AI 를 쓰지 않아 요금이 0원이고, 리포트 신청은 <b>사주 신청자</b> 목록에 들어옵니다.
+    이 링크를 공유하면 내가 꾸민 사이트가 열립니다.
+    손님이 <b>무료사주 · 오늘의 운세 · 만세력</b>을 보고 바로 리포트를 신청하면 <b>사주 신청자</b> 목록에 들어옵니다.<br>
+    <b>AI 를 쓰지 않아 손님이 아무리 많이 와도 요금이 0원입니다.</b>
     <a href="/site-design">사이트 꾸미러 가기 →</a>
   </p>
   <div class="share-row">
@@ -19,8 +20,24 @@
     <button class="btn btn-approve" type="button" onclick="var b=this;navigator.clipboard.writeText(document.getElementById('v2Url').value).then(function(){b.textContent='복사됨';setTimeout(function(){b.textContent='복사'},1500)})">복사</button>
     <a class="btn btn-ghost" href="<%= msiteBase %>/<%= user.slug %>" target="_blank">미리보기</a>
   </div>
+
+  <!-- 링크 주소 바꾸기 -->
+  <label class="fl" style="margin-top:20px">링크 주소 바꾸기</label>
+  <% if (slugError) { %><div class="free-error" style="margin-bottom:8px"><%= slugError %></div><% } %>
+  <form method="post" action="/free-saju-settings/slug" class="share-row" onsubmit="return confirmSlug()">
+    <span class="slug-pre"><%= msiteBase %>/</span>
+    <input class="fi" type="text" name="slug" id="slugIn" value="<%= user.slug %>"
+           pattern="[a-zA-Z0-9-]{3,24}" required
+           placeholder="mysaju" style="flex:1;min-width:120px">
+    <button class="btn btn-approve" type="submit">변경</button>
+  </form>
+  <p class="block-desc" style="margin-top:8px">
+    영문·숫자·하이픈(-)만, 3~24자. 예: <b>mysaju</b>, <b>moon-saju</b>, <b>hong-gildong</b><br>
+    <b style="color:#A8332B">⚠️ 바꾸면 예전 링크는 열리지 않습니다.</b>
+    이미 공유하신 곳이 있으면 주의하세요 — 스레드 글, 문자로 보낸 링크, 프로필에 걸어둔 주소가 모두 안 열리게 됩니다.
+  </p>
 </div>
-<% } %>
+<% } else { %>
 
 <!-- 공유 링크 -->
 <div class="settings-block">
@@ -72,6 +89,7 @@
     상담 신청 뒤 넘어갈 곳은 아래 <b>카카오톡 상담 링크</b>를 씁니다. 비워두면 안내 문구만 나옵니다.
   </p>
 </div>
+<% } %>
 
 <style>
   .th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:4px}
@@ -736,7 +754,7 @@ function confirmSlug(){
   if (v === '<%= user.slug %>') return true;
   return confirm(
     '링크 주소를 "' + v + '" 로 바꿉니다.\n\n' +
-    '예전 링크(/s/<%= user.slug %>)는 더 이상 열리지 않습니다.\n' +
+    '예전 링크(<%= v2on ? '/' + user.slug : '/s/' + user.slug %>)는 더 이상 열리지 않습니다.\n' +
     '이미 공유한 곳이 있다면 모두 새 주소로 바꿔야 합니다.\n\n계속할까요?'
   );
 }

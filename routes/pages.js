@@ -208,6 +208,7 @@ const RESERVED = [
   'admin', 'api', 'auth', 'home', 'builder', 'leads', 'pdf', 'pdfs',
   'records', 'chat', 'account', 'free', 'settings', 'login', 'logout',
   'pending', 's', 'dev', 'public', 'static', 'assets',
+  'site-design', 'site-v2',   // 통합 사이트 꾸미기 · 파일
 ];
 
 router.post('/free-saju-settings/slug', async (req, res, next) => {
@@ -230,6 +231,12 @@ router.post('/free-saju-settings/slug', async (req, res, next) => {
     }
 
     await pool.query('UPDATE users SET slug = $1 WHERE id = $2', [slug, req.user.id]);
+    /* 통합 사이트는 계정에 붙어 있다 — 켜진 아이디 목록을 새 주소로 다시 읽는다 */
+    try {
+      await require('./siteV2').reload();
+    } catch (e) {
+      console.error('[통합 사이트] 켜진 아이디 다시 읽기 실패:', e.message);
+    }
     res.redirect('/free-saju-settings?saved=1');
   } catch (e) {
     next(e);

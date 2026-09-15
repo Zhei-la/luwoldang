@@ -7,6 +7,7 @@
  * 꺼진 교육생은 next() 로 넘겨 예전 화면(웹사이트·만세력)이 그대로 열린다.
  *
  * 켜는 방법: 환경변수 SITE_V2_SLUGS=아이디1,아이디2  (비워두면 lu-saju 만, '*' 는 전원)
+ *   → 서버가 뜰 때 그 계정의 users.site_v2_on 을 켠다. 이후 링크 주소를 바꿔도 계속 켜져 있다.
  *
  * 화면은 ruwoldang-site 저장소(React)에서 묶어 온 파일이 그린다.
  *   services/siteV2/render.js    서버에서 HTML 을 만들고 무료사주를 계산한다
@@ -34,12 +35,37 @@ const MAX_HISTORY = 15;
 
 /* ── 켜진 아이디 ───────────────────────────────────── */
 
-const ON = String(process.env.SITE_V2_SLUGS ? process.env.SITE_V2_SLUGS : 'lu-saju')
+/* 켜짐 표시는 아이디가 아니라 계정(users.site_v2_on)에 붙인다 — 교육생이 링크 주소를 바꿔도 꺼지지 않게.
+ * SITE_V2_SLUGS 는 서버가 뜰 때 그 아이디 계정에 표시를 붙이는 데 쓴다 (비우면 lu-saju). '*' 는 전원.
+ * 요청마다 DB 를 부르지 않도록 켜진 아이디를 메모리에 들고 있고,
+ * 서버가 뜰 때(init)와 아이디를 바꿀 때(routes/pages.js → reload) 다시 읽는다. */
+const SEED = String(process.env.SITE_V2_SLUGS ? process.env.SITE_V2_SLUGS : 'lu-saju')
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+const ALL = SEED.includes('*');
+const onSlugs = new Set(SEED.filter((s) => s !== '*'));   // DB 를 읽기 전에도 켜져 있게
 
 function isOn(slug) {
   const s = String(slug || '').trim().toLowerCase();
-  return !!s && (ON.includes('*') || ON.includes(s));
+  return !!s && (ALL || onSlugs.has(s));
+}
+
+async function reload() {
+  const { rows } = await pool.query(
+    `SELECT LOWER(slug) AS slug FROM users WHERE site_v2_on = TRUE AND slug IS NOT NULL`
+  );
+  onSlugs.clear();
+  rows.forEach((r) => onSlugs.add(r.slug));
+}
+
+async function init() {
+  const seed = SEED.filter((s) => s !== '*');
+  if (seed.length) {
+    await pool.query(
+      `UPDATE users SET site_v2_on = TRUE WHERE LOWER(slug) = ANY($1::text[]) AND site_v2_on IS NOT TRUE`,
+      [seed]
+    );
+  }
+  await reload();
 }
 
 /** 켜진 아이디의 교육생. 켜지지 않은 아이디는 DB 를 부르지도 않는다. */
@@ -467,4 +493,4 @@ dashRouter.post('/site-design/api/admin/site', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-module.exports = { publicRouter, dashRouter, isOn };
+module.exports = { publicRouter, dashRouter, isOn, init, reload };
