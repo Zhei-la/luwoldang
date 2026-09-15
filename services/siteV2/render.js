@@ -1,4 +1,4 @@
-/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151146 */
+/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151258 */
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -13344,13 +13344,22 @@ var UNSEONG_SELF = {
   \uC591: "\uBCF4\uC0B4\uD54C \uC18D\uC5D0\uC11C \uCC28\uBD84\uD788 \uD06C\uB294 \uAE30\uC6B4\uC774\uB77C \uC8FC\uBCC0\uC758 \uB3C4\uC6C0\uC744 \uC798 \uBC1B\uC544\uC694."
 };
 var GRADE = {
-  \uADF9\uC2E0\uAC15: { title: "\uAE30\uC6B4\uC774 \uC544\uC8FC \uAC15\uD55C \uC0AC\uC8FC", text: "\uB098\uB97C \uBC1B\uCCD0\uC8FC\uB294 \uD798\uC774 \uB118\uCE58\uB294 \uAD6C\uC131\uC774\uC5D0\uC694. \uADF8 \uD798\uC744 \uBC16\uC73C\uB85C \uC368\uC57C \uD3B8\uD574\uC9C0\uB2C8 \uC77C\xB7\uC6B4\uB3D9\xB7\uD45C\uD604\uCC98\uB7FC \uC5D0\uB108\uC9C0\uB97C \uC3DF\uC744 \uACF3\uC774 \uAF2D \uD544\uC694\uD574\uC694." },
+  \uADF9\uC2E0\uAC15: { title: "\uAE30\uC6B4\uC774 \uC544\uC8FC \uAC15\uD55C \uC0AC\uC8FC", text: "\uB098\uB97C \uB3D5\uB294 \uD798\uC774 \uB118\uCE58\uB294 \uAD6C\uC131\uC774\uC5D0\uC694. \uADF8 \uD798\uC744 \uBC16\uC73C\uB85C \uC368\uC57C \uD3B8\uD574\uC9C0\uB2C8 \uC77C\xB7\uC6B4\uB3D9\xB7\uD45C\uD604\uCC98\uB7FC \uC5D0\uB108\uC9C0\uB97C \uC3DF\uC744 \uACF3\uC774 \uAF2D \uD544\uC694\uD574\uC694." },
   \uC2E0\uAC15: { title: "\uAE30\uC6B4\uC774 \uAC15\uD55C \uC0AC\uC8FC", text: "\uC2A4\uC2A4\uB85C \uC11C\uB294 \uD798\uC774 \uAC15\uD55C \uD3B8\uC774\uC5D0\uC694. \uB0A8\uC5D0\uAC8C \uAE30\uB300\uAE30\uBCF4\uB2E4 \uC774\uB044\uB294 \uC790\uB9AC\uC5D0\uC11C \uC2E4\uB825\uC774 \uB4DC\uB7EC\uB098\uACE0, \uC4F0\uB294 \uB9CC\uD07C \uC6B4\uC774 \uC5F4\uB824\uC694." },
-  \uC911\uAC15: { title: "\uC870\uAE08 \uAC15\uD55C \uCABD\uC758 \uADE0\uD615", text: "\uBC1B\uCCD0\uC8FC\uB294 \uD798\uC774 \uC870\uAE08 \uB354 \uB9CE\uC740 \uADE0\uD615\uD615\uC774\uC5D0\uC694. \uC8FC\uB3C4\uC801\uC73C\uB85C \uC6C0\uC9C1\uC774\uB418 \uAC00\uB054\uC740 \uC18D\uB3C4\uB97C \uB2A6\uCD94\uB294 \uC5EC\uC720\uAC00 \uC88B\uC544\uC694." },
-  \uC911\uD654: { title: "\uADE0\uD615 \uC7A1\uD78C \uC0AC\uC8FC", text: "\uBC1B\uCCD0\uC8FC\uB294 \uD798\uACFC \uC4F0\uB294 \uD798\uC774 \uBE44\uC2B7\uD574\uC694. \uD55C\uCABD\uC73C\uB85C \uCE58\uC6B0\uCE58\uC9C0 \uC54A\uC544 \uC0C1\uD669\uC5D0 \uB9DE\uCDB0 \uC5ED\uD560\uC744 \uBC14\uAFB8\uB294 \uC720\uC5F0\uD568\uC774 \uC788\uC5B4\uC694." },
-  \uC911\uC57D: { title: "\uC870\uAE08 \uC57D\uD55C \uCABD\uC758 \uADE0\uD615", text: "\uC4F0\uB294 \uD798\uC774 \uC870\uAE08 \uB354 \uB9CE\uC740 \uADE0\uD615\uD615\uC774\uC5D0\uC694. \uC88B\uC740 \uC0AC\uB78C, \uC88B\uC740 \uCCB4\uACC4 \uC548\uC5D0\uC11C \uD798\uC744 \uBAA8\uC744 \uB54C \uACB0\uACFC\uAC00 \uCEE4\uC838\uC694." },
-  \uC2E0\uC57D: { title: "\uAE30\uC6B4\uC774 \uC12C\uC138\uD55C \uC0AC\uC8FC", text: "\uB098\uB97C \uBC1B\uCCD0\uC8FC\uB294 \uD798\uBCF4\uB2E4 \uC368\uC57C \uD560 \uACF3\uC774 \uB9CE\uC740 \uAD6C\uC131\uC774\uC5D0\uC694. \uBA3C\uC800 \uCC44\uC6B0\uACE0 \uC26C\uC5B4\uC57C \uBA40\uB9AC \uAC00\uACE0, \uB3C4\uC6C0\uC744 \uC798 \uBC1B\uB294 \uAC83\uC774 \uACE7 \uC2E4\uB825\uC774\uC5D0\uC694." },
+  \uC911\uAC15: { title: "\uC870\uAE08 \uAC15\uD55C \uCABD\uC758 \uADE0\uD615", text: "\uB098\uB97C \uB3D5\uB294 \uD798\uC774 \uC870\uAE08 \uB354 \uB9CE\uC740 \uADE0\uD615\uD615\uC774\uC5D0\uC694. \uC8FC\uB3C4\uC801\uC73C\uB85C \uC6C0\uC9C1\uC774\uB418 \uAC00\uB054\uC740 \uC18D\uB3C4\uB97C \uB2A6\uCD94\uB294 \uC5EC\uC720\uAC00 \uC88B\uC544\uC694." },
+  \uC911\uD654: { title: "\uADE0\uD615 \uC7A1\uD78C \uC0AC\uC8FC", text: "\uB098\uB97C \uB3D5\uB294 \uD798\uACFC \uBC16\uC73C\uB85C \uC4F0\uB294 \uD798\uC774 \uBE44\uC2B7\uD574\uC694. \uD55C\uCABD\uC73C\uB85C \uCE58\uC6B0\uCE58\uC9C0 \uC54A\uC544 \uC0C1\uD669\uC5D0 \uB9DE\uCDB0 \uC5ED\uD560\uC744 \uBC14\uAFB8\uB294 \uC720\uC5F0\uD568\uC774 \uC788\uC5B4\uC694." },
+  \uC911\uC57D: { title: "\uC870\uAE08 \uC57D\uD55C \uCABD\uC758 \uADE0\uD615", text: "\uBC16\uC73C\uB85C \uC4F0\uB294 \uD798\uC774 \uC870\uAE08 \uB354 \uB9CE\uC740 \uADE0\uD615\uD615\uC774\uC5D0\uC694. \uC88B\uC740 \uC0AC\uB78C, \uC88B\uC740 \uCCB4\uACC4 \uC548\uC5D0\uC11C \uD798\uC744 \uBAA8\uC744 \uB54C \uACB0\uACFC\uAC00 \uCEE4\uC838\uC694." },
+  \uC2E0\uC57D: { title: "\uAE30\uC6B4\uC774 \uC12C\uC138\uD55C \uC0AC\uC8FC", text: "\uB098\uB97C \uB3D5\uB294 \uD798\uBCF4\uB2E4 \uC368\uC57C \uD560 \uACF3\uC774 \uB9CE\uC740 \uAD6C\uC131\uC774\uC5D0\uC694. \uBA3C\uC800 \uCC44\uC6B0\uACE0 \uC26C\uC5B4\uC57C \uBA40\uB9AC \uAC00\uACE0, \uB3C4\uC6C0\uC744 \uC798 \uBC1B\uB294 \uAC83\uC774 \uACE7 \uC2E4\uB825\uC774\uC5D0\uC694." },
   \uADF9\uC2E0\uC57D: { title: "\uAE30\uC6B4\uC774 \uC544\uC8FC \uC12C\uC138\uD55C \uC0AC\uC8FC", text: "\uC8FC\uBCC0 \uAE30\uC6B4\uC5D0 \uC27D\uAC8C \uC601\uD5A5\uC744 \uBC1B\uB294 \uB9CC\uD07C \uAC10\uAC01\uC774 \uC608\uBBFC\uD574\uC694. \uBBFF\uC744 \uB9CC\uD55C \uC0AC\uB78C\uACFC \uD658\uACBD\uC744 \uACE0\uB974\uB294 \uAC83\uC774 \uAC00\uC7A5 \uD070 \uC6B4 \uAD00\uB9AC\uC608\uC694." }
+};
+var YONG_WHY = {
+  "\uC5B5\uBD80(\uC7AC\uADF9\uC778)": "\uB098\uB97C \uB3D5\uB294 \uD798\uC774 \uB118\uCE58\uB294\uB370 \uADF8\uC911 \uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4(\uC778\uC131)\uC774 \uD2B9\uD788 \uB9CE\uC544\uC11C, \uADF8 \uD798\uC744 \uB204\uB974\uB294 \uB2E4\uC2A4\uB9AC\uB294 \uAE30\uC6B4\uC774 \uADE0\uD615\uC744 \uB9DE\uCDB0\uC694.",
+  "\uC5B5\uBD80(\uAD00\uC131\uC73C\uB85C \uC5B5\uC81C)": "\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC774 \uB118\uCCD0\uC11C, \uB2E4\uB4EC\uB294 \uAE30\uC6B4\uC73C\uB85C \uC808\uC81C\uD560 \uB54C \uADE0\uD615\uC774 \uB9DE\uC544\uC694.",
+  "\uC5B5\uBD80(\uC2DD\uC0C1\uC73C\uB85C \uC124\uAE30)": "\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC774 \uB118\uCE58\uB294\uB370 \uB2E4\uB4EC\uB294 \uAE30\uC6B4\uC740 \uC57D\uD574\uC11C, \uD45C\uD604\uD558\uB294 \uAE30\uC6B4\uC73C\uB85C \uD758\uB824\uBCF4\uB0BC \uB54C \uD3B8\uD574\uC838\uC694.",
+  "\uC5B5\uBD80(\uBE44\uAC81\uC73C\uB85C \uC7AC\uC131 \uAC10\uB2F9)": "\uD798\uC774 \uC57D\uD55C \uD3B8\uC778\uB370 \uB2E4\uC2A4\uB9AC\uB294 \uAE30\uC6B4(\uC7AC\uC131)\uC774 \uAC00\uC7A5 \uCEE4\uC11C, \uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC73C\uB85C \uAC10\uB2F9\uD574\uC57C \uD574\uC694.",
+  "\uC5B5\uBD80(\uC0B4\uC778\uC0C1\uC0DD)": "\uD798\uC774 \uC57D\uD55C \uD3B8\uC778\uB370 \uB2E4\uB4EC\uB294 \uAE30\uC6B4(\uAD00\uC131)\uC758 \uC555\uBC15\uC774 \uAC00\uC7A5 \uCEE4\uC11C, \uADF8 \uD798\uC744 \uBC1B\uC544 \uB098\uB97C \uC0B4\uB9AC\uB294 \uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4\uC774 \uD544\uC694\uD574\uC694.",
+  "\uC5B5\uBD80(\uC778\uC131\uC73C\uB85C \uC2DD\uC0C1 \uC81C\uC5B4)": "\uD798\uC774 \uC57D\uD55C \uD3B8\uC778\uB370 \uD45C\uD604\uD558\uB294 \uAE30\uC6B4(\uC2DD\uC0C1)\uC73C\uB85C \uD798\uC774 \uB9CE\uC774 \uC0C8\uC5B4 \uB098\uAC00\uC11C, \uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4\uC73C\uB85C \uCC44\uC6CC\uC57C \uD574\uC694.",
+  "\uC870\uD6C4(\uADE0\uD615\uC774\uB77C \uACC4\uC808 \uC6B0\uC120)": "\uB3D5\uB294 \uD798\uACFC \uC4F0\uB294 \uD798\uC774 \uBE44\uC2B7\uD574\uC11C, \uD0DC\uC5B4\uB09C \uACC4\uC808\uC758 \uC628\uB3C4\uB97C \uB9DE\uCD94\uB294 \uAE30\uC6B4\uC744 \uBA3C\uC800 \uBD24\uC5B4\uC694."
 };
 var EL_STRONG = {
   \uBAA9: "\uC0C8\uB85C \uC2DC\uC791\uD558\uACE0 \uBED7\uC5B4\uAC00\uB824\uB294 \uC131\uD5A5\uC774 \uC0B6\uC758 \uAE30\uBCF8\uAC12\uC774\uC5D0\uC694.",
@@ -13383,7 +13392,9 @@ var GYEOK = {
   \uD3B8\uC778\uACA9: { title: "\uB0A8\uB2E4\uB978 \uB208\uC73C\uB85C \uBCF4\uB294 \uC0AC\uB78C", text: "\uC9C1\uAD00\uACFC \uB3C5\uD2B9\uD55C \uAD00\uC810\uC73C\uB85C \uC804\uBB38 \uC601\uC5ED\uC744 \uB9CC\uB4DC\uB294 \uD2C0\uC774\uC5D0\uC694. \uD63C\uC790 \uAE4A\uC774 \uD30C\uACE0\uB4DC\uB294 \uC2DC\uAC04\uC774 \uACE7 \uACBD\uC7C1\uB825\uC774\uC5D0\uC694.", jobs: "\uC5F0\uAD6C\xB7IT\xB7\uB514\uC790\uC778\xB7\uC0C1\uB2F4\xB7\uC758\uB8CC\uCC98\uB7FC \uC804\uBB38 \uC9C0\uC2DD\uACFC \uAC10\uAC01\uC744 \uC4F0\uB294 \uC77C" },
   \uC815\uC778\uACA9: { title: "\uBC30\uC6B0\uACE0 \uB098\uB204\uB294 \uC0AC\uB78C", text: "\uC9C0\uC2DD\uACFC \uC790\uACA9\uC744 \uC313\uC544 \uC778\uC815\uBC1B\uB294 \uD2C0\uC774\uC5D0\uC694. \uAC00\uB974\uCE58\uACE0 \uB3CC\uBCF4\uB294 \uC790\uB9AC\uC5D0\uC11C \uC0AC\uB78C\uB4E4\uC774 \uB530\uB77C\uC694.", jobs: "\uAD50\uC721\xB7\uCD9C\uD310\xB7\uC5F0\uAD6C\xB7\uBCF5\uC9C0\xB7\uC790\uACA9 \uC804\uBB38\uC9C1\uCC98\uB7FC \uBC30\uC6C0\uC744 \uBC14\uD0D5\uC73C\uB85C \uD55C \uC77C" },
   \uAC74\uB85D\uACA9: { title: "\uC2A4\uC2A4\uB85C \uC11C\uC11C \uC77C\uAD6C\uB294 \uC0AC\uB78C", text: "\uC790\uAE30 \uD798\uC73C\uB85C \uAE30\uBC18\uC744 \uB2E6\uB294 \uD2C0\uC774\uC5D0\uC694. \uB0A8\uC758 \uB3C4\uC6C0\uBCF4\uB2E4 \uC2E4\uB825\uC73C\uB85C \uC790\uB9AC\uB97C \uB9CC\uB4E4 \uB54C \uC624\uB798 \uAC00\uC694.", jobs: "\uC804\uBB38 \uAE30\uC220\xB7\uC790\uC601\uC5C5\xB7\uD504\uB9AC\uB79C\uC11C\xB7\uC2E4\uBB34 \uCC45\uC784\uC790\uCC98\uB7FC \uB0B4 \uC2E4\uB825\uC73C\uB85C \uC11C\uB294 \uC77C" },
-  \uC591\uC778\uACA9: { title: "\uAC15\uD55C \uCD94\uC9C4\uB825\uC73C\uB85C \uBC00\uC5B4\uBD99\uC774\uB294 \uC0AC\uB78C", text: "\uACBD\uC7C1\uACFC \uB3C4\uC804 \uC55E\uC5D0\uC11C \uD798\uC774 \uB098\uB294 \uD2C0\uC774\uC5D0\uC694. \uC5D0\uB108\uC9C0\uB97C \uD55C\uACF3\uC5D0 \uBAA8\uC73C\uBA74 \uB204\uAD6C\uBCF4\uB2E4 \uD06C\uAC8C \uD574\uB0B4\uC694.", jobs: "\uC6B4\uB3D9\xB7\uAD70\uACBD\xB7\uC678\uACFC\xB7\uAC74\uC124\xB7\uACBD\uC7C1\uC774 \uC788\uB294 \uC0AC\uC5C5\uCC98\uB7FC \uAC15\uD55C \uCD94\uC9C4\uB825\uC774 \uD544\uC694\uD55C \uC77C" }
+  \uC591\uC778\uACA9: { title: "\uAC15\uD55C \uCD94\uC9C4\uB825\uC73C\uB85C \uBC00\uC5B4\uBD99\uC774\uB294 \uC0AC\uB78C", text: "\uACBD\uC7C1\uACFC \uB3C4\uC804 \uC55E\uC5D0\uC11C \uD798\uC774 \uB098\uB294 \uD2C0\uC774\uC5D0\uC694. \uC5D0\uB108\uC9C0\uB97C \uD55C\uACF3\uC5D0 \uBAA8\uC73C\uBA74 \uB204\uAD6C\uBCF4\uB2E4 \uD06C\uAC8C \uD574\uB0B4\uC694.", jobs: "\uC6B4\uB3D9\xB7\uAD70\uACBD\xB7\uC678\uACFC\xB7\uAC74\uC124\xB7\uACBD\uC7C1\uC774 \uC788\uB294 \uC0AC\uC5C5\uCC98\uB7FC \uAC15\uD55C \uCD94\uC9C4\uB825\uC774 \uD544\uC694\uD55C \uC77C" },
+  \uC6D4\uBE44\uACA9: { title: "\uB73B \uB9DE\uB294 \uC0AC\uB78C\uACFC \uB098\uB780\uD788 \uAC00\uB294 \uC0AC\uB78C", text: "\uD0DC\uC5B4\uB09C \uB2EC\uC5D0 \uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC774 \uC790\uB9AC \uC7A1\uC740 \uD2C0\uC774\uC5D0\uC694. \uD63C\uC790\uBCF4\uB2E4 \uB3D9\uB8CC\uC640 \uC5ED\uD560\uC744 \uB098\uB20C \uB54C \uD798\uC774 \uC624\uB798 \uAC00\uC694.", jobs: "\uB3D9\uC5C5\xB7\uD611\uC5C5 \uD504\uB85C\uC81D\uD2B8\xB7\uD300 \uC6B4\uC601\xB7\uC9C0\uC5ED \uAE30\uBC18 \uC0AC\uC5C5\uCC98\uB7FC \uC0AC\uB78C\uACFC \uB098\uB780\uD788 \uAC00\uB294 \uC77C" },
+  \uC6D4\uAC81\uACA9: { title: "\uACA8\uB8E8\uBA70 \uD06C\uB294 \uC0AC\uB78C", text: "\uD0DC\uC5B4\uB09C \uB2EC\uC5D0 \uB098\uC640 \uACA8\uB8E8\uB294 \uAE30\uC6B4\uC774 \uC790\uB9AC \uC7A1\uC740 \uD2C0\uC774\uC5D0\uC694. \uBE44\uAD50\uC640 \uACBD\uC7C1\uC774 \uC790\uADF9\uC774 \uB420 \uB54C \uC2E4\uB825\uC774 \uC62C\uB77C\uAC00\uC694.", jobs: "\uC601\uC5C5\xB7\uC2A4\uD3EC\uCE20\xB7\uD611\uC0C1\xB7\uACBD\uC7C1 \uC785\uCC30\uCC98\uB7FC \uACA8\uB8E8\uBA70 \uC131\uACFC\uB97C \uB0B4\uB294 \uC77C" }
 };
 var GROUP_ROW = {
   \uBE44\uAC81: { label: "\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4", hint: "\uC790\uB9BD\xB7\uB3D9\uB8CC" },
@@ -13483,21 +13494,24 @@ function buildReading(s, name = "") {
       `\uC77C\uAC04\uC774 \uC774 \uC790\uB9AC\uC5D0\uC11C \uC4F8 \uC218 \uC788\uB294 \uD798\uC758 \uD06C\uAE30\uB97C 12\uC6B4\uC131\uC73C\uB85C \uBCF4\uBA74 ${J(`'${day.unseong}'`, "\uC774\uC5D0\uC694\uC608\uC694")}. ${UNSEONG_SELF[day.unseong] ?? ""}`
     ]
   };
-  const baseGrade = s.strength.grade.replace(/\(.*\)$/, "");
-  const mod = /\((강변약|약변강)\)/.exec(s.strength.grade)?.[1];
+  const baseGrade = s.strength.grade.replace(/\s*\(.*$/, "");
   const gr = GRADE[baseGrade] ?? GRADE.\uC911\uD654;
   const ox = (v) => v === "O" ? "\uC608" : v === "X" ? "\uC544\uB2C8\uC694" : "\uC77C\uBD80";
-  const strong = [...ELS].sort((a, b) => s.elements[b] - s.elements[a])[0];
+  const sh = s.strength.shares;
+  const maxCount = Math.max(...ELS.map((e) => s.elements[e]));
+  const strongs = ELS.filter((e) => s.elements[e] === maxCount);
   const zeros = ELS.filter((e) => s.elements[e] === 0);
+  const relNames = s.strength.reasons.filter((x) => x.startsWith("\uAD00\uACC4:") && !x.includes("\uC5C6\uC74C")).map((x) => x.replace(/^관계:\s*/, "").replace(/\(.*$/, "").trim());
   const strength = {
     id: "strength",
     label: "\uAE30\uC6B4\uC758 \uC138\uAE30",
     title: gr.title,
     body: [
-      gr.text + (mod === "\uAC15\uBCC0\uC57D" ? " \uB2E4\uB9CC \uAC89\uBCF4\uAE30\uBCF4\uB2E4 \uD798\uC774 \uD769\uC5B4\uC9C0\uAE30 \uC26C\uC6CC \uADE0\uD615 \uCABD\uC73C\uB85C \uBD24\uC5B4\uC694." : mod === "\uC57D\uBCC0\uAC15" ? " \uB2E4\uB9CC \uACF3\uACF3\uC5D0 \uBFCC\uB9AC\uAC00 \uC788\uC5B4 \uAC89\uBCF4\uAE30\uBCF4\uB2E4 \uB2E8\uB2E8\uD574 \uADE0\uD615 \uCABD\uC73C\uB85C \uBD24\uC5B4\uC694." : ""),
-      `\uD310\uB2E8 \uADFC\uAC70\uB294 \uC138 \uAC00\uC9C0\uC608\uC694. \uD0DC\uC5B4\uB09C \uB2EC\uC774 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uB839) ${ox(s.strength.deukryeong)}, \uB0B4\uAC00 \uC549\uC740 \uC790\uB9AC\uAC00 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uC9C0) ${ox(s.strength.deukji)}, \uB098\uBA38\uC9C0 \uAE00\uC790\uB4E4\uC774 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uC138) ${ox(s.strength.deukse)}.${s.pillars.hour ? "" : " \uD0DC\uC5B4\uB09C \uC2DC\uAC04\uC744 \uBAB0\uB77C \uC138 \uAE30\uB465\uC73C\uB85C \uD310\uB2E8\uD588\uC5B4\uC694."}`,
-      `\uB2E4\uC12F \uAE30\uC6B4 \uC911 \uAC00\uC7A5 \uB9CE\uC740 \uAC74 ${EL_PLAIN[strong]}(${s.elements[strong]}\uAC1C)\uC608\uC694. ${EL_STRONG[strong]}` + (zeros.length ? ` ${zeros.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC740 \uC5C6\uC5B4\uC694. ${EL_MISSING[zeros[0]]}` : " \uB2E4\uC12F \uAE30\uC6B4\uC774 \uBAA8\uB450 \uC788\uC5B4 \uD06C\uAC8C \uBE44\uB294 \uACF3\uC774 \uC5C6\uC5B4\uC694.")
-    ]
+      gr.text,
+      `\uB098\uB97C \uB3D5\uB294 \uD798\uC740 ${s.strength.score}%\uC608\uC694(\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4 ${sh.\uBE44\uAC81}% \xB7 \uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4 ${sh.\uC778\uC131}%). \uD0DC\uC5B4\uB09C \uB2EC\uC774 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uB839) ${ox(s.strength.deukryeong)}, \uB0B4\uAC00 \uC549\uC740 \uC790\uB9AC\uAC00 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uC9C0) ${ox(s.strength.deukji)}, \uB098\uBA38\uC9C0 \uAE00\uC790\uB4E4\uC774 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uC138) ${ox(s.strength.deukse)}\uC5D0 \uB354\uD574 \uBFCC\uB9AC\uAC00 \uC788\uB294\uC9C0\uC640 \uACC4\uC808\uC758 \uC138\uAE30\uAE4C\uC9C0 \uBAA8\uB450 \uBC18\uC601\uD55C \uBE44\uC728\uC774\uC5D0\uC694.${s.pillars.hour ? "" : " \uD0DC\uC5B4\uB09C \uC2DC\uAC04\uC744 \uBAB0\uB77C \uC138 \uAE30\uB465\uC73C\uB85C \uD310\uB2E8\uD588\uC5B4\uC694."}`,
+      relNames.length ? `\uAE00\uC790\uB07C\uB9AC\uC758 \uD569\xB7\uCDA9\uB3C4 \uD798\uC5D0 \uBC18\uC601\uD588\uC5B4\uC694(${relNames.join(", ")}).` : "",
+      (strongs.length === 1 ? `\uB2E4\uC12F \uAE30\uC6B4 \uC911 \uAC00\uC7A5 \uB9CE\uC740 \uAC74 ${EL_PLAIN[strongs[0]]}(${maxCount}\uAC1C)\uC608\uC694. ${EL_STRONG[strongs[0]]}` : `\uB2E4\uC12F \uAE30\uC6B4 \uC911 ${strongs.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC774 ${maxCount}\uAC1C\uC529\uC73C\uB85C \uAC00\uC7A5 \uB9CE\uC544\uC694.`) + (zeros.length ? ` ${zeros.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC740 \uC5C6\uC5B4\uC694. ${EL_MISSING[zeros[0]]}` : " \uB2E4\uC12F \uAE30\uC6B4\uC774 \uBAA8\uB450 \uC788\uC5B4 \uD06C\uAC8C \uBE44\uB294 \uACF3\uC774 \uC5C6\uC5B4\uC694.")
+    ].filter(Boolean)
   };
   const season = ["\uACA8\uC6B8", "\uACA8\uC6B8", "\uBD04", "\uBD04", "\uBD04", "\uC5EC\uB984", "\uC5EC\uB984", "\uC5EC\uB984", "\uAC00\uC744", "\uAC00\uC744", "\uAC00\uC744", "\uACA8\uC6B8"][s.pillars.month.ji];
   const yongsin = {
@@ -13506,9 +13520,10 @@ function buildReading(s, name = "") {
     title: `${J(EL_PLAIN[y.\uC6A9\uC2E0], "\uC774\uAC00")} \uB098\uB97C \uB3C4\uC640\uC694`,
     body: [
       `\uC0AC\uC8FC \uC804\uCCB4\uC758 \uADE0\uD615\uC744 \uB9DE\uCD94\uB294 \uB370 \uAC00\uC7A5 \uD544\uC694\uD55C \uAE30\uC6B4\uC744 \uC6A9\uC2E0\uC774\uB77C\uACE0 \uD574\uC694. ${nm}\uC5D0\uAC8C\uB294 ${EL_PLAIN[y.\uC6A9\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uC6A9\uC2E0\uC774\uACE0, \uACC1\uC5D0\uC11C \uD798\uC744 \uBCF4\uD0DC\uB294 \uAE30\uC6B4(\uD76C\uC2E0)\uC740 ${J(EL_PLAIN[y.\uD76C\uC2E0], "\uC774\uC5D0\uC694\uC608\uC694")}.`,
+      YONG_WHY[y.method] ?? "",
       `\uBC18\uB300\uB85C \uB118\uCE58\uBA74 \uADE0\uD615\uC744 \uD754\uB4DC\uB294 \uAE30\uC6B4(\uAE30\uC2E0)\uC740 ${J(EL_PLAIN[y.\uAE30\uC2E0], "\uC774\uC5D0\uC694\uC608\uC694")}. \uC774 \uAE30\uC6B4\uC774 \uAC15\uD574\uC9C0\uB294 \uD574\uB098 \uD658\uACBD\uC5D0\uC11C\uB294 \uC18D\uB3C4\uB97C \uB2A6\uCD94\uACE0 \uC26C\uC5B4\uAC00\uBA74 \uC88B\uC544\uC694.`,
-      `\uD0DC\uC5B4\uB09C \uACC4\uC808(${season})\uB85C \uBCF4\uBA74 ${J(EL_PLAIN[s.johu.main], "\uC774\uAC00")} \uC788\uC5B4\uC57C \uAE30\uC6B4\uC758 \uC628\uB3C4\uAC00 \uC54C\uB9DE\uC544\uC838\uC694.` + (s.johu.main === y.\uC6A9\uC2E0 ? " \uADE0\uD615\uC73C\uB85C \uBD10\uB3C4, \uACC4\uC808\uB85C \uBD10\uB3C4 \uAC19\uC740 \uAE30\uC6B4\uC774 \uD544\uC694\uD574 \uB354 \uBD84\uBA85\uD574\uC694." : s.johu.main === y.\uD76C\uC2E0 ? " \uD798\uC744 \uBCF4\uD0DC\uB294 \uAE30\uC6B4\uACFC \uAC19\uC544 \uCC59\uAE38\uC218\uB85D \uC88B\uC544\uC694." : "")
-    ]
+      y.method.startsWith("\uC870\uD6C4") ? `\uD0DC\uC5B4\uB09C \uACC4\uC808(${season})\uC5D0\uB294 ${J(EL_PLAIN[s.johu.main], "\uC774\uAC00")} \uC788\uC5B4\uC57C \uAE30\uC6B4\uC758 \uC628\uB3C4\uAC00 \uC54C\uB9DE\uC544\uC838\uC11C, \uC774 \uAE30\uC6B4\uC744 \uC6A9\uC2E0\uC73C\uB85C \uACE8\uB790\uC5B4\uC694.` : `\uD0DC\uC5B4\uB09C \uACC4\uC808(${season})\uB85C \uBCF4\uBA74 ${J(EL_PLAIN[s.johu.main], "\uC774\uAC00")} \uC788\uC5B4\uC57C \uAE30\uC6B4\uC758 \uC628\uB3C4\uAC00 \uC54C\uB9DE\uC544\uC838\uC694.` + (s.johu.main === y.\uC6A9\uC2E0 ? " \uADE0\uD615\uC73C\uB85C \uBD10\uB3C4, \uACC4\uC808\uB85C \uBD10\uB3C4 \uAC19\uC740 \uAE30\uC6B4\uC774 \uD544\uC694\uD574 \uB354 \uBD84\uBA85\uD574\uC694." : s.johu.main === y.\uD76C\uC2E0 ? " \uD798\uC744 \uBCF4\uD0DC\uB294 \uAE30\uC6B4\uACFC \uAC19\uC544 \uCC59\uAE38\uC218\uB85D \uC88B\uC544\uC694." : "")
+    ].filter(Boolean)
   };
   const tips = [
     { el: y.\uC6A9\uC2E0, role: "\uB098\uB97C \uB3D5\uB294 \uAE30\uC6B4", ...EL_TIP[y.\uC6A9\uC2E0] },
@@ -13535,7 +13550,7 @@ function buildReading(s, name = "") {
     label: "\uC77C\uD558\uB294 \uBC29\uC2DD",
     title: gk?.title ?? "\uB098\uB9CC\uC758 \uBC29\uC2DD\uC73C\uB85C \uC77C\uD558\uB294 \uC0AC\uB78C",
     body: [
-      `\uD0DC\uC5B4\uB09C \uB2EC\uC758 \uAE00\uC790\uB97C \uC911\uC2EC\uC73C\uB85C \uBCF8 \uC0AC\uC8FC\uC758 \uD070 \uD2C0(\uACA9\uAD6D)\uC740 ${J(s.gyeokguk.name, "\uC774\uC5D0\uC694\uC608\uC694")}. ${gk?.text ?? ""}`.trim(),
+      `\uD0DC\uC5B4\uB09C \uB2EC\uC758 \uAE00\uC790\uB97C \uC911\uC2EC\uC73C\uB85C \uBCF8 \uC0AC\uC8FC\uC758 \uD070 \uD2C0(\uACA9\uAD6D)\uC740 ${J(s.gyeokguk.name, "\uC774\uC5D0\uC694\uC608\uC694")}(\uADFC\uAC70: ${s.gyeokguk.basis}). ${gk?.text ?? ""}`.trim(),
       gk ? `\uC798 \uB9DE\uB294 \uC77C: ${gk.jobs}` : "",
       s.groups.\uAD00\uC131 >= 2 ? "\uCC45\uC784\uACFC \uADDC\uCE59\uC758 \uAE30\uC6B4\uB3C4 \uB109\uB109\uD574 \uC870\uC9C1 \uC548\uC5D0\uC11C \uC790\uB9AC\uB97C \uC7A1\uB294 \uD798\uC774 \uC788\uC5B4\uC694." : s.groups.\uC2DD\uC0C1 >= 2 ? "\uD45C\uD604\uD558\uB294 \uAE30\uC6B4\uB3C4 \uB109\uB109\uD574 \uB0B4 \uC774\uB984\uC744 \uAC78\uACE0 \uD558\uB294 \uC77C\uC5D0\uC11C \uBE5B\uB098\uC694." : s.groups.\uC778\uC131 >= 2 ? "\uBC30\uC6C0\uC758 \uAE30\uC6B4\uB3C4 \uB109\uB109\uD574 \uC790\uACA9\uACFC \uC804\uBB38\uC131\uC744 \uC313\uC744\uC218\uB85D \uC720\uB9AC\uD574\uC694." : ""
     ].filter(Boolean)
@@ -13547,14 +13562,16 @@ function buildReading(s, name = "") {
     label: "\uB3C8\uC758 \uD750\uB984",
     title: mt.title,
     body: [
-      mt.text + (wealth >= 3 ? s.strength.label === "\uC57D\uD55C \uD3B8" ? " \uB0B4 \uD798\uBCF4\uB2E4 \uB3C8\uC758 \uAE30\uC6B4\uC774 \uD06C\uBA74 \uC9C0\uD0A4\uAE30 \uC5B4\uB824\uC6B0\uB2C8 \uBC8C\uC774\uB294 \uADDC\uBAA8\uB97C \uC870\uC808\uD558\uC138\uC694." : " \uBC1B\uCCD0\uC8FC\uB294 \uD798\uC774 \uC788\uC5B4 \uD06C\uAC8C \uBC8C\uC774\uB294 \uC77C\uB3C4 \uAC10\uB2F9\uD560 \uC218 \uC788\uC5B4\uC694." : ""),
+      mt.text + (wealth >= 3 ? s.strength.label === "\uC57D\uD55C \uD3B8" ? " \uB0B4 \uD798\uBCF4\uB2E4 \uB3C8\uC758 \uAE30\uC6B4\uC774 \uD06C\uBA74 \uC9C0\uD0A4\uAE30 \uC5B4\uB824\uC6B0\uB2C8 \uBC8C\uC774\uB294 \uADDC\uBAA8\uB97C \uC870\uC808\uD558\uC138\uC694." : " \uC2A4\uC2A4\uB85C \uC11C\uB294 \uD798\uC774 \uC788\uC5B4 \uD06C\uAC8C \uBC8C\uC774\uB294 \uC77C\uB3C4 \uAC10\uB2F9\uD560 \uC218 \uC788\uC5B4\uC694." : ""),
       s.groups.\uC2DD\uC0C1 >= 1 ? "\uC7AC\uB2A5\uC744 \uBC16\uC73C\uB85C \uB0B4\uBCF4\uB0B4\uB294 \uAE30\uC6B4(\uC2DD\uC0C1)\uC774 \uC788\uC5B4 \uAE30\uC220\xB7\uCF58\uD150\uCE20\xB7\uC11C\uBE44\uC2A4\uB85C \uB3C8\uC744 \uB9CC\uB4DC\uB294 \uD750\uB984\uC774 \uC88B\uC544\uC694." : "",
       s.groups.\uBE44\uAC81 >= 3 ? "\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC774 \uB9CE\uC544 \uB3D9\uC5C5\uC774\uB098 \uB3C8 \uAC70\uB798\uC5D0\uC11C \uC0C8\uB294 \uB3C8\uC774 \uC0DD\uAE30\uAE30 \uC26C\uC6CC\uC694. \uD568\uAED8 \uC4F0\uB294 \uB3C8\uC740 \uAE30\uB85D\uC744 \uBD84\uBA85\uD788 \uD558\uC138\uC694." : ""
     ].filter(Boolean)
   };
   const female = s.input.gender === "\uC5EC";
   const cnt = s.groups[female ? "\uAD00\uC131" : "\uC7AC\uC131"] ?? 0;
-  const dayJi = JI[day.ji];
+  const seatLinks = [s.pillars.year, s.pillars.month, s.pillars.hour].filter((p) => !!p).map((p) => branchLink(day.ji, p.ji));
+  const seatHap = seatLinks.some((l) => l === "hap" || l === "samhap");
+  const seatClash = seatLinks.some((l) => l === "chung" || l === "hyeong" || l === "wonjin");
   const allSinsal = [s.pillars.year, s.pillars.month, s.pillars.day, s.pillars.hour].flatMap((p) => p?.sinsal ?? []);
   const love = {
     id: "love",
@@ -13562,7 +13579,7 @@ function buildReading(s, name = "") {
     title: cnt === 0 ? "\uCC9C\uCC9C\uD788 \uAE4A\uC5B4\uC9C0\uB294 \uC778\uC5F0" : cnt === 1 ? "\uD55C \uC0AC\uB78C\uC5D0\uAC8C \uAE4A\uAC8C \uB9C8\uC74C \uC8FC\uB294 \uC0AC\uB791" : cnt === 2 ? "\uC778\uC5F0\uC758 \uAE30\uD68C\uAC00 \uB109\uB109\uD55C \uC0AC\uC8FC" : "\uC0AC\uB78C\uC774 \uB9CE\uC774 \uBAA8\uC774\uB294 \uC0AC\uC8FC",
     body: [
       `${female ? "\uC5EC\uC131\uC758 \uC0AC\uC8FC\uC5D0\uC11C \uC5F0\uC778\uACFC \uBC30\uC6B0\uC790\uB294 \uB098\uB97C \uB2E4\uB4EC\uB294 \uAE30\uC6B4(\uAD00\uC131)\uC73C\uB85C \uBD10\uC694" : "\uB0A8\uC131\uC758 \uC0AC\uC8FC\uC5D0\uC11C \uC5F0\uC778\uACFC \uBC30\uC6B0\uC790\uB294 \uB0B4\uAC00 \uC544\uB07C\uACE0 \uCC59\uAE30\uB294 \uAE30\uC6B4(\uC7AC\uC131)\uC73C\uB85C \uBD10\uC694"}. ${nm}\uC5D0\uAC8C\uB294 \uC774 \uAE30\uC6B4\uC774 ${cnt === 0 ? "\uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544\uC694" : `${KNUM[Math.min(cnt, 7)]} \uC790\uB9AC \uC788\uC5B4\uC694`}. ${SPOUSE[Math.min(cnt, 3)]}`,
-      s.relations.hap.some((r) => r.includes(dayJi)) ? "\uBC30\uC6B0\uC790 \uC790\uB9AC\uAC00 \uB2E4\uB978 \uAE00\uC790\uC640 \uC190\uC744 \uC7A1\uACE0 \uC788\uC5B4 \uC0AC\uB78C\uC744 \uB04C\uC5B4\uB2F9\uAE30\uB294 \uD798\uC774 \uC788\uC5B4\uC694. \uC778\uC5F0\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uC774\uC5B4\uC9C0\uB294 \uD3B8\uC774\uC5D0\uC694." : s.relations.clash.some((r) => r.includes(dayJi)) ? "\uBC30\uC6B0\uC790 \uC790\uB9AC\uAC00 \uB2E4\uB978 \uAE00\uC790\uC640 \uAE34\uC7A5\uD558\uB294 \uAD6C\uC870\uAC00 \uC788\uC5B4\uC694. \uAC00\uAE4C\uC6B4 \uC0AC\uC774\uC77C\uC218\uB85D \uC11C\uB85C\uC758 \uACF5\uAC04\uC744 \uC874\uC911\uD558\uBA74 \uC624\uD788\uB824 \uC624\uB798 \uAC00\uC694." : "",
+      seatHap ? "\uBC30\uC6B0\uC790 \uC790\uB9AC\uAC00 \uB2E4\uB978 \uAE00\uC790\uC640 \uC190\uC744 \uC7A1\uACE0 \uC788\uC5B4 \uC0AC\uB78C\uC744 \uB04C\uC5B4\uB2F9\uAE30\uB294 \uD798\uC774 \uC788\uC5B4\uC694. \uC778\uC5F0\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uC774\uC5B4\uC9C0\uB294 \uD3B8\uC774\uC5D0\uC694." : seatClash ? "\uBC30\uC6B0\uC790 \uC790\uB9AC\uAC00 \uB2E4\uB978 \uAE00\uC790\uC640 \uAE34\uC7A5\uD558\uB294 \uAD6C\uC870\uAC00 \uC788\uC5B4\uC694. \uAC00\uAE4C\uC6B4 \uC0AC\uC774\uC77C\uC218\uB85D \uC11C\uB85C\uC758 \uACF5\uAC04\uC744 \uC874\uC911\uD558\uBA74 \uC624\uD788\uB824 \uC624\uB798 \uAC00\uC694." : "",
       allSinsal.includes("\uB3C4\uD654\uC0B4") || allSinsal.includes("\uD64D\uC5FC\uC0B4") ? "\uC0AC\uB78C\uC744 \uB044\uB294 \uB9E4\uB825\uC744 \uB73B\uD558\uB294 \uC2E0\uC0B4\uB3C4 \uC788\uC5B4 \uCCAB\uC778\uC0C1\uC5D0\uC11C \uD638\uAC10\uC744 \uC5BB\uAE30 \uC26C\uC6CC\uC694." : ""
     ].filter(Boolean)
   };
@@ -13595,10 +13612,12 @@ function buildReading(s, name = "") {
   const sinsal = SINSAL.filter(([n]) => found.has(n)).map(([n, text]) => ({ name: n, where: found.get(n).join("\xB7"), text }));
   const { stems, hap, clash } = s.relations;
   const types = [...new Set(clash.map((r) => /(원진|귀문|충|형|파|해)\s*$/.exec(r.replace(/\(.*\)$/, "").trim())?.[1]).filter((t) => !!t))];
+  const pull = hap.length > 0 || stems.some((x) => x.includes("\uD569"));
+  const tense = clash.length > 0 || stems.some((x) => x.includes("\uCDA9") || x.includes("\uADF9"));
   const relations = {
     id: "relations",
     label: "\uAE00\uC790\uB07C\uB9AC\uC758 \uAD00\uACC4",
-    title: hap.length && clash.length ? "\uB04C\uC5B4\uB2F9\uAE40\uACFC \uAE34\uC7A5\uC774 \uD568\uAED8 \uC788\uB294 \uC0AC\uC8FC" : hap.length ? "\uAE30\uC6B4\uC774 \uC798 \uBB49\uCE58\uB294 \uC0AC\uC8FC" : clash.length ? "\uC6C0\uC9C1\uC774\uBA70 \uD06C\uB294 \uC0AC\uC8FC" : "\uB2F4\uBC31\uD558\uACE0 \uC548\uC815\uB41C \uD750\uB984",
+    title: pull && tense ? "\uB04C\uC5B4\uB2F9\uAE40\uACFC \uAE34\uC7A5\uC774 \uD568\uAED8 \uC788\uB294 \uC0AC\uC8FC" : pull ? "\uAE30\uC6B4\uC774 \uC798 \uBB49\uCE58\uB294 \uC0AC\uC8FC" : tense ? "\uC6C0\uC9C1\uC774\uBA70 \uD06C\uB294 \uC0AC\uC8FC" : "\uB2F4\uBC31\uD558\uACE0 \uC548\uC815\uB41C \uD750\uB984",
     body: [
       hap.length ? `\uC190\uC7A1\uB294 \uACF3\uC740 ${hap.join(", ")}. \uAE30\uC6B4\uC774 \uD55C\uB370 \uBAA8\uC5EC \uD798\uC774 \uCEE4\uC9C0\uB294 \uC790\uB9AC\uB77C \uC0AC\uB78C\uACFC \uAE30\uD68C\uB97C \uB04C\uC5B4\uBAA8\uC73C\uB294 \uD798\uC73C\uB85C \uC4F0\uC5EC\uC694.` : "",
       clash.length ? `\uAE34\uC7A5\uD558\uB294 \uACF3\uC740 ${clash.join(", ")}. ${types.map((t) => `${J(t, "\uC740\uB294")} ${CLASH_TYPE[t]}`).join(", ")}\uC608\uC694. \uBCC0\uD654\uC640 \uC790\uADF9\uC774 \uB9CE\uC740 \uB300\uC2E0 \uC6C0\uC9C1\uC77C\uC218\uB85D \uC131\uC7A5\uD558\uB294 \uD798\uC774 \uB3FC\uC694.` : "",
@@ -13607,7 +13626,7 @@ function buildReading(s, name = "") {
         stems.some((x) => x.includes("\uCDA9")) ? "\uCDA9\uC740 \uC11C\uB85C \uBC00\uC5B4\uB0B4\uB294 \uAD00\uACC4" : "",
         stems.some((x) => x.includes("\uADF9")) ? "\uADF9\uC740 \uD55C\uCABD\uC774 \uB2E4\uB978 \uCABD\uC744 \uB204\uB974\uB294 \uAD00\uACC4" : ""
       ].filter(Boolean).join(", ")}\uC608\uC694.` : "",
-      !hap.length && !clash.length ? "\uD06C\uAC8C \uBD80\uB52A\uD788\uAC70\uB098 \uBB36\uC774\uB294 \uAE00\uC790\uAC00 \uC5C6\uC5B4 \uD750\uB984\uC774 \uB2F4\uBC31\uD558\uACE0 \uC548\uC815\uC801\uC774\uC5D0\uC694." : ""
+      !pull && !tense ? "\uD06C\uAC8C \uBD80\uB52A\uD788\uAC70\uB098 \uBB36\uC774\uB294 \uAE00\uC790\uAC00 \uC5C6\uC5B4 \uD750\uB984\uC774 \uB2F4\uBC31\uD558\uACE0 \uC548\uC815\uC801\uC774\uC5D0\uC694." : ""
     ].filter(Boolean)
   };
   const idx = s.currentDaewoonIndex;
@@ -14124,6 +14143,34 @@ function ReadCard({ b, top, children }) {
     children
   ] });
 }
+function JudgeBasis({ s }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("details", { style: { marginTop: 12 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("summary", { style: { cursor: "pointer", fontWeight: 600, fontSize: 14 }, children: "\uD310\uC815 \uADFC\uAC70 \uC790\uC138\uD788 \uBCF4\uAE30" }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "basis", style: { marginTop: 8, lineHeight: 1.6 }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { style: { margin: "0 0 6px" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("b", { children: [
+          "\uACA9\uAD6D ",
+          s.gyeokguk.name
+        ] }),
+        " \u2014 ",
+        s.gyeokguk.basis,
+        s.gyeokguk.rule ? ` \xB7 ${s.gyeokguk.rule}` : ""
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { style: { margin: "8px 0 4px" }, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("b", { children: [
+        "\uC2E0\uAC15\uC57D ",
+        s.strength.grade
+      ] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("ul", { style: { margin: 0, paddingLeft: 18 }, children: s.strength.reasons.map((x) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: x }, x)) }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { style: { margin: "8px 0 4px" }, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("b", { children: [
+        "\uC6A9\uC2E0 ",
+        EL_PLAIN[s.yongsin.\uC6A9\uC2E0],
+        " \xB7 ",
+        s.yongsin.method
+      ] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("ul", { style: { margin: 0, paddingLeft: 18 }, children: s.yongsin.reasons.map((x) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: x }, x)) })
+    ] })
+  ] });
+}
 function SajuTab({ shared, singlePrice }) {
   const { data } = shared;
   const r = (0, import_react6.useMemo)(() => data ? buildReading(data.saju, data.name) : null, [data]);
@@ -14165,25 +14212,28 @@ function SajuTab({ shared, singlePrice }) {
           ] })
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(ReadCard, { b: r.yongsin, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "tip-row", children: r.tips.map((t) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: `tip el-${t.el}`, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("b", { children: [
-          EL_PLAIN[t.el],
-          " \xB7 ",
-          t.role
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          "\uC0C9 \xB7 ",
-          t.color
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          "\uC7A5\uC18C \xB7 ",
-          t.place
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          "\uC2B5\uAD00 \xB7 ",
-          t.habit
-        ] })
-      ] }, t.role)) }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(ReadCard, { b: r.yongsin, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(JudgeBasis, { s }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "tip-row", children: r.tips.map((t) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: `tip el-${t.el}`, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("b", { children: [
+            EL_PLAIN[t.el],
+            " \xB7 ",
+            t.role
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
+            "\uC0C9 \xB7 ",
+            t.color
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
+            "\uC7A5\uC18C \xB7 ",
+            t.place
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
+            "\uC2B5\uAD00 \xB7 ",
+            t.habit
+          ] })
+        ] }, t.role)) })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
         ReadCard,
         {
@@ -14561,7 +14611,10 @@ function ManseTab({ shared }) {
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
           "\uC2E0\uAC15\uC57D ",
-          s.strength.grade
+          s.strength.grade,
+          " \xB7 \uB3D5\uB294 \uD798 ",
+          s.strength.score,
+          "%"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
           "\uC6A9\uC2E0 ",
@@ -14576,6 +14629,7 @@ function ManseTab({ shared }) {
           s.gongmang.join("\xB7")
         ] })
       ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(JudgeBasis, { s }),
       /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
         /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { style: { margin: "0 0 8px", fontWeight: 600 }, children: [
           "\uB300\uC6B4 ",
@@ -16637,7 +16691,8 @@ function calcSaju(input, now = /* @__PURE__ */ new Date()) {
       isLeapMonth: leap,
       gender: input.gender === "\uC5EC" ? "female" : "male",
       hourUnknown: !time,
-      correctionMinutes: minutes,
+      correctionMinutes: time ? (0, import_correction3.regionMinutes135)(region) : 0,
+      // 서머타임·127.5도는 엔진이 반영
       birthRegionLabel: region
     },
     "jasi",
@@ -16680,11 +16735,28 @@ function calcSaju(input, now = /* @__PURE__ */ new Date()) {
     pillars,
     dayMaster: { gan: dayGan, el: GAN_EL[dayGan], yang: GAN_YANG(dayGan) },
     elements,
-    strength: { score: Number(c.\uC2E0\uAC15\uC57D\uC810\uC218) || 0, label, grade: gradeLabel, deukryeong: c.\uB4DD\uB839, deukji: c.\uB4DD\uC9C0, deukse: c.\uB4DD\uC138 },
+    strength: {
+      score: Number(c.\uC2E0\uAC15\uC57D\uC810\uC218) || 0,
+      label,
+      grade: gradeLabel,
+      deukryeong: c.\uB4DD\uB839,
+      deukji: c.\uB4DD\uC9C0,
+      deukse: c.\uB4DD\uC138,
+      reasons: Array.isArray(c.\uC2E0\uAC15\uC57D\uADFC\uAC70) ? c.\uC2E0\uAC15\uC57D\uADFC\uAC70 : [],
+      shares: { \uBE44\uAC81: Number(c.\uC138\uB825\uBD84\uD3EC?.\uBE44\uAC81) || 0, \uC778\uC131: Number(c.\uC138\uB825\uBD84\uD3EC?.\uC778\uC131) || 0, \uC2DD\uC0C1: Number(c.\uC138\uB825\uBD84\uD3EC?.\uC2DD\uC0C1) || 0, \uC7AC\uC131: Number(c.\uC138\uB825\uBD84\uD3EC?.\uC7AC\uC131) || 0, \uAD00\uC131: Number(c.\uC138\uB825\uBD84\uD3EC?.\uAD00\uC131) || 0 }
+    },
     helpful: toEl(c.\uC6A9\uC2E0),
-    yongsin: { \uC6A9\uC2E0: toEl(c.\uC6A9\uC2E0), \uD76C\uC2E0: toEl(c.\uD76C\uC2E0), \uAE30\uC2E0: toEl(c.\uAE30\uC2E0), \uAD6C\uC2E0: toEl(c.\uAD6C\uC2E0), \uD55C\uC2E0: toEl(c.\uD55C\uC2E0) },
+    yongsin: {
+      \uC6A9\uC2E0: toEl(c.\uC6A9\uC2E0),
+      \uD76C\uC2E0: toEl(c.\uD76C\uC2E0),
+      \uAE30\uC2E0: toEl(c.\uAE30\uC2E0),
+      \uAD6C\uC2E0: toEl(c.\uAD6C\uC2E0),
+      \uD55C\uC2E0: toEl(c.\uD55C\uC2E0),
+      method: String(c.\uC6A9\uC2E0\uBC29\uBC95 ?? ""),
+      reasons: Array.isArray(c.\uC6A9\uC2E0\uADFC\uAC70) ? c.\uC6A9\uC2E0\uADFC\uAC70 : []
+    },
     johu: { main: johuMain, sub: johuSub },
-    gyeokguk: { name: String(c.\uACA9\uAD6D), basis: String(c.\uACA9\uAD6D\uADFC\uAC70) },
+    gyeokguk: { name: String(c.\uACA9\uAD6D), basis: String(c.\uACA9\uAD6D\uADFC\uAC70), rule: String(c.\uACA9\uAD6D\uAE30\uC900 ?? "") },
     groups: { \uBE44\uAC81: c.\uC2ED\uC131\uBD84\uD3EC.\uBE44\uAC81, \uC2DD\uC0C1: c.\uC2ED\uC131\uBD84\uD3EC.\uC2DD\uC0C1, \uC7AC\uC131: c.\uC2ED\uC131\uBD84\uD3EC.\uC7AC\uC131, \uAD00\uC131: c.\uC2ED\uC131\uBD84\uD3EC.\uAD00\uC131, \uC778\uC131: c.\uC2ED\uC131\uBD84\uD3EC.\uC778\uC131 },
     relations: { stems: c.\uCC9C\uAC04\uAD00\uACC4 ?? [], hap: c.\uD569 ?? [], clash: c.\uCDA9\uD615\uD30C\uD574 ?? [] },
     gongmang: c.\uACF5\uB9DD\uC77C ?? [],
@@ -16739,7 +16811,7 @@ function renderPage(kind, cfg, opts = {}) {
       return { html: (0, import_server.renderToString)(/* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Landing, { cfg })), title: `${brand} \u2014 ${cfg.brand.tagline}`, description: fill(cfg.hero.lede, cfg) };
   }
 }
-var BUILD_ID = "202609151146";
+var BUILD_ID = "202609151258";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BUILD_ID,

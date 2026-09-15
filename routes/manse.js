@@ -13,11 +13,10 @@
  * ============================================================ */
 
 const express = require('express');
-const solarTime = require('../services/solarTime');
 const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const engine = require('../services/cbEngine');
-/* 엔진은 서머타임을 모른다. 넘기기 직전에 얹고, 엔진이 적은 보정 문구를 바로잡는다. */
+/* 엔진이 서머타임·127.5도 표준시를 스스로 반영한다. 여기서는 서머타임 태생 판정(안내 ⓘ)만 받는다. */
 const { 서머타임반영, 보정문구, 서머타임안내, 서머타임기본안내 } = require('../services/dstCorrection');
 const { REGIONS } = require('../services/cbRegions');
 const pool = require('../db').pool;
@@ -70,12 +69,10 @@ function toInfo(p) {
     gender: p.gender === 'female' ? 'female' : 'male',
     hourUnknown: !!p.hourUnknown,
     ganjiSelect: typeof p.ganjiSelect === 'string' ? p.ganjiSelect : '',
-    /* ⚠️ 화면은 지금 기준(135도)으로 적힌 보정분을 보낸다.
-       1954-03-21~1961-08-09 는 표준자오선이 127.5도라 30분을 되돌려야
-       한다. 안 하면 그때 태어난 분의 시주가 한 시진 밀린다. */
-    correctionMinutes: typeof p.correctionMinutes === 'number'
-      ? solarTime.adjust(p.correctionMinutes, Number(p.year), Number(p.month), Number(p.day))
-      : undefined,
+    /* 화면은 지금 기준(135도)으로 적힌 보정분을 보낸다. 그대로 넘긴다.
+       1954-03-21~1961-08-09 · 1908~1911 의 127.5도 표준시는 엔진이 날짜와 지역 이름(birthRegionLabel)으로
+       스스로 되돌린다. 여기서 30분을 또 옮기면 두 번 옮겨진다. */
+    correctionMinutes: typeof p.correctionMinutes === 'number' ? p.correctionMinutes : undefined,
     birthRegionLabel: typeof p.birthRegionLabel === 'string' ? p.birthRegionLabel : undefined,
   };
 }

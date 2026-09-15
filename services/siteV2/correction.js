@@ -19,9 +19,14 @@ const KNOWN = ['서울', '부산', '대구', '인천', '광주', '대전', '울�
 
 const knownRegion = (region) => !!region && KNOWN.includes(region);
 
-/** 지역시 보정분 — 1954-03-21~1961-08-09 는 manseryeok.js 가 127.5도로 계산한다 */
+/** 지역시 보정분(당시 기준 자오선) — 화면 안내용. 1954-03-21~1961-08-09 는 manseryeok.js 가 127.5도로 계산한다 */
 function localMinutes(region, solarDate) {
   return knownRegion(region) ? manse.localTimeCorrection(region, solarDate) : 0;
+}
+
+/** 135°E 기준 지역 보정분 — 명리 엔진에 넘기는 값. 서머타임·127.5도 표준시는 엔진이 스스로 반영한다 */
+function regionMinutes135(region) {
+  return knownRegion(region) ? manse.regionMinutes135(region) : 0;
 }
 
 /** 서머타임 판정 — manseryeok.js 의 DST_PERIODS 그대로 */
@@ -36,4 +41,4 @@ function shiftTime(hh, mm, minutes) {
   return pad(Math.floor(t / 60)) + ':' + pad(t % 60);
 }
 
-module.exports = { knownRegion, localMinutes, isDST, shiftTime, standardMeridian: manse.standardMeridian };
+module.exports = { knownRegion, localMinutes, regionMinutes135, isDST, shiftTime, standardMeridian: manse.standardMeridian };

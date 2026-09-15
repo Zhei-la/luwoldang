@@ -5,16 +5,11 @@
  * 루월당이 쓰는 내담자 정보({ birthDate, birthTime, calendar, gender, region })를
  * 엔진 형식으로 바꿔주는 게 이 파일의 역할이다.
  *
- * ⚠️ 진태양시(지역시) 보정 주의
- *   루월당도 보정하고 엔진도 correctionMinutes로 보정한다.
- *   둘 다 먹이면 두 번 보정돼서 시주가 틀린다.
- *   그래서 여기서는 **루월당의 localTimeCorrection 을 그대로 재사용**해
- *   엔진에 한 번만 넘긴다.
- *
- * ⚠️ 서머타임
- *   엔진(cbEngine.js)은 서머타임을 모른다. 넘겨받은 보정분만큼만 옮긴다.
- *   그래서 서머타임 구간이면 여기서 -60분을 보정분에 더해 넘긴다.
- *   구간 판정은 manseryeok.js 의 isDST (만세력 계산기 kst-history.ts 와 같은 목록).
+ * ⚠️ 진태양시(지역시)·서머타임·127.5도 표준시
+ *   엔진(cbEngine.js)이 날짜를 보고 서머타임(-60분)과 127.5도 표준시 시기를 스스로 반영한다.
+ *   그래서 엔진에는 **135도 기준 지역 보정분(regionMinutes135)** 과 지역 이름만 넘긴다.
+ *   여기서 서머타임을 빼거나 127.5도로 옮겨 넘기면 두 번 보정돼 시주가 틀린다.
+ *   (예전 엔진은 서머타임을 몰라 여기서 -60분을 얹었다. 엔진이 바뀌어 그 처리를 뺐다)
  *
  * 엔진이 돌려주는 것:
  *   text      — LLM(ChatGPT 등)에 그대로 붙여넣는 명식 텍스트
@@ -24,7 +19,7 @@
 
 const engine = require('./cbEngine');
 const { REGIONS, searchRegions } = require('./cbRegions');
-const { localTimeCorrection, isDST } = require('./manseryeok');
+const { localTimeCorrection, regionMinutes135, isDST } = require('./manseryeok');
 /* npm 패키지 manseryeok (위의 ./manseryeok.js 와 다른 것) — 엔진이 음력을 양력으로 바꿀 때 쓰는 함수 */
 const { lunarToSolar } = require('manseryeok');
 
@@ -64,10 +59,11 @@ function 입력과보정(c) {
   /* 시간을 아는 경우에만 보정한다. 시간을 모르면 시주를 안 쓰므로 보정 자체가 의미 없다.
    *   지역시   — 루월당과 똑같은 값으로 한 번만. 지역을 넣고 지역시를 켰을 때만.
    *   서머타임 — 표준시 자체를 당긴 것이라 출생지·지역시 켜고 끄기와 상관없이 -60분. */
-  let local = 0, dst = false;
+  let local = 0, engineLocal = 0, dst = false;
   if (!hourUnknown) {
     if (c.useLocalSolarTime !== false && c.region) {
-      local = localTimeCorrection(c.region, `${y}-${pad(mo)}-${pad(d)}`);
+      local = localTimeCorrection(c.region, `${y}-${pad(mo)}-${pad(d)}`); // 당시 기준 자오선 (안내용)
+      engineLocal = regionMinutes135(c.region);                          // 엔진에 넘기는 135도 기준
     }
     /* 서머타임은 양력 날짜로 판정한다. 바꿀 수 없는 날짜는 서머타임일 수도 없으니
        그냥 넘긴다 — 날짜 오류는 예전처럼 엔진이 낸다. */
@@ -85,7 +81,7 @@ function 입력과보정(c) {
       isLunar, isLeapMonth: !!c.isLeapMonth,
       gender: toGender(c.gender),
       hourUnknown,
-      correctionMinutes: dst ? local - 60 : local,
+      correctionMinutes: engineLocal,
       birthRegionLabel: c.region || '',
     },
     보정: { dst, local },
@@ -93,30 +89,11 @@ function 입력과보정(c) {
 }
 
 /* ── 보정 내역 문구 ──
- * 엔진은 넘겨받은 보정분 하나만 알아서, 서머타임 1시간까지 합쳐 「지역시 서울 -92분」 이라고 적는다.
- * cbEngine.js 는 명리학자가 준 파일이라 손대지 않고, 나온 글자만 바꾼다 (routes/manse.js 의 일간십성과 같은 방식).
- *   글     (지역시 서울 -92분 → 12:28 기준)  →  (서머타임 -1시간, 지역시 서울 -32분 → 12:28 기준)
- *   표 머리 · 지역시 서울 -92분 적용           →  · 서머타임 -1시간 · 지역시 서울 -32분 적용
- * 지역시 보정이 없으면(지역 없음·지역시 끔) 「서머타임 -1시간」만 적는다.
- * 서머타임이 아니면 결과를 그대로 돌려준다. */
-const 분 = (n) => (n > 0 ? '+' : '') + n + '분';
-const escHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-function 보정문구(out, x) {
-  if (!out || !x.보정.dst) return out;
-  const label = String(x.info.birthRegionLabel || '').trim();
-  const 합계 = x.info.correctionMinutes;
-  const 지역 = x.보정.local !== 0;
-
-  /* 엔진이 적는 글자 그대로 (cbEngine.js 의 보정Text · pdf보정Suffix) */
-  const 글앞 = label ? label + ' ' : '보정 ';
-  const 글From = ` (지역시 ${글앞}${분(합계)} → `;
-  const 글To = ` (서머타임 -1시간${지역 ? `, 지역시 ${글앞}${분(x.보정.local)}` : ''} → `;
-  const 표From = escHtml(` · 지역시 ${label || '보정'} ${분(합계)} 적용`);
-  const 표To = escHtml(` · 서머타임 -1시간${지역 ? ` · 지역시 ${label || '보정'} ${분(x.보정.local)}` : ''} 적용`);
-
-  const 바꾸기 = (s) => (typeof s === 'string' ? s.split(글From).join(글To).split(표From).join(표To) : s);
-  return Object.assign({}, out, { text: 바꾸기(out.text), pdfHtml: 바꾸기(out.pdfHtml), colorHtml: 바꾸기(out.colorHtml) });
+ * 엔진이 「서머타임(-1시간), 지역시 서울 -32분 → 12:28 기준」처럼 직접 적는다.
+ * 예전 엔진은 서머타임을 몰라 「지역시 서울 -92분」이라 적어 여기서 글자를 바꿨는데, 이제는 고칠 것이 없다.
+ * 부르는 곳이 바뀌지 않도록 함수는 남겨 둔다. */
+function 보정문구(out) {
+  return out;
 }
 
 /**

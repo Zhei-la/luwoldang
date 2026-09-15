@@ -23,9 +23,7 @@ const { pool } = require('../db');
 const fortune = require('../services/cbFortune');
 const engine = fortune;
 const { REGIONS } = require('../services/cbRegions');
-const solarTime = require('../services/solarTime');
 /* 엔진은 서머타임을 모른다. 넘기기 직전에 얹는다 (교육생 만세력 /manse 와 같은 처리) */
-const { 서머타임반영 } = require('../services/dstCorrection');
 const theme = require('../services/msiteTheme');
 const quota = require('../services/msiteQuota');
 const guest = require('../services/guestSite');
@@ -136,10 +134,9 @@ function readBirth(b) {
       isLunar: lunar,
       isLeapMonth: b.calendar === '음력 윤달' || b.leap === 'on' || b.leap === '1',
       gender: b.gender === 'male' ? 'male' : 'female',
-        /* ⚠️ 태어난 때에 따라 표준자오선이 달라 보정분이 바뀐다.
-         1954~61년생에게 32분을 빼면 시주가 한 시진 밀린다. */
-      correctionMinutes: region
-        ? solarTime.adjust(region.correctionMinutes, year, month, day) : 0,
+      /* 135도 기준 보정분을 그대로 넘긴다. 1954~61년 127.5도 표준시와 서머타임은
+         엔진이 날짜와 지역 이름(birthRegionLabel)으로 스스로 반영한다 — 여기서 옮기면 두 번 옮겨진다. */
+      correctionMinutes: region ? region.correctionMinutes : 0,
       birthRegionLabel: region ? region.name : '',
       name: String(b.name || '').trim().slice(0, 20),
     },
@@ -241,7 +238,7 @@ async function showResult(req, res, next) {
          교육생 만세력(/manse) 기본값과 똑같이 '자시 미분리'로 맞춘다. */
       /* 화면에 보여줄 값(b.input)은 그대로 두고 엔진에 넘길 입력에만 서머타임을 얹는다.
          b.input 의 보정분을 바꾸면 「지역시 보정 켬」 표시(pre.localTime)까지 따라 바뀐다. */
-      r = engine.명식표상세(서머타임반영(b.input).info, 'jasi', '미적용');
+      r = engine.명식표상세(b.input, 'jasi', '미적용');
     } catch (e) {
       console.error('[만세력] 계산 실패:', e.message);
       return res.render('msite/input', Object.assign(pageBits(req, t), {

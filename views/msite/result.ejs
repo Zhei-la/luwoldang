@@ -356,7 +356,7 @@
     <div class="kv" style="margin-top:16px">
       <span>일간 <b><%= c.일간 %> (<%= c.일간오행 %>)</b></span>
       <span>일주 <b><%= c.일주 %></b></span>
-      <span>격국 <b><%= c.격국 %></b></span>
+      <span>격국 <b><%= c.격국 %></b><% if (c.격국근거) { %> <small style="color:var(--dim)">(<%= c.격국근거 %>)</small><% } %></span>
       <% if (c.공망일 && c.공망일.length) { %><span>공망 <b><%= c.공망일.join('·') %></b></span><% } %>
     </div>
   </div>
@@ -425,6 +425,17 @@
       <% if (c.한신) { %><span>한신 <b><%= c.한신 %></b></span><% } %>
       <% if (c.조후) { %><span>조후 <b><%= c.조후 %></b></span><% } %>
     </div>
+    <%# 판정 근거 — 엔진이 낸 문장을 그대로 보여준다. 격국은 어떤 기준으로 정했는지도 함께 %>
+    <% if ((c.신강약근거 && c.신강약근거.length) || (c.용신근거 && c.용신근거.length)) { %>
+      <details style="margin-top:14px;font-size:13.5px;line-height:1.65">
+        <summary style="cursor:pointer;font-weight:600">판정 근거 보기</summary>
+        <% if (c.격국기준) { %><p style="margin:10px 0 0;color:var(--dim)">격국 <b><%= c.격국 %></b> — <%= c.격국근거 %> · <%= c.격국기준 %></p><% } %>
+        <p style="margin:10px 0 4px"><b>신강약 <%= c.신강약 %></b><% if (c.신강약점수 != null) { %> · 돕는 힘 <%= c.신강약점수 %>%<% } %></p>
+        <ul style="margin:0;padding-left:18px"><% (c.신강약근거 || []).forEach(function(x){ %><li><%= x %></li><% }); %></ul>
+        <p style="margin:10px 0 4px"><b>용신 <%= c.용신 %></b><% if (c.용신방법) { %> · <%= c.용신방법 %><% } %></p>
+        <ul style="margin:0;padding-left:18px"><% (c.용신근거 || []).forEach(function(x){ %><li><%= x %></li><% }); %></ul>
+      </details>
+    <% } %>
   </div>
 
   <% if (c.대운목록 && c.대운목록.length) { %>

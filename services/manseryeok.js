@@ -114,6 +114,12 @@ function localTimeCorrection(region, dateStr) {
   return Math.round((lon - meridian) * 4); // 음수 = 늦춰짐
 }
 
+/** 135°E 기준 지역 보정분 — 명리 엔진(cbEngine·cbFortune)에 넘기는 값.
+ *  서머타임과 127.5도 표준시 시기는 엔진이 날짜를 보고 스스로 되돌린다. 여기서 미리 옮기면 두 번 옮겨진다. */
+function regionMinutes135(region) {
+  return Math.round((findLongitude(region) - 135) * 4);
+}
+
 /* ---------- 한국 서머타임 구간 (-60분) ----------
  * 만세력 계산기(src/kst-history.ts)의 DST_PERIODS 와 같은 목록이다.
  * 당시 벽시계 시각 기준 [시작, 종료) — 이 사이의 시계는 표준시보다 1시간 앞서 있었다.
@@ -192,11 +198,12 @@ function calcSaju(o) {
   }
 
   // 1) 음력 → 양력 정규화
+  //    ⚠️ 한국천문연구원 음력(npm manseryeok, 명리 엔진과 같은 것)으로 바꾼다. lunar-javascript 는 중국 음력이라
+  //       1996·2012(윤3월)·2017(윤5월) 등 60여 해에서 날짜가 하루, 윤달은 한 달 어긋났다.
   let sy = y, sm = m, sd = d;
   if (calendar === '음력') {
-    const lu = Lunar.fromYmdHms(y, isLeapMonth ? -m : m, d, hh, mm, 0);
-    const so = lu.getSolar();
-    sy = so.getYear(); sm = so.getMonth(); sd = so.getDay();
+    const so = require('manseryeok').lunarToSolar(y, m, d, isLeapMonth);
+    sy = so.year; sm = so.month; sd = so.day;
   }
 
   // 2) 시간 보정 (서머타임 → 지역시)
@@ -253,15 +260,21 @@ function calcSaju(o) {
   const lunarForPillars = Solar.fromYmdHms(py, pm, pd, pHour, pMin, 0).getLunar();
 
   const 엔진 = require('./cbEngine');
-  const m4 = 엔진.명식표상세({
+  /* 엔진이 서머타임·127.5도 표준시를 스스로 반영한다(만세력 계산기와 같은 경로).
+     그래서 엔진에는 135도 기준 지역 보정분만 넘긴다. 위 correction(서머타임 + 당시 기준 지역시)은
+     화면·PDF 에 적는 「적용시각」용이고, 엔진이 실제로 옮기는 시각과 같다(scripts/manse-audit.js 가 대조한다).
+     년주·월주는 엔진이 절입 순간(한국 표준시)으로 따로 가른다 — 지역시로 절입을 비교하지 않는다. */
+  const 엔진결과 = 엔진.명식표상세({
     year: sy, month: sm, day: sd,
     hour: timeKnown ? hh : 12,
     minute: timeKnown ? mm : 0,
     hourUnknown: !timeKnown,
     isLunar: false, isLeapMonth: false,
     gender: (gender === '남' || gender === 'male') ? 'male' : 'female',
-    correctionMinutes: correction,
-  }, 'jasi', '미적용', {}).raw.m;
+    correctionMinutes: timeKnown && useLocalSolarTime ? regionMinutes135(region) : 0,
+    birthRegionLabel: region,
+  }, 'jasi', '미적용', {});
+  const m4 = 엔진결과.raw.m;
 
   const yearP = KO_TO_HANJA(m4.year);
   const monthP = KO_TO_HANJA(m4.month);
@@ -320,11 +333,20 @@ function calcSaju(o) {
   };
 
   // 대운 (성별을 알아야 순행/역행 판단 가능)
+  //   만세력 계산기와 같은 엔진 값을 쓴다 — 절입 순간까지의 일수 ÷ 3, 년간 음양·성별로 순행/역행.
+  //   (예전 calcDaewoon 은 lunar-javascript 의 중국 시간 절기 「날짜」로 따로 세어 대운수가 계산기와 달라질 수 있었다)
   let daewoon = null;
   if (gender) {
     try {
-      const solarForDw = Solar.fromYmd(sy, sm, sd);
-      daewoon = calcDaewoon(solarForDw, yearP[0], monthP, gender, 9);
+      const c = 엔진결과.raw.consult;
+      daewoon = {
+        forward: c.대운방향 === '순행',
+        startAge: c.대운수,
+        list: c.대운목록.slice(0, 9).map(function (x) {
+          const hz = KO_TO_HANJA(x.간지);
+          return { age: x.나이, ganzi: hz, ko: x.간지, stem: hz[0], branch: hz[1] };
+        }),
+      };
     } catch (e) { /* 실패해도 나머지는 정상 반환 */ }
   }
 
@@ -670,6 +692,7 @@ module.exports.findCurrentDaewoon = findCurrentDaewoon;
 
 /* 진태양시 보정을 새 엔진 래퍼에서 재사용하기 위해 내보낸다 (계산 로직 변경 없음) */
 module.exports.localTimeCorrection = localTimeCorrection;
+module.exports.regionMinutes135 = regionMinutes135;
 module.exports.standardMeridian = standardMeridian;
 /* 서머타임 판정 — manseCalc.js 가 엔진에 넘길 보정분에 넣는다 */
 module.exports.isDST = isDST;
