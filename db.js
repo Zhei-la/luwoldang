@@ -63,6 +63,9 @@ async function initDb() {
   /* 공개 만세력 페이지 색. 교육생마다 다르게 보이게 한다. */
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS msite_theme TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS msite_limit JSONB;`);
+  /* 통합 사이트(웹사이트 + 무료 만세력) 꾸미기 — { draft, published, history, draftSavedAt, publishedAt }
+     routes/siteV2.js 가 읽고 쓴다. 비어 있으면 기본 디자인에 교육생 이름을 넣어 보여준다. */
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS site_v2 JSONB;`);
 
   // 상담 신청 (랜딩 폼)
   await pool.query(`

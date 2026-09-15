@@ -26,6 +26,7 @@ const boardRouter = require('./routes/board');     // 공지사항 · 문의하�
 const lpReviewRouter = require('./routes/lpReview'); // 판매 페이지 후기
 const manseLinkRouter = require('./routes/manseLink'); // 만세력 연동
 const msiteRouter = require('./routes/msite'); // 공개 만세력 (교육생 개인 링크)
+const siteV2 = require('./routes/siteV2'); // 통합 사이트 (웹사이트 + 무료 만세력 한 페이지)
 const guest = require('./services/guestSite'); // 손님 주소와 루월당 주소를 가른다
 const { router: reviewRoutes } = require('./routes/reviews');
 const { requireAuth } = require('./middleware/auth');
@@ -34,6 +35,8 @@ const PORT = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// 통합 사이트가 켜진 아이디인지 — 대시보드 메뉴·설정 화면에서 쓴다
+app.locals.siteV2On = siteV2.isOn;
 // 후기 이미지(data URI)를 폼으로 받기 때문에 기본 100kb 로는 부족하다
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(express.json({ limit: '25mb' }));
@@ -118,6 +121,9 @@ app.use('/', lpReviewRouter);
 /* 만세력 연동 — /api/manse/lead 는 로그인 없이 열려 있어야 한다.
    leads 라우터의 requireAuth 가 /api/* 를 가로채므로 반드시 그보다 먼저. */
 app.use('/', manseLinkRouter);
+/* 통합 사이트 — 켜진 아이디만 /아이디 · /s/아이디 · /@아이디 · /saju@아이디 를 새 사이트로 연다.
+   꺼진 아이디는 next() 로 넘겨 아래 만세력·무료사주가 예전처럼 연다. 그래서 둘보다 먼저 붙인다. */
+app.use('/', siteV2.publicRouter);
 /* 공개 만세력 — /saju@아이디 · /@아이디 (로그인 없음).
    없는 아이디면 next() 로 넘기므로 뒤에 붙은 라우터를 가로막지 않는다. */
 app.use('/', msiteRouter);
@@ -147,6 +153,8 @@ app.use((req, res, next) => {
 app.use('/', threadsAutoRouter);
 // 관리자 (승인 관리 등) — 대시보드 라우터보다 먼저
 app.use('/admin', adminRouter);
+// 통합 사이트 꾸미기 — /site-v2 (교육생, 로그인 필요)
+app.use('/', siteV2.dashRouter);
 // 랜딩 빌더
 app.use('/', builderRouter);
 // ⚠️ 리포트 미리보기 · 수정하기 — 반드시 leadsRouter 보다 "먼저"

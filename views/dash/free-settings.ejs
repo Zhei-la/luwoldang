@@ -4,6 +4,24 @@
 
 <% if (saved) { %><div class="save-toast">저장되었습니다.</div><% } %>
 
+<% if (typeof siteV2On === 'function' && siteV2On(user.slug)) { %>
+<!-- 통합 사이트 — 웹사이트와 무료 만세력을 한 페이지로 합친 새 버전 -->
+<div class="settings-block" style="border:2px solid #2F7A55">
+  <h2 class="section-h">통합 사이트 링크 <span style="font-size:12px;color:#2F7A55;font-weight:700">새 버전 적용 중</span></h2>
+  <p class="block-desc">
+    내 웹사이트와 무료 만세력이 <b>한 페이지로 합쳐졌습니다.</b>
+    아래 「내 웹사이트 링크」와 「무료 만세력 링크」로 들어와도 모두 이 통합 사이트가 열립니다.<br>
+    무료사주 · 오늘의 운세 · 만세력은 AI 를 쓰지 않아 요금이 0원이고, 리포트 신청은 <b>사주 신청자</b> 목록에 들어옵니다.
+    <a href="/site-design">사이트 꾸미러 가기 →</a>
+  </p>
+  <div class="share-row">
+    <input class="fi share-input" id="v2Url" type="text" value="<%= msiteBase %>/<%= user.slug %>" readonly>
+    <button class="btn btn-approve" type="button" onclick="var b=this;navigator.clipboard.writeText(document.getElementById('v2Url').value).then(function(){b.textContent='복사됨';setTimeout(function(){b.textContent='복사'},1500)})">복사</button>
+    <a class="btn btn-ghost" href="<%= msiteBase %>/<%= user.slug %>" target="_blank">미리보기</a>
+  </div>
+</div>
+<% } %>
+
 <!-- 공유 링크 -->
 <div class="settings-block">
   <h2 class="section-h">내 웹사이트 링크</h2>
