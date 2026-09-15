@@ -1495,14 +1495,17 @@ function _\uBA85\uC2DD\uD45C\uC0DD\uC131(info, dayBoundary, \uC57C\uC790\uB77C\u
   if (name) head += `\uC774\uB984: ${name}
 `;
   const timeText = hourUnknown ? "\uC2DC\uAC01 \uBBF8\uC0C1" : info.ganjiSelect ? `${info.ganjiSelect}(\uAC04\uC9C0\uC120\uD0DD)` : `${String(info.hour).padStart(2, "0")}:${String(info.minute).padStart(2, "0")}`;
-  const jasiText = hourUnknown ? "" : ` (\uC790\uC2DC: ${\uC57C\uC790\uB77C\uBCA8})`;
+  const \uBC2411\uC2DC = !hourUnknown && effectiveInfo.hour === 23;
+  const \uBC2411\uC2DC\uBB38\uAD6C = dayBoundary === "jasi" ? "\uBC24 11\uC2DC \uC774\uD6C4 \uCD9C\uC0DD\uC774\uB77C \uB2E4\uC74C \uB0A0 \uC77C\uC8FC\uB85C \uBD04" : "\uBC24 11\uC2DC \uC774\uD6C4 \uCD9C\uC0DD\uC774\uB77C \uC77C\uC8FC\uB294 \uB2F9\uC77C, \uC2DC\uC8FC \uCC9C\uAC04\uB9CC \uB2E4\uC74C \uB0A0\uB85C \uBD04(\uC57C\uC790\uC2DC)";
+  void \uC57C\uC790\uB77C\uBCA8;
+  const jasiText = \uBC2411\uC2DC ? ` (${\uBC2411\uC2DC\uBB38\uAD6C})` : "";
   const \uBCF4\uC815Text = correctionActive ? ` (${\uBCF4\uC815\uC870\uAC01.join(", ")} \u2192 ${String(correctedInfo.hour).padStart(2, "0")}:${String(correctedInfo.minute).padStart(2, "0")} \uAE30\uC900)` : "";
   head += `\uAE30\uBCF8\uC815\uBCF4: ${info.isLunar ? "\uC74C\uB825" : "\uC591\uB825"} ${info.year}\uB144 ${info.month}\uC6D4 ${info.day}\uC77C ${timeText}${\uBCF4\uC815Text}, ${info.gender === "female" ? "\uC5EC\uC131" : "\uB0A8\uC131"}${jasiText}, \uC77C\uAC04(\uB098): ${m.day[0]}`;
   if (hourUnknown) head += `
 (\uCD9C\uC0DD\uC2DC\uAC01 \uBBF8\uC0C1 \u2014 \uC2DC\uC8FC \uC81C\uC678)`;
   blocks.push(head);
   const genderText = info.gender === "female" ? "\uC5EC\uC131" : "\uB0A8\uC131";
-  const pdf\uC790\uC2DCSuffix = hourUnknown ? "" : ` \xB7 \uC790\uC2DC ${\uC57C\uC790\uB77C\uBCA8}`;
+  const pdf\uC790\uC2DCSuffix = \uBC2411\uC2DC ? ` \xB7 ${\uBC2411\uC2DC\uBB38\uAD6C}` : "";
   const pdf\uBCF4\uC815Suffix = correctionActive ? ` \xB7 ${\uBCF4\uC815\uC870\uAC01.join(" \xB7 ")} \uC801\uC6A9` : "";
   const pdfInfoLine = `${info.isLunar ? "\uC74C\uB825" : "\uC591\uB825"} ${info.year}\uB144 ${info.month}\uC6D4 ${info.day}\uC77C ${timeText} \xB7 ${genderText}${pdf\uC790\uC2DCSuffix}${pdf\uBCF4\uC815Suffix}`;
   const headerLabel = opts.headerLabel || "\uB0B4\uB2F4\uC790";

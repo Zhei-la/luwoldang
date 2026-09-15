@@ -1,4 +1,4 @@
-/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151323 */
+/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151455 */
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -16822,7 +16822,7 @@ function renderPage(kind, cfg, opts = {}) {
       return { html: (0, import_server.renderToString)(/* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Landing, { cfg })), title: `${brand} \u2014 ${cfg.brand.tagline}`, description: fill(cfg.hero.lede, cfg) };
   }
 }
-var BUILD_ID = "202609151323";
+var BUILD_ID = "202609151455";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BUILD_ID,

@@ -56,12 +56,36 @@ function isBirthOk(b) {
  *
  *  '11:00'                  → '11:00'   (실제 시각 그대로)
  *  '사시 巳 09:30~11:29'     → '10:30'   (구간 중앙값)
+ *  '오전 11시' '11시 5분'     → '11:00' · '11:05'
+ *  '오후 2시 30분'            → '14:30'
+ *  '1100'                   → '11:00'   (만세력 계산기 HHMM 형식)
+ *  '사시' '巳時'              → '10:30'   (시진 이름만 — 시진 구간 중앙값)
  *  '모름 / 선택 안함'         → null
+ *
+ * ⚠️ 예전에는 「오전 11시」「1100」 같은 형식을 못 읽어 시간을 모르는 사람으로 계산했다(시주가 빠짐).
+ *    못 읽는 형식은 여전히 null 이다 — 추측해서 엉뚱한 시(예: 자시)로 넣지 않는다.
  */
+const SIJIN_MID = { 자: '00:30', 축: '02:30', 인: '04:30', 묘: '06:30', 진: '08:30', 사: '10:30', 오: '12:30', 미: '14:30', 신: '16:30', 유: '18:30', 술: '20:30', 해: '22:30' };
+const SIJIN_HANJA = { 子: '자', 丑: '축', 寅: '인', 卯: '묘', 辰: '진', 巳: '사', 午: '오', 未: '미', 申: '신', 酉: '유', 戌: '술', 亥: '해' };
+const hhmm = (hh, mm) => (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59 ? String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') : null);
+
 function parseHour(h) {
   if (!h) return null;
   const str = String(h).trim();
   if (/모름|선택 안함/.test(str)) return null;
+
+  // 0) 한글 시각 ('오전 11시', '오후 2시 30분', '11시 5분')
+  const ko = str.match(/^(오전|오후|AM|PM)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?$/i);
+  if (ko) {
+    let hh = Number(ko[2]);
+    const mm = Number(ko[3] || 0);
+    if (/오후|PM/i.test(ko[1] || '') && hh < 12) hh += 12;
+    if (/오전|AM/i.test(ko[1] || '') && hh === 12) hh = 0;
+    return hhmm(hh, mm);
+  }
+
+  // 0-1) 숫자 네 자리 ('1100') — 만세력 계산기 입력 형식
+  if (/^\d{4}$/.test(str)) return hhmm(Number(str.slice(0, 2)), Number(str.slice(2)));
 
   // 1) 실제 시각만 저장된 경우 ('11:00') → 그대로 사용
   if (/^\d{1,2}:\d{2}$/.test(str)) {
@@ -84,6 +108,10 @@ function parseHour(h) {
   if (one) {
     return String(Number(one[1])).padStart(2, '0') + ':' + one[2];
   }
+
+  // 4) 시진 이름만 ('사시', '巳時', '사시(巳時)') — 그 시진 구간(09:30~11:29 식)의 중앙값
+  const name = str.match(/^([자축인묘진사오미신유술해])시/) || str.match(/^([子丑寅卯辰巳午未申酉戌亥])時/);
+  if (name) return SIJIN_MID[SIJIN_HANJA[name[1]] || name[1]];
   return null;
 }
 

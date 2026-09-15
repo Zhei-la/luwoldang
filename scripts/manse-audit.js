@@ -215,6 +215,21 @@ check('보정 사례 — 만세력 계산기·공개 만세력 입력 · PDF 만
   return cases.length * 4 + 3;
 });
 
+check('신청자에 저장된 시간 글자 읽기 (시주가 빠지거나 엉뚱한 시로 들어가지 않음)', (bad) => {
+  const { parseHour } = require('../services/birth');
+  const cases = [
+    ['11:00', '11:00'], ['9:05', '09:05'], ['오전 11시', '11:00'], ['오후 2시 30분', '14:30'], ['11시 5분', '11:05'], ['오전 12시', '00:00'],
+    ['1100', '11:00'], ['사시 巳 09:30~11:29', '10:30'], ['자시 子 23:30~01:29', '00:30'], ['사시(巳時) 09:30~11:30', '10:30'],
+    ['사시', '10:30'], ['巳時', '10:30'], ['모름 / 선택 안함', null], ['', null], ['2500', null], ['아무말', null],
+  ];
+  for (const [input, want] of cases) { const got = parseHour(input); if (got !== want) bad.push(`${JSON.stringify(input)} → ${got} (기대 ${want})`); }
+  const r = ms.calcSaju({ birthDate: '1999-02-21', birthTime: parseHour('오전 11시'), region: '울산', gender: '여' });
+  if (r.pillarsKo.hour !== '기사') bad.push(`1999-02-21 「오전 11시」 울산 → 시주 ${r.pillarsKo.hour} (기대 기사)`);
+  const e = 엔진(eng, { year: 1999, month: 2, day: 21, hour: 11, minute: 0, gender: 'female', correctionMinutes: -23, birthRegionLabel: '울산광역시' });
+  if (/자시/.test(e.text.split('\n')[0])) bad.push('사시 태생 기본정보 줄에 「자시」 글자가 보임');
+  return cases.length + 2;
+});
+
 check('음력 윤달: 한국천문연구원 기준 (2012년 윤3월 · 2017년 윤5월)', (bad) => {
   let n = 0;
   for (const [y, m, ok] of [[2012, 3, true], [2012, 4, false], [2017, 5, true], [2017, 6, false]]) {
