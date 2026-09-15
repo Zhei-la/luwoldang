@@ -221,6 +221,7 @@ check('신청자에 저장된 시간 글자 읽기 (시주가 빠지거나 엉�
     ['11:00', '11:00'], ['9:05', '09:05'], ['오전 11시', '11:00'], ['오후 2시 30분', '14:30'], ['11시 5분', '11:05'], ['오전 12시', '00:00'],
     ['1100', '11:00'], ['사시 巳 09:30~11:29', '10:30'], ['자시 子 23:30~01:29', '00:30'], ['사시(巳時) 09:30~11:30', '10:30'],
     ['사시', '10:30'], ['巳時', '10:30'], ['모름 / 선택 안함', null], ['', null], ['2500', null], ['아무말', null],
+    ['오후 2:30', '14:30'], ['PM 2:30', '14:30'], ['오전 12:10', '00:10'], ['오후 12:10', '12:10'],
   ];
   for (const [input, want] of cases) { const got = parseHour(input); if (got !== want) bad.push(`${JSON.stringify(input)} → ${got} (기대 ${want})`); }
   const r = ms.calcSaju({ birthDate: '1999-02-21', birthTime: parseHour('오전 11시'), region: '울산', gender: '여' });
@@ -228,6 +229,25 @@ check('신청자에 저장된 시간 글자 읽기 (시주가 빠지거나 엉�
   const e = 엔진(eng, { year: 1999, month: 2, day: 21, hour: 11, minute: 0, gender: 'female', correctionMinutes: -23, birthRegionLabel: '울산광역시' });
   if (/자시/.test(e.text.split('\n')[0])) bad.push('사시 태생 기본정보 줄에 「자시」 글자가 보임');
   return cases.length + 2;
+});
+
+check('리포트 경로: 신청자 달력 값(양력·음력·윤달)·성별 표기가 두 계산(calcSaju · PDF 만세력 장)에서 같은 사람으로 읽힘', (bad) => {
+  let n = 0;
+  const cases = [
+    ['2023-02-10', '10:00', '윤달', '여'], ['2012-03-10', '09:00', '윤달', '남'], ['2017-05-20', '15:00', '윤달', '여'],
+    ['1990-05-12', '11:00', '음력', '남성'], ['1985-11-03', '23:40', '양력', '여성'], ['1974-04-26', '10:00', '음력', 'male'],
+  ];
+  for (const [birth, hour, cal, gender] of cases) {
+    // leads.js 가 calcSaju 에 넘기는 모양과 리포트(client)에 넘기는 모양을 그대로 흉내 낸다
+    const saju = ms.calcSaju({ birthDate: birth, birthTime: hour, calendar: cal === '윤달' ? '음력' : cal, isLeapMonth: cal === '윤달', region: '서울특별시', gender });
+    const pdf = manseCalc.buildMyeongsik({ birthDate: birth, birthTime: hour, calendar: cal, gender, region: '서울특별시', name: '' });
+    const a = [saju.pillarsKo.year, saju.pillarsKo.month, saju.pillarsKo.day, saju.pillarsKo.hour].join(' ');
+    const b = [pdf.raw.m.year, pdf.raw.m.month, pdf.raw.m.day, pdf.raw.m.hour].join(' ');
+    n++;
+    if (a !== b) bad.push(`${birth} ${hour} ${cal} ${gender}: 신청자 상세 ${a} / PDF 만세력 장 ${b}`);
+    if (saju.daewoon && pdf.raw.consult && (saju.daewoon.forward !== (pdf.raw.consult.대운방향 === '순행'))) bad.push(`${birth} ${cal} ${gender}: 대운 방향이 두 계산에서 다름`);
+  }
+  return n;
 });
 
 check('음력 윤달: 한국천문연구원 기준 (2012년 윤3월 · 2017년 윤5월)', (bad) => {

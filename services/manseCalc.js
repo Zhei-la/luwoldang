@@ -28,9 +28,10 @@ const 궁합분석 = engine['궁합분석'];
 
 const pad = (n) => String(n).padStart(2, '0');
 
-/** '여'/'여성'/'female' → 'female', 나머지는 'male' */
+/** '여'/'여성'/'female'/'F' → 'female', 나머지는 'male'
+ *  ⚠️ calcSaju(manseryeok.js)의 genderOf 와 같은 규칙이어야 대운 방향이 두 계산에서 같다 */
 function toGender(g) {
-  return /여|female|f/i.test(String(g || '')) ? 'female' : 'male';
+  return /여|female|^f$/i.test(String(g || '').trim()) ? 'female' : 'male';
 }
 
 /**
@@ -54,7 +55,11 @@ function 입력과보정(c) {
     hour = tp[0]; minute = tp[1]; hourUnknown = false;
   }
 
-  const isLunar = c.calendar === '음력';
+  /* 신청자 달력 값은 '양력' · '음력' · '윤달' 셋이다. 리포트 쪽은 lead.calendar 를 그대로 넘기므로
+     '윤달'도 음력(윤달)으로 읽어야 한다. 예전에는 '음력'만 음력으로 봐서 윤달 신청자를 양력 날짜로 계산했다
+     (PDF 만세력 장·리포트 글쓰기에 넘기는 명식이 다른 사람의 사주였다). */
+  const isLunar = /음력|윤달/.test(String(c.calendar || ''));
+  const isLeap = !!c.isLeapMonth || /윤/.test(String(c.calendar || ''));
 
   /* 시간을 아는 경우에만 보정한다. 시간을 모르면 시주를 안 쓰므로 보정 자체가 의미 없다.
    *   지역시   — 루월당과 똑같은 값으로 한 번만. 지역을 넣고 지역시를 켰을 때만.
@@ -68,7 +73,7 @@ function 입력과보정(c) {
     /* 서머타임은 양력 날짜로 판정한다. 바꿀 수 없는 날짜는 서머타임일 수도 없으니
        그냥 넘긴다 — 날짜 오류는 예전처럼 엔진이 낸다. */
     try {
-      const s = isLunar ? lunarToSolar(y, mo, d, !!c.isLeapMonth) : { year: y, month: mo, day: d };
+      const s = isLunar ? lunarToSolar(y, mo, d, isLeap) : { year: y, month: mo, day: d };
       dst = isDST(`${s.year}-${pad(s.month)}-${pad(s.day)}`, hour, minute);
     } catch (e) {
       dst = false;
@@ -78,7 +83,7 @@ function 입력과보정(c) {
   return {
     info: {
       year: y, month: mo, day: d, hour, minute,
-      isLunar, isLeapMonth: !!c.isLeapMonth,
+      isLunar, isLeapMonth: isLunar && isLeap,
       gender: toGender(c.gender),
       hourUnknown,
       correctionMinutes: engineLocal,

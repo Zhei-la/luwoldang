@@ -84,6 +84,15 @@ function parseHour(h) {
     return hhmm(hh, mm);
   }
 
+  // 0-0) 오전/오후 + 콜론 시각 ('오후 2:30', 'PM 2:30') — 오후를 버리고 02:30 으로 읽지 않게 먼저 본다
+  const ampm = str.match(/^(오전|오후|AM|PM)\s*(\d{1,2}):(\d{2})$/i);
+  if (ampm) {
+    let hh = Number(ampm[2]);
+    if (/오후|PM/i.test(ampm[1]) && hh < 12) hh += 12;
+    if (/오전|AM/i.test(ampm[1]) && hh === 12) hh = 0;
+    return hhmm(hh, Number(ampm[3]));
+  }
+
   // 0-1) 숫자 네 자리 ('1100') — 만세력 계산기 입력 형식
   if (/^\d{4}$/.test(str)) return hhmm(Number(str.slice(0, 2)), Number(str.slice(2)));
 

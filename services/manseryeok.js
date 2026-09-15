@@ -270,7 +270,8 @@ function calcSaju(o) {
     minute: timeKnown ? mm : 0,
     hourUnknown: !timeKnown,
     isLunar: false, isLeapMonth: false,
-    gender: (gender === '남' || gender === 'male') ? 'male' : 'female',
+    /* 성별 규칙은 manseCalc.toGender 와 같다 — '남성'을 여성으로 읽으면 대운 방향이 PDF 만세력 장과 갈린다 */
+    gender: /여|female|^f$/i.test(String(gender || '').trim()) ? 'female' : 'male',
     correctionMinutes: timeKnown && useLocalSolarTime ? regionMinutes135(region) : 0,
     birthRegionLabel: region,
   }, 'jasi', '미적용', {});
