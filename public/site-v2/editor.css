@@ -1,4 +1,4 @@
-/* 자동 생성 — ruwoldang-site 저장소 build 202609151057 */
+/* 자동 생성 — ruwoldang-site 저장소 build 202609151110 */
 /* 관리자 화면 — 훑어보고 조작하는 화면이라 정보 밀도를 높인다 */
 .admin { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; background: var(--ground); }
 @media (max-width: 860px) { .admin { grid-template-columns: minmax(0, 1fr); } }

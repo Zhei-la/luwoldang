@@ -1,4 +1,4 @@
-/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151057 */
+/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151110 */
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -13737,7 +13737,59 @@ var LUCKY_CARDS = [
   { name: "\uC0C8\uBCBD \uC774\uC2AC", message: "\uC544\uCE68 \uC2DC\uAC04\uC744 \uC7A1\uC73C\uBA74 \uD558\uB8E8 \uC804\uCCB4\uAC00 \uAC00\uBCBC\uC6CC\uC838\uC694." },
   { name: "\uC740\uBE5B \uC5F4\uC1E0", message: "\uC624\uB798 \uB9C9\uD600 \uC788\uB358 \uC77C\uC758 \uC2E4\uB9C8\uB9AC\uAC00 \uC0AC\uB78C\uC744 \uD1B5\uD574 \uD480\uB824\uC694." },
   { name: "\uB530\uB73B\uD55C \uCC28", message: "\uC624\uB298\uC740 \uB098\uB97C \uCC59\uAE30\uB294 \uAC8C \uAC00\uC7A5 \uC0DD\uC0B0\uC801\uC778 \uC77C\uC774\uC5D0\uC694." },
-  { name: "\uB4F1\uBD88", message: "\uB204\uAD70\uAC00\uC5D0\uAC8C \uAC74\uB128 \uC791\uC740 \uB3C4\uC6C0\uC774 \uB098\uC911\uC5D0 \uD06C\uAC8C \uB3CC\uC544\uC640\uC694." }
+  { name: "\uB4F1\uBD88", message: "\uB204\uAD70\uAC00\uC5D0\uAC8C \uAC74\uB128 \uC791\uC740 \uB3C4\uC6C0\uC774 \uB098\uC911\uC5D0 \uD06C\uAC8C \uB3CC\uC544\uC640\uC694." },
+  { name: "\uD480\uB9B0 \uB9E4\uB4ED", message: "\uC624\uB798 \uAF2C\uC5EC \uC788\uB358 \uAD00\uACC4\uC5D0\uC11C \uBA3C\uC800 \uD55C\uB9C8\uB514 \uAC74\uB124\uBA74 \uC2A4\uB974\uB974 \uD480\uB824\uC694." },
+  { name: "\uBC18\uCBE4 \uCC2C \uB2EC", message: "\uC644\uBCBD\uD558\uAC8C \uC900\uBE44\uB420 \uB54C\uAE4C\uC9C0 \uAE30\uB2E4\uB9AC\uC9C0 \uB9C8\uC138\uC694. \uC808\uBC18\uC774\uBA74 \uC2DC\uC791\uD558\uAE30 \uCDA9\uBD84\uD574\uC694." },
+  { name: "\uCCAB\uB208", message: "\uCC98\uC74C \uD574\uBCF4\uB294 \uC77C\uC5D0 \uC6B4\uC774 \uBD99\uC5B4\uC694. \uC775\uC219\uD558\uC9C0 \uC54A\uC740 \uC120\uD0DD\uC744 \uD558\uB098 \uD574\uBCF4\uC138\uC694." },
+  { name: "\uBD04\uBE44", message: "\uC870\uAE09\uD574\uD558\uC9C0 \uC54A\uC544\uB3C4 \uB3FC\uC694. \uC624\uB298 \uBFCC\uB9B0 \uC791\uC740 \uB178\uB825\uC774 \uCC9C\uCC9C\uD788 \uC2A4\uBA70\uB4E4\uC5B4\uC694." },
+  { name: "\uB098\uCE68\uBC18", message: "\uAC08\uB9BC\uAE38\uC5D0\uC11C\uB294 \uB9C8\uC74C\uC774 \uBA3C\uC800 \uD3B8\uC548\uD574\uC9C0\uB294 \uCABD\uC774 \uC624\uB298\uC758 \uC815\uB2F5\uC774\uC5D0\uC694." },
+  { name: "\uD3B8\uC9C0 \uBD09\uD22C", message: "\uD558\uACE0 \uC2F6\uB358 \uB9D0\uC744 \uAE00\uB85C \uC801\uC5B4\uBCF4\uC138\uC694. \uB9D0\uBCF4\uB2E4 \uB354 \uC798 \uC804\uD574\uC838\uC694." },
+  { name: "\uB4F1\uB300", message: "\uB204\uAD70\uAC00 \uAE38\uC744 \uBB3C\uC5B4\uC624\uBA74 \uC544\uB294 \uB9CC\uD07C \uC54C\uB824\uC8FC\uC138\uC694. \uADF8 \uC778\uC5F0\uC774 \uC624\uB798 \uAC00\uC694." },
+  { name: "\uB3CC\uB2E4\uB9AC", message: "\uD655\uC2E4\uD574 \uBCF4\uC774\uB294 \uC77C\uB3C4 \uD55C \uBC88 \uB354 \uB450\uB4DC\uB824 \uBCF4\uBA74 \uC2E4\uC218\uB97C \uB9C9\uC544\uC694." },
+  { name: "\uC740\uD589\uC78E", message: "\uC9C0\uB098\uAC04 \uC77C\uC744 \uC815\uB9AC\uD558\uAE30 \uC88B\uC740 \uB0A0\uC774\uC5D0\uC694. \uBC84\uB9B4 \uAC83 \uD558\uB098\uB97C \uACE8\uB77C\uBCF4\uC138\uC694." },
+  { name: "\uC0C8 \uACF5\uCC45", message: "\uC0C8\uB85C\uC6B4 \uACC4\uD68D\uC744 \uC801\uC5B4\uB450\uBA74 \uC774\uBC88\uC5D0\uB294 \uB05D\uAE4C\uC9C0 \uC774\uC5B4\uAC08 \uD798\uC774 \uC0DD\uACA8\uC694." },
+  { name: "\uB530\uB73B\uD55C \uC190", message: "\uB3C4\uC6C0\uC744 \uBC1B\uB294 \uAC74 \uBD80\uB044\uB7EC\uC6B4 \uC77C\uC774 \uC544\uB2C8\uC5D0\uC694. \uC624\uB298\uC740 \uD3B8\uD558\uAC8C \uBD80\uD0C1\uD574\uBCF4\uC138\uC694." },
+  { name: "\uBC24\uD558\uB298 \uBCC4", message: "\uB2F9\uC7A5 \uB208\uC5D0 \uBCF4\uC774\uC9C0 \uC54A\uC544\uB3C4 \uC313\uC774\uACE0 \uC788\uB294 \uAC8C \uC788\uC5B4\uC694. \uD558\uB358 \uAC78 \uBA48\uCD94\uC9C0 \uB9C8\uC138\uC694." },
+  { name: "\uC791\uC740 \uC528\uC557", message: "5\uBD84\uC9DC\uB9AC \uC2B5\uAD00 \uD558\uB098\uAC00 \uD55C \uB2EC \uB4A4\uC758 \uB098\uB97C \uBC14\uAFD4\uC694. \uC624\uB298 \uC2DC\uC791\uD574\uBCF4\uC138\uC694." },
+  { name: "\uB9D1\uC740 \uAC70\uC6B8", message: "\uB0A8\uC758 \uB9D0\uBCF4\uB2E4 \uB0B4 \uB9C8\uC74C\uC744 \uBA3C\uC800 \uB4E4\uC5EC\uB2E4\uBCF4\uBA74 \uB2F5\uC774 \uC120\uBA85\uD574\uC838\uC694." },
+  { name: "\uBD80\uB4DC\uB7EC\uC6B4 \uBC14\uB78C", message: "\uD798\uC744 \uBE7C\uACE0 \uD750\uB984\uC5D0 \uB9E1\uAE30\uBA74 \uC624\uD788\uB824 \uC77C\uC774 \uC27D\uAC8C \uD480\uB9AC\uB294 \uB0A0\uC774\uC5D0\uC694." },
+  { name: "\uB465\uADFC \uBCF4\uB984\uB2EC", message: "\uAE30\uB2E4\uB9AC\uB358 \uC18C\uC2DD\uC774 \uAC00\uAE4C\uC6CC\uC84C\uC5B4\uC694. \uC624\uB294 \uC5F0\uB77D\uC744 \uB193\uCE58\uC9C0 \uC54A\uAC8C \uCC59\uAE30\uC138\uC694." },
+  { name: "\uC624\uC194\uAE38", message: "\uC0AC\uB78C \uB9CE\uC740 \uAE38\uBCF4\uB2E4 \uC870\uC6A9\uD55C \uAE38\uC5D0\uC11C \uC88B\uC740 \uC0DD\uAC01\uC774 \uB5A0\uC62C\uB77C\uC694." },
+  { name: "\uCD1B\uBD88", message: "\uD55C \uC0AC\uB78C\uC5D0\uAC8C \uB9C8\uC74C\uC744 \uC4F0\uB294 \uB0A0\uC774\uC5D0\uC694. \uAC00\uAE4C\uC6B4 \uC0AC\uB78C\uC744 \uBA3C\uC800 \uCC59\uACA8\uC8FC\uC138\uC694." },
+  { name: "\uBAA8\uB798\uC2DC\uACC4", message: "\uB9C8\uAC10\uC774 \uC788\uB294 \uC77C\uBD80\uD130 \uB05D\uB0B4\uBA74 \uB0A8\uC740 \uD558\uB8E8\uAC00 \uD55C\uACB0 \uC5EC\uC720\uB85C\uC6CC\uC838\uC694." },
+  { name: "\uBB3C\uB808\uBC29\uC544", message: "\uB3C8\uC740 \uB3CC\uC544\uC57C \uB4E4\uC5B4\uC640\uC694. \uD544\uC694\uD55C \uACF3\uC5D0 \uAE30\uBD84 \uC88B\uAC8C \uC4F0\uBA74 \uB418\uB3CC\uC544\uC640\uC694." },
+  { name: "\uBD89\uC740 \uC2E4", message: "\uC6B0\uC5F0\uD788 \uB9C8\uC8FC\uCE5C \uC0AC\uB78C\uC774 \uB098\uC911\uC5D0 \uC911\uC694\uD55C \uC778\uC5F0\uC774 \uB420 \uC218 \uC788\uC5B4\uC694." },
+  { name: "\uC27C\uD45C", message: "\uC7A0\uAE50 \uBA48\uCDB0 \uC26C\uB294 \uC2DC\uAC04\uC774 \uC624\uB298 \uAC00\uC7A5 \uC88B\uC740 \uC544\uC774\uB514\uC5B4\uB97C \uB370\uB824\uC640\uC694." },
+  { name: "\uC0C8\uBCBD \uC885", message: "\uC77C\uCC0D \uC6C0\uC9C1\uC778 \uB9CC\uD07C \uAE30\uD68C\uB97C \uBA3C\uC800 \uC7A1\uB294 \uB0A0\uC774\uC5D0\uC694." },
+  { name: "\uD30C\uB780 \uB300\uBB38", message: "\uC0C8\uB85C\uC6B4 \uACF3\uC5D0 \uBC1C\uC744 \uB4E4\uC774\uBA74 \uBC18\uAC00\uC6B4 \uC0AC\uB78C\uC744 \uB9CC\uB098\uC694." },
+  { name: "\uAC70\uBD81\uC774", message: "\uB290\uB824\uB3C4 \uAD1C\uCC2E\uC544\uC694. \uAFB8\uC900\uD788 \uAC00\uB294 \uCABD\uC774 \uACB0\uAD6D \uBA40\uB9AC \uAC00\uC694." },
+  { name: "\uD770 \uAE43\uD138", message: "\uAC00\uBCCD\uAC8C \uC6C3\uC5B4\uB118\uAE30\uBA74 \uBCC4\uC77C \uC544\uB2CC \uC77C\uC774 \uB9CE\uC544\uC694. \uC624\uB298\uC740 \uB9C8\uC74C\uC744 \uAC00\uBCCD\uAC8C \uB450\uC138\uC694." },
+  { name: "\uAE08\uBE5B \uB3D9\uC804", message: "\uC791\uC740 \uB3C8\uC744 \uC544\uB080 \uC120\uD0DD\uC774 \uC0DD\uAC01\uBCF4\uB2E4 \uD070 \uC5EC\uC720\uB85C \uB3CC\uC544\uC640\uC694." },
+  { name: "\uC0B0\uB9C8\uB8E8", message: "\uC870\uAE08\uB9CC \uB354 \uAC00\uBA74 \uBCF4\uC774\uB294 \uD48D\uACBD\uC774 \uC788\uC5B4\uC694. \uD3EC\uAE30\uD558\uAE30\uC5D4 \uC774\uB978 \uB0A0\uC774\uC5D0\uC694." },
+  { name: "\uC5F0\uAF43", message: "\uBCF5\uC7A1\uD55C \uC0C1\uD669 \uC18D\uC5D0\uC11C\uB3C4 \uB0B4 \uC790\uB9AC\uB97C \uC9C0\uD0A4\uBA74 \uC624\uD788\uB824 \uB3CB\uBCF4\uC5EC\uC694." },
+  { name: "\uC30D\uBB34\uC9C0\uAC1C", message: "\uC88B\uC740 \uC77C\uC774 \uACB9\uCCD0 \uC624\uB294 \uB0A0\uC774\uC5D0\uC694. \uAE30\uC05C \uC18C\uC2DD\uC740 \uD568\uAED8 \uB098\uB204\uC138\uC694." },
+  { name: "\uC639\uB2EC\uC0D8", message: "\uC9C0\uCE5C \uB9C8\uC74C\uC744 \uCC44\uC6B0\uB294 \uAC8C \uBA3C\uC800\uC608\uC694. \uC88B\uC544\uD558\uB294 \uC74C\uC2DD \uD55C \uAC00\uC9C0\uB97C \uCC59\uACA8 \uB4DC\uC138\uC694." },
+  { name: "\uC624\uB798\uB41C \uC0AC\uC9C4", message: "\uC61B \uCE5C\uAD6C\uC5D0\uAC8C \uC548\uBD80\uB97C \uC804\uD558\uBA74 \uB73B\uBC16\uC758 \uBC18\uAC00\uC6B4 \uC18C\uC2DD\uC744 \uB4E4\uC5B4\uC694." },
+  { name: "\uB098\uBB34 \uADF8\uB298", message: "\uC624\uB298\uC740 \uC55E\uC5D0 \uB098\uC11C\uAE30\uBCF4\uB2E4 \uD55C \uAC78\uC74C \uB4A4\uC5D0\uC11C \uC9C0\uCF1C\uBCF4\uB294 \uAC8C \uC774\uB4DD\uC774\uC5D0\uC694." },
+  { name: "\uBC18\uB527\uBD88", message: "\uC791\uC740 \uCE6D\uCC2C \uD55C\uB9C8\uB514\uAC00 \uB204\uAD70\uAC00\uC758 \uD558\uB8E8\uB97C \uD658\uD558\uAC8C \uBC1D\uD600\uC694." },
+  { name: "\uC794\uC794\uD55C \uD638\uC218", message: "\uAC10\uC815\uC774 \uCD9C\uB801\uC77C \uB54C\uB294 \uB300\uB2F5\uC744 \uBBF8\uB8E8\uC138\uC694. \uAC00\uB77C\uC549\uC73C\uBA74 \uAE38\uC774 \uBCF4\uC5EC\uC694." },
+  { name: "\uD65C\uC9DD \uC5F0 \uCC3D", message: "\uCC3D\uBB38\uC744 \uC5F4\uB4EF \uC8FC\uBCC0\uC744 \uC815\uB9AC\uD558\uBA74 \uB9C9\uD614\uB358 \uC0DD\uAC01\uC774 \uD480\uB824\uC694." },
+  { name: "\uB2EC\uBE5B \uC0B0\uCC45", message: "\uC800\uB141\uC5D0 \uC7A0\uAE50 \uAC77\uB294 \uC2DC\uAC04\uC5D0 \uACE0\uBBFC\uC758 \uC2E4\uB9C8\uB9AC\uAC00 \uD480\uB824\uC694." },
+  { name: "\uC57D\uC18D \uBC18\uC9C0", message: "\uC9C0\uD0A4\uAE30\uB85C \uD55C \uC791\uC740 \uC57D\uC18D \uD558\uB098\uAC00 \uC2E0\uB8B0\uB97C \uD06C\uAC8C \uC313\uC544\uC694." },
+  { name: "\uD574\uBC14\uB77C\uAE30", message: "\uBC1D\uC740 \uCABD\uC744 \uBC14\uB77C\uBCF4\uBA74 \uC88B\uC740 \uC0AC\uB78C\uC774 \uBAA8\uC5EC\uC694. \uC624\uB298\uC740 \uBA3C\uC800 \uC6C3\uC5B4\uBCF4\uC138\uC694." },
+  { name: "\uC18C\uB098\uBB34", message: "\uD754\uB4E4\uB9AC\uC9C0 \uC54A\uACE0 \uB0B4 \uC6D0\uCE59\uC744 \uC9C0\uD0A4\uBA74 \uACB0\uAD6D \uC778\uC815\uBC1B\uC544\uC694." },
+  { name: "\uC870\uC57D\uB3CC", message: "\uD06C\uACE0 \uC5B4\uB824\uC6B4 \uBAA9\uD45C\uBCF4\uB2E4 \uC624\uB298 \uD560 \uC218 \uC788\uB294 \uC791\uC740 \uD55C \uAC00\uC9C0\uC5D0 \uC9D1\uC911\uD558\uC138\uC694." },
+  { name: "\uBC00\uBB3C", message: "\uB4E4\uC5B4\uC624\uB294 \uAE30\uC6B4\uC774 \uAC15\uD55C \uB0A0\uC774\uC5D0\uC694. \uC81C\uC548\uC774 \uC624\uBA74 \uAE0D\uC815\uC801\uC73C\uB85C \uC0B4\uD3B4\uBCF4\uC138\uC694." },
+  { name: "\uC370\uBB3C", message: "\uB0B4\uB824\uB193\uC744\uC218\uB85D \uAC00\uBCBC\uC6CC\uC9C0\uB294 \uB0A0\uC774\uC5D0\uC694. \uBB34\uB9AC\uD55C \uC695\uC2EC\uC740 \uC7A0\uC2DC \uC811\uC5B4\uB450\uC138\uC694." },
+  { name: "\uB465\uC9C0", message: "\uC9D1\uC744 \uB3CC\uBCF4\uB294 \uC77C\uC5D0 \uC6B4\uC774 \uB530\uB77C\uC694. \uAC00\uC871\uACFC \uB530\uB73B\uD55C \uC2DC\uAC04\uC744 \uBCF4\uB0B4\uC138\uC694." },
+  { name: "\uC885\uC774\uBC30", message: "\uBD80\uB2F4 \uC5C6\uC774 \uB744\uC6CC\uBCF8 \uC2DC\uB3C4\uAC00 \uB73B\uBC16\uC758 \uACF3\uC5D0 \uB2FF\uC544\uC694." },
+  { name: "\uB9E4\uD654", message: "\uCD94\uC6B4 \uC2DC\uAE30\uC77C\uC218\uB85D \uBA3C\uC800 \uD53C\uC5B4\uB098\uB294 \uC0AC\uB78C\uC774 \uB3FC\uC694. \uAE30\uC8FD\uC9C0 \uB9C8\uC138\uC694." },
+  { name: "\uB2EC\uBB34\uB9AC", message: "\uD750\uB984\uC774 \uBC14\uB00C\uB294 \uC791\uC740 \uC2E0\uD638\uAC00 \uBCF4\uC5EC\uC694. \uC0AC\uC18C\uD55C \uBCC0\uD654\uC5D0 \uADC0 \uAE30\uC6B8\uC774\uC138\uC694." },
+  { name: "\uC0C8 \uC2E0\uBC1C", message: "\uC0C8\uB85C\uC6B4 \uACF3\uC73C\uB85C \uD55C \uAC78\uC74C \uB0B4\uB51B\uAE30 \uC88B\uC740 \uB0A0\uC774\uC5D0\uC694. \uBBF8\uB904\uB454 \uBC29\uBB38\uC744 \uD574\uBCF4\uC138\uC694." },
+  { name: "\uBAA8\uB2E5\uBD88", message: "\uC0AC\uB78C\uB4E4\uACFC \uB458\uB7EC\uC549\uC544 \uC774\uC57C\uAE30\uD558\uBA74 \uD798\uC774 \uB098\uB294 \uB0A0\uC774\uC5D0\uC694." },
+  { name: "\uD669\uAE08 \uC5F4\uB9E4", message: "\uADF8\uB3D9\uC548 \uACF5\uB4E4\uC778 \uC77C\uC5D0\uC11C \uC791\uC740 \uACB0\uC2E4\uC744 \uD655\uC778\uD558\uAC8C \uB3FC\uC694." },
+  { name: "\uC740\uD558\uC218", message: "\uD06C\uAC8C \uAFC8\uAFD4\uB3C4 \uAD1C\uCC2E\uC740 \uB0A0\uC774\uC5D0\uC694. \uD558\uACE0 \uC2F6\uC740 \uC77C\uC744 \uB9C8\uC74C\uAECF \uC801\uC5B4\uBCF4\uC138\uC694." },
+  { name: "\uCD08\uC2B9\uB2EC", message: "\uC2DC\uC791\uC740 \uAC00\uB298\uC5B4\uB3C4 \uC810\uC810 \uCC28\uC624\uB974\uB294 \uC6B4\uC774\uC5D0\uC694. \uC624\uB298 \uCCAB\uAC78\uC74C\uC744 \uB5BC\uC138\uC694." }
 ];
 
 // lib/regions.ts
@@ -15475,6 +15527,7 @@ function ReportSample({ brand = "\uC0AC\uC8FC", coverImage = "", coverText = tru
 // components/Extras.tsx
 var import_react7 = __toESM(require_react());
 var import_jsx_runtime11 = __toESM(require_jsx_runtime());
+var SEEN_KEY = "rw_lucky_seen";
 function LuckyCard() {
   const [card, setCard] = (0, import_react7.useState)(null);
   const [ready, setReady] = (0, import_react7.useState)(false);
@@ -15490,10 +15543,23 @@ function LuckyCard() {
   }, [key]);
   const draw = () => {
     if (card !== null) return;
-    const idx = Math.floor(Math.random() * LUCKY_CARDS.length);
+    const all = LUCKY_CARDS.map((_, i) => i);
+    let seen = [];
+    try {
+      const raw = JSON.parse(localStorage.getItem(SEEN_KEY) || "[]");
+      if (Array.isArray(raw)) seen = raw.filter((n) => Number.isInteger(n) && n >= 0 && n < LUCKY_CARDS.length);
+    } catch {
+    }
+    let pool = all.filter((i) => !seen.includes(i));
+    if (!pool.length) {
+      seen = seen.slice(-1);
+      pool = all.filter((i) => !seen.includes(i));
+    }
+    const idx = pool[Math.floor(Math.random() * pool.length)];
     setCard(idx);
     try {
       localStorage.setItem(key, String(idx));
+      localStorage.setItem(SEEN_KEY, JSON.stringify([...seen, idx]));
     } catch {
     }
   };
@@ -15507,7 +15573,11 @@ function LuckyCard() {
         /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: c?.message ?? "" })
       ] })
     ] }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { style: { fontSize: 13.5, color: "var(--muted)", margin: "10px 0 0" }, children: "\uD558\uB8E8\uC5D0 \uD55C \uC7A5, \uC790\uC815\uC774 \uC9C0\uB098\uBA74 \uB2E4\uC2DC \uBF51\uC744 \uC218 \uC788\uC5B4\uC694." })
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("p", { style: { fontSize: 13.5, color: "var(--muted)", margin: "10px 0 0" }, children: [
+      "\uD558\uB8E8\uC5D0 \uD55C \uC7A5, \uC790\uC815\uC774 \uC9C0\uB098\uBA74 \uB2E4\uC2DC \uBF51\uC744 \uC218 \uC788\uC5B4\uC694. \uCE74\uB4DC ",
+      LUCKY_CARDS.length,
+      "\uC7A5\uC744 \uB2E4 \uBCFC \uB54C\uAE4C\uC9C0 \uAC19\uC740 \uCE74\uB4DC\uB294 \uB098\uC624\uC9C0 \uC54A\uC544\uC694."
+    ] })
   ] });
 }
 var MOODS = [
@@ -15897,7 +15967,7 @@ function ApplyForm({ initialProduct, products, base = "" }) {
   const [applicant, setApplicant] = (0, import_react8.useState)({ name: "", phone: "", email: "", depositor: "", question: "" });
   const [persons, setPersons] = (0, import_react8.useState)([emptyPerson(), emptyPerson()]);
   const [relation, setRelation] = (0, import_react8.useState)("\uC5F0\uC778");
-  const [consents, setConsents] = (0, import_react8.useState)({ privacy: false, refund: false, marketing: false });
+  const [consents, setConsents] = (0, import_react8.useState)({ privacy: false, refund: false });
   const [step, setStep] = (0, import_react8.useState)("form");
   const [errors, setErrors] = (0, import_react8.useState)({});
   const [sending, setSending] = (0, import_react8.useState)(false);
@@ -16111,12 +16181,7 @@ function ApplyForm({ initialProduct, products, base = "" }) {
             /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("a", { href: `${base}/policy#refund`, target: "_blank", children: "\uD658\uBD88 \uADDC\uC815" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(Err, { k: "refund" }),
-        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("label", { className: "check", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("input", { type: "checkbox", checked: consents.marketing, onChange: (e) => setConsents({ ...consents, marketing: e.target.checked }) }),
-          " ",
-          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "[\uC120\uD0DD] \uC0C8 \uB9AC\uD3EC\uD2B8\uC640 \uD560\uC778 \uC18C\uC2DD\uC744 \uBC1B\uC744\uAC8C\uC694." })
-        ] })
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(Err, { k: "refund" })
       ] }),
       Object.keys(errors).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("p", { className: "form-error", role: "alert", children: "\uC785\uB825\uD558\uC9C0 \uC54A\uC740 \uD56D\uBAA9\uC774 \uC788\uC5B4\uC694. \uBE68\uAC04 \uC548\uB0B4\uB97C \uD655\uC778\uD574\uC8FC\uC138\uC694." }),
       /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("button", { className: "btn btn-primary", type: "submit", style: { width: "100%" }, children: "\uC785\uB825 \uB0B4\uC6A9 \uD655\uC778\uD558\uAE30" })
@@ -16211,7 +16276,7 @@ function PolicyView({ cfg }) {
     /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("ul", { children: [
       /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uD544\uC218: \uC2E0\uCCAD\uC790 \uC774\uB984, \uC804\uD654\uBC88\uD638, \uC774\uBA54\uC77C, \uC785\uAE08\uC790\uBA85" }),
       /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uD544\uC218: \uD480\uC774 \uB300\uC0C1\uC790\uC758 \uC774\uB984, \uC131\uBCC4, \uC0DD\uB144\uC6D4\uC77C, \uC591\uB825\xB7\uC74C\uB825, \uD0DC\uC5B4\uB09C \uC2DC\uAC04(\uC120\uD0DD \uAC00\uB2A5), \uD0DC\uC5B4\uB09C \uC9C0\uC5ED" }),
-      /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uC120\uD0DD: \uAD81\uAE08\uD55C \uC810, \uC0C8 \uC18C\uC2DD \uBC1B\uAE30 \uB3D9\uC758" })
+      /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("li", { children: "\uC120\uD0DD: \uAD81\uAE08\uD55C \uC810" })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("h2", { children: "\uC774\uC6A9 \uBAA9\uC801\uACFC \uBCF4\uAD00 \uAE30\uAC04" }),
     /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { children: [
@@ -16628,7 +16693,7 @@ function renderPage(kind, cfg, opts = {}) {
       return { html: (0, import_server.renderToString)(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Landing, { cfg })), title: `${brand} \u2014 ${cfg.brand.tagline}`, description: fill(cfg.hero.lede, cfg) };
   }
 }
-var BUILD_ID = "202609151057";
+var BUILD_ID = "202609151110";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BUILD_ID,

@@ -369,7 +369,6 @@ publicRouter.post('/:slug/api/orders', async (req, res, next) => {
       if (!p.region) memo.push(`${who}태어난 지역: ${p.regionText}`);
     });
     if (cut(a.question, 500)) memo.push('궁금한 점: ' + cut(a.question, 500));
-    memo.push(`새 소식 받기 동의: ${body.consents.marketing ? '예' : '아니오'}`);
 
     const [p1, p2] = P;
     const { rows } = await pool.query(
