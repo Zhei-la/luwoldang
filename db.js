@@ -161,6 +161,9 @@ async function initDb() {
   // 지역시(진태양시) 보정 사용 여부.
   // 기본 TRUE = 종전 동작 그대로. 체크를 풀면 표준시(시계 시각) 그대로 계산한다.
   await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS use_local_time BOOLEAN DEFAULT TRUE;`);
+  /* 특이사항 — 신청 경로·입금자·시간 모름처럼 손님 질문이 아닌 안내.
+     memo(묻고 싶은 것)는 리포트의 질문 답변 장에 쓰이므로 질문만 둔다. 통합 사이트 신청이 쓴다. */
+  await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS note TEXT;`);
 
   // 제작한 PDF (내담자별)
   await pool.query(`

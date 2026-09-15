@@ -66,6 +66,30 @@ async function init() {
     );
   }
   await reload();
+  try {
+    await splitOldMemos();
+  } catch (e) {
+    console.error('[통합 사이트] 예전 신청 메모 나누기 실패:', e.message);
+  }
+}
+
+/* 특이사항 칸이 생기기 전에 들어온 통합 사이트 신청은 메모 한 칸에 모든 줄이 섞여 있다.
+ * 「궁금한 점: 」 뒤는 묻고 싶은 것(memo)으로, 그 앞줄은 특이사항(note)으로 나눈다.
+ * 새 소식 받기 동의 줄은 더 이상 받지 않으므로 버린다. 나눈 뒤에는 앞머리가 바뀌어 다시 걸리지 않는다. */
+async function splitOldMemos() {
+  const { rows } = await pool.query(
+    `SELECT id, memo FROM leads WHERE note IS NULL AND memo LIKE '통합 사이트 ·%'`
+  );
+  for (const r of rows) {
+    const lines = String(r.memo).split('\n').filter((l) => !/^새 소식 받기 동의:/.test(l));
+    const qi = lines.findIndex((l) => l.startsWith('궁금한 점: '));
+    const noteLines = qi >= 0 ? lines.slice(0, qi) : lines;
+    const question = qi >= 0
+      ? [lines[qi].slice('궁금한 점: '.length)].concat(lines.slice(qi + 1)).join('\n').trim()
+      : '';
+    await pool.query('UPDATE leads SET memo = $1, note = $2 WHERE id = $3',
+      [question || null, noteLines.join('\n') || null, r.id]);
+  }
 }
 
 /** 켜진 아이디의 교육생. 켜지지 않은 아이디는 DB 를 부르지도 않는다. */
@@ -358,30 +382,33 @@ publicRouter.post('/:slug/api/orders', async (req, res, next) => {
     const phone = digits.length === 11 ? digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7) : digits;
     const productText = `${product.name} (${v2.won(product.price)})`;
 
-    const memo = [
+    /* 「묻고 싶은 것」(memo)에는 손님이 남긴 질문만 넣는다.
+       이 칸에 글이 있으면 리포트에 질문 답변 장이 붙기 때문에, 질문이 없으면 비워둔다.
+       신청 경로·입금자·시간 모름 같은 나머지는 특이사항(note)에 따로 남긴다. */
+    const question = cut(a.question, 500) || null;
+    const note = [
       `통합 사이트 · ${cfg.brand.name} 리포트 신청`,
       `신청자 ${cut(a.name, 60)} · 입금자 ${cut(a.depositor, 60)}`,
     ];
-    if (product.love) memo.push(`관계: ${body.relation === '배우자' ? '배우자' : '연인'}`);
+    if (product.love) note.push(`관계: ${body.relation === '배우자' ? '배우자' : '연인'}`);
     P.forEach((p, i) => {
       const who = i === 0 ? '' : '상대방 ';
-      if (!p.hour) memo.push(`${who}태어난 시간 모름`);
-      if (!p.region) memo.push(`${who}태어난 지역: ${p.regionText}`);
+      if (!p.hour) note.push(`${who}태어난 시간 모름`);
+      if (!p.region) note.push(`${who}태어난 지역: ${p.regionText}`);
     });
-    if (cut(a.question, 500)) memo.push('궁금한 점: ' + cut(a.question, 500));
 
     const [p1, p2] = P;
     const { rows } = await pool.query(
       `INSERT INTO leads (teacher_id, name, gender, birth, calendar, hour, region,
                           phone, email, product, memo, status, source, recruiter,
                           partner_name, partner_gender, partner_birth, partner_hour,
-                          partner_calendar, partner_region, use_local_time)
+                          partner_calendar, partner_region, use_local_time, note)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'접수완료','상담신청',$12,
-               $13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+               $13,$14,$15,$16,$17,$18,$19,$20) RETURNING id`,
       [t.id, p1.name, p1.gender, p1.birth, p1.calendar, p1.hour || null, p1.region || null,
-       phone, cut(a.email, 120), productText, memo.join('\n'), t.slug,
+       phone, cut(a.email, 120), productText, question, t.slug,
        p2 ? p2.name : null, p2 ? p2.gender : null, p2 ? p2.birth : null, p2 ? (p2.hour || null) : null,
-       p2 ? p2.calendar : null, p2 ? (p2.region || null) : null, !!p1.region]
+       p2 ? p2.calendar : null, p2 ? (p2.region || null) : null, !!p1.region, note.join('\n')]
     );
     const id = rows[0].id;
 

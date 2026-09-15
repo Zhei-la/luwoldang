@@ -85,6 +85,13 @@
     </div>
   <% } %>
 
+  <% if (lead.note && String(lead.note).trim()) { %>
+    <!-- 특이사항 — 손님 질문이 아닌 신청 안내 (통합 사이트: 신청 경로·입금자·시간 모름 등). 리포트에는 들어가지 않는다 -->
+    <div class="acc-row col"><span>특이사항</span>
+      <div class="memo-box" style="white-space:pre-line;background:#faf8f2;color:#5c5140"><%= lead.note %></div>
+    </div>
+  <% } %>
+
   <!-- 연인궁합 · 재회운용 상대방 정보 -->
   <div class="acc-row col"><span>상대방 정보</span>
     <% if (lead.partner_birth) { %>
