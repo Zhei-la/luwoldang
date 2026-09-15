@@ -1,0 +1,10 @@
+<%# 서머타임이란? — 생시 칸 옆 「서머타임이란? ⓘ」 를 누르면 펼친다(views/dash/manse.ejs).
+    문구와 기간은 services/dstCorrection.js 의 서머타임기본안내() 에서 온다. id 는 버튼의 aria-controls 와 짝이다. %>
+<% if (typeof guide !== 'undefined' && guide) { %>
+<div class="dst-guide" id="<%= id %>" hidden>
+  <b class="dst-guide-title">서머타임이란?</b>
+  <% guide.lines.forEach(function (line) { %><p><%= line %></p><% }); %>
+  <p class="dst-guide-sub">시행 기간 (당시 시계 기준)</p>
+  <ul><% guide.periods.forEach(function (p) { %><li><%= p %></li><% }); %></ul>
+</div>
+<% } %>

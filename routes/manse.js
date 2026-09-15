@@ -18,7 +18,7 @@ const router = express.Router();
 const { requireAuth, requireApproved } = require('../middleware/auth');
 const engine = require('../services/cbEngine');
 /* 엔진은 서머타임을 모른다. 넘기기 직전에 얹고, 엔진이 적은 보정 문구를 바로잡는다. */
-const { 서머타임반영, 보정문구, 서머타임안내 } = require('../services/dstCorrection');
+const { 서머타임반영, 보정문구, 서머타임안내, 서머타임기본안내 } = require('../services/dstCorrection');
 const { REGIONS } = require('../services/cbRegions');
 const pool = require('../db').pool;
 
@@ -47,7 +47,8 @@ router.get('/manse', async (req, res) => {
       console.error('[만세력] 신청자 불러오기 실패:', e.message);
     }
   }
-  res.render('dash/manse', { user: req.user, active: 'manse', prefill });
+  /* dstGuide: 생시 칸 옆 「서머타임이란? ⓘ」 에 펼칠 기본 설명 (입력 전에도 본다) */
+  res.render('dash/manse', { user: req.user, active: 'manse', prefill, dstGuide: 서머타임기본안내() });
 });
 
 /* ── 지역 목록 (진태양시 보정분 포함) ── */

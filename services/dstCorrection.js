@@ -54,7 +54,7 @@ function 서머타임반영(info) {
  * 보정 내역만 「(서머타임 -60분, 지역시 -23분)」 으로 적으면 손님은 왜 시각이 바뀌었는지 모른다.
  * 서머타임 구간 태생에게만 이유를 적어 준다. 아니면 null.
  * 「이 시기」 는 구간 목록(DST_PERIODS)에서 이어진 해끼리 묶어 뽑는다 — 1948~1951 · 1955~1960 · 1987~1988 */
-function 시행기간(year) {
+function 시행연도구간() {
   const years = [...new Set(DST_PERIODS.map((p) => Number(String(p[0]).slice(0, 4))))].sort((a, b) => a - b);
   const runs = [];
   for (const y of years) {
@@ -62,9 +62,32 @@ function 시행기간(year) {
     if (last && y === last[1] + 1) last[1] = y;
     else runs.push([y, y]);
   }
-  const r = runs.find(([a, b]) => year >= a && year <= b);
-  if (!r) return `${year}년`;
-  return r[0] === r[1] ? `${r[0]}년` : `${r[0]}~${r[1]}년`;
+  return runs;
+}
+const 연도구간글 = ([a, b]) => (a === b ? `${a}년` : `${a}~${b}년`);
+
+function 시행기간(year) {
+  const r = 시행연도구간().find(([a, b]) => year >= a && year <= b);
+  return r ? 연도구간글(r) : `${year}년`;
+}
+
+/* ── 서머타임이란? (입력 전에도 보는 기본 설명) ──
+ * 만세력 계산기 생시 칸 옆 「서머타임이란? ⓘ」 를 누르면 펼친다. 생년월일과 상관없이 늘 같은 내용이다.
+ * 연도와 기간 목록은 구간 목록(DST_PERIODS)에서 만든다 — 목록을 따로 적어두면 둘이 어긋난다. */
+const 시각라벨 = (s) => {
+  const [date, time] = String(s).split(' ');
+  return `${date.split('-').map(Number).join('.')} ${time}`;
+};
+function 서머타임기본안내() {
+  return {
+    lines: [
+      '여름철에 시계를 실제 시각보다 1시간 앞당겨 쓰던 제도입니다.',
+      `우리나라는 ${시행연도구간().map(연도구간글).join(', ')}의 일부 기간에 시행했습니다.`,
+      '이 기간에 태어나셨다면 기록된 출생 시각이 실제보다 1시간 앞서 있어, 1시간을 빼고 사주를 계산합니다.',
+      '생년월일과 태어난 시각을 넣으면 해당 여부를 자동으로 확인해 반영합니다.',
+    ],
+    periods: DST_PERIODS.map(([a, b]) => `${시각라벨(a)} ~ ${시각라벨(b)}`),
+  };
 }
 
 /** @returns {string[]|null} 줄 단위 안내 문구 (화면에서 줄바꿈으로 잇는다) */
@@ -104,4 +127,4 @@ function 보정문구(out, x) {
   return Object.assign({}, out, { text: 바꾸기(out.text), pdfHtml: 바꾸기(out.pdfHtml), colorHtml: 바꾸기(out.colorHtml) });
 }
 
-module.exports = { 서머타임반영, 보정문구, 서머타임안내 };
+module.exports = { 서머타임반영, 보정문구, 서머타임안내, 서머타임기본안내 };

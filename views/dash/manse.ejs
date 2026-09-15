@@ -244,9 +244,20 @@
 #manse-app .corr-note { margin:7px 0 0; font-size:12px; line-height:1.75; color:#8A8574; }
 #manse-app .corr-note b { color:#4A4438; }
 /* 서머타임 설명 — 보정 문구 옆 ⓘ 를 누르면 아래로 펼친다. 둘 다 표 이미지 저장에서는 빠진다(data-html2canvas-ignore) */
-#manse-app .dst-i { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; min-width:0; min-height:0; margin:0 0 0 6px; padding:0; border:1px solid #C9B27A; border-radius:50%; background:#FFFBEF; color:#8A6F3C; font-size:12px; font-weight:700; line-height:1; vertical-align:middle; cursor:pointer; box-shadow:none; }
-#manse-app .dst-i:hover { border-color:#8A6F3C; }
-#manse-app .dst-i[aria-expanded="true"] { background:#8A6F3C; border-color:#8A6F3C; color:#fff; }
+/* 「서머타임 적용 ⓘ」 — 검은 글상자·흰 표머리 어디에 붙어도 눈에 띄게 금색 바탕 */
+#manse-app .dst-i { display:inline-flex; align-items:center; gap:4px; width:auto; height:22px; min-width:0; min-height:0; margin:0 0 0 8px; padding:0 10px; border:1px solid #8A6F3C; border-radius:999px; background:#A6844B; color:#fff; font-family:inherit; font-size:12px; font-weight:700; line-height:1; white-space:nowrap; vertical-align:middle; cursor:pointer; box-shadow:none; }
+#manse-app .dst-i:hover { background:#8A6F3C; }
+#manse-app .dst-i[aria-expanded="true"] { background:#6F5830; border-color:#6F5830; }
+/* 「서머타임이란? ⓘ」 — 생시 칸 옆, 입력 전에도 늘 보인다 */
+#manse-app .label-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+#manse-app .dst-guide-btn { display:inline-flex; align-items:center; gap:3px; width:auto; min-width:0; min-height:0; margin:0; padding:1px 8px; border:1px solid #C9B27A; border-radius:999px; background:#FFFBEF; color:#8A6F3C; font-family:inherit; font-size:11.5px; font-weight:700; line-height:1.5; white-space:nowrap; cursor:pointer; box-shadow:none; }
+#manse-app .dst-guide-btn:hover, #manse-app .dst-guide-btn[aria-expanded="true"] { background:#A6844B; border-color:#A6844B; color:#fff; }
+#manse-app .dst-guide { margin:6px 0 2px; padding:10px 12px; border:1px solid #E6D9B8; border-radius:8px; background:#FFFBEF; font-size:12.5px; line-height:1.7; color:#4A4438; white-space:normal; }
+#manse-app .dst-guide[hidden] { display:none; }
+#manse-app .dst-guide p { margin:0 0 4px; }
+#manse-app .dst-guide-title { display:block; margin-bottom:4px; font-size:13px; color:#6F5830; }
+#manse-app .dst-guide-sub { margin-top:8px !important; font-weight:700; color:#6F5830; }
+#manse-app .dst-guide ul { margin:0; padding-left:18px; font-variant-numeric:tabular-nums; }
 #manse-app .dst-panel { display:block; margin:6px 0 8px; padding:9px 12px; border:1px solid #E6D9B8; border-radius:8px; background:#FFFBEF; font-family:inherit; font-size:12.5px; line-height:1.75; color:#4A4438; white-space:normal; text-align:left; }
 #manse-app .dst-panel[hidden] { display:none; }
 #manse-app .corr-chk { display:flex; align-items:center; gap:6px; margin-top:6px;
@@ -389,8 +400,9 @@
         </select>
       </div>
       <div class="field">
-        <label for="time">생시</label>
+        <div class="label-row"><label for="time">생시</label><button type="button" class="dst-guide-btn" aria-controls="dstGuide" aria-expanded="false">서머타임이란? ⓘ</button></div>
         <input type="text" id="time" inputmode="numeric" maxlength="4" placeholder="HHMM">
+        <%- include('../partials/dst-guide', { id: 'dstGuide', guide: typeof dstGuide !== 'undefined' ? dstGuide : null }) %>
       </div>
       <div class="field or-field">
         <span class="or-text">또는</span>
@@ -505,8 +517,9 @@
           </select>
         </div>
         <div class="field">
-          <label for="p1_time">생시</label>
+          <div class="label-row"><label for="p1_time">생시</label><button type="button" class="dst-guide-btn" aria-controls="p1_dstGuide" aria-expanded="false">서머타임이란? ⓘ</button></div>
           <input type="text" id="p1_time" inputmode="numeric" maxlength="4" placeholder="HHMM">
+          <%- include('../partials/dst-guide', { id: 'p1_dstGuide', guide: typeof dstGuide !== 'undefined' ? dstGuide : null }) %>
         </div>
         <div class="field or-field">
           <span class="or-text">또는</span>
@@ -580,8 +593,9 @@
           </select>
         </div>
         <div class="field">
-          <label for="p2_time">생시</label>
+          <div class="label-row"><label for="p2_time">생시</label><button type="button" class="dst-guide-btn" aria-controls="p2_dstGuide" aria-expanded="false">서머타임이란? ⓘ</button></div>
           <input type="text" id="p2_time" inputmode="numeric" maxlength="4" placeholder="HHMM">
+          <%- include('../partials/dst-guide', { id: 'p2_dstGuide', guide: typeof dstGuide !== 'undefined' ? dstGuide : null }) %>
         </div>
         <div class="field or-field">
           <span class="or-text">또는</span>
@@ -1119,9 +1133,9 @@ function dstInfoButton(idx) {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'dst-i';
-  b.textContent = 'ⓘ';
+  b.textContent = '서머타임 적용 ⓘ';
   b.title = '왜 1시간을 뺐나요?';
-  b.setAttribute('aria-label', '서머타임 보정 설명 보기');
+  b.setAttribute('aria-label', '서머타임 적용 — 설명 보기');
   b.setAttribute('aria-expanded', 'false');
   b.setAttribute('data-html2canvas-ignore', 'true');
   b.dataset.dstIdx = String(idx);
@@ -1215,6 +1229,18 @@ resultDiv.addEventListener('click', (e) => {
   const open = btn.getAttribute('aria-expanded') !== 'true';
   resultDiv.querySelectorAll('.dst-i[data-dst-idx="' + idx + '"]').forEach((b) => b.setAttribute('aria-expanded', String(open)));
   resultDiv.querySelectorAll('.dst-panel[data-dst-idx="' + idx + '"]').forEach((p) => { p.hidden = !open; });
+});
+
+// 생시 칸 옆 「서머타임이란? ⓘ」 — 누르면 그 칸 아래 기본 설명을 펼치고, 한 번 더 누르면 접는다.
+// 입력 전에도 보는 설명이라 결과와 상관없이 늘 동작한다.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.dst-guide-btn');
+  if (!btn) return;
+  const panel = document.getElementById(btn.getAttribute('aria-controls'));
+  if (!panel) return;
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', String(open));
+  panel.hidden = !open;
 });
 
 // PDF용 표·컬러 표 천간·지지 칸의 한자 아래 한글 발음(pdf-hanja-sub) 표시 토글.
