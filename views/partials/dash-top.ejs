@@ -116,7 +116,7 @@
           { key: 'leads',   href: '/leads',              label: '사주 신청자' },
           { key: 'pdf',     href: '/pdf/create',         label: 'PDF 만들기' },
           { key: 'chat',    href: '/chat',               label: '내담자 추가질문' },
-          { key: 'reviews', href: '/reviews',            label: '후기' },
+          { key: 'reviews', href: '/reviews',            label: '후기', v2hide: true },
           { key: 'covers',  href: '/covers',             label: 'PDF 표지 꾸미기' },
           { key: 'records', href: '/records',            label: 'PDF · 이메일 발송 기록' },
           { key: 'settings',href: '/free-saju-settings', label: '무료사주 · API 설정' },
@@ -124,7 +124,8 @@
           { key: 'account', href: '/account',            label: '내 계정' }
         ];
       %>
-      <% menu.forEach(function (m) { %>
+      <% /* 통합 사이트가 켜진 계정은 v2hide 메뉴(후기)를 감춘다 */ %>
+      <% menu.filter(function (m) { return !(m.v2hide && typeof siteV2On === 'function' && siteV2On(user.slug)); }).forEach(function (m) { %>
         <a href="<%= m.href %>" class="nav-item <%= active === m.key ? 'active' : '' %>"><%= m.label %></a>
       <% }); %>
 

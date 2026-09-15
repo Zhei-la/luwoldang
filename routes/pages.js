@@ -83,17 +83,24 @@ router.post('/free-saju-settings', async (req, res, next) => {
             bank_name, bank_account, bank_holder, bank_notice,
             msite_theme } = req.body;
 
+    /* 화면에 없던 칸은 기존 값을 그대로 둔다.
+       통합 사이트가 켜진 계정은 만세력 색 · 하루 정원 · 리포트 후기 칸이 화면에 없어서,
+       없는 칸을 빈값으로 저장하면 예전 설정이 지워진다. */
+    const has = (k) => Object.prototype.hasOwnProperty.call(req.body, k);
+
     /* 만세력 하루 정원 — 남은 자리·할인 안내 */
-    await pool.query('UPDATE users SET msite_limit = $1 WHERE id = $2', [
-      JSON.stringify(msiteQuota.clean({
-        on: req.body.q_on,
-        cap: req.body.q_cap,
-        seed: req.body.q_seed,
-        discount: req.body.q_discount,
-        full: req.body.q_full,
-      })),
-      req.user.id,
-    ]);
+    if (has('q_cap')) {
+      await pool.query('UPDATE users SET msite_limit = $1 WHERE id = $2', [
+        JSON.stringify(msiteQuota.clean({
+          on: req.body.q_on,
+          cap: req.body.q_cap,
+          seed: req.body.q_seed,
+          discount: req.body.q_discount,
+          full: req.body.q_full,
+        })),
+        req.user.id,
+      ]);
+    }
 
     // 무료 PDF 업셀 설정 (프리미엄 안내 · Q&A · 후기 이미지 · 할인 문구)
     if (promo_json) {
@@ -126,7 +133,12 @@ router.post('/free-saju-settings', async (req, res, next) => {
     const local = String(mail_local || '').toLowerCase().replace(/[^a-z0-9._-]/g, '') || null;
 
     // 체크박스: 체크하면 'on' 이 넘어오고, 안 하면 아예 안 넘어온다
-    const reviewOn = req.body.review_on != null;
+    // 리포트 후기 칸이 화면에 없었으면(통합 사이트 계정) 세 값 모두 기존 값을 둔다
+    const reviewShown = has('review_link');
+    const reviewOn = reviewShown ? req.body.review_on != null : req.user.review_on;
+    const reviewNotice = reviewShown ? ((review_notice || '').trim() || null) : req.user.review_notice;
+    const reviewLink = reviewShown ? ((review_link || '').trim() || null) : req.user.review_link;
+    const themeValue = has('msite_theme') ? msiteTheme.clean(msite_theme) : req.user.msite_theme;
 
     await pool.query(
       `UPDATE users
@@ -139,13 +151,13 @@ router.post('/free-saju-settings', async (req, res, next) => {
       [site_name || null, kakao_consult_link || null, consult_message || null, button_text || null,
        local, (mail_name || '').trim() || null, (mail_reply || '').trim() || null,
        (pdf_cta_text || '').trim() || null, (pdf_cta_desc || '').trim() || null, reviewOn,
-       (review_notice || '').trim() || null,
+       reviewNotice,
        (bank_name || '').trim() || null,
        (bank_account || '').trim() || null,
        (bank_holder || '').trim() || null,
        (bank_notice || '').trim() || null,
-       (review_link || '').trim() || null,
-       msiteTheme.clean(msite_theme),
+       reviewLink,
+       themeValue,
        req.user.id]
     );
 

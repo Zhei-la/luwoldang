@@ -112,6 +112,7 @@
 
 <!-- 설정 폼 -->
 <form method="post" action="/free-saju-settings" class="settings-form">
+<% if (!v2on) { /* 통합 사이트 계정은 예전 만세력 페이지의 색·하루 정원을 쓰지 않는다 */ %>
 <div class="settings-block">
   <h2 class="section-h">무료 만세력 색</h2>
   <p class="block-desc">위 링크로 열리는 페이지의 색입니다.
@@ -188,6 +189,7 @@
     <br>정원이 찬 뒤 들어온 신청에는 <b>할인이 붙지 않습니다.</b>
   </p>
 </div>
+<% } %>
 
 <style>
   .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:14px 0 4px}
@@ -408,6 +410,7 @@
     <p class="hint">직접 입력하거나 칸을 클릭해 예시 중 선택할 수 있습니다.</p>
   </div>
 
+  <% if (!v2on) { /* 통합 사이트 계정은 리포트 후기 받기 칸을 두지 않는다 */ %>
   <div class="settings-block">
     <h2 class="section-h">리포트 후기 받기
       <% if (user.review_link) { %><span class="key-ok">사용 중 ✓</span><% } %>
@@ -431,6 +434,7 @@
     </datalist>
     <p class="hint">후기 작성란 위에 눈에 띄게 표시됩니다. 후기를 남길 이유를 만들어주면 훨씬 많이 작성합니다.</p>
   </div>
+  <% } %>
 
   <div class="settings-block">
     <h2 class="section-h">PDF 마지막 페이지 · 추가질문 버튼</h2>
@@ -458,6 +462,7 @@
     <p class="hint">줄바꿈이 그대로 반영됩니다.</p>
   </div>
 
+  <% if (!v2on) { /* 통합 사이트 계정은 무료사주 PDF(AI)를 쓰지 않는다 */ %>
   <!-- ===== 무료사주 PDF — 뒷장 안내 페이지 ===== -->
   <div class="settings-block">
     <h2 class="section-h">무료사주 PDF 뒷장 (상담 유도 페이지)</h2>
@@ -552,6 +557,7 @@
 
     <input type="hidden" name="promo_json" id="promoJson">
   </div>
+  <% } %>
 
   <button class="free-save-btn" type="submit">설정 저장</button>
 </form>
