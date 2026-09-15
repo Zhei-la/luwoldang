@@ -1,4 +1,4 @@
-/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151049 */
+/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151057 */
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -14127,6 +14127,11 @@ function SajuTab({ shared, singlePrice }) {
       /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "report-cta", children: [
         /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "read-label", children: "30\uCABD \uB9AC\uD3EC\uD2B8" }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "\uC5EC\uAE30\uAE4C\uC9C0\uAC00 \uBB34\uB8CC \uD480\uC774\uC608\uC694. \uB9AC\uD3EC\uD2B8\uC5D0\uC11C\uB294 \uD55C \uAD8C\uC73C\uB85C \uC774\uC5B4\uC11C \uD480\uC5B4\uB4DC\uB824\uC694" }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { style: { margin: 0, color: "var(--night-muted)" }, children: [
+          "30\uCABD \uB9AC\uD3EC\uD2B8\uB294 \uC790\uB3D9\uC73C\uB85C \uB9CC\uB4E0 \uAE00\uC774 \uC544\uB2C8\uB77C, ",
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("b", { style: { color: "var(--night-ink)" }, children: "\uBA85\uB9AC\uD559\uC790\uAC00 \uC9C1\uC811 \uC0AC\uC8FC\uB97C \uBD84\uC11D\uD574 \uC791\uC131\uD55C \uBD84\uC11D\uC9C0" }),
+          "\uB97C \uBCF4\uB0B4\uB4DC\uB824\uC694."
+        ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("ul", { children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("li", { children: "\uAC89\uC73C\uB85C \uBCF4\uC774\uB294 \uB098\uC640 \uC18D\uC758 \uB098" }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("li", { children: "\uB300\uC6B4 10\uB144\uC529, \uC778\uC0DD\uC758 \uACC4\uC808 \uD480\uC774" }),
@@ -16623,7 +16628,7 @@ function renderPage(kind, cfg, opts = {}) {
       return { html: (0, import_server.renderToString)(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Landing, { cfg })), title: `${brand} \u2014 ${cfg.brand.tagline}`, description: fill(cfg.hero.lede, cfg) };
   }
 }
-var BUILD_ID = "202609151049";
+var BUILD_ID = "202609151057";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BUILD_ID,
