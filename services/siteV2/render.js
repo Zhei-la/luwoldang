@@ -1,4 +1,4 @@
-/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151258 */
+/* 자동 생성 파일 — 고치지 말고 ruwoldang-site 저장소에서 scripts/build-ruwoldang.mjs 로 다시 만든다. build 202609151323 */
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -13411,11 +13411,11 @@ var GROUP_TOP = {
   \uC778\uC131: "\uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4(\uC778\uC131)\uC774 \uAC00\uC7A5 \uB9CE\uC544 \uBC30\uC6B0\uACE0 \uC0DD\uAC01\uD558\uB294 \uD798, \uB3C4\uC6C0\uC744 \uBC1B\uB294 \uBCF5\uC774 \uC788\uC5B4\uC694."
 };
 var GROUP_ZERO = {
-  \uBE44\uAC81: "\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC774 \uC5C6\uC5B4 \uD63C\uC790 \uBC84\uD2F0\uAE30\uBCF4\uB2E4 \uBBFF\uC744 \uB9CC\uD55C \uC0AC\uB78C\uACFC \uD798\uC744 \uD569\uCE60 \uB54C \uC88B\uC544\uC694.",
-  \uC2DD\uC0C1: "\uD45C\uD604\uD558\uB294 \uAE30\uC6B4\uC774 \uC5C6\uC5B4 \uC18D\uB9C8\uC74C\uC744 \uB9D0\uB85C \uAEBC\uB0B4\uB294 \uC5F0\uC2B5\uC774 \uB3C4\uC6C0\uC774 \uB3FC\uC694.",
-  \uC7AC\uC131: "\uB2E4\uC2A4\uB9AC\uB294 \uAE30\uC6B4\uC774 \uC5C6\uC5B4 \uB3C8 \uAD00\uB9AC\uB294 \uC790\uB3D9\uC774\uCCB4\uCC98\uB7FC \uD2C0\uC744 \uB9CC\uB4E4\uC5B4\uB450\uBA74 \uD3B8\uD574\uC694.",
-  \uAD00\uC131: "\uB2E4\uB4EC\uB294 \uAE30\uC6B4\uC774 \uC5C6\uC5B4 \uC2A4\uC2A4\uB85C \uB9C8\uAC10\uACFC \uADDC\uCE59\uC744 \uC815\uD574\uB450\uBA74 \uD750\uB984\uC774 \uC7A1\uD600\uC694.",
-  \uC778\uC131: "\uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4\uC774 \uC5C6\uC5B4 \uC26C\uB294 \uC2DC\uAC04\uACFC \uBC30\uC6C0\uC758 \uC2DC\uAC04\uC744 \uC758\uC2DD\uC801\uC73C\uB85C \uCC59\uAE30\uBA74 \uC88B\uC544\uC694."
+  \uBE44\uAC81: "\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4\uC774 \uAC89\uAE00\uC790\uC5D0 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544 \uD63C\uC790 \uBC84\uD2F0\uAE30\uBCF4\uB2E4 \uBBFF\uC744 \uB9CC\uD55C \uC0AC\uB78C\uACFC \uD798\uC744 \uD569\uCE60 \uB54C \uC88B\uC544\uC694.",
+  \uC2DD\uC0C1: "\uD45C\uD604\uD558\uB294 \uAE30\uC6B4\uC774 \uAC89\uAE00\uC790\uC5D0 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544 \uC18D\uB9C8\uC74C\uC744 \uB9D0\uB85C \uAEBC\uB0B4\uB294 \uC5F0\uC2B5\uC774 \uB3C4\uC6C0\uC774 \uB3FC\uC694.",
+  \uC7AC\uC131: "\uB2E4\uC2A4\uB9AC\uB294 \uAE30\uC6B4\uC774 \uAC89\uAE00\uC790\uC5D0 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544 \uB3C8 \uAD00\uB9AC\uB294 \uC790\uB3D9\uC774\uCCB4\uCC98\uB7FC \uD2C0\uC744 \uB9CC\uB4E4\uC5B4\uB450\uBA74 \uD3B8\uD574\uC694.",
+  \uAD00\uC131: "\uB2E4\uB4EC\uB294 \uAE30\uC6B4\uC774 \uAC89\uAE00\uC790\uC5D0 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544 \uC2A4\uC2A4\uB85C \uB9C8\uAC10\uACFC \uADDC\uCE59\uC744 \uC815\uD574\uB450\uBA74 \uD750\uB984\uC774 \uC7A1\uD600\uC694.",
+  \uC778\uC131: "\uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4\uC774 \uAC89\uAE00\uC790\uC5D0 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544 \uC26C\uB294 \uC2DC\uAC04\uACFC \uBC30\uC6C0\uC758 \uC2DC\uAC04\uC744 \uC758\uC2DD\uC801\uC73C\uB85C \uCC59\uAE30\uBA74 \uC88B\uC544\uC694."
 };
 var MONEY = [
   { title: "\uB3C8\uBCF4\uB2E4 \uC2E4\uB825\uC774 \uBA3C\uC800 \uAC00\uB294 \uC0AC\uC8FC", text: "\uC0AC\uC8FC\uC5D0 \uB3C8\uC744 \uB73B\uD558\uB294 \uAE30\uC6B4(\uC7AC\uC131)\uC774 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544\uC694. \uB3C8\uC744 \uC887\uAE30\uBCF4\uB2E4 \uC2E4\uB825\uACFC \uC774\uB984\uC744 \uC313\uC73C\uBA74 \uB3C8\uC774 \uB4A4\uB530\uB77C\uC624\uB294 \uAD6C\uC870\uC608\uC694. \uC6B4\uC5D0\uC11C \uB3C8\uC758 \uAE30\uC6B4\uC774 \uB4E4\uC5B4\uC624\uB294 \uD574\uC5D0 \uAE30\uD68C\uAC00 \uCEE4\uC838\uC694." },
@@ -13501,6 +13501,7 @@ function buildReading(s, name = "") {
   const maxCount = Math.max(...ELS.map((e) => s.elements[e]));
   const strongs = ELS.filter((e) => s.elements[e] === maxCount);
   const zeros = ELS.filter((e) => s.elements[e] === 0);
+  const hiddenOnly = zeros.filter((e) => (s.strength.elementShares[e] ?? 0) > 0);
   const relNames = s.strength.reasons.filter((x) => x.startsWith("\uAD00\uACC4:") && !x.includes("\uC5C6\uC74C")).map((x) => x.replace(/^관계:\s*/, "").replace(/\(.*$/, "").trim());
   const strength = {
     id: "strength",
@@ -13510,23 +13511,24 @@ function buildReading(s, name = "") {
       gr.text,
       `\uB098\uB97C \uB3D5\uB294 \uD798\uC740 ${s.strength.score}%\uC608\uC694(\uB098\uC640 \uAC19\uC740 \uAE30\uC6B4 ${sh.\uBE44\uAC81}% \xB7 \uBC1B\uCCD0\uC8FC\uB294 \uAE30\uC6B4 ${sh.\uC778\uC131}%). \uD0DC\uC5B4\uB09C \uB2EC\uC774 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uB839) ${ox(s.strength.deukryeong)}, \uB0B4\uAC00 \uC549\uC740 \uC790\uB9AC\uAC00 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uC9C0) ${ox(s.strength.deukji)}, \uB098\uBA38\uC9C0 \uAE00\uC790\uB4E4\uC774 \uB098\uB97C \uB3D5\uB294\uC9C0(\uB4DD\uC138) ${ox(s.strength.deukse)}\uC5D0 \uB354\uD574 \uBFCC\uB9AC\uAC00 \uC788\uB294\uC9C0\uC640 \uACC4\uC808\uC758 \uC138\uAE30\uAE4C\uC9C0 \uBAA8\uB450 \uBC18\uC601\uD55C \uBE44\uC728\uC774\uC5D0\uC694.${s.pillars.hour ? "" : " \uD0DC\uC5B4\uB09C \uC2DC\uAC04\uC744 \uBAB0\uB77C \uC138 \uAE30\uB465\uC73C\uB85C \uD310\uB2E8\uD588\uC5B4\uC694."}`,
       relNames.length ? `\uAE00\uC790\uB07C\uB9AC\uC758 \uD569\xB7\uCDA9\uB3C4 \uD798\uC5D0 \uBC18\uC601\uD588\uC5B4\uC694(${relNames.join(", ")}).` : "",
-      (strongs.length === 1 ? `\uB2E4\uC12F \uAE30\uC6B4 \uC911 \uAC00\uC7A5 \uB9CE\uC740 \uAC74 ${EL_PLAIN[strongs[0]]}(${maxCount}\uAC1C)\uC608\uC694. ${EL_STRONG[strongs[0]]}` : `\uB2E4\uC12F \uAE30\uC6B4 \uC911 ${strongs.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC774 ${maxCount}\uAC1C\uC529\uC73C\uB85C \uAC00\uC7A5 \uB9CE\uC544\uC694.`) + (zeros.length ? ` ${zeros.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC740 \uC5C6\uC5B4\uC694. ${EL_MISSING[zeros[0]]}` : " \uB2E4\uC12F \uAE30\uC6B4\uC774 \uBAA8\uB450 \uC788\uC5B4 \uD06C\uAC8C \uBE44\uB294 \uACF3\uC774 \uC5C6\uC5B4\uC694.")
+      `\uAC89\uC73C\uB85C \uB4DC\uB7EC\uB09C ${s.pillars.hour ? "\uC5EC\uB35F" : "\uC5EC\uC12F"} \uAE00\uC790\uB85C \uC138\uBA74 ` + (strongs.length === 1 ? `\uAC00\uC7A5 \uB9CE\uC740 \uAC74 ${EL_PLAIN[strongs[0]]}(${maxCount}\uAC1C)\uC608\uC694. ${EL_STRONG[strongs[0]]}` : `${strongs.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC774 ${maxCount}\uAC1C\uC529\uC73C\uB85C \uAC00\uC7A5 \uB9CE\uC544\uC694.`) + (zeros.length ? ` ${zeros.map((e) => EL_PLAIN[e]).join("\xB7")}\uC758 \uAE30\uC6B4\uC740 \uAC89\uAE00\uC790\uC5D0 \uB4DC\uB7EC\uB098 \uC788\uC9C0 \uC54A\uC544\uC694. ${EL_MISSING[zeros[0]]}` : " \uB2E4\uC12F \uAE30\uC6B4\uC774 \uBAA8\uB450 \uAC89\uAE00\uC790\uC5D0 \uC788\uC5B4 \uD06C\uAC8C \uBE44\uB294 \uACF3\uC774 \uC5C6\uC5B4\uC694."),
+      hiddenOnly.length ? `\uC704\uC758 \uD798 \uBE44\uC728\uC740 \uC9C0\uC9C0 \uC18D\uC5D0 \uC228\uC740 \uAE00\uC790(\uC9C0\uC7A5\uAC04)\uC640 \uACC4\uC808\uC758 \uC601\uD5A5\uAE4C\uC9C0 \uB123\uC5B4 \uACC4\uC0B0\uD574\uC11C, \uAC89\uAE00\uC790\uC5D0 \uC5C6\uB294 ${hiddenOnly.map((e) => `${EL_PLAIN[e]}(${s.strength.elementShares[e]}%)`).join("\xB7")}\uC758 \uAE30\uC6B4\uB3C4 \uC870\uAE08 \uC7A1\uD600\uC694.` : ""
     ].filter(Boolean)
   };
   const season = ["\uACA8\uC6B8", "\uACA8\uC6B8", "\uBD04", "\uBD04", "\uBD04", "\uC5EC\uB984", "\uC5EC\uB984", "\uC5EC\uB984", "\uAC00\uC744", "\uAC00\uC744", "\uAC00\uC744", "\uACA8\uC6B8"][s.pillars.month.ji];
   const yongsin = {
     id: "yongsin",
-    label: "\uB098\uB97C \uB3D5\uB294 \uAE30\uC6B4",
-    title: `${J(EL_PLAIN[y.\uC6A9\uC2E0], "\uC774\uAC00")} \uB098\uB97C \uB3C4\uC640\uC694`,
+    label: "\uAC00\uC7A5 \uD544\uC694\uD55C \uAE30\uC6B4",
+    title: `${EL_PLAIN[y.\uC6A9\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uADE0\uD615\uC744 \uB9DE\uCDB0\uC694`,
     body: [
       `\uC0AC\uC8FC \uC804\uCCB4\uC758 \uADE0\uD615\uC744 \uB9DE\uCD94\uB294 \uB370 \uAC00\uC7A5 \uD544\uC694\uD55C \uAE30\uC6B4\uC744 \uC6A9\uC2E0\uC774\uB77C\uACE0 \uD574\uC694. ${nm}\uC5D0\uAC8C\uB294 ${EL_PLAIN[y.\uC6A9\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uC6A9\uC2E0\uC774\uACE0, \uACC1\uC5D0\uC11C \uD798\uC744 \uBCF4\uD0DC\uB294 \uAE30\uC6B4(\uD76C\uC2E0)\uC740 ${J(EL_PLAIN[y.\uD76C\uC2E0], "\uC774\uC5D0\uC694\uC608\uC694")}.`,
       YONG_WHY[y.method] ?? "",
-      `\uBC18\uB300\uB85C \uB118\uCE58\uBA74 \uADE0\uD615\uC744 \uD754\uB4DC\uB294 \uAE30\uC6B4(\uAE30\uC2E0)\uC740 ${J(EL_PLAIN[y.\uAE30\uC2E0], "\uC774\uC5D0\uC694\uC608\uC694")}. \uC774 \uAE30\uC6B4\uC774 \uAC15\uD574\uC9C0\uB294 \uD574\uB098 \uD658\uACBD\uC5D0\uC11C\uB294 \uC18D\uB3C4\uB97C \uB2A6\uCD94\uACE0 \uC26C\uC5B4\uAC00\uBA74 \uC88B\uC544\uC694.`,
+      `\uBC18\uB300\uB85C \uB118\uCE58\uBA74 \uADE0\uD615\uC744 \uD754\uB4DC\uB294 \uAE30\uC6B4(\uAE30\uC2E0)\uC740 ${J(EL_PLAIN[y.\uAE30\uC2E0], "\uC774\uC5D0\uC694\uC608\uC694")}. \uC774 \uAE30\uC6B4\uC774 \uACFC\uB3C4\uD574\uC9C8 \uB54C\uB294 \uBC29\uD5A5\uC774 \uD754\uB4E4\uB9B4 \uC218 \uC788\uC5B4\uC694.`,
       y.method.startsWith("\uC870\uD6C4") ? `\uD0DC\uC5B4\uB09C \uACC4\uC808(${season})\uC5D0\uB294 ${J(EL_PLAIN[s.johu.main], "\uC774\uAC00")} \uC788\uC5B4\uC57C \uAE30\uC6B4\uC758 \uC628\uB3C4\uAC00 \uC54C\uB9DE\uC544\uC838\uC11C, \uC774 \uAE30\uC6B4\uC744 \uC6A9\uC2E0\uC73C\uB85C \uACE8\uB790\uC5B4\uC694.` : `\uD0DC\uC5B4\uB09C \uACC4\uC808(${season})\uB85C \uBCF4\uBA74 ${J(EL_PLAIN[s.johu.main], "\uC774\uAC00")} \uC788\uC5B4\uC57C \uAE30\uC6B4\uC758 \uC628\uB3C4\uAC00 \uC54C\uB9DE\uC544\uC838\uC694.` + (s.johu.main === y.\uC6A9\uC2E0 ? " \uADE0\uD615\uC73C\uB85C \uBD10\uB3C4, \uACC4\uC808\uB85C \uBD10\uB3C4 \uAC19\uC740 \uAE30\uC6B4\uC774 \uD544\uC694\uD574 \uB354 \uBD84\uBA85\uD574\uC694." : s.johu.main === y.\uD76C\uC2E0 ? " \uD798\uC744 \uBCF4\uD0DC\uB294 \uAE30\uC6B4\uACFC \uAC19\uC544 \uCC59\uAE38\uC218\uB85D \uC88B\uC544\uC694." : "")
     ].filter(Boolean)
   };
   const tips = [
-    { el: y.\uC6A9\uC2E0, role: "\uB098\uB97C \uB3D5\uB294 \uAE30\uC6B4", ...EL_TIP[y.\uC6A9\uC2E0] },
+    { el: y.\uC6A9\uC2E0, role: "\uADE0\uD615\uC744 \uB9DE\uCD94\uB294 \uAE30\uC6B4", ...EL_TIP[y.\uC6A9\uC2E0] },
     { el: y.\uD76C\uC2E0, role: "\uD798\uC744 \uBCF4\uD0DC\uB294 \uAE30\uC6B4", ...EL_TIP[y.\uD76C\uC2E0] }
   ];
   const order = ["\uBE44\uAC81", "\uC2DD\uC0C1", "\uC7AC\uC131", "\uAD00\uC131", "\uC778\uC131"];
@@ -14167,7 +14169,11 @@ function JudgeBasis({ s }) {
         " \xB7 ",
         s.yongsin.method
       ] }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("ul", { style: { margin: 0, paddingLeft: 18 }, children: s.yongsin.reasons.map((x) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: x }, x)) })
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("ul", { style: { margin: 0, paddingLeft: 18 }, children: s.yongsin.reasons.map((x) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: x }, x)) }),
+      s.strength.rules.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { style: { margin: "8px 0 4px" }, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("b", { children: "\uACC4\uC0B0 \uAE30\uC900" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("ul", { style: { margin: 0, paddingLeft: 18 }, children: s.strength.rules.map((x) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: x }, x)) })
+      ] })
     ] })
   ] });
 }
@@ -14204,9 +14210,11 @@ function SajuTab({ shared, singlePrice }) {
             /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
               /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(ElementLegend, { elements: s.elements }),
               /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { className: "basis", style: { marginTop: 10 }, children: [
-                "\uAD75\uC740 \uD14C\uB450\uB9AC\uAC00 \uB098\uB97C \uB3D5\uB294 ",
+                "\uAD75\uC740 \uD14C\uB450\uB9AC\uB294 \uC804\uCCB4 \uADE0\uD615\uC744 \uB9DE\uCD94\uB294 ",
                 EL_PLAIN[s.helpful],
-                "\uC758 \uAE30\uC6B4\uC774\uC5D0\uC694."
+                "\uC758 \uAE30\uC6B4\uC774\uC5D0\uC694. \uAC1C\uC218\uB294 \uAC89\uC73C\uB85C \uB4DC\uB7EC\uB09C ",
+                s.pillars.hour ? "\uC5EC\uB35F" : "\uC5EC\uC12F",
+                " \uAE00\uC790 \uAE30\uC900\uC774\uC5D0\uC694."
               ] })
             ] })
           ] })
@@ -14272,6 +14280,7 @@ function SajuTab({ shared, singlePrice }) {
           "\uC138"
         ] })
       ] }, d.age)) }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "notice", style: { margin: 0 }, children: "\uD480\uC774\uB294 \uD0C0\uACE0\uB09C \uAD6C\uC131\uC73C\uB85C \uBCF8 \uCC38\uACE0 \uD574\uC11D\uC774\uC5D0\uC694. \uC2E0\uC0B4\xB7\uC5F0\uC560\xB7\uAC74\uAC15\xB7\uD574\uB9C8\uB2E4\uC758 \uD750\uB984\uC740 \uD655\uC815\uB41C \uC608\uCE21\uC774 \uC544\uB2C8\uB2C8 \uD310\uB2E8\uC758 \uD55C \uAC00\uC9C0 \uC790\uB8CC\uB85C\uB9CC \uBD10 \uC8FC\uC138\uC694." }),
       /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "report-cta", children: [
         /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "read-label", children: "30\uCABD \uB9AC\uD3EC\uD2B8" }),
         /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "\uC5EC\uAE30\uAE4C\uC9C0\uAC00 \uBB34\uB8CC \uD480\uC774\uC608\uC694. \uB9AC\uD3EC\uD2B8\uC5D0\uC11C\uB294 \uD55C \uAD8C\uC73C\uB85C \uC774\uC5B4\uC11C \uD480\uC5B4\uB4DC\uB824\uC694" }),
@@ -16562,7 +16571,7 @@ function buildToday(s, date, core, next) {
     return { ji, link, els, w: elW(els[0]) + elW(els[1]) + LINK_W[link] };
   });
   const sorted = [...slots].sort((a, b) => b.w - a.w);
-  const whyGood = (h) => h.link === "hap" || h.link === "samhap" ? "\uB0B4 \uAE30\uC6B4\uACFC \uC190\uC7A1\uB294 \uC2DC\uAC04\uC774\uB77C \uBD80\uD0C1\uC774\uB098 \uB9CC\uB0A8\uC5D0 \uC88B\uC544\uC694" : h.els.includes(y.\uC6A9\uC2E0) ? `\uB098\uB97C \uB3D5\uB294 ${EL_PLAIN[y.\uC6A9\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uB3C4\uB294 \uC2DC\uAC04\uC774\uB77C \uC911\uC694\uD55C \uC77C\uC744 \uB450\uAE30 \uC88B\uC544\uC694` : h.els.includes(y.\uD76C\uC2E0) ? `\uD798\uC744 \uBCF4\uD0DC\uB294 ${EL_PLAIN[y.\uD76C\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uB3C4\uB294 \uC2DC\uAC04\uC774\uC5D0\uC694` : "\uD750\uB984\uC774 \uBB34\uB09C\uD574 \uC9D1\uC911\uD558\uAE30 \uC88B\uC740 \uC2DC\uAC04\uC774\uC5D0\uC694";
+  const whyGood = (h) => h.link === "hap" || h.link === "samhap" ? "\uB0B4 \uAE30\uC6B4\uACFC \uC190\uC7A1\uB294 \uC2DC\uAC04\uC774\uB77C \uBD80\uD0C1\uC774\uB098 \uB9CC\uB0A8\uC5D0 \uC88B\uC544\uC694" : h.els.includes(y.\uC6A9\uC2E0) ? `\uADE0\uD615\uC744 \uB9DE\uCD94\uB294 ${EL_PLAIN[y.\uC6A9\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uB3C4\uB294 \uC2DC\uAC04\uC774\uB77C \uC911\uC694\uD55C \uC77C\uC744 \uB450\uAE30 \uC88B\uC544\uC694` : h.els.includes(y.\uD76C\uC2E0) ? `\uD798\uC744 \uBCF4\uD0DC\uB294 ${EL_PLAIN[y.\uD76C\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uB3C4\uB294 \uC2DC\uAC04\uC774\uC5D0\uC694` : "\uD750\uB984\uC774 \uBB34\uB09C\uD574 \uC9D1\uC911\uD558\uAE30 \uC88B\uC740 \uC2DC\uAC04\uC774\uC5D0\uC694";
   const whyBad = (h) => h.link === "chung" ? "\uB0B4 \uAE30\uC6B4\uACFC \uBD80\uB52A\uD788\uB294 \uC2DC\uAC04\uC774\uB77C \uACB0\uC815\uACFC \uC6B4\uC804\uC740 \uD55C \uBC88 \uB354 \uC870\uC2EC\uD558\uC138\uC694" : h.link === "hyeong" || h.link === "wonjin" ? "\uB9C8\uC74C\uC774 \uB0A0\uCE74\uB85C\uC6CC\uC9C0\uAE30 \uC26C\uC6B4 \uC2DC\uAC04\uC774\uB77C \uB9D0\uC744 \uC544\uB07C\uC138\uC694" : `\uC870\uC2EC\uD560 ${EL_PLAIN[y.\uAE30\uC2E0]}\uC758 \uAE30\uC6B4\uC774 \uAC15\uD55C \uC2DC\uAC04\uC774\uB77C \uBB34\uB9AC\uD55C \uC77C\uC815\uC740 \uD53C\uD558\uC138\uC694`;
   const bestHours = sorted.slice(0, 2).map((h) => ({ ji: h.ji, range: HOUR_RANGE[h.ji], why: whyGood(h) }));
   const worst = sorted[sorted.length - 1];
@@ -16743,6 +16752,8 @@ function calcSaju(input, now = /* @__PURE__ */ new Date()) {
       deukji: c.\uB4DD\uC9C0,
       deukse: c.\uB4DD\uC138,
       reasons: Array.isArray(c.\uC2E0\uAC15\uC57D\uADFC\uAC70) ? c.\uC2E0\uAC15\uC57D\uADFC\uAC70 : [],
+      rules: Array.isArray(c.\uC2E0\uAC15\uC57D\uAE30\uC900) ? c.\uC2E0\uAC15\uC57D\uAE30\uC900 : [],
+      elementShares: Object.fromEntries(ELS.map((e) => [e, Number(c.\uC624\uD589\uC138\uB825?.[e]) || 0])),
       shares: { \uBE44\uAC81: Number(c.\uC138\uB825\uBD84\uD3EC?.\uBE44\uAC81) || 0, \uC778\uC131: Number(c.\uC138\uB825\uBD84\uD3EC?.\uC778\uC131) || 0, \uC2DD\uC0C1: Number(c.\uC138\uB825\uBD84\uD3EC?.\uC2DD\uC0C1) || 0, \uC7AC\uC131: Number(c.\uC138\uB825\uBD84\uD3EC?.\uC7AC\uC131) || 0, \uAD00\uC131: Number(c.\uC138\uB825\uBD84\uD3EC?.\uAD00\uC131) || 0 }
     },
     helpful: toEl(c.\uC6A9\uC2E0),
@@ -16811,7 +16822,7 @@ function renderPage(kind, cfg, opts = {}) {
       return { html: (0, import_server.renderToString)(/* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Landing, { cfg })), title: `${brand} \u2014 ${cfg.brand.tagline}`, description: fill(cfg.hero.lede, cfg) };
   }
 }
-var BUILD_ID = "202609151258";
+var BUILD_ID = "202609151323";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BUILD_ID,

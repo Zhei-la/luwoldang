@@ -434,6 +434,10 @@
         <ul style="margin:0;padding-left:18px"><% (c.신강약근거 || []).forEach(function(x){ %><li><%= x %></li><% }); %></ul>
         <p style="margin:10px 0 4px"><b>용신 <%= c.용신 %></b><% if (c.용신방법) { %> · <%= c.용신방법 %><% } %></p>
         <ul style="margin:0;padding-left:18px"><% (c.용신근거 || []).forEach(function(x){ %><li><%= x %></li><% }); %></ul>
+        <% if (c.신강약기준 && c.신강약기준.length) { %>
+          <p style="margin:10px 0 4px"><b>계산 기준</b></p>
+          <ul style="margin:0;padding-left:18px;color:var(--dim)"><% c.신강약기준.forEach(function(x){ %><li><%= x %></li><% }); %></ul>
+        <% } %>
       </details>
     <% } %>
   </div>
@@ -500,9 +504,14 @@
         </div>
       <% }); %>
       <%# 여기까지가 계산이 해준 것이라는 걸 분명히 해 둔다 %>
+      <%# 시간을 모르면 원국은 여섯 글자다 — 오행 개수 합으로 가른다 %>
+      <% var 글자수 = (reading.elements || []).reduce(function(a, e){ return a + (e.count || 0); }, 0) === 6 ? '여섯' : '여덟'; %>
       <p class="rd-more">여기까지는 <b>계산이 뽑아낸 것</b>입니다.
-        사주를 신청하시면 이 여덟 글자를 사람이 직접 읽고,
+        사주를 신청하시면 이 <%= 글자수 %> 글자를 사람이 직접 읽고,
         <b>지금 무엇을 결정해야 하는지</b>까지 훨씬 자세히 풀어 적어 보내드립니다.</p>
+      <p style="margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.6">
+        풀이는 타고난 구성으로 본 참고 해석입니다. 신살·연애·건강·해마다의 흐름은 확정된 예측이 아니니 판단의 한 가지 자료로만 봐 주세요.
+        오행 개수는 겉으로 드러난 글자 기준이고, 신강약의 힘 비율은 지장간과 계절의 영향까지 포함한 이 만세력의 계산 기준입니다.</p>
     </div>
   <% } %>
 
